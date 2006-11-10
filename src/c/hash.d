@@ -167,8 +167,27 @@ _hash_equal(int depth, cl_hashkey h, cl_object x)
 		return _hash_equal(depth, h, CDR(x));
 	case t_symbol:
 		x = x->symbol.name;
+#ifdef ECL_UNICODE
+	case t_base_string: {
+		cl_index i;
+		for (i = 0; i < x->base_string.fillp; i++) {
+			uint32_t w = x->base_string.self[i];
+			h = hash_word(h, w);
+		}
+		break;
+	}
+	case t_string: {
+		cl_index i;
+		for (i = 0; i < x->string.fillp; i++) {
+			uint32_t w = CHAR_CODE(x->string.self[i]);
+			h = hash_word(h, w);
+		}
+		break;
+	}
+#else
 	case t_base_string:
 		return hash_string(h, x->base_string.self, x->base_string.fillp);
+#endif
 	case t_pathname:
 		h = _hash_equal(depth, h, x->pathname.host);
 		h = _hash_equal(depth, h, x->pathname.device);
@@ -182,7 +201,7 @@ _hash_equal(int depth, cl_hashkey h, cl_object x)
 		/* Notice that we may round out some bits. We must do this
 		 * because the fill pointer may be set in the middle of a byte.
 		 * If so, the extra bits _must_ _not_ take part in the hash,
-		 * because otherwise we two bit arrays which are EQUAL might
+		 * because otherwise two bit arrays which are EQUAL might
 		 * have different hash keys. */
 		return hash_string(h, x->vector.self.ch, x->vector.fillp / 8);
 	default:

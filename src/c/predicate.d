@@ -408,55 +408,55 @@ BEGIN:
 	case t_longfloat:
 #endif
 	case t_complex:
-		if (ECL_NUMBER_TYPE_P(ty))
-			return number_equalp(x, y);
-		else
-			return FALSE;
-
+		return ECL_NUMBER_TYPE_P(ty) && number_equalp(x, y);
 	case t_vector:
-#ifdef ECL_UNICODE
-	case t_string:
-#endif
 	case t_base_string:
 	case t_bitvector:
-		if (ty == t_vector || ty == t_base_string || ty == t_bitvector) {
-		  j = x->vector.fillp;
-		  if (j != y->vector.fillp)
-		    return FALSE;
-		  goto ARRAY;
-		}
-		else
-			return(FALSE);
+#ifdef ECL_UNICODE
+	case t_string:
+		if (ty != t_vector && ty != t_base_string && ty != t_bitvector
+		    && ty != t_string)
+			return FALSE;
+#else
+		if (ty != t_vector && ty != t_base_string && ty != t_bitvector)
+			return FALSE;
+#endif
 
+		j = x->vector.fillp;
+		if (j != y->vector.fillp)
+			return FALSE;
+		goto ARRAY;
 	case t_array:
-		if (ty == t_array && x->array.rank == y->array.rank) {
-		  if (x->array.rank > 1) {
-		    cl_index i = 0;
-		    for (i = 0; i < x->array.rank; i++)
-		      if (x->array.dims[i] != y->array.dims[i]) return(FALSE);
-		  }
-		  if (x->array.dim != y->array.dim)
-		    return(FALSE);
-		  j=x->array.dim;
-		  goto ARRAY;
+		if (ty != t_array || x->array.rank != y->array.rank)
+			return FALSE;
+		if (x->array.rank > 1) {
+			cl_index i = 0;
+			for (i = 0; i < x->array.rank; i++)
+				if (x->array.dims[i] != y->array.dims[i]) return(FALSE);
 		}
-		else
+		if (x->array.dim != y->array.dim)
 			return(FALSE);
+		j=x->array.dim;
+	ARRAY: {
+		cl_index i;
+		for (i = 0;  i < j;  i++)
+			if (!equalp(aref(x, i), aref(y, i)))
+				return(FALSE);
+		return(TRUE);
+	}
 	default:;
 	}
 	if (tx != ty)
-		return(FALSE);
+		return FALSE;
 	switch (tx) {
 	case t_character:
-		return(char_equal(x, y));
-
+		return char_equal(x, y);
 	case t_cons:
 		if (!equalp(CAR(x), CAR(y)))
 			return(FALSE);
 		x = CDR(x);
 		y = CDR(y);
 		goto BEGIN;
-
 #ifdef CLOS
 	case t_instance: {
 		cl_index i;
@@ -480,10 +480,8 @@ BEGIN:
 		return(TRUE);
 	}
 #endif /* CLOS */
-
 	case t_pathname:
-		return(equal(x, y));
-
+		return equal(x, y);
 	case t_hashtable: {
 		cl_index i;
 		struct ecl_hashtable_entry *ex, *ey;
@@ -499,21 +497,10 @@ BEGIN:
 					return(FALSE);
 			}
 		}
-		return(TRUE);
+		return TRUE;
 	}
-
 	default:
-		return(FALSE);
-	}
-
-ARRAY:
-	{
-		cl_index i;
-
-		for (i = 0;  i < j;  i++)
-			if (!equalp(aref(x, i), aref(y, i)))
-				return(FALSE);
-		return(TRUE);
+		return FALSE;
 	}
 }
 
