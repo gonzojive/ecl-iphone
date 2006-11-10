@@ -364,12 +364,13 @@ BEGIN:
 		return(TRUE);
 	}
 	case t_pathname:
-		return(equal(x->pathname.host, y->pathname.host) &&
+		return ty == tx &&
+		       equal(x->pathname.host, y->pathname.host) &&
 		       equal(x->pathname.device, y->pathname.device) &&
 		       equal(x->pathname.directory, y->pathname.directory) &&
 		       equal(x->pathname.name, y->pathname.name) &&
 		       equal(x->pathname.type, y->pathname.type) &&
-		       equal(x->pathname.version, y->pathname.version));
+		       equal(x->pathname.version, y->pathname.version);
 	case t_foreign:
 		return (tx == ty) && (x->foreign.data == y->foreign.data);
 	default:

@@ -137,6 +137,16 @@ EXPORTS
 	cl_standard_char_p
 	cl_upper_case_p
 
+	ecl_alpha_char_p	
+	ecl_alphanumericp
+	ecl_both_case_p
+	ecl_char_downcase
+	ecl_char_upcase
+	ecl_graphic_char_p
+	ecl_lower_case_p
+	ecl_standard_char_p
+	ecl_upper_case_p
+
 	;ecl_base_string_case
 	ecl_char_code
 	ecl_base_char_code

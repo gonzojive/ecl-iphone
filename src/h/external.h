@@ -360,6 +360,16 @@ extern cl_object cl_name_char(cl_object s);
 extern cl_object cl_standard_char_p(cl_object c);
 extern cl_object cl_upper_case_p(cl_object c);
 
+extern bool ecl_alpha_char_p(cl_index c);
+extern bool ecl_alphanumericp(cl_index c);
+extern bool ecl_both_case_p(cl_index c);
+extern cl_index ecl_char_downcase(cl_index c);
+extern cl_index ecl_char_upcase(cl_index c);
+extern bool ecl_graphic_char_p(cl_index c);
+extern bool ecl_lower_case_p(cl_index c);
+extern bool ecl_standard_char_p(cl_index c);
+extern bool ecl_upper_case_p(cl_index c);
+
 extern int ecl_base_string_case(cl_object s);
 extern cl_fixnum ecl_char_code(cl_object c);
 extern int ecl_base_char_code(cl_object c);

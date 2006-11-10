@@ -115,7 +115,10 @@ ECL 1.0:
  - The FFI will signal a type error when converting extended characters to
    the C types "char" or "unsigned char".
 
- - EQUAL did not work with extended strings. 
+ - EQUAL and EQUALP did not work with extended strings. 
+
+ - Unicode support for ALPHA-CHAR-P, ALPHANUMERICP, CHAR-UPCASE, CHAR-DOWNCASE,
+   etc, based on the C library functions towupper, towlower.
 
 * Other visible changes:
 

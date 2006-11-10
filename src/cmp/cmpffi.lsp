@@ -28,8 +28,9 @@
     :cl-index ((integer 0 #.most-positive-fixnum) "cl_index")
     :float (single-float "float")
     :double (double-float "double")
-    :char (character "char")
-    :unsigned-char (character "char")
+    :char (base-char "char")
+    :unsigned-char (base-char "char")
+    :wchar (character "cl_index")
     :object (t "cl_object")
     :bool (t "bool")
     ;; These types are never selected to unbox data.
@@ -93,7 +94,7 @@
 	(t
 	 (case (first loc)
 	   (FIXNUM-VALUE 'FIXNUM)
-	   (CHARACTER-VALUE 'CHARACTER)
+	   (CHARACTER-VALUE (type-of (code-char (second loc))))
 	   (DOUBLE-FLOAT-VALUE 'DOUBLE-FLOAT)
 	   (SINGLE-FLOAT-VALUE 'SINGLE-FLOAT)
 	   (C-INLINE (let ((type (first (second loc))))
@@ -109,7 +110,7 @@
 	(t
 	 (case (first loc)
 	   (FIXNUM-VALUE :fixnum)
-	   (CHARACTER-VALUE :char)
+	   (CHARACTER-VALUE (if (<= (second loc) 255) :char :wchar))
 	   (DOUBLE-FLOAT-VALUE :double)
 	   (SINGLE-FLOAT-VALUE :float)
 	   (C-INLINE (let ((type (first (second loc))))
@@ -157,9 +158,9 @@
 		loc ")"))
 	   (otherwise
 	    (coercion-error))))
-	((:char :unsigned-char)
+	((:char :unsigned-char :wchar)
 	 (case loc-rep-type
-	   ((:char :unsigned-char)
+	   ((:char :unsigned-char :wchar)
 	    (wt "((" (rep-type-name dest-rep-type) ")" loc ")"))
 	   ((:object)
 	    (ensure-valid-object-type dest-type)
@@ -182,7 +183,7 @@
 	((:bool)
 	 (case loc-rep-type
 	   ((:int :unsigned-int :long :unsigned-long :byte :unsigned-byte :fixnum
-		  :float :double :char :unsigned-char)
+		  :float :double :char :unsigned-char :wchar)
 	    (wt "1"))
 	   ((:object)
 	    (wt "(" loc ")!=Cnil"))
@@ -206,7 +207,7 @@
 		(wt "make_doublefloat(" loc ")")))
 	   ((:bool)
 	    (wt "((" loc ")?Ct:Cnil)"))
-	   ((:char :unsigned-char)
+	   ((:char :unsigned-char :wchar)
 	    (wt "CODE_CHAR(" loc ")"))
 	   ((:cstring)
 	    (wt "ecl_cstring_to_base_string_or_nil(" loc ")"))

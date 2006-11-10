@@ -158,7 +158,7 @@
  "@1;(#1)->array.self.t[#2*(#1)->array.dims[1]+#3]= #0")
 (def-inline si:aset :unsafe (t (array bit) fixnum fixnum) :fixnum
  "@0;aset_bv(#1,(#2)*(#1)->array.dims[1]+(#3),fix(#0))")
-(def-inline si:aset :unsafe (character (array base-char) fixnum fixnum) :char
+(def-inline si:aset :unsafe (base-char (array base-char) fixnum fixnum) :char
  "@1;(#1)->base_string.self[#2*(#1)->array.dims[1]+#3]= #0")
 (def-inline si:aset :unsafe (double-float (array double-float) fixnum fixnum)
  :double "@1;(#1)->array.self.df[#2*(#1)->array.dims[1]+#3]= #0")
@@ -175,7 +175,7 @@
  "(#1)->vector.self.t[#2]= #0")
 (def-inline si:aset :unsafe (t (array bit) fixnum) :fixnum
  "aset_bv(#1,#2,fix(#0))")
-(def-inline si:aset :unsafe (character (array base-char) fixnum) :char
+(def-inline si:aset :unsafe (base-char (array base-char) fixnum) :char
  "(#1)->base_string.self[#2]= #0")
 #+unicode
 (def-inline si:aset :unsafe (character (array character) fixnum) t
@@ -240,18 +240,22 @@
 ;; file character.d
 
 (proclaim-function standard-char-p (character) t :predicate t)
+(def-inline standard-char-p :always (character) :bool "ecl_standard_char_p(#0)")
+
 (proclaim-function graphic-char-p (character) t :predicate t)
+(def-inline graphic-char-p :always (character) :bool "ecl_graphic_char_p(#0)")
+
 (proclaim-function alpha-char-p (character) t :predicate t :no-side-effects t)
-(def-inline alpha-char-p :always (character) :bool "isalpha(#0)")
+(def-inline alpha-char-p :always (character) :bool "ecl_alpha_char_p(#0)")
 
 (proclaim-function upper-case-p (character) t :predicate t :no-side-effects t)
-(def-inline upper-case-p :always (character) :bool "isupper(#0)")
+(def-inline upper-case-p :always (character) :bool "ecl_upper_case_p(#0)")
 
 (proclaim-function lower-case-p (character) t :predicate t :no-side-effects t)
-(def-inline lower-case-p :always (character) :bool "islower(#0)")
+(def-inline lower-case-p :always (character) :bool "ecl_lower_case_p(#0)")
 
 (proclaim-function both-case-p (character) t :predicate t :no-side-effects t)
-(def-inline both-case-p :always (character) :bool "(islower(#0)||isupper(#0))")
+(def-inline both-case-p :always (character) :bool "ecl_both_case_p(#0)")
 
 (proclaim-function digit-char-p (character *) t :no-side-effects t)
 (def-inline digit-char-p :always (character) :bool
@@ -295,10 +299,10 @@
 (def-inline code-char :always (fixnum) :char "#0")
 
 (proclaim-function char-upcase (character) character :no-side-effects t)
-(def-inline char-upcase :always (character) :char "toupper(#0)")
+(def-inline char-upcase :always (base-char) :char "toupper(#0)")
 
 (proclaim-function char-downcase (character) character :no-side-effects t)
-(def-inline char-downcase :always (character) :char "tolower(#0)")
+(def-inline char-downcase :always (base-char) :char "tolower(#0)")
 
 (proclaim-function digit-char (fixnum *) (or character null))
 (proclaim-function char-int (character) fixnum :no-side-effects t)
@@ -1167,7 +1171,7 @@ type_of(#0)==t_bitvector")
 (def-inline si:schar-set :always (t fixnum t) t "elt_set(#0,#1,#2)")
 (def-inline si:schar-set :unsafe (t t t) t
  "@2;((#0)->base_string.self[fix(#1)]=ecl_char_code(#2),(#2))")
-(def-inline si:schar-set :unsafe (t fixnum character) :char
+(def-inline si:schar-set :unsafe (t fixnum base-char) :char
  "(#0)->base_string.self[#1]= #2")
 
 (proclaim-function string= (string-designator string-designator *) t :predicate t :no-side-effects t)

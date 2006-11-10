@@ -16,6 +16,9 @@
 #include <stdio.h>
 #include <ecl/ecl.h>
 #include <ctype.h>
+#ifdef ECL_UNICODE
+#include <wctype.h>
+#endif
 
 cl_fixnum
 ecl_char_code(cl_object c)
@@ -46,45 +49,98 @@ cl_standard_char_p(cl_object c)
 {
 	/* INV: ecl_char_code() checks the type */
 	cl_fixnum i = ecl_char_code(c);
-	@(return (((' ' <= i && i < '\177') || i == '\n')? Ct : Cnil))
+	@(return (ecl_standard_char_p(i)? Ct : Cnil))
+}
+
+bool
+ecl_standard_char_p(cl_index code)
+{
+	return ((' ' <= code) && (code <= '\177')) || (code == '\n');
 }
 
 cl_object
 cl_graphic_char_p(cl_object c)
 {
 	/* INV: ecl_char_code() checks the type */
-	cl_fixnum i = ecl_char_code(c);     /* ' ' < '\177'  ??? Beppe*/
-	@(return ((' ' <= i && i < '\177')? Ct : Cnil))
+	@(return (ecl_graphic_char_p(ecl_char_code(c))? Ct : Cnil))
+}
+
+bool
+ecl_graphic_char_p(cl_index code)
+{
+#ifdef ECL_UNICODE
+	return code == ' ' || iswgraph(code);
+#else
+	return code == ' ' || isgraph(code);
+#endif
 }
 
 cl_object
 cl_alpha_char_p(cl_object c)
 {
 	/* INV: ecl_char_code() checks the type */
-	cl_fixnum i = ecl_char_code(c);
-	@(return (isalpha(i)? Ct : Cnil))
+	@(return (ecl_alpha_char_p(ecl_char_code(c))? Ct : Cnil))
+}
+
+bool
+ecl_alpha_char_p(cl_index code)
+{
+#ifdef ECL_UNICODE
+	return iswalpha(code);
+#else
+	return isalpha(code);
+#endif
 }
 
 cl_object
 cl_upper_case_p(cl_object c)
 {
 	/* INV: ecl_char_code() checks the type */
-	@(return (isupper(ecl_char_code(c))? Ct : Cnil))
+	@(return (ecl_upper_case_p(ecl_char_code(c))? Ct : Cnil))
+}
+
+bool
+ecl_upper_case_p(cl_index code)
+{
+#ifdef ECL_UNICODE
+	return iswupper(code);
+#else
+	return isupper(code);
+#endif
 }
 
 cl_object
 cl_lower_case_p(cl_object c)
 {
 	/* INV: ecl_char_code() checks the type */
-	@(return (islower(ecl_char_code(c))? Ct : Cnil))
+	@(return (ecl_lower_case_p(ecl_char_code(c))? Ct : Cnil))
+}
+
+bool
+ecl_lower_case_p(cl_index code)
+{
+#ifdef ECL_UNICODE
+	return iswlower(code);
+#else
+	return islower(code);
+#endif
 }
 
 cl_object
 cl_both_case_p(cl_object c)
 {
 	/* INV: ecl_char_code() checks the type */
-	cl_fixnum code = ecl_char_code(c);
-	@(return ((isupper(code) || islower(code)) ? Ct : Cnil))
+	@(return (ecl_both_case_p(ecl_char_code(c))? Ct : Cnil))
+}
+
+bool
+ecl_both_case_p(cl_index code)
+{
+#ifdef ECL_UNICODE
+	return iswlower(code) || iswupper(code);
+#else
+	return islower(code) || isupper(code);
+#endif
 }
 
 int
@@ -136,7 +192,17 @@ cl_alphanumericp(cl_object c)
 {
 	/* INV: ecl_char_code() checks type of `c' */
 	cl_fixnum i = ecl_char_code(c);
-	@(return (isalnum(i)? Ct : Cnil))
+	@(return (ecl_alphanumericp(i)? Ct : Cnil))
+}
+
+bool
+ecl_alphanumericp(cl_index i)
+{
+#ifdef ECL_UNICODE
+	return iswalnum(i);
+#else
+	return isalnum(i);
+#endif
 }
 
 @(defun char= (c &rest cs)
@@ -320,17 +386,30 @@ char_compare(cl_object x, cl_object y)
 cl_object
 cl_character(cl_object x)
 {
+ AGAIN:
 	switch (type_of(x)) {
 	case t_character:
 		break;
 	case t_symbol:
 		x = x->symbol.name;
+		goto AGAIN;
+#ifdef ECL_UNICODE
+	case t_string:
+		if (x->string.fillp == 1) {
+			x = x->string.self[0];
+			break;
+		}
+		goto ERROR;
+#endif
 	case t_base_string:
-		if (x->base_string.fillp == 1)
+		if (x->base_string.fillp == 1) {
 			x = CODE_CHAR(x->base_string.self[0]);
-		break;
-	default:
-		FEtype_error_character(x);
+			break;
+		}
+	default: ERROR:
+		x = ecl_type_error(@'character',"character designator",
+				   x,c_string_to_object("(OR CHARACTER SYMBOL (ARRAY CHARACTER (1)) (ARRAY BASE-CHAR (1)))"));
+		goto AGAIN;
 	}
 	@(return x)
 }
@@ -368,7 +447,17 @@ cl_char_upcase(cl_object c)
 {
 	/* INV: ecl_char_code() checks the type of `c' */
 	cl_fixnum code = ecl_char_code(c);
-	@(return (islower(code) ? CODE_CHAR(toupper(code)) : c))
+	@(return CODE_CHAR(ecl_char_upcase(code)))
+}
+
+cl_index
+ecl_char_upcase(cl_index code)
+{
+#ifdef ECL_UNICODE
+	return iswlower(code)? towupper(code) : code;
+#else
+	return islower(code)? toupper(code) : code;
+#endif
 }
 
 cl_object
@@ -376,7 +465,17 @@ cl_char_downcase(cl_object c)
 {
 	/* INV: ecl_char_code() checks the type of `c' */
 	cl_fixnum code = ecl_char_code(c);
-	@(return (isupper(code) ? CODE_CHAR(tolower(code)) : c))
+	@(return CODE_CHAR(ecl_char_downcase(code)))
+}
+
+cl_index
+ecl_char_downcase(cl_index code)
+{
+#ifdef ECL_UNICODE
+	return iswupper(code)? towlower(code) : code;
+#else
+	return isupper(code)? tolower(code) : code;
+#endif
 }
 
 @(defun digit_char (weight &optional (radix MAKE_FIXNUM(10)))
@@ -446,9 +545,10 @@ cl_object
 cl_name_char(cl_object name)
 {
 	cl_object c = gethash_safe((name = cl_string(name)), cl_core.char_names, Cnil);
-	if (c == Cnil && type_of(name) == t_base_string) {
+	if (c == Cnil && type_of(name) == t_base_string &&
+	    length(name)) {
 		c = cl_char(name, MAKE_FIXNUM(0));
-		if (c == CODE_CHAR('u') || c = CODE_CHAR('U')) {
+		if (c == CODE_CHAR('u') || c == CODE_CHAR('U')) {
 			/* FIXME! This only works with base-strings */
 			cl_index end = name->base_string.fillp - 1;
 			cl_index real_end = end;

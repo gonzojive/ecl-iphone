@@ -237,7 +237,7 @@ cl_string(cl_object x)
 			y = cl_alloc_simple_extended_string(1);
 			y->string.self[0] = x;
 			x = y;
-			}
+		}
 #else
 		y = cl_alloc_simple_base_string(1);
 		y->base_string.self[0] = CHAR_CODE(x);
