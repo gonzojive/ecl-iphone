@@ -250,17 +250,19 @@ cl_symbol_name(cl_object x)
 	cl_object counter, output;
 	bool increment;
 @
-	t = type_of(prefix);
-	if (t == t_base_string) {
+	if (ecl_stringp(prefix)) {
 		counter = SYM_VAL(@'*gensym-counter*');
 		increment = 1;
-	} else if (t == t_fixnum || t == t_bignum) {
-		counter = prefix;
-		prefix = cl_core.gensym_prefix;
-		increment = 0;
 	} else {
-		FEwrong_type_argument(cl_list(3, @'or', @'string', @'integer'),
-				      prefix);
+		cl_type t = type_f(t);
+		if (t == t_fixnum || t == t_bignum) {
+			counter = prefix;
+			prefix = cl_core.gensym_prefix;
+			increment = 0;
+		} else {
+			FEwrong_type_argument(cl_list(3, @'or', @'string', @'integer'),
+					      prefix);
+		}
 	}
 	output = ecl_make_string_output_stream(64);
 	bds_bind(@'*print-base*', MAKE_FIXNUM(10));

@@ -179,12 +179,6 @@
     (when (cdr remaining)
       (switch-to-buffer (find-buffer-visiting (cadr remaining))))))
 
-(global-set-key [?\221 ?\C-i] 'back-to-emacs)
-(global-set-key [?\221 ?\C-s] 'search-ecl)
-(global-set-key [?\221 ?\C-n] 'search-next-ecl)
-(global-set-key [?\221 ?\C-m] 'next-ecl)
-(global-set-key [?\221 ?\C-p] 'ecl-load-symbols)
-
 (global-set-key [?\M-p ?\C-i] 'back-to-emacs)
 (global-set-key [?\M-p ?\C-s] 'search-ecl)
 (global-set-key [?\M-p ?\C-n] 'search-next-ecl)
