@@ -222,6 +222,9 @@ _hash_equalp(int depth, cl_hashkey h, cl_object x)
 		}
 		h = _hash_equalp(depth, h, CAR(x));
 		return _hash_equalp(depth, h, CDR(x));
+#ifdef ECL_UNICODE
+	case t_string:
+#endif
 	case t_base_string:
 	case t_vector:
 	case t_bitvector:
