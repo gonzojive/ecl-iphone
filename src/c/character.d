@@ -446,16 +446,19 @@ cl_object
 cl_name_char(cl_object name)
 {
 	cl_object c = gethash_safe((name = cl_string(name)), cl_core.char_names, Cnil);
-	if (c == Cnil && (name->base_string.self[0] == 'u' || name->base_string.self[0] == 'U')) {
-                /* more error checking? FIXME */
-		cl_index end = name->base_string.fillp - 1;
-		cl_index real_end = end;
-		c = parse_integer(name->base_string.self + 1, end,
-				  &real_end, 16);
-		if ((real_end != end) || !FIXNUMP(c)) {
-			c = Cnil;
-		} else {
-			c = CODE_CHAR(fix(c));
+	if (c == Cnil && type_of(name) == t_base_string) {
+		c = cl_char(name, MAKE_FIXNUM(0));
+		if (c == CODE_CHAR('u') || c = CODE_CHAR('U')) {
+			/* FIXME! This only works with base-strings */
+			cl_index end = name->base_string.fillp - 1;
+			cl_index real_end = end;
+			c = parse_integer(name->base_string.self + 1, end,
+					  &real_end, 16);
+			if ((real_end != end) || !FIXNUMP(c)) {
+				c = Cnil;
+			} else {
+				c = CODE_CHAR(fix(c));
+			}
 		}
 	}
 	@(return c);
