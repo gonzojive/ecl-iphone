@@ -20,6 +20,11 @@
 #include <ecl/internal.h>
 
 #if !defined(ECL_CMU_FORMAT)
+
+#ifdef ECL_UNICODE
+#error "The old version of FORMAT does not support Unicode"
+#endif
+
 #define FMT_MAX_PARAM	8
 typedef struct format_stack_struct {
   cl_object	stream;
