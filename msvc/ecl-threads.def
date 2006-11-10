@@ -997,7 +997,7 @@ EXPORTS
 	member_char
 	ecl_string_push_extend
 	get_string_start_end
-
+	ecl_fits_in_base_string
 
 	; structure.c
 
@@ -1037,7 +1037,6 @@ EXPORTS
 
 	;cl_defvar
 	;cl_defparameter
-	make_symbol
 	make_keyword
 	symbol_value
 	ecl_getf

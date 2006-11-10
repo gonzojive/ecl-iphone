@@ -255,48 +255,37 @@ bool
 eql(cl_object x, cl_object y)
 {
 	cl_type t;
-
 	if (x == y)
 		return(TRUE);
 	if ((t = type_of(x)) != type_of(y))
 		return(FALSE);
 	switch (t) {
-
 	case t_fixnum:
-		return(fix(x) == fix(y));
-
+		return FALSE;
 	case t_bignum:
-		return(big_compare(x, y) == 0);
-
+		return (big_compare(x, y) == 0);
 	case t_ratio:
-		return(eql(x->ratio.num, y->ratio.num) &&
-		       eql(x->ratio.den, y->ratio.den));
-
+		return (eql(x->ratio.num, y->ratio.num) &&
+			eql(x->ratio.den, y->ratio.den));
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 		return ecl_short_float(x) == ecl_short_float(y);
 #endif
 	case t_singlefloat:
-		return(sf(x) == sf(y));
-
+		return (sf(x) == sf(y));
 	case t_doublefloat:
-		return(df(x) == df(y));
+		return (df(x) == df(y));
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
 		return ecl_long_float(x) == ecl_long_float(y);
 #endif
 	case t_complex:
-		if (eql(x->complex.real, y->complex.real) &&
-		    eql(x->complex.imag, y->complex.imag))
-			return(TRUE);
-		else
-			return(FALSE);
-
+		return (eql(x->complex.real, y->complex.real) &&
+			eql(x->complex.imag, y->complex.imag));
 	case t_character:
 		return(CHAR_CODE(x) == CHAR_CODE(y));
-
 	default:
-		return(FALSE);
+		return FALSE;
 	}
 }
 
@@ -309,51 +298,61 @@ cl_eql(cl_object x, cl_object y)
 bool
 equal(register cl_object x, cl_object y)
 {
-	register cl_type t;
-
+	cl_type tx, ty;
 BEGIN:
-	if ((t = type_of(x)) != type_of(y))
-		return(FALSE);
 	if (x==y)
 		return(TRUE);
-	switch (t) {
-
+	tx = type_of(x);
+	ty = type_of(y);
+	switch (tx) {
 	case t_cons:
-		if (!equal(CAR(x), CAR(y)))
-			return(FALSE);
+		if (tx != ty || !equal(CAR(x), CAR(y)))
+			return FALSE;
 		x = CDR(x);
 		y = CDR(y);
 		goto BEGIN;
-
 	case t_symbol:
 	case t_vector:
 	case t_array:
-		return FALSE;
-
 	case t_fixnum:
-		return(fix(x)==fix(y));
+		return FALSE;
+	case t_bignum:
+		return (tx == ty) && (big_compare(x,y) == 0);
+	case t_ratio:
+		return (tx == ty) && eql(x->ratio.num, y->ratio.num) &&
+			eql(x->ratio.den, y->ratio.den);
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
-		return ecl_short_float(x) == ecl_short_float(y);
+		return (tx == ty) && (ecl_short_float(x) == ecl_short_float(y));
 #endif
 	case t_singlefloat:
-		return(sf(x)==sf(y));
+		return (tx == ty) && (sf(x)==sf(y));
 
 	case t_doublefloat:
-		return(df(x)==df(y));
+		return (tx == ty) && (df(x)==df(y));
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
-		return ecl_long_float(x) == ecl_long_float(y);
+		return (tx == ty) && (ecl_long_float(x) == ecl_long_float(y));
 #endif
+	case t_complex:
+		return (tx = ty) && eql(x->complex.real, y->complex.real) &&
+			eql(x->complex.imag, y->complex.imag);
+	case t_character:
+		return(CHAR_CODE(x) == CHAR_CODE(y));
+	case t_base_string:
 #ifdef ECL_UNICODE
 	case t_string:
+		if (ty != t_base_string && ty != t_string)
+			return FALSE;
+#else
+		if (ty != t_base_string)
+			return FALSE;
 #endif
-	case t_base_string:
-		return(string_eq(x, y));
-
+		return string_eq(x, y);
 	case t_bitvector: {
 		cl_index i, ox, oy;
-
+		if (ty != tx)
+			return FALSE;
 		if (x->vector.fillp != y->vector.fillp)
 			return(FALSE);
 		ox = x->vector.offset;
@@ -364,43 +363,6 @@ BEGIN:
 				return(FALSE);
 		return(TRUE);
 	}
-
-#ifdef CLOS
-	case t_instance: {
-		cl_index i, l = x->instance.length;
-
-		if (CLASS_OF(x) != CLASS_OF(y))
-			return(FALSE);
-		if (l != y->instance.length)
-			return(FALSE);
-		for (i = 0;  i < l;  i++) {
-			cl_object vx = x->instance.slots[i];
-			cl_object vy = y->instance.slots[i];
-			if (vx == OBJNULL) {
-				if (vy != OBJNULL)
-					return FALSE;
-			} else if (vy == OBJNULL) {
-				return FALSE;
-			} else if (!equal(vx, vy)) {
-				return FALSE;
-			}
-		}
-		return TRUE;
-	}
-#else
-	case t_structure:
-	{
-		int i;
-
-		if (x->str.name != y->str.name)
-			return(FALSE);
-		for (i = 0;  i < x->str.length;  i++)
-			if (!equal(x->str.self[i], y->str.self[i]))
-				return(FALSE);
-		return(TRUE);
-	}
-#endif /* CLOS */
-
 	case t_pathname:
 		return(equal(x->pathname.host, y->pathname.host) &&
 		       equal(x->pathname.device, y->pathname.device) &&
@@ -408,12 +370,10 @@ BEGIN:
 		       equal(x->pathname.name, y->pathname.name) &&
 		       equal(x->pathname.type, y->pathname.type) &&
 		       equal(x->pathname.version, y->pathname.version));
-
 	case t_foreign:
-		return (x->foreign.data == y->foreign.data);
-
+		return (tx == ty) && (x->foreign.data == y->foreign.data);
 	default:
-		return(eql(x,y));
+		return FALSE;
 	}
 }
 

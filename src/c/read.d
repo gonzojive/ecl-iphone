@@ -338,7 +338,7 @@ BEGIN:
 		if (p == Cnil) {
 			p = current_package();
 		}
-		/* INV: make_symbol() copies the string */
+		/* INV: cl_make_symbol() copies the string */
 		x = intern(token, p, &intern_flag);
 	}
  OUTPUT:
@@ -993,7 +993,7 @@ M:
 	if (read_suppress) {
 		output = Cnil;
 	} else {
-		output = make_symbol(token);
+		output = cl_make_symbol(token);
 	}
 	si_put_buffer_string(token);
 	@(return output)

@@ -156,6 +156,28 @@ ecl_cstring_to_base_string_or_nil(const char *s)
 		return make_base_string_copy(s);
 }
 
+bool
+ecl_fits_in_base_string(cl_object s)
+{
+ AGAIN:
+	switch (type_of(s)) {
+#ifdef ECL_UNICODE
+	case t_string: {
+		cl_index i;
+		for (i = 0; i < s->string.fillp; i++) {
+			if (!BASE_CHAR_P(s->string.self[i]))
+				return 0;
+		}
+		return 1;
+	}
+#endif
+	case t_base_string:
+		return 1;
+	default:
+		s = ecl_type_error(@'si::copy-to-simple-base-string',"",s,@'string');
+		goto AGAIN;
+	}
+}
 
 cl_object
 si_copy_to_simple_base_string(cl_object x)
@@ -535,10 +557,8 @@ string_eq(cl_object x, cl_object y)
 		break;
 	case t_base_string:
 		switch(type_of(y)) {
-		case t_string: {
-			cl_object z = x; x = y; y = z;
-			goto AGAIN;
-		}
+		case t_string:
+			return string_eq(y, x);
 		case t_base_string:
 			return memcmp(x->base_string.self, y->base_string.self, i) == 0;
 		default:

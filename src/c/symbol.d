@@ -24,19 +24,27 @@ static void FEtype_error_plist(cl_object x) /*__attribute__((noreturn))*/;
 cl_object
 cl_make_symbol(cl_object str)
 {
-	str = ecl_check_type_string(@'make-symbol',str);
-	str = si_copy_to_simple_base_string(str);
-	@(return make_symbol(str))
-}
-
-cl_object
-make_symbol(cl_object st)
-{
 	cl_object x;
-
+ AGAIN:
+	/* INV: In several places it is assumed that we copy the string! */
+	switch (type_of(str)) {
+#ifdef ECL_UNICODE
+	case t_string:
+		if (!ecl_fits_in_base_string(str)) {
+			str = cl_copy_seq(str);
+		} else {
+			str = si_copy_to_simple_base_string(str);
+		}
+#endif
+	case t_base_string:
+		str = si_copy_to_simple_base_string(str);
+		break;
+	default:
+		str = ecl_type_error(@'make-symbol',"name",str,@'string');
+		goto AGAIN;
+	}
 	x = cl_alloc_object(t_symbol);
-	/* FIXME! Should we copy? */
-	x->symbol.name = si_copy_to_simple_base_string(st);
+	x->symbol.name = str;
 	x->symbol.dynamic = 0;
 	ECL_SET(x,OBJNULL);
 	SYM_FUN(x) = Cnil;
@@ -45,7 +53,7 @@ make_symbol(cl_object st)
 	x->symbol.stype = stp_ordinary;
 	x->symbol.mflag = FALSE;
 	x->symbol.isform = FALSE;
-	return(x);
+	@(return x)
 }
 
 /*
@@ -232,7 +240,7 @@ cl_symbol_name(cl_object x)
 @(defun copy_symbol (sym &optional cp &aux x)
 @
 	x = ecl_check_cl_type(@'copy-symbol', x, t_symbol);
-	x = make_symbol(sym->symbol.name);
+	x = cl_make_symbol(sym->symbol.name);
 	if (Null(cp))
 		@(return x)
 	x->symbol.stype = sym->symbol.stype;
@@ -249,20 +257,19 @@ cl_symbol_name(cl_object x)
 	cl_type t;
 	cl_object counter, output;
 	bool increment;
-@
+@ {
+ AGAIN:
 	if (ecl_stringp(prefix)) {
 		counter = SYM_VAL(@'*gensym-counter*');
 		increment = 1;
+	} else if ((t = type_of(prefix)) == t_fixnum || t == t_bignum) {
+		counter = prefix;
+		prefix = cl_core.gensym_prefix;
+		increment = 0;
 	} else {
-		cl_type t = type_f(t);
-		if (t == t_fixnum || t == t_bignum) {
-			counter = prefix;
-			prefix = cl_core.gensym_prefix;
-			increment = 0;
-		} else {
-			FEwrong_type_argument(cl_list(3, @'or', @'string', @'integer'),
-					      prefix);
-		}
+		prefix = ecl_type_error(@'gensym',"prefix",prefix,
+					cl_list(3, @'or', @'string', @'integer'));
+		goto AGAIN;
 	}
 	output = ecl_make_string_output_stream(64);
 	bds_bind(@'*print-base*', MAKE_FIXNUM(10));
@@ -270,18 +277,17 @@ cl_symbol_name(cl_object x)
 	princ(prefix, output);
 	princ(counter, output);
 	bds_unwind_n(2);
-	output = make_symbol(cl_get_output_stream_string(output));
+	output = cl_make_symbol(cl_get_output_stream_string(output));
 	if (increment)
 		ECL_SETQ(@'*gensym-counter*',one_plus(counter));
-	@(return output)
-@)
+	@(return output);
+} @)
 
 @(defun gentemp (&optional (prefix cl_core.gentemp_prefix) (pack current_package()))
 	cl_object output, s;
 	int intern_flag;
 @
-	/* FIXME! Symbols restricted to base string */
-	prefix = ecl_check_cl_type(@'gentemp', prefix, t_base_string);
+	prefix = ecl_check_type_string(@'gentemp', prefix);
 	pack = si_coerce_to_package(pack);
 ONCE_MORE:
 	output = ecl_make_string_output_stream(64);

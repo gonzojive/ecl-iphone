@@ -294,8 +294,12 @@ intern(cl_object name, cl_object p, int *intern_flag)
 {
 	cl_object s, ul;
 
-	/* FIXME! Symbols restricted to base string */
-	name = ecl_check_cl_type(@'intern', name, t_base_string);
+	name = ecl_check_type_string(@'intern', name);
+#ifdef ECL_UNICODE
+	if (ecl_fits_in_base_string(name)) {
+		name = si_copy_to_simple_base_string(name);
+	}
+#endif
 	p = si_coerce_to_package(p);
  TRY_AGAIN_LABEL:
 	PACKAGE_LOCK(p);
@@ -325,7 +329,7 @@ intern(cl_object name, cl_object p, int *intern_flag)
 				"Ignore lock and proceed", p, 2, name, p);
 		goto TRY_AGAIN_LABEL;
 	}
-	s = make_symbol(name);
+	s = cl_make_symbol(name);
 	s->symbol.hpack = p;
 	*intern_flag = 0;
 	if (p == cl_core.keyword_package) {
@@ -349,8 +353,12 @@ ecl_find_symbol_nolock(cl_object name, cl_object p, int *intern_flag)
 {
 	cl_object s, ul;
 
-	/* FIXME! Symbols restricted to base string */
-	name = ecl_check_cl_type(@'find-symbol', name, t_base_string);
+	name = ecl_check_type_string(@'find-symbol', name);
+#ifdef ECL_UNICODE
+	if (ecl_fits_in_base_string(name)) {
+		name = si_copy_to_simple_base_string(name);
+	}
+#endif
 	s = gethash_safe(name, p->pack.external, OBJNULL);
 	if (s != OBJNULL) {
 		*intern_flag = EXTERNAL;
@@ -662,7 +670,7 @@ shadow(cl_object s, cl_object p)
 	PACKAGE_LOCK(p);
 	x = ecl_find_symbol_nolock(s, p, &intern_flag);
 	if (intern_flag != INTERNAL && intern_flag != EXTERNAL) {
-		x = make_symbol(s);
+		x = cl_make_symbol(s);
 		sethash(x->symbol.name, p->pack.internal, x);
 		x->symbol.hpack = p;
 	}

@@ -1306,7 +1306,7 @@ extern bool string_eq(cl_object x, cl_object y);
 extern bool member_char(int c, cl_object char_bag);
 extern int ecl_string_push_extend(cl_object s, int c);
 extern void get_string_start_end(cl_object s, cl_object start, cl_object end, cl_index *ps, cl_index *pe);
-
+extern bool ecl_fits_in_base_string(cl_object s);
 
 /* structure.c */
 
@@ -1349,7 +1349,6 @@ extern cl_object si_put_properties _ARGS((cl_narg narg, cl_object sym, ...));
 
 extern void cl_defvar(cl_object s, cl_object v);
 extern void cl_defparameter(cl_object s, cl_object v);
-extern cl_object make_symbol(cl_object st);
 extern cl_object make_keyword(const char *s);
 extern cl_object symbol_value(cl_object s);
 extern cl_object ecl_getf(cl_object place, cl_object indicator, cl_object deflt);

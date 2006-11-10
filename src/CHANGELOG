@@ -115,6 +115,8 @@ ECL 1.0:
  - The FFI will signal a type error when converting extended characters to
    the C types "char" or "unsigned char".
 
+ - EQUAL did not work with extended strings. 
+
 * Other visible changes:
 
  - EXT:PROCESS-COMMAND-ARGS now allows for a default rule.
@@ -158,7 +160,7 @@ ECL 1.0:
 
  - C functions which disappear: si_set_compiled_function_name(),
    si_extended_string_concatenate(), assert_type_string(),
-   assert_type_character(), assert_type_symbol().
+   assert_type_character(), assert_type_symbol(), make_symbol().
 
  - Lisp functions which disappear: si:set-compiled-function-name,
    si:extended-string-concatenate, si:list-nth, si:rplaca-nthcdr.
