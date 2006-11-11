@@ -23,7 +23,7 @@ rando(cl_object x, cl_object rs)
 	cl_object z;
 	double d = (double)(rs->random.value>>1) / (4294967296.0/2.0);
  AGAIN:
-	if (number_minusp(x)) {
+	if (!number_plusp(x)) {
 		goto ERROR;
 	}
 	switch (type_of(x)) {
@@ -52,7 +52,7 @@ rando(cl_object x, cl_object rs)
 	default:
 	ERROR:
 		x = ecl_type_error(@'random',"limit",x,
-				   c_string_to_object("(OR (INTEGER 0 *) (FLOAT 0 *))"));
+				   c_string_to_object("(OR (INTEGER (0) *) (FLOAT (0) *))"));
 		goto AGAIN;
 	}
 	return z;
