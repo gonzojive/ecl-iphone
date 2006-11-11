@@ -932,7 +932,6 @@ cl_decode_float(cl_object x)
 	int e, s;
 	cl_type tx = type_of(x);
 	float f;
-	double d;
  AGAIN:
 	switch (tx) {
 #ifdef ECL_SHORT_FLOAT
@@ -943,21 +942,21 @@ cl_decode_float(cl_object x)
 	case t_singlefloat: {
 		f = sf(x);
 	FLOAT:
-		if (d >= 0.0)
+		if (f >= 0.0) {
 			s = 1;
-		else {
-			d = -d;
+		} else {
+			f = -f;
 			s = 0;
 		}
-		d = frexpf(d, &e);
-		x = make_singlefloat(d);
+		f = frexpf(f, &e);
+		x = make_singlefloat(f);
 		break;
 	}
 	case t_doublefloat: {
 		double d = df(x);
-		if (d >= 0.0)
+		if (d >= 0.0) {
 			s = 1;
-		else {
+		} else {
 			d = -d;
 			s = 0;
 		}
