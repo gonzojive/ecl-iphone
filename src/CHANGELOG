@@ -124,6 +124,9 @@ ECL 1.0:
  - Following functions fixed to work with Unicode strings: EQUAL, EQUALP,
    PARSE-INTEGER.
 
+ - Most functions dealing with sequences (REMOVE, DELETE, etc) would
+   output a STRING even if the input was a BASE-STRING.
+
 * Other visible changes:
 
  - EXT:PROCESS-COMMAND-ARGS now allows for a default rule.
