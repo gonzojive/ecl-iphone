@@ -20,38 +20,40 @@
 static cl_object
 rando(cl_object x, cl_object rs)
 {
-	cl_type tx;
 	cl_object z;
-	double d;
-
-	tx = type_of(x);
-	if (number_compare(x, MAKE_FIXNUM(0)) != 1)
-		FEwrong_type_argument(c_string_to_object("(REAL (0) *)"),
-				      x);
-	d = (double)(rs->random.value>>1) / (4294967296.0/2.0);
-	d = number_to_double(x) * d;
-	if (tx == t_fixnum) {
-		z = MAKE_FIXNUM((cl_fixnum)d);
-	} else if (tx == t_bignum) {
-		z = double_to_integer(d);
-	} else if (tx == t_singlefloat) {
-		z = make_singlefloat((float)d);
-	} else if (tx == t_doublefloat) {
-		z = make_doublefloat(d);
+	double d = (double)(rs->random.value>>1) / (4294967296.0/2.0);
+ AGAIN:
+	if (number_minusp(x)) {
+		goto ERROR;
 	}
-#ifdef ECL_LONG_FLOAT
-	else if (tx == t_longfloat) {
-		z = make_longfloat(d);
-	}
-#endif
+	switch (type_of(x)) {
+	case t_fixnum:
+		z = MAKE_FIXNUM((cl_fixnum)(fix(x) * d));
+		break;
+	case t_bignum:
+		z = floor1(number_times(x, cl_rational(make_doublefloat(d))));
+		break;
 #ifdef ECL_SHORT_FLOAT
-	else if (tx == t_shortfloat) {
-		z = make_shortfloat(d);
-	}
+	case t_shortfloat:
+		z = make_shortfloat(ecl_short_float(x) * (float)d);
+		break;
 #endif
-	else {
-		FEerror("~S is not an integer nor a floating-point number.",
-			1, x);
+	case t_singlefloat:
+		z = make_singlefloat(sf(x) * (float)d);
+		break;
+	case t_doublefloat:
+		z = make_doublefloat(df(x) * d);
+		break;
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		z = make_longfloat(ecl_long_float(x) * (long double)d);
+		break;
+#endif
+	default:
+	ERROR:
+		x = ecl_type_error(@'random',"limit",x,
+				   c_string_to_object("(OR (INTEGER 0 *) (FLOAT 0 *))"));
+		goto AGAIN;
 	}
 	return z;
 }
@@ -88,9 +90,8 @@ advance_random_state(cl_object rs)
 
 
 @(defun random (x &optional (rs symbol_value(@'*random-state*')))
-@	
-	if (type_of(rs) != t_random)
-		FEwrong_type_argument(@'random-state', rs);
+@
+	rs = ecl_check_cl_type(@'random', rs, t_random);
 	advance_random_state(rs);
 	@(return rando(x, rs));
 @)
