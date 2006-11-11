@@ -16,6 +16,7 @@
 (defun seqtype (sequence)
   (declare (si::c-local))
   (cond ((listp sequence) 'list)
+	#+unicode
 	((base-string-p sequence) 'base-string)
         ((stringp sequence) 'string)
         ((bit-vector-p sequence) 'bit-vector)
