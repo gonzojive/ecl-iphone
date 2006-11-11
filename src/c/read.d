@@ -34,6 +34,9 @@
 #define	cat(rtbl,c)	((rtbl)->readtable.table[c].syntax_type)
 #define read_suppress (SYM_VAL(@'*read-suppress*') != Cnil)
 
+static struct ecl_readtable_entry*
+read_table_entry(cl_object rdtbl, cl_object c);
+
 /* FIXME! *READ-EVAL* is not taken into account */
 
 cl_object
@@ -309,7 +312,7 @@ BEGIN:
 	base = ecl_current_read_base();
 	if ((base <= 10) && isalpha(token->base_string.self[0]))
 		goto SYMBOL;
-	x = parse_number(token->base_string.self, token->base_string.fillp, &i, base);
+	x = ecl_parse_number(token, 0, token->base_string.fillp, &i, base);
 	if (x == Cnil)
 		FEreader_error("Syntax error when reading number.~%Offending string: ~S.",
 			       in, 1, token);
@@ -365,8 +368,8 @@ read_object(cl_object in)
 #define basep(d)	(d <= 36)
 
 /*
-	parse_number(s, end, ep, radix) parses C string s
-	up to (but not including) s[end]
+	ecl_parse_number(str, start, end, ep, radix) parses C string str
+	up to (but not including) str[end]
 	using radix as the radix for the rational number.
 	(For floating numbers, the radix is ignored and replaced with 10)
 	When parsing succeeds,
@@ -375,27 +378,26 @@ read_object(cl_object in)
 	If not, OBJNULL is returned.
 */
 cl_object
-parse_number(const char *s, cl_index end, cl_index *ep, int radix)
+ecl_parse_number(cl_object str, cl_index start, cl_index end,
+		 cl_index *ep, unsigned int radix)
 {
-	cl_index i, j, exp_marker_loc = 0;
+	cl_index i, exp_marker_loc = 0;
 	bool is_float = 0;
-	for (i=0; i < end; i++) {
-		char c = s[i];
+	if (end <= start) {
+		*ep = start;
+		return OBJNULL;
+	}
+	for (i = start; i < end; i++) {
+		cl_index c = ecl_char(str, i);
 		if (c == '/') {
+			/* A slash separates two integer numbers forming a ratio */
 			cl_object num, den;
-			num = parse_number(s, i, &j, radix);
-			if (num == OBJNULL || (j < i) ||
-			    (!FIXNUMP(num) && type_of(num) != t_bignum))
-			{
-				*ep = j;
+			num = ecl_parse_integer(str, start, i, ep, radix);
+			if (num == OBJNULL || (*ep < i)) {
 				return OBJNULL;
 			}
-			i++;
-			den = parse_number(s+i, end-i, ep, radix);
-			*ep += i;
-			if (den == OBJNULL || (*ep < end) ||
-			   (!FIXNUMP(den) && type_of(den) != t_bignum))
-			{
+			den = ecl_parse_integer(str, i+1, end, ep, radix);
+			if (den == OBJNULL || (*ep < end)) {
 				return OBJNULL;
 			}
 			if (den == MAKE_FIXNUM(0)) {
@@ -403,17 +405,20 @@ parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 			}
 			return make_ratio(num, den);
 		} else if (c == '.') {
+			/* A trailing dot denotes base-10 integer number */
 			radix = 10;
 			if (i == (end-1)) {
-				cl_object aux = parse_integer(s, end-1, ep, radix);
-				(*ep)++;
+				cl_object aux =
+				  ecl_parse_integer(str, 0, i, ep, radix);
+				if (*ep == i) {
+					*ep = end;
+				}
 				return aux;
-			} else {
-				is_float = 1;
 			}
+			is_float = 1;
 		} else if (digitp(c, radix) < 0) {
 			if (ecl_exponent_marker_p(c)) {
-				exp_marker_loc = i;
+				exp_marker_loc = i - start;
 				is_float = 1;
 				break;
 			}
@@ -424,17 +429,18 @@ parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 		}
 	}
 	if (!is_float) {
-		return parse_integer(s, end, ep, radix);
+		return ecl_parse_integer(str, start, end, ep, radix);
+	} else if (radix != 10) {
+		/* Can only parse floating point numbers in decimal format */
+		*ep = 1;
+		return OBJNULL;
 	} else {
 		/* We use strtod() for parsing floating point numbers
 		 * accurately. However, this routine only accepts character
 		 * 'e' or 'E' as exponent markers and we have to make a copy
 		 * of the number with this exponent marker. */
-#ifdef __GNUC__
-		char buffer[end+1];
-#else
-		char *buffer = (char*)cl_alloc_atomic(end+1);
-#endif
+		cl_index length = end - start;
+		char *buffer = (char*)cl_alloc_atomic(length+1);
 		char *parse_end;
 		char exp_marker;
 		cl_object output;
@@ -444,11 +450,25 @@ parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 #else
 		double d;
 #endif
-		memcpy(buffer, s, end);
-		buffer[end] = '\0';
+#ifdef ECL_UNICODE
+		if (type_of(str) == t_string) {
+			for (i = start; i < end; i++) {
+				cl_index c = ecl_char(str, i);
+				if (c > 255) {
+					*ep = i;
+					return OBJNULL;
+				}
+				buffer[i] = c;
+			}
+		} else
+#endif
+		{
+			memcpy(buffer, str->base_string.self + start, length);
+		}
+		buffer[length] = '\0';
 		if (exp_marker_loc) {
+			exp_marker = buffer[exp_marker_loc];
 			buffer[exp_marker_loc] = 'e';
-			exp_marker = s[exp_marker_loc];
 		} else {
 			exp_marker = ecl_current_read_default_float_format();
 		}
@@ -457,8 +477,8 @@ parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 #else
 		d = strtod(buffer, &parse_end);
 #endif
-		*ep = (parse_end - buffer);
-		if (*ep == 0) {
+		*ep = (parse_end - buffer) + start;
+		if (*ep == start) {
 			output = OBJNULL;
 			goto OUTPUT;
 		}
@@ -489,44 +509,47 @@ parse_number(const char *s, cl_index end, cl_index *ep, int radix)
 			output = OBJNULL;
 		}
 	OUTPUT:
-#ifndef __GNUC__
-		cl_dealloc(s, end+1);
-#endif
+		cl_dealloc(buffer, length+1);
 		return output;
 	}
 }
 
 cl_object
-parse_integer(const char *s, cl_index end, cl_index *ep, int radix)
+ecl_parse_integer(cl_object str, cl_index start, cl_index end,
+		  cl_index *ep, unsigned int radix)
 {
-	cl_object x;
 	int sign, d;
-	cl_object integer_part;
-	cl_index i;
+	cl_object integer_part, output;
+	cl_index i, c;
 
-	i = 0;
-	sign = 1;
-	if (s[i] == '+')
-		i++;
-	else if (s[i] == '-') {
-		sign = -1;
-		i++;
+	if (start >= end || !basep(radix)) {
+		*ep = i;
+		return OBJNULL;
 	}
-	if (i >= end || !basep(radix) || (d = digitp(s[i], radix)) < 0) {
-	  *ep = i;
-	  return(OBJNULL);
+	sign = 1;
+	c = ecl_char(str, start);
+	if (c == '+') {
+		start++;
+	} else if (c == '-') {
+		sign = -1;
+		start++;
 	}
 	integer_part = big_register0_get();
-	do {
+	for (i = start; i < end; i++) {
+		c = ecl_char(str, i);
+		d = digitp(c, radix);
+		if (d < 0) {
+			break;
+		}
 		big_mul_ui(integer_part, radix);
 		big_add_ui(integer_part, d);
-		i++;
-	} while (i < end && (d = digitp(s[i], radix)) >= 0);
-	if (sign < 0)
+	}
+	if (sign < 0) {
 		big_complement(integer_part);
-	x = big_register_normalize(integer_part);
+	}
+	output = big_register_normalize(integer_part);
 	*ep = i;
-	return(x);
+	return (i == start)? OBJNULL : output;
 }
 
 static cl_object
@@ -877,7 +900,7 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 			if (aux == OBJNULL)
 				break;
 			if (i >= dim) {
-				FEreader_error("Vector larger than specified length, ~D.", 1, d);
+				FEreader_error("Vector larger than specified length, ~D.", in, 1, d);
 			}
 			aset1(v, i, last = aux);
 		}
@@ -1024,7 +1047,7 @@ read_number(cl_object in, int radix, cl_object macro_char)
 	if (token == Cnil) {
 		x = Cnil;
 	} else {
-		x = parse_number(token->base_string.self, token->base_string.fillp, &i, radix);
+		x = ecl_parse_number(token, 0, token->base_string.fillp, &i, radix);
 		if (x == OBJNULL || x == Cnil || i != token->base_string.fillp) {
 			FEreader_error("Cannot parse the #~A readmacro.", in, 1,
 				       macro_char);
@@ -1619,40 +1642,43 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 		       &aux x)
 	cl_index s, e, ep;
 	cl_object rtbl = ecl_current_readtable();
-@
-	/* FIXME! PARSE-INTEGER restricted to base-strings */
-	strng = ecl_check_cl_type(@'parse-integer', strng, t_base_string);
+@ {
+	strng = ecl_check_type_string(@'parse-integer', strng);
 	get_string_start_end(strng, start, end, &s, &e);
 	if (!FIXNUMP(radix) ||
 	    fix(radix) < 2 || fix(radix) > 36)
 		FEerror("~S is an illegal radix.", 1, radix);
-	while (rtbl->readtable.table[strng->base_string.self[s]].syntax_type
-	       == cat_whitespace && s < e)
+	while (s < e &&
+	       read_table_entry(rtbl, cl_char(strng, MAKE_FIXNUM(s)))->syntax_type
+	       == cat_whitespace) {
 		s++;
+	}
 	if (s >= e) {
 		if (junk_allowed != Cnil)
 			@(return Cnil MAKE_FIXNUM(s))
 		else
 			goto CANNOT_PARSE;
 	}
-	x = parse_integer(strng->base_string.self+s, e-s, &ep, fix(radix));
+	x = ecl_parse_integer(strng, s, e, &ep, fix(radix));
 	if (x == OBJNULL) {
-		if (junk_allowed != Cnil)
-			@(return Cnil MAKE_FIXNUM(ep+s))
-		else
+		if (junk_allowed != Cnil) {
+			@(return Cnil MAKE_FIXNUM(ep));
+		} else {
 			goto CANNOT_PARSE;
+		}
 	}
-	if (junk_allowed != Cnil)
-		@(return x MAKE_FIXNUM(ep+s))
-	for (s += ep ;  s < e;  s++)
-		if (rtbl->readtable.table[strng->base_string.self[s]].syntax_type
-		    != cat_whitespace)
-			goto CANNOT_PARSE;
-	@(return x MAKE_FIXNUM(e))
-
-CANNOT_PARSE:
-	FEparse_error("Cannot parse an integer in the string ~S.", Cnil, 1, strng);
-@)
+	if (junk_allowed != Cnil) {
+		@(return x MAKE_FIXNUM(ep));
+	}
+	for (s = ep; s < e; s++) {
+		if (read_table_entry(rtbl, cl_char(strng, MAKE_FIXNUM(s)))->syntax_type
+		    != cat_whitespace) {
+CANNOT_PARSE:		FEparse_error("Cannot parse an integer in the string ~S.",
+				      Cnil, 1, strng);
+		}
+	}
+	@(return x MAKE_FIXNUM(e));
+} @)
 
 @(defun read_byte (binary_input_stream &optional (eof_errorp Ct) eof_value)
 	cl_object c;
@@ -1736,12 +1762,25 @@ cl_readtablep(cl_object readtable)
 	@(return ((type_of(readtable) == t_readtable)? Ct : Cnil))
 }
 
+#ifdef ECL_UNICODE
+static struct ecl_readtable_entry default_readtable_entry;
+#endif
+
 static struct ecl_readtable_entry*
 read_table_entry(cl_object rdtbl, cl_object c)
 {
 	/* INV: ecl_char_code() checks the type of `c' */
+	cl_index code = ecl_char_code(c);
 	assert_type_readtable(rdtbl);
-	return &(rdtbl->readtable.table[ecl_char_code(c)]);
+#ifdef ECL_UNICODE
+	if (!BASE_CHAR_CODE_P(code)) {
+		default_readtable_entry.syntax_type = cat_constituent;
+		default_readtable_entry.macro = Cnil;
+		default_readtable_entry.dispatch_table = NULL;
+		return &default_readtable_entry;
+	}
+#endif
+	return &(rdtbl->readtable.table[code]);
 }
 
 bool
@@ -2102,4 +2141,3 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 
 	return block;
 }
-

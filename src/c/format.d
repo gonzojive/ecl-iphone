@@ -21,9 +21,13 @@
 
 #if !defined(ECL_CMU_FORMAT)
 
-#ifdef ECL_UNICODE
-#error "The old version of FORMAT does not support Unicode"
-#endif
+/*
+ * This code is broken because of several reasons:
+ * 1) It does not support Unicode
+ * 2) It does not support pretty printing
+ * 3) It uses the old version of parse_integer()
+ */
+#error "The old version of FORMAT is broken"
 
 #define FMT_MAX_PARAM	8
 typedef struct format_stack_struct {

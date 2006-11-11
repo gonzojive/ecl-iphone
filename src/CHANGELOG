@@ -115,10 +115,11 @@ ECL 1.0:
  - The FFI will signal a type error when converting extended characters to
    the C types "char" or "unsigned char".
 
- - EQUAL and EQUALP did not work with extended strings. 
-
  - Unicode support for ALPHA-CHAR-P, ALPHANUMERICP, CHAR-UPCASE, CHAR-DOWNCASE,
-   etc, based on the C library functions towupper, towlower.
+   etc, based on the ISO C99 library functions for wide characters.
+
+ - Following functions fixed to work with Unicode strings: EQUAL, EQUALP,
+   PARSE-INTEGER.
 
 * Other visible changes:
 
@@ -163,20 +164,22 @@ ECL 1.0:
 
  - C functions which disappear: si_set_compiled_function_name(),
    si_extended_string_concatenate(), assert_type_string(),
-   assert_type_character(), assert_type_symbol(), make_symbol().
+   assert_type_character(), assert_type_symbol(), make_symbol(),
+   parse_number(), parse_integer().
 
  - Lisp functions which disappear: si:set-compiled-function-name,
    si:extended-string-concatenate, si:list-nth, si:rplaca-nthcdr.
 
  - New C functions: ecl_stream_to_handle(), ecl_base_char_code(),
    ecl_type_error(), ecl_check_cl_type(), ecl_check_type_string(),
-   ecl_fixnum_in_range(), ecl_stringp().
+   ecl_fixnum_in_range(), ecl_stringp(), ecl_parse_number(),
+   ecl_parse_integer(), ecl_char(), ecl_char_set().
 
  - New Lisp functions: si:wrong-type-argument.
 
- - Functions renamed: backup_fopen() -> ecl_backup_fopen()
-   char_code() -> ecl_char_code(), cl_log1() -> ecl_log1(),
-   cl_log2() -> ecl_log2(), NUMBER_TYPE() -> ECL_NUMBER_TYPE_P()
+ - Functions renamed: backup_fopen() -> ecl_backup_fopen() char_code() ->
+   ecl_char_code(), cl_log1() -> ecl_log1(), cl_log2() -> ecl_log2(),
+   NUMBER_TYPE() -> ECL_NUMBER_TYPE_P().
 
 * Contributed code:
 

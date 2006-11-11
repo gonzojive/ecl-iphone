@@ -550,10 +550,9 @@ cl_name_char(cl_object name)
 		c = cl_char(name, MAKE_FIXNUM(0));
 		if (c == CODE_CHAR('u') || c == CODE_CHAR('U')) {
 			/* FIXME! This only works with base-strings */
-			cl_index end = name->base_string.fillp - 1;
+			cl_index end = name->base_string.fillp;
 			cl_index real_end = end;
-			c = parse_integer(name->base_string.self + 1, end,
-					  &real_end, 16);
+			c = ecl_parse_integer(name, 1, end, &real_end, 16);
 			if ((real_end != end) || !FIXNUMP(c)) {
 				c = Cnil;
 			} else {

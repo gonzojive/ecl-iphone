@@ -1212,8 +1212,8 @@ extern cl_object cl_get_dispatch_macro_character _ARGS((cl_narg narg, cl_object 
 
 extern cl_object read_object_non_recursive(cl_object in);
 extern cl_object read_object(cl_object in);
-extern cl_object parse_number(const char *s, cl_index end, cl_index *ep, int radix);
-extern cl_object parse_integer(const char *s, cl_index end, cl_index *ep, int radix);
+extern cl_object ecl_parse_number(cl_object s, cl_index start, cl_index end, cl_index *ep, unsigned int radix);
+extern cl_object ecl_parse_integer(cl_object s, cl_index start, cl_index end, cl_index *ep, unsigned int radix);
 extern bool ecl_invalid_character_p(int c);
 extern cl_object copy_readtable(cl_object from, cl_object to);
 extern cl_object ecl_current_readtable(void);
@@ -1221,7 +1221,6 @@ extern int ecl_current_read_base(void);
 extern char ecl_current_read_default_float_format(void);
 extern cl_object c_string_to_object(const char *s);
 extern cl_object read_VV(cl_object block, void (*entry)(cl_object));
-
 
 /* reference.c */
 
@@ -1317,6 +1316,8 @@ extern bool member_char(int c, cl_object char_bag);
 extern int ecl_string_push_extend(cl_object s, int c);
 extern void get_string_start_end(cl_object s, cl_object start, cl_object end, cl_index *ps, cl_index *pe);
 extern bool ecl_fits_in_base_string(cl_object s);
+extern cl_index ecl_char(cl_object s, cl_index i);
+extern void ecl_char_set(cl_object s, cl_index i, cl_index c);
 
 /* structure.c */
 

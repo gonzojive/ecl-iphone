@@ -303,19 +303,25 @@ cl_object
 cl_char(cl_object object, cl_object index)
 {
 	cl_index position = object_to_index(index);
+	@(return CODE_CHAR(ecl_char(object, position)))
+}
+
+cl_index
+ecl_char(cl_object object, cl_index index)
+{
 	/* CHAR bypasses fill pointers when accessing strings */
  AGAIN:
 	switch(type_of(object)) {
 #ifdef ECL_UNICODE
 	case t_string:
-		if (position >= object->string.dim)
+		if (index >= object->string.dim)
 			illegal_index(object, index);
-		@(return object->string.self[position])
+		return CHAR_CODE(object->string.self[index]);
 #endif
 	case t_base_string:
-		if (position >= object->base_string.dim)
+		if (index >= object->base_string.dim)
 			illegal_index(object, index);
-		@(return CODE_CHAR(object->base_string.self[position]))
+		return object->base_string.self[index];
 	default:
 		object = ecl_type_error(@'char',"",object,@'string');
 		goto AGAIN;
@@ -326,23 +332,31 @@ cl_object
 si_char_set(cl_object object, cl_object index, cl_object value)
 {
 	cl_index position = object_to_index(index);
+	cl_index c = ecl_char_code(value);
+	ecl_char_set(object, position, c);
+	@(return value)
+}
+
+void
+ecl_char_set(cl_object object, cl_index index, cl_index value)
+{
  AGAIN:
 	/* CHAR bypasses fill pointers when accessing strings */
 	switch(type_of(object)) {
 #ifdef ECL_UNICODE
 	case t_string:
-		if (position >= object->string.dim)
+		if (index >= object->string.dim)
 			illegal_index(object, index);
 		if (!CHARACTERP(value)) FEtype_error_character(value);
-		object->string.self[position] = value;
-		@(return object->string.self[position])
+		object->string.self[index] = CODE_CHAR(value);
+		break;
 #endif
 	case t_base_string:
-		if (position >= object->base_string.dim)
+		if (index >= object->base_string.dim)
 			illegal_index(object, index);
 		/* INV: ecl_char_code() checks type of value */
-		object->base_string.self[position] = ecl_char_code(value);
-		@(return value)
+		object->base_string.self[index] = value;
+		break;
 	default:
 		object = ecl_type_error(@'si::char-set', "", object, @'string');
 		goto AGAIN;
