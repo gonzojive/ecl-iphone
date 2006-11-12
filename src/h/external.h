@@ -368,6 +368,7 @@ extern cl_index ecl_char_upcase(cl_index c);
 extern bool ecl_graphic_char_p(cl_index c);
 extern bool ecl_lower_case_p(cl_index c);
 extern bool ecl_standard_char_p(cl_index c);
+extern bool ecl_base_char_p(cl_index c);
 extern bool ecl_upper_case_p(cl_index c);
 
 extern int ecl_base_string_case(cl_object s);

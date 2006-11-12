@@ -146,6 +146,7 @@ EXPORTS
 	ecl_lower_case_p
 	ecl_standard_char_p
 	ecl_upper_case_p
+	ecl_base_char_p
 
 	;ecl_base_string_case
 	ecl_char_code

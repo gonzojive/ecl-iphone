@@ -121,9 +121,9 @@ cl_characterp(cl_object x)
 
 #ifdef ECL_UNICODE
 cl_object
-si_base_char_p(cl_object x)
+si_base_char_p(cl_object c)
 {
-	@(return (BASE_CHAR_P(x) ? Ct : Cnil))
+	@(return ((CHARACTERP(c) && BASE_CHAR_P(c))? Ct : Cnil))
 }
 #endif
 

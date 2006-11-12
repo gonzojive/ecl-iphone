@@ -58,6 +58,12 @@ ecl_standard_char_p(cl_index code)
 	return ((' ' <= code) && (code <= '\177')) || (code == '\n');
 }
 
+bool
+ecl_base_char_p(cl_index c)
+{
+	return c < 255;
+}
+
 cl_object
 cl_graphic_char_p(cl_object c)
 {

@@ -317,10 +317,13 @@ cl_type_of(cl_object x)
 #endif
 	case t_character: {
 		int i = CHAR_CODE(x);
-		if ((' ' <= i && i < '\177') || i == '\n')
+		if (ecl_standard_char_p(x)) {
 			t = @'standard-char';
-		else
+		} else if (ecl_base_char_p(x)) {
 			t = @'base-char';
+		} else {
+			t = @'character';
+		}
 		break;
 	}
 
