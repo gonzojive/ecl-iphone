@@ -1094,7 +1094,7 @@ extern cl_object si_default_pathname_defaults(void);
 extern cl_object cl_wild_pathname_p _ARGS((cl_narg narg, cl_object pathname, ...));
 
 extern cl_object make_pathname(cl_object host, cl_object device, cl_object directory, cl_object name, cl_object type, cl_object version);
-extern cl_object parse_namestring(const char *s, cl_index start, cl_index end, cl_index *ep, cl_object default_host);
+extern cl_object parse_namestring(cl_object s, cl_index start, cl_index end, cl_index *ep, cl_object default_host);
 extern cl_object coerce_to_physical_pathname(cl_object x);
 extern cl_object coerce_to_file_pathname(cl_object pathname);
 extern cl_object ecl_namestring(cl_object pname, int truncate_if_impossible);

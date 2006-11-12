@@ -131,6 +131,10 @@ ECL 1.0:
 
  - Type BASE-STRING and STRING were defined as equivalent.
 
+ - Pathnames now allow extended strings in the names. Errors are signalled,
+   however, when a file name contains illegal characters. UTF-8 encoding
+   of file names is not supported.
+
 * Other visible changes:
 
  - EXT:PROCESS-COMMAND-ARGS now allows for a default rule.
