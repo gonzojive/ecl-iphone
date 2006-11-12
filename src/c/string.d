@@ -392,67 +392,34 @@ for the string designator ~S.", 3, start, end, string);
 
 #ifdef ECL_UNICODE
 static int
-compare_extended(cl_object *s1, cl_index l1, cl_object *s2, cl_index l2,
-		 int case_sensitive, cl_index *m)
+compare_strings(cl_object string1, cl_index s1, cl_index e1,
+		cl_object string2, cl_index s2, cl_index e2,
+		int case_sensitive, cl_index *m)
 {
-	cl_index l, c1, c2;
-	for (l = 0; l < l1; l++, s1++, s2++) {
-		if (l == l2) { /* s1 is longer than s2, therefore s2 < s1 */
-			*m = l;
+	cl_index c1, c2;
+	for (; s1 < e1; s1++, s2++) {
+		if (s2 >= e2) { /* s1 is longer than s2, therefore s2 < s1 */
+			*m = s1;
 			return +1;
 		}
-		c1 = CHAR_CODE(*s1);
-		c2 = CHAR_CODE(*s2);
+		c1 = ecl_char(string1, s1);
+		c2 = ecl_char(string2, s2);
 		if (!case_sensitive) {
-			c1 = toupper(c1);
-			c2 = toupper(c2);
+			c1 = towupper(c1);
+			c2 = towupper(c2);
 		}
 		if (c1 < c2) {
-			*m = l;
+			*m = s1;
 			return -1;
 		} else if (c1 > c2) {
-			*m = l;
+			*m = s1;
 			return +1;
 		}
 	}
-	*m = l;
-	if (l1 == l2)
+	*m = s1;
+	if (s2 >= e2) {
 		return 0;
-	else { /* s1 is shorter than s2, hence s1 < s2 */
-		return -1;
-	}
-}
-#endif
-
-#ifdef ECL_UNICODE
-static int
-compare_mixed(cl_object *s1, cl_index l1, char *s2, cl_index l2,
-	      int case_sensitive, cl_index *m)
-{
-	cl_index l, c1, c2;
-	for (l = 0; l < l1; l++, s1++, s2++) {
-		if (l == l2) { /* s1 is longer than s2, therefore s2 < s1 */
-			*m = l;
-			return +1;
-		}
-		c1 = CHAR_CODE(*s1);
-		c2 = *s2;
-		if (!case_sensitive) {
-			c1 = toupper(c1);
-			c2 = toupper(c2);
-		}
-		if (c1 < c2) {
-			*m = l;
-			return -1;
-		} else if (c1 > c2) {
-			*m = l;
-			return +1;
-		}
-	}
-	*m = l;
-	if (l1 == l2)
-		return 0;
-	else { /* s1 is shorter than s2, hence s1 < s2 */
+	} else { /* s1 is shorter than s2, hence s1 < s2 */
 		return -1;
 	}
 }
@@ -601,43 +568,15 @@ AGAIN:
 	get_string_start_end(string1, start1, end1, &s1, &e1);
 	get_string_start_end(string2, start2, end2, &s2, &e2);
 	if (e1 - s1 != e2 - s2)
-		@(return Cnil)
+		@(return Cnil);
 #ifdef ECL_UNICODE
-	switch(type_of(string1)) {
-	case t_string:
-		switch(type_of(string2)) {
-		case t_string:
-			output = compare_extended(string1->string.self + s1, e1 - s1,
-						  string2->string.self + s2, e2 - s2,
-						  0, &e1);
-			break;
-		case t_base_string:
-			output = compare_mixed(string1->string.self + s1, e1 - s1,
-					       string2->base_string.self + s2, e2 - s2,
-					       0, &e1);
-			break;
-		}
-		break;
-	case t_base_string:
-		switch(type_of(string2)) {
-		case t_string:
-			output = compare_mixed(string2->string.self + s2, e2 - s2,
-					       string1->base_string.self + s1, e1 - s1,
-					       0, &e1);
-			break;
-		case t_base_string:
-			output = compare_base(string1->base_string.self + s1, e1 - s1,
-					      string2->base_string.self + s2, e2 - s2,
-					      0, &e1);
-			break;
-		}
-		break;
-	}
-#else
+	if (type_of(string1) != t_base_string || type_of(string2) != t_base_string) {
+		output = compare_strings(string1, s1, e1, string2, s2, e2, 0, &e1);
+	} else
+#endif
 	output = compare_base(string1->base_string.self + s1, e1 - s1,
 			      string2->base_string.self + s2, e2 - s2,
 			      0, &e1);
-#endif
 	@(return ((output == 0)? Ct : Cnil))
 @)
 
@@ -672,42 +611,19 @@ string_compare(cl_narg narg, int sign1, int sign2, int case_sensitive, cl_va_lis
 	get_string_start_end(string1, start1, end1, &s1, &e1);
 	get_string_start_end(string2, start2, end2, &s2, &e2);
 #ifdef ECL_UNICODE
-	switch(type_of(string1)) {
-	case t_string:
-		switch(type_of(string2)) {
-		case t_string:
-			output = compare_extended(string1->string.self + s1, e1 - s1,
-						  string2->string.self + s2, e2 - s2,
-						  case_sensitive, &e1);
-			break;
-		case t_base_string:
-			output = compare_mixed(string1->string.self + s1, e1 - s1,
-					       string2->base_string.self + s2, e2 - s2,
-					       case_sensitive, &e1);
-			break;
-		}
-	case t_base_string:
-		switch(type_of(string2)) {
-		case t_string:
-			output = compare_mixed(string2->string.self + s2, e2 - s2,
-					       string1->base_string.self + s1, e1 - s1,
-					       case_sensitive, &e1);
-			output = - output;
-			break;
-		case t_base_string:
-			output = compare_base(string1->base_string.self + s1, e1 - s1,
-					      string2->base_string.self + s2, e2 - s2,
-					      case_sensitive, &e1);
-			break;
-		}
-	}
-#else
-	output = compare_base(string1->base_string.self + s1, e1 - s1,
-			      string2->base_string.self + s2, e2 - s2,
-			      case_sensitive, &e1);
+	if (type_of(string1) != t_base_string || type_of(string2) != t_base_string) {
+		output = compare_strings(string1, s1, e1, string2, s2, e2,
+					 case_sensitive, &e1);
+	} else
 #endif
+	{
+		output = compare_base(string1->base_string.self + s1, e1 - s1,
+				      string2->base_string.self + s2, e2 - s2,
+				      case_sensitive, &e1);
+		e1 += s1;
+	}
 	if (output == sign1 || output == sign2) {
-		result = MAKE_FIXNUM(e1 + s1);
+		result = MAKE_FIXNUM(e1);
 	} else {
 		result = Cnil;
 	}
