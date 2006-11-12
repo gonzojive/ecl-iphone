@@ -363,29 +363,29 @@ cl_type_of(cl_object x)
 		if (x->string.adjustable ||
 		    x->string.hasfillp ||
 		    !Null(CAR(x->string.displaced)))
-			t = @'string';
+			t = @'array';
 		else
-			t = @'simple-string';
-		t = cl_list(2, t, MAKE_FIXNUM(x->string.dim));
+			t = @'simple-array';
+		t = cl_list(3, t, @'character', cl_list(1, MAKE_FIXNUM(x->string.dim)));
 		break;
 #endif
 	case t_base_string:
 		if (x->base_string.adjustable ||
 		    x->base_string.hasfillp ||
 		    !Null(CAR(x->base_string.displaced)))
-			t = @'base-string';
+			t = @'array';
 		else
-			t = @'simple-base-string';
-		t = cl_list(2, t, MAKE_FIXNUM(x->base_string.dim));
+			t = @'simple-array';
+		t = cl_list(3, t, @'base-char', cl_list(1, MAKE_FIXNUM(x->base_string.dim)));
 		break;
 	case t_bitvector:
 		if (x->vector.adjustable ||
 		    x->vector.hasfillp ||
 		    !Null(CAR(x->vector.displaced)))
-			t = @'bit-vector';
+			t = @'array';
 		else
-			t = @'simple-bit-vector';
-		t = cl_list(2, t, MAKE_FIXNUM(x->vector.dim));
+			t = @'simple-array';
+		t = cl_list(3, t, @'bit', cl_list(1, MAKE_FIXNUM(x->vector.dim)));
 		break;
 #ifndef CLOS
 	case t_structure:

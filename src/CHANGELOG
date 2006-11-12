@@ -129,6 +129,8 @@ ECL 1.0:
 
  - TYPE-OF did not recognized EXTENDED-CHARs.
 
+ - Type BASE-STRING and STRING were defined as equivalent.
+
 * Other visible changes:
 
  - EXT:PROCESS-COMMAND-ARGS now allows for a default rule.
@@ -169,6 +171,9 @@ ECL 1.0:
 
  - The slot accessors for structures with type VECTOR or LIST now rely on
    the standard function ELT, instead of si:list-nth and si:rplaca-nthcdr.
+
+ - TYPE-OF returns expanded types for arrays. For instance,
+   (ARRAY CHARACTER (12)) instead of (STRING 12).
 
  - C functions which disappear: si_set_compiled_function_name(),
    si_extended_string_concatenate(), assert_type_string(),

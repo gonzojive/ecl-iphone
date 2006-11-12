@@ -152,7 +152,13 @@ may be adjustable.  Other vectors are called simple-vectors."
 characters with double quotes.  Some strings may be displaced to another
 string, may have a fill-pointer, or may be adjustable.  Other strings are
 called simple-strings."
-  (if size `(array character (,size)) '(array character (*))))
+  #-unicode
+  (if size `(array character (,size)) '(array character (*)))
+  #+unicode
+  (if size
+      `(or (array base-char (,size))
+	   (array character (,size)))
+      '(or (array base-char (*)) (array character (*)))))
 
 (deftype base-string (&optional size)
   (if size `(array base-char (,size)) '(array base-char (*))))
@@ -167,7 +173,15 @@ fill-pointer, and is not adjustable."
 (deftype simple-string (&optional size)
   "A simple-string is a string that is not displaced to another array, has no
 fill-pointer, and is not adjustable."
-  (if size `(simple-array character (,size)) '(simple-array character (*))))
+  #-unicode
+  (if size
+    `(simple-array character (,size))
+    '(simple-array character (*)))
+  #+unicode
+  (if size
+      `(or (simple-array base-char (,size))
+	   (simple-array character (,size)))
+      '(or (simple-array base-char (*)) (simple-array character (*)))))
 
 (deftype simple-base-string (&optional size)
   (if size `(simple-array base-char (,size)) '(simple-array base-char (*))))
