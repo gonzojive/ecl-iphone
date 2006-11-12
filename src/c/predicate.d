@@ -183,7 +183,7 @@ cl_simple_string_p(cl_object x)
 cl_object
 si_base_string_p(cl_object x)
 {
-	@(return (type_of(x) == t_base_string))
+	@(return ((type_of(x) == t_base_string)? Ct : Cnil))
 }
 #endif
 
