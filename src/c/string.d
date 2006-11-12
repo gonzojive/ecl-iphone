@@ -347,7 +347,6 @@ ecl_char_set(cl_object object, cl_index index, cl_index value)
 	case t_string:
 		if (index >= object->string.dim)
 			illegal_index(object, index);
-		if (!CHARACTERP(value)) FEtype_error_character(value);
 		object->string.self[index] = CODE_CHAR(value);
 		break;
 #endif
