@@ -951,6 +951,9 @@ BEGIN:
 @
 BEGIN:
 	switch (type_of(symbols)) {
+#ifdef ECL_UNICODE
+	case t_string:
+#endif
 	case t_base_string:
 	case t_symbol:
 	case t_character:

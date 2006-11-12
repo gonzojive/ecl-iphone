@@ -119,6 +119,9 @@ cl_copy_structure(cl_object s)
 		s = ecl_copy_structure(s);
 		break;
 	case t_cons:
+#ifdef ECL_UNICODE
+	case t_string:
+#endif
 	case t_base_string:
 	case t_bitvector:
 	case t_vector:

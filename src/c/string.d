@@ -315,12 +315,12 @@ ecl_char(cl_object object, cl_index index)
 #ifdef ECL_UNICODE
 	case t_string:
 		if (index >= object->string.dim)
-			illegal_index(object, index);
+			illegal_index(object, MAKE_FIXNUM(index));
 		return CHAR_CODE(object->string.self[index]);
 #endif
 	case t_base_string:
 		if (index >= object->base_string.dim)
-			illegal_index(object, index);
+			illegal_index(object, MAKE_FIXNUM(index));
 		return object->base_string.self[index];
 	default:
 		object = ecl_type_error(@'char',"",object,@'string');
@@ -346,13 +346,13 @@ ecl_char_set(cl_object object, cl_index index, cl_index value)
 #ifdef ECL_UNICODE
 	case t_string:
 		if (index >= object->string.dim)
-			illegal_index(object, index);
+			illegal_index(object, MAKE_FIXNUM(index));
 		object->string.self[index] = CODE_CHAR(value);
 		break;
 #endif
 	case t_base_string:
 		if (index >= object->base_string.dim)
-			illegal_index(object, index);
+			illegal_index(object, MAKE_FIXNUM(index));
 		/* INV: ecl_char_code() checks type of value */
 		object->base_string.self[index] = value;
 		break;
@@ -735,24 +735,27 @@ member_char(int c, cl_object char_bag)
 static cl_object
 string_trim0(bool left_trim, bool right_trim, cl_object char_bag, cl_object strng)
 {
-	cl_object res;
-	cl_index i, j, k;
+	cl_index i, j;
 
 	strng = cl_string(strng);
 	i = 0;
-	j = strng->base_string.fillp - 1;
-	if (left_trim)
-		for (;  i <= j;  i++)
-			if (!member_char(strng->base_string.self[i], char_bag))
+	j = length(strng);
+	if (left_trim) {
+		for (;  i < j;  i++) {
+			cl_index c = ecl_char(strng, i);
+			if (!member_char(c, char_bag))
 				break;
-	if (right_trim)
-		for (;  j >= i;  --j)
-			if (!member_char(strng->base_string.self[j], char_bag))
+		}
+	}
+	if (right_trim) {
+		for (; j > i; j--) {
+			cl_index c = ecl_char(strng, j-1);
+			if (!member_char(c, char_bag)) {
 				break;
-	k = j - i + 1;
-	res = cl_alloc_simple_base_string(k);
-	memcpy(res->base_string.self, strng->base_string.self+i, k);
-	@(return res)
+			}
+		}
+	}
+	return cl_subseq(3, strng, MAKE_FIXNUM(i), MAKE_FIXNUM(j));
 }
 
 cl_object

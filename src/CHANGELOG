@@ -122,7 +122,8 @@ ECL 1.0:
    etc, based on the ISO C99 library functions for wide characters.
 
  - Following functions fixed to work with Unicode strings: EQUAL, EQUALP,
-   PARSE-INTEGER.
+   PARSE-INTEGER, STRING-TRIM, STRING-LEFT-TRIM, STRING-RIGHT-TRIM,
+   COPY-STRUCTURE, SHADOW.
 
  - Most functions dealing with sequences (REMOVE, DELETE, etc) would
    output a STRING even if the input was a BASE-STRING.
