@@ -61,7 +61,7 @@ ecl_standard_char_p(cl_index code)
 bool
 ecl_base_char_p(cl_index c)
 {
-	return c < 255;
+	return c <= 255;
 }
 
 cl_object

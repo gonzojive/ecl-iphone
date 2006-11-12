@@ -317,9 +317,9 @@ cl_type_of(cl_object x)
 #endif
 	case t_character: {
 		int i = CHAR_CODE(x);
-		if (ecl_standard_char_p(x)) {
+		if (ecl_standard_char_p(i)) {
 			t = @'standard-char';
-		} else if (ecl_base_char_p(x)) {
+		} else if (ecl_base_char_p(i)) {
 			t = @'base-char';
 		} else {
 			t = @'character';
