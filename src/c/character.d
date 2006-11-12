@@ -55,7 +55,7 @@ cl_standard_char_p(cl_object c)
 bool
 ecl_standard_char_p(cl_index code)
 {
-	return ((' ' <= code) && (code <= '\177')) || (code == '\n');
+	return ((' ' <= code) && (code < '\177')) || (code == '\n');
 }
 
 bool
