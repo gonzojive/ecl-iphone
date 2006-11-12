@@ -35,6 +35,7 @@ cl_make_symbol(cl_object str)
 		} else {
 			str = si_copy_to_simple_base_string(str);
 		}
+		break;
 #endif
 	case t_base_string:
 		str = si_copy_to_simple_base_string(str);
