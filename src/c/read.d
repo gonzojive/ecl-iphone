@@ -1280,7 +1280,7 @@ sharp_dollar_reader(cl_object in, cl_object c, cl_object d)
 	c = read_object(in);
 	rs = cl_alloc_object(t_random);
 	rs->random.value = fixnnint(c);
-	return rs;
+	@(return rs)
 }
 
 /*
