@@ -197,9 +197,6 @@ has no fill-pointer, and is not adjustable."
 	     (ATOM . ATOM)
              #-unicode
 	     (EXTENDED-CHAR . CONSTANTLY-NIL)
-             #-unicode
-	     (BASE-CHAR . CHARACTERP)
-             #+unicode
 	     (BASE-CHAR . BASE-CHAR-P)
 	     (CHARACTER . CHARACTERP)
 	     (COMPILED-FUNCTION . COMPILED-FUNCTION-P)
@@ -350,24 +347,21 @@ Returns T if X belongs to TYPE; NIL otherwise."
     (CONS (and (consp object)
 	       (or (endp i) (typep (car object) (first i)))
 	       (or (endp (cdr i)) (typep (cdr object) (second i)))))
+    (BASE-STRING
+     (and (base-string-p object)
+          (or (null i) (match-dimensions object i))))
     (STRING
      (and (stringp object)
-          (or (null i) (match-dimensions object i))))
-    #+unicode
-    (BASE-STRING
-     (and (stringp object)
-	  (typep (array-element-type object) 'base-char)
           (or (null i) (match-dimensions object i))))
     (BIT-VECTOR
      (and (bit-vector-p object)
           (or (null i) (match-dimensions object i))))
+    (SIMPLE-BASE-STRING
+     (and (base-string-p object)
+          (simple-string-p object)
+	  (or (null i) (match-dimensions object i))))
     (SIMPLE-STRING
      (and (simple-string-p object)
-          (or (null i) (match-dimensions object i))))
-    #+unicode
-    (SIMPLE-BASE-STRING
-     (and (simple-string-p object)
-	  (base-string-p object)
           (or (null i) (match-dimensions object i))))
     (SIMPLE-BIT-VECTOR
      (and (simple-bit-vector-p object)

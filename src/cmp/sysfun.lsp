@@ -976,17 +976,14 @@
 (proclaim-function characterp (t) t :predicate t :no-side-effects t)
 (def-inline characterp :always (t) :bool "CHARACTERP(#0)")
 
-#+unicode #+unicode
 (proclaim-function base-char-p (t) t :predicate t :no-side-effects t)
-(def-inline base-char-p :always (t) :bool "BASE_CHAR_P(#0)")
+(def-inline base-char-p :always (character) :bool "BASE_CHAR_P(#0)")
 
 (proclaim-function stringp (t) t :predicate t :no-side-effects t)
-#-unicode
-(def-inline stringp :always (t) :bool "type_of(#0)==t_base_string")
-#+unicode
-(def-inline base-string-p :always (t) :bool "type_of(#0)==t_base_string")
-#+unicode
 (def-inline stringp :always (t) :bool "ecl_stringp(#0)")
+
+(proclaim-function base-string-p (t) t :predicate t :no-side-effects t)
+(def-inline base-string-p :always (t) :bool "type_of(#0)==t_base_string")
 
 (proclaim-function bit-vector-p (t) t :predicate t :no-side-effects t)
 (def-inline bit-vector-p :always (t) :bool "(type_of(#0)==t_bitvector)")
