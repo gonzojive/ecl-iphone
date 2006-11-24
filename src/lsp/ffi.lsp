@@ -338,7 +338,7 @@
   (si::allocate-foreign-data type 0))
 
 (defun make-pointer (addr type)
-  (c-inline (type (size-of-foreign-type type) addr) (:object :int :int) :object
+  (c-inline (type (size-of-foreign-type type) addr) (:object :unsigned-long :unsigned-long) :object
             "ecl_make_foreign_data(#0, #1, (void*)#2)"
 	    :side-effects t
 	    :one-liner t))
