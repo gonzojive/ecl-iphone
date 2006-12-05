@@ -186,7 +186,7 @@ make_pathname(cl_object host, cl_object device, cl_object directory,
 	p->pathname.name      = name;
 	p->pathname.type      = type;
 	p->pathname.version   = version;
-	if (destructively_check_directory(directory, 1) == @':error') {
+	if (destructively_check_directory(directory, p->pathname.logical) == @':error') {
 		cl_error(3, @'file-error', @':pathname', p);
 	}
 	return(p);

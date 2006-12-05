@@ -110,6 +110,9 @@ ECL 1.0:
  - RANDOM no longer overflows when the input is a bignum that does not fit in a
    double-float.
 
+ - MAKE-PATHNAME should remove all occurrences of single dots "." in physical
+   pathnames.
+
 * Unicode:
 
  - MAKE-STRING only allowed :ELEMENT-TYPE to be one of CHARACTER, BASE-CHAR, or
