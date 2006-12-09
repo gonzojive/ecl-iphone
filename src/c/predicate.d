@@ -335,7 +335,7 @@ BEGIN:
 		return (tx == ty) && (ecl_long_float(x) == ecl_long_float(y));
 #endif
 	case t_complex:
-		return (tx = ty) && eql(x->complex.real, y->complex.real) &&
+		return (tx == ty) && eql(x->complex.real, y->complex.real) &&
 			eql(x->complex.imag, y->complex.imag);
 	case t_character:
 		return(CHAR_CODE(x) == CHAR_CODE(y));
