@@ -548,7 +548,7 @@ parse_namestring(cl_object s, cl_index start, cl_index end, cl_index *ep,
 			device = Cnil;
 	}
 	start = *ep;
-	if (start <= end - 2 && is_slash(ecl_char(s, start)) &&
+	if ((start+2) <= end && is_slash(ecl_char(s, start)) &&
 	    is_slash(ecl_char(s, start+1)))
 	{
 		host = parse_word(s, is_slash, WORD_EMPTY_IS_NIL,
