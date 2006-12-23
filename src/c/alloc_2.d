@@ -25,6 +25,10 @@
 
 #ifdef GBC_BOEHM
 
+#if GBC_BOEHM == 0
+#include <ecl/gc/private/gc_priv.h>
+#endif
+
 static void finalize_queued();
 
 /**********************************************************
@@ -162,6 +166,7 @@ init_alloc(void)
 	int i;
 	if (alloc_initialized) return;
 	alloc_initialized = TRUE;
+	cl_core.bytes_consed = OBJNULL;
 
 	GC_no_dls = 1;
 	GC_init();
@@ -310,6 +315,12 @@ static void
 finalize_queued()
 {
 	cl_object l = cl_core.to_be_finalized;
+#if GBC_BOEHM == 0
+	if (cl_core.bytes_consed != OBJNULL) {
+		cl_core.bytes_consed = number_plus(cl_core.bytes_consed,
+						   make_integer(GC_words_allocd));
+	}
+#endif
 	if (l == Cnil)
 		return;
 	CL_NEWENV_BEGIN {

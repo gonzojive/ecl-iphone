@@ -171,6 +171,7 @@ struct cl_core_struct {
 	cl_object processes;
 	pthread_mutex_t global_lock;
 #endif
+	cl_object bytes_consed;
 	cl_object libraries;
 	cl_object to_be_finalized;
 };

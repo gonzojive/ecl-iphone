@@ -306,6 +306,7 @@ else
       [FASL_LIBS="${FASL_LIBS} -lgc"],
       [AC_MSG_ERROR([System Boehm GC library requested but not found.])])
     AC_MSG_CHECKING( [if we need to copy GC private headers] )
+    AC_DEFINE(GBC_BOEHM, [1], [Use Boehm's garbage collector])
   else
     enable_boehm="included"
     SUBDIRS="${SUBDIRS} gc"
@@ -313,9 +314,9 @@ else
     if test "${enable_shared}" = "no"; then
       LIBRARIES="${LIBRARIES} ${LIBPREFIX}eclgc.${LIBEXT}"
     fi
+    AC_DEFINE(GBC_BOEHM, [0], [Use Boehm's garbage collector])
   fi
   EXTRA_OBJS="${EXTRA_OBJS} alloc_2.${OBJEXT}"
-  AC_DEFINE(GBC_BOEHM, [1], [Use Boehm's garbage collector])
 fi
 
 
