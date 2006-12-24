@@ -83,7 +83,7 @@
              "real time : ~,3F secs~%~
               run time  : ~,3F secs~%~
               gc count  : ~D times~%~
-              consed    : ~D words~%"
+              consed    : ~D bytes~%"
 	     (/ (- real-end real-start) internal-time-units-per-second)
 	     (/ (- run-end run-start) internal-time-units-per-second)
 	     (- gc-no-end gc-no-start)
