@@ -166,7 +166,6 @@ init_alloc(void)
 	int i;
 	if (alloc_initialized) return;
 	alloc_initialized = TRUE;
-	cl_core.bytes_consed = OBJNULL;
 
 	GC_no_dls = 1;
 	GC_init();
@@ -306,6 +305,17 @@ si_set_finalizer(cl_object o, cl_object finalizer)
 	@(return)
 }
 
+cl_object
+si_gc_stats(cl_object enable)
+{
+	cl_object old_status = cl_core.gc_stats? Ct : Cnil;
+	cl_object origin = MAKE_FIXNUM(MOST_POSITIVE_FIXNUM);
+	cl_core.gc_stats = (enable != Cnil);
+	@(return number_minus(cl_core.bytes_consed,origin)
+	  number_minus(cl_core.gc_counter,origin)
+	  old_status)
+}
+
 /*
  * This procedure is invoked after garbage collection. It invokes
  * finalizers for all objects that are to be reclaimed by the
@@ -315,12 +325,35 @@ static void
 finalize_queued()
 {
 	cl_object l = cl_core.to_be_finalized;
+	if (cl_core.gc_stats) {
 #if GBC_BOEHM == 0
-	if (cl_core.bytes_consed != OBJNULL) {
-		cl_core.bytes_consed = number_plus(cl_core.bytes_consed,
-						   make_integer(GC_words_allocd));
-	}
+		mpz_add_ui(cl_core.bytes_consed->big.big_num,
+			   cl_core.bytes_consed->big.big_num,
+			   GC_words_allocd * sizeof(cl_index));
+#else
+		/* This is less accurate and may wrap around. We try
+		   to detect this assuming that an overflow in an
+		   unsigned integer will produce an smaller
+		   integer.*/
+		static cl_index bytes = 0;
+		cl_index new_bytes = GC_total_bytes();
+		if (bytes < new_bytes) {
+			cl_index wrapped;
+			wrapped = ~((cl_index)0) - bytes;
+			mpz_add_ui(cl_core.bytes_consed->big.big_num,
+				   cl_core.bytes_consed->big.big_num,
+				   wrapped);
+			bytes = 0;
+		}
+		mpz_add_ui(cl_core.bytes_consed->big.big_num,
+			   cl_core.bytes_consed->big.big_num,
+			   new_bytes - bytes);
+		bytes = 0;
 #endif
+		mpz_add_ui(cl_core.gc_counter->big.big_num,
+			   cl_core.gc_counter->big.big_num,
+			   1);
+	}
 	if (l == Cnil)
 		return;
 	CL_NEWENV_BEGIN {

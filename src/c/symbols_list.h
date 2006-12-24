@@ -1655,6 +1655,8 @@ cl_symbols[] = {
 
 {SYS_ "WRONG-TYPE-ARGUMENT", SI_ORDINARY, NULL, -1, OBJNULL},
 
+{SYS_ "GC-STATS", SI_ORDINARY, si_gc_stats, 1, OBJNULL},
+
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};
 

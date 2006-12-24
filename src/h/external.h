@@ -171,9 +171,11 @@ struct cl_core_struct {
 	cl_object processes;
 	pthread_mutex_t global_lock;
 #endif
-	cl_object bytes_consed;
 	cl_object libraries;
 	cl_object to_be_finalized;
+	cl_object bytes_consed;
+	cl_object gc_counter;
+	bool gc_stats;
 };
 
 #if defined(mingw32) || defined(_MSC_VER) || defined(cygwin)
@@ -190,6 +192,7 @@ extern void cl_dealloc(void *p, cl_index s);
 #ifdef GBC_BOEHM
 extern cl_object si_gc(cl_object area);
 extern cl_object si_gc_dump(void);
+extern cl_object si_gc_stats(cl_object enable);
 #define cl_alloc GC_malloc_ignore_off_page
 #define cl_alloc_atomic GC_malloc_atomic_ignore_off_page
 #define cl_alloc_align(s,d) GC_malloc_ignore_off_page(s)

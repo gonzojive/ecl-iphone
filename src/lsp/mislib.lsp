@@ -37,11 +37,14 @@
   #-boehm-gc
   (let* ((real-start (get-internal-real-time))
 	 (run-start (get-internal-run-time))
-	 (gc-start (si::gc-time))
+	 gc-start
 	 bytes-consed
 	 real-end
 	 run-end
 	 gc-end)
+    ;; Garbage collection forces counters to be updated
+    (si::gc t)
+    (setf gc-start (si::gc-time))
     (multiple-value-prog1
 	(funcall closure)
       (setq run-end (get-internal-run-time)
@@ -55,33 +58,36 @@
 	     (/ (- run-end run-start) internal-time-units-per-second)
 	     (/ (- gc-end gc-start) internal-time-units-per-second))))
   #+boehm-gc
-  (let* ((real-start (get-internal-real-time))
-	 (run-start (get-internal-run-time))
-	 #-boehm-gc (gc-start (si::gc-time))
+  (let* (real-start
+	 run-start
+	 consed-start
+	 gc-no-start
 	 real-end
 	 run-end
-	 gc-end)
-    ;; Garbage collection forces counter in GC to be cleaned
+	 consed-end
+	 gc-no-end)
+    ;; Garbage collection forces the value of counters to be updated
     (si::gc t)
-    (ffi::c-inline () () :void "cl_core.bytes_consed = MAKE_FIXNUM(0);")
+    (multiple-value-setq (consed-start gc-no-start) (gc-stats t))
+    (setq real-start (get-internal-real-time)
+	  run-start (get-internal-run-time))
     (multiple-value-prog1
 	(funcall closure)
       (setq run-end (get-internal-run-time)
 	    real-end (get-internal-real-time))
-      ;; Garbage collection forces the value of bytes_consed to be updated
+      ;; Garbage collection forces the value of counters to be updated
       (si::gc t)
-      (setq bytes-consed (ffi::c-inline () () :object "cl_core.bytes_consed"
-					:one-liner t))
-      ;; And this deactivates statistics of GC
-      (ffi::c-inline () () :void "cl_core.bytes_consed = OBJNULL;")
+      (multiple-value-setq (consed-end gc-no-end) (gc-stats nil))
       (fresh-line *trace-output*)
       (format *trace-output*
              "real time : ~,3F secs~%~
               run time  : ~,3F secs~%~
-              consed    : ~D bytes~%"
+              gc count  : ~D times~%~
+              consed    : ~D words~%"
 	     (/ (- real-end real-start) internal-time-units-per-second)
 	     (/ (- run-end run-start) internal-time-units-per-second)
-	     bytes-consed))))
+	     (- gc-no-end gc-no-start)
+	     (- consed-end consed-start)))))
 
 (defmacro time (form)
   "Syntax: (time form)

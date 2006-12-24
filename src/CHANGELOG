@@ -31,8 +31,8 @@ ECL 1.0:
    a patch by Lars Brinkhoff). Still missing compiler support for unboxed
    long double types.
 
- - TIME outputs information about consed bytes, but only when using the
-   Boehm-Weiser garbage collector which is shipped with ECL.
+ - TIME outputs information about consed bytes and calls to the garbage
+   collector.
 
 * Bugs fixed:
 
