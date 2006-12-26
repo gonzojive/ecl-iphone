@@ -34,6 +34,10 @@ ECL 1.0:
  - TIME outputs information about consed bytes and calls to the garbage
    collector.
 
+ - MAKE-ARRAY accepts a foreign pointer as an argument to :DISPLACED-TO That
+   creates a lisp array on top of the foreign data and can be used to directly
+   scan C strings, or unboxed arrays of numbers.
+
 * Bugs fixed:
 
  - STREAMP signals an error for Gray streams.
@@ -189,7 +193,7 @@ ECL 1.0:
  - C functions which disappear: si_set_compiled_function_name(),
    si_extended_string_concatenate(), assert_type_string(),
    assert_type_character(), assert_type_symbol(), make_symbol(),
-   parse_number(), parse_integer().
+   parse_number(), parse_integer(), adjust_displaced().
 
  - Lisp functions which disappear: si:set-compiled-function-name,
    si:extended-string-concatenate, si:list-nth, si:rplaca-nthcdr.

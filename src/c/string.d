@@ -947,46 +947,33 @@ nstring_case(cl_narg narg, cl_object fun, int (*casefun)(int, bool *), cl_va_lis
 int
 ecl_string_push_extend(cl_object s, int c)
 {
-	cl_index new_length;
  AGAIN:
 	switch(type_of(s)) {
 #ifdef ECL_UNICODE
 	case t_string:
-		if (s->string.fillp >= s->string.dim) {
-			cl_object *p;
-			if (!s->string.adjustable)
-				FEerror("string-push-extend: the string ~S is not adjustable.",
-					1, s);
-			start_critical_section(); /* avoid losing p */
-			if (s->string.dim >= ADIMLIM/2)
-				FEerror("Can't extend the string.", 0);
-			new_length = (s->string.dim + 1) * 2;
-			p = (cl_object *)cl_alloc_align(sizeof (cl_object)*new_length, sizeof (cl_object));
-			memcpy(p, s->string.self, s->string.dim * sizeof (cl_object));
-			s->string.dim = new_length;
-			adjust_displaced(s, p - s->string.self);
-			end_critical_section();
-		}
-		s->string.self[s->string.fillp++] = CODE_CHAR(c);
-		return c;
 #endif
 	case t_base_string:
+		/* We use the fact that both string types are
+		   byte-compatible except for the data. */
 		if (s->base_string.fillp >= s->base_string.dim) {
-			char *p;
+			cl_object other;
+			cl_index new_length;
 			if (!s->base_string.adjustable)
 				FEerror("string-push-extend: the string ~S is not adjustable.",
 					1, s);
-			start_critical_section(); /* avoid losing p */
-			if (s->base_string.dim >= ADIMLIM/2)
+			if (s->base_string.dim >= ADIMLIM)
 				FEerror("Can't extend the string.", 0);
-			new_length = (s->base_string.dim + 1) * 2;
-			p = (char *)cl_alloc_atomic(new_length+1); p[new_length] = 0;
-			memcpy(p, s->base_string.self, s->base_string.dim * sizeof(char));
-			s->base_string.dim = new_length;
-			adjust_displaced(s, p - (char *)s->base_string.self);
-			end_critical_section();
+			new_length = 1 + s->base_string.dim + (s->base_string.dim / 2);
+			if (new_length > ADIMLIM)
+				new_length = ADIMLIM;
+			other = si_make_vector(cl_array_element_type(s),
+					       MAKE_FIXNUM(new_length), Ct,
+					       MAKE_FIXNUM(s->base_string.fillp),
+					       Cnil, MAKE_FIXNUM(0));
+			ecl_copy_subarray(other, 0, s, 0, s->base_string.fillp);
+			s = si_replace_array(s, other);
 		}
-		s->base_string.self[s->base_string.fillp++] = c;
+		ecl_char_set(s, s->base_string.fillp++, c);
 		return c;
 	default:
 		s = ecl_type_error(@'vector-push-extend',"",s,@'string');

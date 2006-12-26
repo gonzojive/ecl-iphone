@@ -648,7 +648,7 @@
        (dyn-form #+dffi (when (and (not system-library) si::*use-dffi*)
                           `((si:load-foreign-module ,filename)))
                  #-dffi nil))
-   `(progn ,@compile-form ,@dyn-form))))
+   `(progn ,@compile-form ,@dyn-form)))
 
 ;;;----------------------------------------------------------------------
 ;;; CALLBACKS

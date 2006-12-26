@@ -275,7 +275,6 @@ extern cl_object aref1(cl_object v, cl_index index);
 extern cl_object aset(cl_object x, cl_index index, cl_object value);
 extern cl_object aset1(cl_object v, cl_index index, cl_object val);
 extern void array_allocself(cl_object x);
-extern void adjust_displaced(cl_object x, ptrdiff_t diff);
 extern cl_elttype array_elttype(cl_object x);
 extern cl_elttype ecl_symbol_to_elttype(cl_object x);
 extern cl_object ecl_elttype_to_symbol(cl_elttype aet);

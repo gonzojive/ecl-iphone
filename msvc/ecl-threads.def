@@ -51,7 +51,6 @@ EXPORTS
 	aset
 	aset1
 	array_allocself
-	adjust_displaced
 	array_elttype
 	ecl_symbol_to_elttype
 	ecl_elttype_to_symbol

@@ -555,31 +555,39 @@ ecl_elttype_to_symbol(cl_elttype aet)
 }
 
 static void *
-array_address(cl_object x, cl_index inc)
+address_inc(void *address, cl_fixnum inc, cl_elttype elt_type)
 {
-	switch(array_elttype(x)) {
+	union ecl_array_data aux;
+	aux.t = address;
+	switch (elt_type) {
 #ifdef ECL_UNICODE
 	case aet_ch:
 #endif
 	case aet_object:
-		return x->array.self.t + inc;
+		return aux.t + inc;
 	case aet_fix:
-		return x->array.self.fix + inc;
+		return aux.fix + inc;
 	case aet_index:
-		return x->array.self.fix + inc;
+		return aux.fix + inc;
 	case aet_sf:
-		return x->array.self.sf + inc;
+		return aux.sf + inc;
 	case aet_bc:
-		return x->base_string.self + inc;
+		return aux.ch + inc;
 	case aet_df:
-		return x->array.self.df + inc;
+		return aux.df + inc;
 	case aet_b8:
-		return x->array.self.b8 + inc;
+		return aux.b8 + inc;
 	case aet_i8:
-		return x->array.self.i8 + inc;
+		return aux.i8 + inc;
 	default:
 		FEbad_aet();
 	}
+}
+
+static void *
+array_address(cl_object x, cl_index inc)
+{
+	return address_inc(x->array.self.t, inc, array_elttype(x));
 }
 
 cl_object
@@ -601,85 +609,41 @@ static void
 displace(cl_object from, cl_object to, cl_object offset)
 {
 	cl_index j;
+	void *base;
 	cl_elttype totype, fromtype;
-
-	totype = array_elttype(to);
 	fromtype = array_elttype(from);
-	if (totype != fromtype)
-		FEerror("Cannot displace the array,~%\
+	if (type_of(to) == t_foreign) {
+		if (fromtype == aet_bit) {
+			FEerror("Cannot displace bit vectors onto foreign data",0);
+		}
+		base = to->foreign.data;
+		j = ecl_fixnum_in_range(@'adjust-array',"array displacement", offset,
+					0, MOST_POSITIVE_FIXNUM);
+		from->array.displaced = to;
+	} else {
+		totype = array_elttype(to);
+		if (totype != fromtype)
+			FEerror("Cannot displace the array,~%\
 because the element types don't match.", 0);
-	if (from->array.dim > to->array.dim)
-		FEerror("Cannot displace the array,~%\
+		if (from->array.dim > to->array.dim)
+			FEerror("Cannot displace the array,~%\
 because the total size of the to-array is too small.", 0);
-	j = ecl_fixnum_in_range(@'adjust-array',"array displacement",offset,
-				0, to->array.dim - from->array.dim);
-	from->array.displaced = CONS(to, Cnil);
-	if (Null(to->array.displaced))
-		to->array.displaced = CONS(Cnil, Cnil);
-	CDR(to->array.displaced) =
-	CONS(from, CDR(to->array.displaced));
-	if (fromtype == aet_bit) {
-		j += to->vector.offset;
-		from->vector.self.bit = to->vector.self.bit + j/CHAR_BIT;
-		from->vector.offset = j%CHAR_BIT;
-	}
-#ifndef BYTE_ADDRESS
-	else if (fromtype != aet_bc)
-		from->array.self.t = (cl_object *)(array_address(to, j));
-#endif
-	else
-		from->base_string.self = (char *)array_address(to, j);
-}
-
-/*
-	Check_displaced(dlist, orig, newdim) checks if the displaced
-	arrays can keep the displacement when the original array is
-	adjusted.
-	Dlist is the list of displaced arrays, orig is the original array
-	and newdim is the new dimension of the original array.
-*/
-static void
-check_displaced(cl_object dlist, cl_object orig, cl_index newdim)
-{
-	cl_object x;
-
-	for (;  dlist != Cnil;  dlist = CDR(dlist)) {
-		x = CAR(dlist);
-		if (x->array.self.t == NULL)
-			continue;
-		if (array_elttype(x) != aet_bit) {
-			if (array_address(x, x->array.dim) >
-			    array_address(orig, newdim))
-				FEerror("Can't keep displacement.", 0);
-		} else {
-			if ((x->vector.self.bit - orig->vector.self.bit)*CHAR_BIT +
-			    x->vector.dim - newdim +
-			    x->vector.offset - orig->vector.offset > 0)
-				FEerror("Can't keep displacement.", 0);
+		j = ecl_fixnum_in_range(@'adjust-array',"array displacement",offset,
+					0, to->array.dim - from->array.dim);
+		from->array.displaced = CONS(to, Cnil);
+		if (Null(to->array.displaced))
+			to->array.displaced = CONS(Cnil, Cnil);
+		CDR(to->array.displaced) =
+			CONS(from, CDR(to->array.displaced));
+		if (fromtype == aet_bit) {
+			j += to->vector.offset;
+			from->vector.offset = j%CHAR_BIT;
+			from->vector.self.bit = to->vector.self.bit + j/CHAR_BIT;
+			return;
 		}
-		check_displaced(CDR(x->array.displaced), orig, newdim);
+		base = to->array.self.t;
 	}
-}
-
-/*
-	Adjust_displaced(x, diff) adds the int value diff
-	to the a_self field of the array x and all the arrays displaced to x.
-	This function is used in @si::replace-array (ADJUST-ARRAY) and
-	the garbage collector.
-*/
-void adjust_displaced(cl_object x, ptrdiff_t diff)
-{
-	if (x->array.self.t != NULL) {
-		if (array_elttype(x) == aet_bit) {
-			ptrdiff_t aux = diff + x->array.offset;
-			x->array.offset = aux % CHAR_BIT;
-			x->array.self.bit += aux / CHAR_BIT;
-		} else {
-			x->array.self.t = (cl_object *)((char*)(x->array.self.t) + diff);
-		}
-		for (x = CDR(x->array.displaced);  x != Cnil;  x = CDR(x))
-			adjust_displaced(CAR(x), diff);
-	}
+	from->array.self.t = address_inc(base, j, fromtype);
 }
 
 cl_elttype
@@ -780,7 +744,8 @@ cl_array_displacement(cl_object a)
 			break;
 		case aet_bit:
 			offset = a->array.self.bit - to_array->array.self.bit;
-			offset = offset * CHAR_BIT + a->array.offset;
+			offset = offset * CHAR_BIT + a->array.offset
+				- to_array->array.offset;
 			break;
 		case aet_fix:
 			offset = a->array.self.fix - to_array->array.self.fix;
@@ -902,9 +867,7 @@ si_fill_pointer_set(cl_object a, cl_object fp)
 cl_object
 si_replace_array(cl_object olda, cl_object newa)
 {
-	cl_object displaced, dlist;
-	ptrdiff_t diff;
-
+	cl_object dlist;
 	if (type_of(olda) != type_of(newa)
 	    || (type_of(olda) == t_array && olda->array.rank != newa->array.rank))
 		goto CANNOT;
@@ -913,23 +876,22 @@ si_replace_array(cl_object olda, cl_object newa)
 		olda = newa;
 		goto OUTPUT;
 	}
-	diff = (char*)(newa->array.self.t) - (char*)(olda->array.self.t);
-	if (array_elttype(newa) == aet_bit) {
-		diff = diff * CHAR_BIT + (newa->array.offset - olda->array.offset);
+	for (dlist = CDR(olda->array.displaced); dlist != Cnil; dlist = CDR(dlist)) {
+		cl_object other_array = CAR(dlist);
+		cl_object offset;
+		cl_array_displacement(other_array);
+		offset = VALUES(1);
+		displace(other_array, newa, offset);
 	}
-	dlist = CDR(olda->array.displaced);
-	displaced = CONS(CAR(newa->array.displaced), dlist);
-	check_displaced(dlist, olda, newa->array.dim);
-	adjust_displaced(olda, diff);
 	switch (type_of(olda)) {
 	case t_array:
-#ifdef ECL_UNICODE
-	case t_string:
-#endif
 	case t_vector:
 	case t_bitvector:
 		olda->array = newa->array;
 		break;
+#ifdef ECL_UNICODE
+	case t_string:
+#endif
 	case t_base_string:
 		olda->base_string = newa->base_string;
 		break;
@@ -938,7 +900,6 @@ si_replace_array(cl_object olda, cl_object newa)
 		FEerror("Cannot replace the array ~S by the array ~S.",
 			2, olda, newa);
 	}
-	olda->array.displaced = displaced;
  OUTPUT:
 	@(return olda)
 }
