@@ -287,7 +287,7 @@ translate_directory_case(cl_object list, cl_object scase)
 	} else {
 		cl_object l;
 		list = cl_copy_list(list);
-		for (l = cl_copy_list(list); !endp(l); l = CDR(l)) {
+		for (l = list; !endp(l); l = CDR(l)) {
 			/* It is safe to pass anything to translate_pathname_case,
 			 * because it will only transform strings, leaving other
 			 * object (such as symbols) unchanged.*/
