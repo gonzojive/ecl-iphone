@@ -1158,7 +1158,9 @@ cl_host_namestring(cl_object pname)
 		cl_index begin;
 		cl_object dir_begin = funcall(5, @'mismatch', pathdir, defaultdir,
 					      @':test', @'equal');
-		if (dir_begin != Cnil && (dir_begin == cl_length(defaultdir))) {
+		if (dir_begin == Cnil) {
+			pathdir = Cnil;
+		} else if (dir_begin == cl_length(defaultdir)) {
 			pathdir = funcall(3, @'subseq', pathdir, dir_begin);
 			pathdir = CONS(@':relative', pathdir);
 		}

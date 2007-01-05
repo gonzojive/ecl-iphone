@@ -120,6 +120,9 @@ ECL 1.0:
  - MAKE-PATHNAME should remove all occurrences of single dots "." in physical
    pathnames and does not interpret the directory component :BACK properly.
 
+ - ENOUGH-NAMESTRING did not simplify a pathname when it had the same directory
+   as the default pathname.
+
 * Unicode:
 
  - MAKE-STRING only allowed :ELEMENT-TYPE to be one of CHARACTER, BASE-CHAR, or
