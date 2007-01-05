@@ -1039,6 +1039,7 @@ if not possible."
 	       (READTABLE)
 	       #+threads (MP::PROCESS)
 	       #+threads (MP::LOCK)
+	       #+ffi (FOREIGN-DATA)
 	       ))
 
 (defun find-built-in-tag (name)

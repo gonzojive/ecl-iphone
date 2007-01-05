@@ -36,7 +36,7 @@
     ;; These types are never selected to unbox data.
     ;; They are here, because we need to know how to print them.
     :void (nil "void")
-    :pointer-void (foreign-data "void*")
+    :pointer-void (si::foreign-data "void*")
     :cstring (string "char*")
     :char* (string "char*")
     :short ((integer #.si:c-short-min #.si:c-short-max) "short")
