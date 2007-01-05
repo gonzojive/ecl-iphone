@@ -118,7 +118,7 @@ ECL 1.0:
    double-float.
 
  - MAKE-PATHNAME should remove all occurrences of single dots "." in physical
-   pathnames.
+   pathnames and does not interpret the directory component :BACK properly.
 
 * Unicode:
 

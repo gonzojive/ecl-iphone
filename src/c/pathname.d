@@ -77,9 +77,9 @@ destructively_check_directory(cl_object directory, bool logical)
 			item = nth(i-1, directory);
 			if (item == @':absolute' || item == @':wild-inferiors')
 				return @':error';
-			if (i > 2)
+			if (i >= 2)
 				CDR(nthcdr(i-2, directory)) = CDR(ptr);
-		} if (item == @':up') {
+		} else if (item == @':up') {
 			if (i == 0)
 				return @':error';
 			item = nth(i-1, directory);
