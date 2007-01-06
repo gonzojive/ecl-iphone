@@ -138,10 +138,9 @@
     (when (not (var-ref-clb var))
       ;; if the variable can be stored locally, set it var-kind to its type
       (setf (var-kind var)
-	    (if (> (var-ref var) 1)
+	    (if (plusp (var-ref var))
 		(lisp-type->rep-type (var-type var))
-		:OBJECT))))
-  )
+		:OBJECT)))))
 
 (defun c1var (name)
   (let ((vref (c1vref name)))
