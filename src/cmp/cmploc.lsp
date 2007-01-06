@@ -22,7 +22,7 @@
 ;;;	( VALUE i )			VALUES(i)
 ;;;	( VV vv-index )
 ;;;	( VV-temp vv-index )
-;;;	( LCL lcl )			local variable, type unboxed
+;;;	( LCL lcl [representation-type]) local variable, type unboxed
 ;;;	( TEMP temp )			local variable, type object
 ;;;	( CALL c-fun-name args fname )	locs are locations containing the arguments
 ;;;	( CALL-NORMAL fun locs)		similar as CALL, but number of arguments is fixed
@@ -150,7 +150,7 @@
     (wt "VVtemp[" vv "]")
     (wt vv)))
 
-(defun wt-lcl-loc (lcl)
+(defun wt-lcl-loc (lcl &optional type)
   (wt-lcl lcl))
 
 (defun wt-temp (temp)

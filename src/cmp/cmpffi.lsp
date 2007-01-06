@@ -55,12 +55,17 @@
 	  (t (error "Unknown representation type ~S" rep-type)))))
 
 (defun lisp-type->rep-type (type)
-  (if (getf +representation-types+ type)
-      type
-      (do ((l +representation-types+ (cddr l)))
-	  ((endp l) :object)
-	(when (subtypep type (first (second l)))
-	  (return-from lisp-type->rep-type (first l))))))
+  (cond
+    ;; We expect type = NIL when we have no information. Should be fixed. FIXME!
+    ((null type)
+     :object)
+    ((getf +representation-types+ type)
+     type)
+    (t
+     (do ((l +representation-types+ (cddr l)))
+	 ((endp l) :object)
+       (when (subtypep type (first (second l)))
+	 (return-from lisp-type->rep-type (first l)))))))
 
 (defun rep-type-name (type)
   (or (second (getf +representation-types+ type))
@@ -100,6 +105,7 @@
 	   (C-INLINE (let ((type (first (second loc))))
 		       (if (lisp-type-p type) type (rep-type->lisp-type type))))
 	   (BIND (var-type (second loc)))
+	   (LCL (or (third loc) T))
 	   (otherwise T)))))
 
 (defun loc-representation-type (loc)
@@ -116,6 +122,7 @@
 	   (C-INLINE (let ((type (first (second loc))))
 		       (if (lisp-type-p type) (lisp-type->rep-type type) type)))
 	   (BIND (var-rep-type (second loc)))
+	   (LCL (lisp-type->rep-type (or (third loc) T)))
 	   (otherwise :object)))))
 
 (defun wt-coerce-loc (dest-rep-type loc)
