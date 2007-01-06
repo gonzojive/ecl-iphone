@@ -286,12 +286,12 @@ pointer is 0 already."
   (declare (si::c-local))
   (labels
       ((do-copy (dest orig dims1 dims2 start1 start2)
-	 (declare (array dest orig))
+	 (declare (array dest orig)
+		  (list dims1 dims2)
+		  (fixnum start1 start2))
 	 (let* ((d1 (pop dims1))
 		(d2 (pop dims2))
 		(l (min d1 d2))
-		(step1 (apply #'* dims1))
-		(step2 (apply #'* dims2))
 		(i1 start1)
 		(i2 start2))
 	   (declare (fixnum d1 d2 l step1 step2 i1 i2))
@@ -308,12 +308,19 @@ pointer is 0 already."
 			      "ecl_copy_subarray(#0, #1, #2, #3, #4)"
 			      :one-liner t
 			      :side-effects t)
-	       (dotimes (i l)
-		 (declare (fixnum i))
-		 (do-copy dest orig dims1 dims2 i1 i2)
-		 (incf i1 step1)
-		 (incf i2 step2))))))
-    (do-copy dest orig (array-dimensions dest) (array-dimensions orig) 0 0)))
+	       (let ((step1 (apply #'* dims1))
+		     (step2 (apply #'* dims2)))
+		 (declare (fixnum step1 step2))
+		 (dotimes (i l)
+		   (declare (fixnum i))
+		   (do-copy dest orig dims1 dims2 i1 i2)
+		   (incf i1 step1)
+		   (incf i2 step2)))))))
+    ;; We have to lie to DO-COPY reshaping the zero-dimensional array
+    ;; as a one-dimensional array of one element.
+    (do-copy dest orig (or (array-dimensions dest) '(1))
+	               (or (array-dimensions orig) '(1))
+		       0 0)))
 
 (defun adjust-array (array new-dimensions
                      &rest r
