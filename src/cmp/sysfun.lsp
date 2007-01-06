@@ -999,7 +999,7 @@ type_of(#0)==t_base_string||
 type_of(#0)==t_string||
 type_of(#0)==t_bitvector")
 
-(proclaim-function vector-push (t vector) fixnum :no-sp-change t)
+(proclaim-function vector-push (t vector) (or fixnum null) :no-sp-change t)
 (proclaim-function vector-push-extend (t vector *) fixnum :no-sp-change t)
 (proclaim-function simple-string-p (t) t :predicate t)
 (proclaim-function simple-bit-vector-p (t) t :predicate t)
