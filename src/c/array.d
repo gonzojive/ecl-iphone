@@ -613,8 +613,8 @@ displace(cl_object from, cl_object to, cl_object offset)
 	cl_elttype totype, fromtype;
 	fromtype = array_elttype(from);
 	if (type_of(to) == t_foreign) {
-		if (fromtype == aet_bit) {
-			FEerror("Cannot displace bit vectors onto foreign data",0);
+		if (fromtype == aet_bit || fromtype == aet_object) {
+			FEerror("Cannot displace arrays with element type T or BIT onto foreign data",0);
 		}
 		base = to->foreign.data;
 		j = ecl_fixnum_in_range(@'adjust-array',"array displacement", offset,
