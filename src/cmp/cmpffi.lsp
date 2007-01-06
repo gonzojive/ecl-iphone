@@ -387,12 +387,8 @@
 	inlined-args)
     (let* ((type (if types (pop types) :object))
 	   (rep-type (lisp-type->rep-type type))
-	   (expected-arg-type (rep-type->lisp-type type))
 	   (lisp-type (first item))
 	   (loc (second item)))
-;      (unless (and (eql rep-type (loc-representation-type loc))
-;		   (or (loc-movable-p loc)
-;		       (not (member i args-to-be-saved))))
       (cond ((and (not (loc-movable-p loc)) (member i args-to-be-saved))
 	     (let ((lcl (make-lcl-var :rep-type rep-type)))
 	       (wt-nl)
@@ -405,8 +401,7 @@
 	       (setq loc lcl)))
 	    ((and (not (equal rep-type (loc-representation-type loc))))
 	     (setq loc `(COERCE-LOC ,rep-type ,loc))))
-      (setf (first l) loc)
-      )))
+      (setf (first l) loc))))
 
 (defun wt-c-inline-loc (output-rep-type c-expression coerced-arguments side-effects output-vars)
   (with-input-from-string (s c-expression
