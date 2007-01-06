@@ -223,13 +223,19 @@
      (do-declaration (rest decl) #'error))
     (SI::C-EXPORT-FNAME
      (dolist (x (cdr decl))
-       (if (symbolp x)
-	 (multiple-value-bind (found fname)
-	     (si::mangle-name x t)
-	   (if found
-	     (warn "The function ~s is already in the runtime." x)
-	     (put-sysprop x 'Lfun fname)))
-	 (error "Syntax error in proclamation ~s" decl))))
+       (cond ((symbolp x)
+	      (multiple-value-bind (found c-name)
+		  (si::mangle-name x t)
+		(if found
+		    (warn "The function ~s is already in the runtime. C-EXPORT-FNAME declaration ignored." x)
+		    (put-sysprop x 'Lfun c-name))))
+	     ((consp x)
+	      (destructuring-bind (c-name lisp-name) x
+		(if (si::mangle-name lisp-name)
+		    (warn "The funciton ~s is already in the runtime. C-EXPORT-FNAME declaration ignored." lisp-name)
+		    (put-sysprop lisp-name 'Lfun c-name))))
+	     (t
+	      (error "Syntax error in proclamation ~s" decl)))))
     ((ARRAY ATOM BASE-CHAR BIGNUM BIT BIT-VECTOR CHARACTER COMPILED-FUNCTION
       COMPLEX CONS DOUBLE-FLOAT EXTENDED-CHAR FIXNUM FLOAT HASH-TABLE INTEGER KEYWORD LIST
       LONG-FLOAT NIL NULL NUMBER PACKAGE PATHNAME RANDOM-STATE RATIO RATIONAL
