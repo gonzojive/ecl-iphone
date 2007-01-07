@@ -189,7 +189,8 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 	~A
 }")
 
-(defun init-function-name (s &optional (si::*init-function-prefix* si::*init-function-prefix*))
+(defun init-function-name (s &key ((:prefix si::*init-function-prefix*) si::*init-function-prefix*)
+			   (kind :object))
   (flet ((translate-char (c)
 	   (cond ((and (char>= c #\a) (char<= c #\z))
 		  (char-upcase c))
@@ -204,12 +205,96 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 		 ((digit-char-p c)
 		  c)
 		 (t
-		  #\p))))
+		  #\p)))
+	 (disambiguation (c)
+	   (case kind
+	     (:object "")
+	     ((:fasl :fas) "fas_")
+	     ((:shared-library :dll :static-library :lib) "lib_")
+	     (otherwise (error "Not a valid argument to INIT-FUNCTION-NAME: kind = ~S"
+			       kind)))))
     (setq s (map 'string #'translate-char (string s)))
-    (concatenate 'string "init_"
+    (concatenate 'string
+		 "init_"
+		 (disambiguation kind)
 		 (if si::*init-function-prefix*
-		     (concatenate 'string si::*init-function-prefix* "_" s)
-		   s))))
+		     (concatenate 'string si::*init-function-prefix* "_")
+		     "")
+		 (map 'string #'translate-char (string s)))))
+
+(defun guess-kind (pathname)
+  "Given a file name, guess whether it is an object file, a library, a program
+or a loadable module."
+  (let ((record (assoc (pathname-type pathname)
+		       '(("o" :object) ("obj" :object) ("c" :c)
+			 ("lib" :static-library)
+			 ("a" :static-library)
+			 ("dll" :shared-library)
+			 ("so" :shared-library)
+			 ("fas" :fasl))
+		       :test #'string-equal)))
+    (if record
+	(second record)
+	(progn
+	  (warn "File ~s is of no known file type. Assuming it is an object file."
+		pathname)
+	  :object))))
+
+(defun guess-name-and-flags (pathname &key (prefix si::*init-function-prefix*)
+			     (kind (guess-kind pathname)))
+  "Given a file name, guess whether it is an object file or a library, and what
+is the name of the initialization function in this file."
+  (let ((filename (pathname-name pathname))
+	name flags)
+    (case kind
+      ((:object :c)
+       (setf name filename
+	     flags (si::coerce-to-filename pathname)))
+      ((:fasl :fas)
+       (setf name "CODE"
+	     flags ""))
+      ((:static-library :lib)
+       (setf name (if (zerop (search +static-library-prefix+ filename))
+		      (subseq filename (length +static-library-prefix+) nil)
+		      filename)
+	     flags (if (probe-file pathname)
+		       (si::coerce-to-filename pathname)
+		       (concatenate 'string "-l" name))))
+      ((:shared-library :dll)
+       (setf name (if (zerop (search +shared-library-prefix+ filename))
+		      (subseq filename (length +shared-library-prefix+) nil)
+		      filename)
+	     flags (if (probe-file pathname)
+		       (si::coerce-to-filename pathname)
+		       (concatenate 'string "-l" name))))
+      ((:program)
+       (setf name "ECL_PROGRAM"
+	     flags nil))
+      (otherwise
+       (error "C::BUILDER cannot accept files of kind ~s" kind)))
+    (values (init-function-name name :kind kind :prefix prefix) flags)))
+
+(defun system-ld-flag (library)
+  "Given a symbol, try to find a library that matches it, either by looking in the
+filesystem or in the database of ASDF modules."
+  (let ((asdf (find-package "ASDF"))
+        system)
+    (labels ((asdfsym (x) (find-symbol (string x) asdf))
+             (asdfcall (fun &rest rest) (apply (asdfsym fun) rest))
+             (system-output (system type)
+               (let ((build (make-instance (asdfsym :build-op) :type type)))
+                 (first (asdfcall :output-files build system))))
+             (existing-system-output (system type)
+               (let ((o (system-output system type)))
+                 (and o (probe-file o))))
+             (find-archive (system)
+                 (or (existing-system-output system :library)
+                     (existing-system-output system :shared-library)))
+             (fallback () (format nil #-msvc "-l~A" #+msvc "~A.lib" (string-downcase library))))
+      (or (and asdf
+               (setf system (asdfcall :find-system library nil))
+               (find-archive system))
+        (fallback)))))
 
 (defun builder (target output-name &key lisp-files ld-flags shared-data-file
 		(init-name nil)
@@ -257,16 +342,22 @@ output = cl_safe_eval(c_string_to_object(lisp_code), Cnil, OBJNULL);
 	 submodules
 	 c-file)
     (dolist (item (reverse lisp-files))
-      (cond ((symbolp item)
-	     (push (format nil #-msvc "-l~A" #+msvc "~A.lib" (string-downcase item)) ld-flags)
-	     (push (init-function-name item nil) submodules))
-	    (t
-	     (push (si::coerce-to-filename
-		    (compile-file-pathname item :type :object)) ld-flags)
-	     (setq item (pathname-name item))
-	     (push (init-function-name item) submodules))))
+      (etypecase item
+        (symbol
+         (push (system-ld-flag item) ld-flags)
+         (push (init-function-name item :kind :lib) submodules))
+        ((or string pathname)
+	 (let* ((pathname (parse-namestring item))
+		(kind (guess-kind pathname)))
+	   (unless (member kind '(:shared-library :dll :static-library :lib
+				  :object :c))
+	     (error "C::BUILDER does not accept a file ~s of kind ~s" item kind))
+	   (multiple-value-bind (init-fn flags)
+	       (guess-name-and-flags (parse-namestring item))
+	     (when flags (push flags ld-flags))
+	     (push init-fn submodules))))))
     (setq c-file (open c-name :direction :output))
-    (format c-file +lisp-program-header+ 
+    (format c-file +lisp-program-header+
             #-(or :win32 :mingw32 :darwin) (if (eq :fasl target) nil submodules)
             #+(or :win32 :mingw32 :darwin) submodules)
     (cond (shared-data-file
@@ -287,12 +378,12 @@ static cl_object VV[VM];
 #define compiler_data_text_size 0
 #define VV NULL
 #define VM 0" c-file)))
+    (when (or (symbolp output-name) (stringp output-name))
+      (setf output-name (compile-file-pathname output-name :type target)))
+    (unless init-name
+      (setf init-name (guess-name-and-flags output-name :prefix nil)))
     (ecase target
       (:program
-       (when (or (symbolp output-name) (stringp output-name))
-	 (setf output-name (compile-file-pathname output-name :type :program)))
-       (unless init-name
-        (setf init-name (init-function-name "ECL_PROGRAM" nil)))
        (format c-file +lisp-program-init+ init-name "" shared-data-file
 	       submodules "")
        (format c-file #+:win32 (ecase system (:console +lisp-program-main+)
@@ -303,12 +394,6 @@ static cl_object VV[VM];
        (compiler-cc c-name o-name)
        (apply #'linker-cc output-name (namestring o-name) ld-flags))
       ((:library :static-library :lib)
-       (when (or (symbolp output-name) (stringp output-name))
-	 (setf output-name (compile-file-pathname output-name :type :lib)))
-       (unless init-name
-	 ;; Remove the leading "lib"
-	 (setf init-name (subseq (pathname-name output-name) (length +static-library-prefix+)))
-	 (setf init-name (init-function-name init-name nil)))
        (format c-file +lisp-program-init+ init-name prologue-code
 	       shared-data-file submodules epilogue-code)
        (close c-file)
@@ -330,13 +415,6 @@ static cl_object VV[VM];
        )
       #+dlopen
       ((:shared-library :dll)
-       (when (or (symbolp output-name) (stringp output-name))
-	 (setf output-name (compile-file-pathname output-name :type :dll)))
-       (unless init-name
-	 ;; Remove the leading "lib"
-	 (setf init-name (subseq (pathname-name output-name)
-				 (length +static-library-prefix+)))
-	 (setf init-name (init-function-name init-name nil)))
        (format c-file +lisp-program-init+ init-name prologue-code
 	       shared-data-file submodules epilogue-code)
        (close c-file)
@@ -344,10 +422,6 @@ static cl_object VV[VM];
        (apply #'shared-cc output-name o-name ld-flags))
       #+dlopen
       (:fasl
-       (when (or (symbolp output-name) (stringp output-name))
-	 (setf output-name (compile-file-pathname output-name :type :fasl)))
-       (unless init-name
-	 (setf init-name (init-function-name "CODE" nil)))
        #-(or :win32 :mingw32 :darwin)
        (setf submodules
 	     (mapcar #'(lambda (sm)

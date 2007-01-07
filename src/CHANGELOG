@@ -217,6 +217,14 @@ ECL 1.0:
    of that library instead of directly referencing the shared library: i.e. use
    linker flag -lmylib instead of libmylib.so (Brian Spilsbury)
 
+ - When compiling lisp files, ECL now creates different entry functions
+   depending on the file type. FASL, library and object files get a function
+   with the prefix {init_fas, init_lib, init_} prepended to the file name.
+   This solves the problem of a shared library having the same name as one
+   of the components it is made of.
+
+ - C:BUILDER searches the ASDF module list for libraries. (Thanks to F.R. Rideau)
+
 * Contributed code:
 
  - New examples: cmdline/ls.lsp, ffi/uffi.lsp, ffi/cffi.lsp

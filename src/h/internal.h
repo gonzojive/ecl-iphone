@@ -45,8 +45,7 @@ extern void init_unixtime(void);
 extern void init_compiler(void);
 #endif
 extern void ecl_init_env(struct cl_env_struct *);
-extern void init_LSP(cl_object);
-extern void init_CLOS(cl_object);
+extern void init_lib_LSP(cl_object);
 
 /* alloc.d/alloc_2.d */
 

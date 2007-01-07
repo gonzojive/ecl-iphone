@@ -113,7 +113,7 @@ main(int argc, char **args)
 }
 
 #ifdef __cplusplus
-extern "C" void init_LSP(cl_object);
+extern "C" void init_lib_LSP(cl_object);
 #endif
 
-void init_LSP(cl_object o) {}
+void init_lib_LSP(cl_object o) {}

@@ -487,7 +487,7 @@ cl_boot(int argc, char **argv)
 	 * clear_compiler_properties() to work in init_CLOS(). */
 	ecl_booted = 1;
 
-	read_VV(OBJNULL,init_LSP);
+	read_VV(OBJNULL,init_lib_LSP);
 
 	/* Jump to top level */
 	ECL_SET(@'*package*', cl_core.user_package);
