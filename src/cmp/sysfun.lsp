@@ -410,7 +410,7 @@
 (proclaim-function remhash (t t) t)
 (proclaim-function maphash (t t) t)
 (proclaim-function clrhash (t) t)
-(proclaim-function hash-table-count (t) t)
+(proclaim-function hash-table-count (t) si::index)
 (proclaim-function sxhash (t) fixnum)
 (proclaim-function si:hash-set (*) t)
 
