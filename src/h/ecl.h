@@ -17,7 +17,7 @@
 #include <stddef.h>		/* NULL, ptrdiff_t */
 #include <stdarg.h> 		/* va_list */
 #include <setjmp.h> 		/* setjmp and buffers */
-#if !defined(cygwin) && !defined(_MSC_VER)
+#if !defined(_MSC_VER)
 #include <stdint.h> 		/* int8_t and friends */
 #else
 typedef char int8_t;
