@@ -20,7 +20,7 @@
 #define CLOS
 
 /* Use Boehm's garbage collector					*/
-#define GBC_BOEHM 1
+#define GBC_BOEHM 0
 #ifdef GBC_BOEHM
 #include <ecl/gc/gc.h>
 #define ECL_DYNAMIC_VV
