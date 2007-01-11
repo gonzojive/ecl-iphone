@@ -683,7 +683,7 @@ under certain conditions; see file 'Copyright' for details.")
 	  i (frs-ihs i) (frs-bds i)))
 
 (defun break-where (&aux (fname (ihs-fname *ihs-current*)))
-  (if (or (eq fname 'TOP-LEVEL) (eq fname 'BREAK-WHERE))
+  (if (<= *tpl-level* 0)
     (format t "Top level.~%")
     (format t "Broken at ~:@(~S~).~%" (ihs-fname *ihs-current*))))
 
@@ -878,6 +878,7 @@ package."
     ;; Like in SBCL, the error message is output through *error-output*
     ;; The rest of the interaction is performed through *debug-io*
     (princ *break-message* *error-output*)
+    (tpl-print-current)
     ;; Here we show a list of restarts and invoke the toplevel with
     ;; an extended set of commands which includes invoking the associated
     ;; restarts.
