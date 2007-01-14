@@ -118,6 +118,7 @@ struct ecl_fficall {
 	size_t buffer_size;
 	union ecl_ffi_values output;
 	enum ecl_ffi_calling_convention cc;
+	struct ecl_fficall_reg *registers;
 	char buffer[ECL_FFICALL_LIMIT];
 	cl_object cstring;
 };
@@ -131,6 +132,7 @@ void ecl_fficall_align(int data);
 cl_object ecl_foreign_data_ref_elt(void *p, enum ecl_ffi_tag type);
 void ecl_foreign_data_set_elt(void *p, enum ecl_ffi_tag type, cl_object value);
 
+struct ecl_fficall_reg *ecl_fficall_prepare_extra(struct ecl_fficall_reg *registers);
 void ecl_fficall_push_arg(union ecl_ffi_values *data, enum ecl_ffi_tag type);
 void ecl_fficall_execute(void *f_ptr, struct ecl_fficall *fficall, enum ecl_ffi_tag return_type);
 void ecl_dynamic_callback_call(cl_object callback_info, char* buffer);

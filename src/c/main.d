@@ -78,7 +78,8 @@ ecl_init_env(struct cl_env_struct *env)
 #endif /* !GBC_BOEHM */
 
 #ifdef ECL_DYNAMIC_FFI
-	env->fficall = malloc(sizeof(struct ecl_fficall));
+	env->fficall = cl_alloc(sizeof(struct ecl_fficall));
+	((struct ecl_fficall*)env->fficall)->registers = 0;
 #endif
 
 	init_stacks(&i);

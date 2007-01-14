@@ -38,6 +38,11 @@ ECL 1.0:
    creates a lisp array on top of the foreign data and can be used to directly
    scan C strings, or unboxed arrays of numbers.
 
+ - DFFI works now on AMD64 or Intel EMT64 (DFFI stands for Dynamical Foreign
+   Function Interface and it is the component that allows ECL call directly
+   C functions and create C callbacks without the C compiler being around).
+   (initial code by M. Goffioul)
+
 * Bugs fixed:
 
  - STREAMP signals an error for Gray streams.
