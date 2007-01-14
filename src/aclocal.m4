@@ -531,6 +531,10 @@ case "${host_cpu}" in
 	EXTRA_OBJS="${EXTRA_OBJS} ffi_x86.o"
 	dynamic_ffi=yes
 	;;
+   x86_64 )
+	EXTRA_OBJS="${EXTRA_OBJS} ffi_x86_64.o"
+	dynamic_ffi=yes
+	;;
    *)
 	dynamic_ffi=no
 	;;
@@ -563,6 +567,10 @@ case "${host_cpu}" in
    i686 |i586 | pentium* | athlon* )
 	ECL_FPE_CODE="arch/fpe_x86.c"
 	AC_MSG_RESULT([x86])
+	;;
+   x86_64* )
+	ECL_FPE_CODE="arch/fpe_x86.c"
+	AC_MSG_RESULT([x86_64])
 	;;
    *)
         ECL_FPE_CODE="arch/fpe_none.c"
