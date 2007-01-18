@@ -274,7 +274,7 @@ extern cl_object ecl_aref(cl_object x, cl_index index);
 extern cl_object ecl_aref1(cl_object v, cl_index index);
 extern cl_object ecl_aset(cl_object x, cl_index index, cl_object value);
 extern cl_object ecl_aset1(cl_object v, cl_index index, cl_object val);
-extern void array_allocself(cl_object x);
+extern void ecl_array_allocself(cl_object x);
 extern cl_elttype ecl_array_elttype(cl_object x);
 extern cl_elttype ecl_symbol_to_elttype(cl_object x);
 extern cl_object ecl_elttype_to_symbol(cl_elttype aet);
