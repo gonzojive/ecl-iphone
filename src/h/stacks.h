@@ -83,7 +83,7 @@ typedef struct ihs_frame {
 
 #define ihs_pop() do {\
 	cl_env.lex_env = cl_env.ihs_top->lex_env; \
-	if (cl_env.ihs_top->next == NULL) internal_error("Underflow in IHS stack"); \
+	if (cl_env.ihs_top->next == NULL) ecl_internal_error("Underflow in IHS stack"); \
 	cl_env.ihs_top = cl_env.ihs_top->next; \
 } while(0)
 
@@ -185,7 +185,7 @@ extern ecl_frame_ptr _frs_push(register cl_object val);
 
 #define CL_UNWIND_PROTECT_END \
 	cl_stack_pop_values(__nr); \
-	if (__unwinding) unwind(__next_fr); }
+	if (__unwinding) ecl_unwind(__next_fr); }
 
 #define CL_BLOCK_BEGIN(id) { \
 	cl_object id = new_frame_id(); \

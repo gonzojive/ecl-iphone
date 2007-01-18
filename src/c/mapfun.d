@@ -41,7 +41,7 @@ prepare_map(cl_va_list lists, cl_index *cdrs_sp)
 		cl_object *cdrs = cl_env.stack + cdrs_sp;
 		cl_object *cars = cdrs + nlist;
 		for (i = 0;  i < nlist;  i++) {
-			if (endp(cdrs[i])) {
+			if (ecl_endp(cdrs[i])) {
 			 	cl_stack_set_index(cdrs_sp);
 				@(return res)
 			}
@@ -63,7 +63,7 @@ prepare_map(cl_va_list lists, cl_index *cdrs_sp)
 		cl_object *cdrs = cl_env.stack + cdrs_sp;
 		cl_object *cars = cdrs + nlist;
 		for (i = 0;  i < nlist;  i++) {
-			if (endp(cdrs[i])) {
+			if (ecl_endp(cdrs[i])) {
 				cl_stack_set_index(cdrs_sp);
 				@(return res)
 			}
@@ -85,7 +85,7 @@ prepare_map(cl_va_list lists, cl_index *cdrs_sp)
 		cl_object *cdrs = cl_env.stack + cdrs_sp;
 		cl_object *cars = cdrs + nlist;
 		for (i = 0;  i < nlist;  i++) {
-			if (endp(cdrs[i])) {
+			if (ecl_endp(cdrs[i])) {
 				cl_stack_set_index(cdrs_sp);
 				@(return onelist)
 			}
@@ -106,7 +106,7 @@ prepare_map(cl_va_list lists, cl_index *cdrs_sp)
 		cl_object *cdrs = cl_env.stack + cdrs_sp;
 		cl_object *cars = cdrs + nlist;
 		for (i = 0;  i < nlist;  i++) {
-			if (endp(cdrs[i])) {
+			if (ecl_endp(cdrs[i])) {
 				cl_stack_set_index(cdrs_sp);
 				@(return onelist)
 			}
@@ -127,7 +127,7 @@ prepare_map(cl_va_list lists, cl_index *cdrs_sp)
 		cl_object *cdrs = cl_env.stack + cdrs_sp;
 		cl_object *cars = cdrs + nlist;
 		for (i = 0;  i < nlist;  i++) {
-			if (endp(cdrs[i])) {
+			if (ecl_endp(cdrs[i])) {
 				cl_stack_set_index(cdrs_sp);
 				@(return res)
 			}
@@ -150,7 +150,7 @@ prepare_map(cl_va_list lists, cl_index *cdrs_sp)
 		cl_object *cdrs = cl_env.stack + cdrs_sp;
 		cl_object *cars = cdrs + nlist;
 		for (i = 0;  i < nlist;  i++) {
-			if (endp(cdrs[i])) {
+			if (ecl_endp(cdrs[i])) {
 				cl_stack_set_index(cdrs_sp);
 				@(return res)
 			}

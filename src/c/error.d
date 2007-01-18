@@ -26,7 +26,7 @@
 #include <ecl/internal.h>
 
 void
-cs_overflow(void)
+ecl_cs_overflow(void)
 {
 #ifdef DOWN_STACK
 	if (cl_env.cs_limit < cl_env.cs_org - cl_env.cs_size)
@@ -39,20 +39,9 @@ cs_overflow(void)
 }
 
 void
-error(const char *s)
+ecl_internal_error(const char *s)
 {
-	printf("\nUnrecoverable error: %s\n", s);
-	fflush(stdout);
-#ifdef SIGIOT
-	signal(SIGIOT, SIG_DFL); /* avoid getting into a loop with abort */
-#endif
-	abort();
-}
-
-void
-internal_error(const char *s)
-{
-	printf("\nInternal error in %s()\n", s);
+	printf("\nInternal or unrecoverable error in:\n%s\n", s);
 	fflush(stdout);
 #ifdef SIGIOT
 	signal(SIGIOT, SIG_DFL); /* avoid getting into a loop with abort */
@@ -219,11 +208,11 @@ FEinvalid_function_name(cl_object fname)
 static
 @(defun "universal_error_handler" (c err args)
 @
-	error("\nLisp initialization error.\n");
+	ecl_internal_error("\nLisp initialization error.\n");
 @)
 
 void
-illegal_index(cl_object x, cl_object i)
+FEillegal_index(cl_object x, cl_object i)
 {
 	FEerror("~S is an illegal index to ~S.", 2, i, x);
 }

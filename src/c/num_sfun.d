@@ -52,7 +52,7 @@ atanh(double x)
 #endif /* mingw32 */
 
 cl_fixnum
-fixnum_expt(cl_fixnum x, cl_fixnum y)
+ecl_fixnum_expt(cl_fixnum x, cl_fixnum y)
 {
 	cl_fixnum z = 1;
 	while (y > 0)
@@ -75,15 +75,15 @@ cl_exp(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		output = make_singlefloat(expf(number_to_float(x))); break;
+		output = ecl_make_singlefloat(expf(number_to_float(x))); break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 		output = make_shortfloat(expf(ecl_short_float(x))); break;
 #endif
 	case t_singlefloat:
-		output = make_singlefloat(expf(sf(x))); break;
+		output = ecl_make_singlefloat(expf(sf(x))); break;
 	case t_doublefloat:
-		output = make_doublefloat(exp(df(x))); break;
+		output = ecl_make_doublefloat(exp(df(x))); break;
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
 		output = make_longfloat(expl(ecl_long_float(x))); break;
@@ -95,8 +95,8 @@ cl_exp(cl_object x)
 		output = cl_exp(x->complex.real);
 		y1 = cl_cos(y);
 		y = cl_sin(y);
-		y = make_complex(y1, y);
-		output = number_times(output, y);
+		y = ecl_make_complex(y1, y);
+		output = ecl_times(output, y);
 		break;
 	}
 	default:
@@ -118,7 +118,7 @@ cl_expt(cl_object x, cl_object y)
 	while ((tx = type_of(x), !ECL_NUMBER_TYPE_P(tx))) {
 		x = ecl_type_error(@'exp',"basis",x,@'number');
 	}
-	if (number_zerop(y)) {
+	if (ecl_zerop(y)) {
 		/* INV: The most specific numeric types come first. */
 		switch ((ty > tx)? ty : tx) {
 		case t_fixnum:
@@ -130,9 +130,9 @@ cl_expt(cl_object x, cl_object y)
 			z = make_shortfloat(1.0); break;
 #endif
 		case t_singlefloat:
-			z = make_singlefloat(1.0); break;
+			z = ecl_make_singlefloat(1.0); break;
 		case t_doublefloat:
-			z = make_doublefloat(1.0); break;
+			z = ecl_make_doublefloat(1.0); break;
 #ifdef ECL_LONG_FLOAT
 		case t_longfloat:
 			z = make_longfloat(1.0); break;
@@ -140,33 +140,33 @@ cl_expt(cl_object x, cl_object y)
 		case t_complex:
 			z = cl_expt((tx == t_complex)? x->complex.real : x,
 				    (ty == t_complex)? y->complex.real : y);
-			z = make_complex(z, MAKE_FIXNUM(0));
+			z = ecl_make_complex(z, MAKE_FIXNUM(0));
 			break;
 		default:
 			/* We will never reach this */
 			(void)0;
 		}
-	} else if (number_zerop(x)) {
-		if (!number_plusp(ty==t_complex?y->complex.real:y))
+	} else if (ecl_zerop(x)) {
+		if (!ecl_plusp(ty==t_complex?y->complex.real:y))
 			FEerror("Cannot raise zero to the power ~S.", 1, y);
-		z = number_times(x, y);
+		z = ecl_times(x, y);
 	} else if (ty != t_fixnum && ty != t_bignum) {
 		z = ecl_log1(x);
-		z = number_times(z, y);
+		z = ecl_times(z, y);
 		z = cl_exp(z);
-	} else if (number_minusp(y)) {
-		z = number_negate(y);
+	} else if (ecl_minusp(y)) {
+		z = ecl_negate(y);
 		z = cl_expt(x, z);
-		z = number_divide(MAKE_FIXNUM(1), z);
+		z = ecl_divide(MAKE_FIXNUM(1), z);
 	} else {
 		z = MAKE_FIXNUM(1);
 		do {
-			/* INV: integer_divide outputs an integer */
-			if (!number_evenp(y))
-				z = number_times(z, x);
-			y = integer_divide(y, MAKE_FIXNUM(2));
-			if (number_zerop(y)) break;
-			x = number_times(x, x);
+			/* INV: ecl_integer_divide outputs an integer */
+			if (!ecl_evenp(y))
+				z = ecl_times(z, x);
+			y = ecl_integer_divide(y, MAKE_FIXNUM(2));
+			if (ecl_zerop(y)) break;
+			x = ecl_times(x, x);
 		} while (1);
 	}
 	@(return z);
@@ -175,13 +175,13 @@ cl_expt(cl_object x, cl_object y)
 static cl_object
 ecl_log1_complex(cl_object r, cl_object i)
 {
-	cl_object a = number_times(r, r);
-	cl_object p = number_times(i, i);
-	a = number_plus(a, p);
+	cl_object a = ecl_times(r, r);
+	cl_object p = ecl_times(i, i);
+	a = ecl_plus(a, p);
 	a = ecl_log1(a);
-	a = number_divide(a, MAKE_FIXNUM(2));
+	a = ecl_divide(a, MAKE_FIXNUM(2));
 	p = ecl_atan2(i, r);
-	return make_complex(a, p);
+	return ecl_make_complex(a, p);
 }
 
 cl_object
@@ -196,23 +196,23 @@ ecl_log1(cl_object x)
 	}
 	if (tx == t_complex) {
 		return ecl_log1_complex(x->complex.real, x->complex.imag);
-	} else if (number_zerop(x)) {
+	} else if (ecl_zerop(x)) {
 		FEerror("Zero is the logarithmic singularity.", 0);
-	} else if (number_minusp(x)) {
+	} else if (ecl_minusp(x)) {
 		return ecl_log1_complex(x, MAKE_FIXNUM(0));
 	} else switch (tx) {
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		return make_singlefloat(logf(number_to_float(x)));
+		return ecl_make_singlefloat(logf(number_to_float(x)));
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 		return make_shortfloat(logf(ecl_short_float(x)));
 #endif
 	case t_singlefloat:
-		return make_singlefloat(logf(sf(x)));
+		return ecl_make_singlefloat(logf(sf(x)));
 	case t_doublefloat:
-		return make_doublefloat(log(df(x)));
+		return ecl_make_doublefloat(log(df(x)));
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
 		return make_longfloat(logl(ecl_long_float(x)));
@@ -226,9 +226,9 @@ ecl_log1(cl_object x)
 cl_object
 ecl_log2(cl_object x, cl_object y)
 {
-	if (number_zerop(y))
+	if (ecl_zerop(y))
 		FEerror("Zero is the logarithmic singularity.", 0);
-	return number_divide(ecl_log1(y), ecl_log1(x));
+	return ecl_divide(ecl_log1(y), ecl_log1(x));
 }
 
 cl_object
@@ -243,23 +243,23 @@ cl_sqrt(cl_object x)
 		goto AGAIN;
 	}
 	if (tx == t_complex) {
-		z = make_ratio(MAKE_FIXNUM(1), MAKE_FIXNUM(2));
+		z = ecl_make_ratio(MAKE_FIXNUM(1), MAKE_FIXNUM(2));
 		z = cl_expt(x, z);
-	} else if (number_minusp(x)) {
-		z = make_complex(MAKE_FIXNUM(0), cl_sqrt(number_negate(x)));
+	} else if (ecl_minusp(x)) {
+		z = ecl_make_complex(MAKE_FIXNUM(0), cl_sqrt(ecl_negate(x)));
 	} else switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		z = make_singlefloat(sqrtf(number_to_float(x))); break;
+		z = ecl_make_singlefloat(sqrtf(number_to_float(x))); break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 		z = make_shortfloat(sqrtf(ecl_short_float(x))); break;;
 #endif
 	case t_singlefloat:
-		z = make_singlefloat(sqrtf(sf(x))); break;
+		z = ecl_make_singlefloat(sqrtf(sf(x))); break;
 	case t_doublefloat:
-		z = make_doublefloat(sqrt(df(x))); break;
+		z = ecl_make_doublefloat(sqrt(df(x))); break;
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
 		z = make_longfloat(sqrtl(ecl_long_float(x))); break;
@@ -277,8 +277,8 @@ ecl_atan2(cl_object y, cl_object x)
 	cl_object z;
 	double dy, dx, dz;
 
-	dy = number_to_double(y);
-	dx = number_to_double(x);
+	dy = ecl_to_double(y);
+	dx = ecl_to_double(x);
 	if (dx > 0.0)
 		if (dy > 0.0)
 			dz = atan(dy / dx);
@@ -301,9 +301,9 @@ ecl_atan2(cl_object y, cl_object x)
 		else
 			dz = -M_PI + atan(-dy / -dx);
 	if (type_of(x) == t_doublefloat || type_of(y) == t_doublefloat)
-		return make_doublefloat(dz);
+		return ecl_make_doublefloat(dz);
 	else
-		return make_singlefloat(dz);
+		return ecl_make_singlefloat(dz);
 }
 
 cl_object
@@ -311,19 +311,19 @@ ecl_atan1(cl_object y)
 {
 	if (type_of(y) == t_complex) {
 #if 0 /* FIXME! ANSI states it should be this first part */
-		z = number_times(cl_core.imag_unit, y);
-		z = ecl_log1(one_plus(z)) +
-		    ecl_log1(number_minus(MAKE_FIXNUM(1), z));
-		z = number_divide(z, number_times(MAKE_FIXNUM(2), cl_core.imag_unit));
+		z = ecl_times(cl_core.imag_unit, y);
+		z = ecl_log1(ecl_one_plus(z)) +
+		    ecl_log1(ecl_minus(MAKE_FIXNUM(1), z));
+		z = ecl_divide(z, ecl_times(MAKE_FIXNUM(2), cl_core.imag_unit));
 #else
-		cl_object z1, z = number_times(cl_core.imag_unit, y);
-		z = one_plus(z);
-		z1 = number_times(y, y);
-		z1 = one_plus(z1);
+		cl_object z1, z = ecl_times(cl_core.imag_unit, y);
+		z = ecl_one_plus(z);
+		z1 = ecl_times(y, y);
+		z1 = ecl_one_plus(z1);
 		z1 = cl_sqrt(z1);
-		z = number_divide(z, z1);
+		z = ecl_divide(z, z1);
 		z = ecl_log1(z);
-		z = number_times(cl_core.minus_imag_unit, z);
+		z = ecl_times(cl_core.minus_imag_unit, z);
 #endif /* ANSI */
 		return z;
 	} else {
@@ -340,15 +340,15 @@ cl_sin(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		output = make_singlefloat(sinf(number_to_float(x))); break;
+		output = ecl_make_singlefloat(sinf(number_to_float(x))); break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 		output = make_shortfloat(sinf(ecl_short_float(x))); break;
 #endif
 	case t_singlefloat:
-		output = make_singlefloat(sinf(sf(x))); break;
+		output = ecl_make_singlefloat(sinf(sf(x))); break;
 	case t_doublefloat:
-		output = make_doublefloat(sin(df(x))); break;
+		output = ecl_make_doublefloat(sin(df(x))); break;
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
 		output = make_longfloat(sinf(ecl_long_float(x))); break;
@@ -359,16 +359,16 @@ cl_sin(cl_object x)
 		  z = x + I y
 		  sin(z) = sinh(I z) = sinh(-y + I x)
 		*/
-		double dx = number_to_double(x->complex.real);
-		double dy = number_to_double(x->complex.imag);
+		double dx = ecl_to_double(x->complex.real);
+		double dy = ecl_to_double(x->complex.imag);
 		double a = sin(dx) * cosh(dy);
 		double b = cos(dx) * sinh(dy);
 		if (type_of(x->complex.real) != t_doublefloat)
-			output = make_complex(make_singlefloat(a),
-					      make_singlefloat(b));
+			output = ecl_make_complex(ecl_make_singlefloat(a),
+					      ecl_make_singlefloat(b));
 		else
-			output = make_complex(make_doublefloat(a),
-					      make_doublefloat(b));
+			output = ecl_make_complex(ecl_make_doublefloat(a),
+					      ecl_make_doublefloat(b));
 		break;
 	}
 	default:
@@ -387,15 +387,15 @@ cl_cos(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		output = make_singlefloat(cosf(number_to_float(x))); break;
+		output = ecl_make_singlefloat(cosf(number_to_float(x))); break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 		output = make_shortfloat(cosf(ecl_short_float(x))); break;
 #endif
 	case t_singlefloat:
-		output = make_singlefloat(cosf(sf(x))); break;
+		output = ecl_make_singlefloat(cosf(sf(x))); break;
 	case t_doublefloat:
-		output = make_doublefloat(cos(df(x))); break;
+		output = ecl_make_doublefloat(cos(df(x))); break;
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
 		output = make_longfloat(cosl(ecl_long_float(x))); break;
@@ -405,16 +405,16 @@ cl_cos(cl_object x)
 		  z = x + I y
 		  cos(z) = cosh(I z) = cosh(-y + I x)
 		*/
-		double dx = number_to_double(x->complex.real);
-		double dy = number_to_double(x->complex.imag);
+		double dx = ecl_to_double(x->complex.real);
+		double dy = ecl_to_double(x->complex.imag);
 		double a =  cos(dx) * cosh(dy);
 		double b = -sin(dx) * sinh(dy);
 		if (type_of(x->complex.real) != t_doublefloat)
-			output = make_complex(make_singlefloat(a),
-					      make_singlefloat(b));
+			output = ecl_make_complex(ecl_make_singlefloat(a),
+					      ecl_make_singlefloat(b));
 		else
-			output = make_complex(make_doublefloat(a),
-					      make_doublefloat(b));
+			output = ecl_make_complex(ecl_make_doublefloat(a),
+					      ecl_make_doublefloat(b));
 		break;
 	}
 	default:
@@ -433,15 +433,15 @@ cl_tan(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		output = make_singlefloat(tanf(number_to_float(x))); break;
+		output = ecl_make_singlefloat(tanf(number_to_float(x))); break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 		output = make_shortfloat(tanf(ecl_short_float(x))); break;
 #endif
 	case t_singlefloat:
-		output = make_singlefloat(tanf(sf(x))); break;
+		output = ecl_make_singlefloat(tanf(sf(x))); break;
 	case t_doublefloat:
-		output = make_doublefloat(tan(df(x))); break;
+		output = ecl_make_doublefloat(tan(df(x))); break;
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
 		output = make_longfloat(tanl(ecl_long_float(x))); break;
@@ -449,7 +449,7 @@ cl_tan(cl_object x)
 	case t_complex: {
 		cl_object a = cl_sin(x);
 		cl_object b = cl_cos(x);
-		output = number_divide(a, b);
+		output = ecl_divide(a, b);
 		break;
 	}
 	default:
@@ -468,15 +468,15 @@ cl_sinh(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		output = make_singlefloat(sinhf(number_to_float(x))); break;
+		output = ecl_make_singlefloat(sinhf(number_to_float(x))); break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 		output = make_shortfloat(sinhf(ecl_short_float(x))); break;
 #endif
 	case t_singlefloat:
-		output = make_singlefloat(sinhf(sf(x))); break;
+		output = ecl_make_singlefloat(sinhf(sf(x))); break;
 	case t_doublefloat:
-		output = make_doublefloat(sinh(df(x))); break;
+		output = ecl_make_doublefloat(sinh(df(x))); break;
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
 		output = make_longfloat(sinhf(ecl_long_float(x))); break;
@@ -488,16 +488,16 @@ cl_sinh(cl_object x)
 		          = (exp(x)*(cos(y)+Isin(y))-exp(-x)*(cos(y)-Isin(y)))/2
 			  = sinh(x)*cos(y) + Icosh(x)*sin(y);
 		*/
-		double dx = number_to_double(x->complex.real);
-		double dy = number_to_double(x->complex.imag);
+		double dx = ecl_to_double(x->complex.real);
+		double dy = ecl_to_double(x->complex.imag);
 		double a = sinh(dx) * cos(dy);
 		double b = cosh(dx) * sin(dy);
 		if (type_of(x->complex.real) != t_doublefloat)
-			output = make_complex(make_singlefloat(a),
-					      make_singlefloat(b));
+			output = ecl_make_complex(ecl_make_singlefloat(a),
+					      ecl_make_singlefloat(b));
 		else
-			output = make_complex(make_doublefloat(a),
-					      make_doublefloat(b));
+			output = ecl_make_complex(ecl_make_doublefloat(a),
+					      ecl_make_doublefloat(b));
 		break;
 	}
 	default:
@@ -516,15 +516,15 @@ cl_cosh(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		output = make_singlefloat(coshf(number_to_float(x))); break;
+		output = ecl_make_singlefloat(coshf(number_to_float(x))); break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 		output = make_shortfloat(coshf(ecl_short_float(x))); break;
 #endif
 	case t_singlefloat:
-		output = make_singlefloat(coshf(sf(x))); break;
+		output = ecl_make_singlefloat(coshf(sf(x))); break;
 	case t_doublefloat:
-		output = make_doublefloat(cosh(df(x))); break;
+		output = ecl_make_doublefloat(cosh(df(x))); break;
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
 		output = make_longfloat(coshl(ecl_long_float(x))); break;
@@ -536,16 +536,16 @@ cl_cosh(cl_object x)
 		          = (exp(x)*(cos(y)+Isin(y))+exp(-x)*(cos(y)-Isin(y)))/2
 			  = cosh(x)*cos(y) + Isinh(x)*sin(y);
 		*/
-		double dx = number_to_double(x->complex.real);
-		double dy = number_to_double(x->complex.imag);
+		double dx = ecl_to_double(x->complex.real);
+		double dy = ecl_to_double(x->complex.imag);
 		double a = cosh(dx) * cos(dy);
 		double b = sinh(dx) * sin(dy);
 		if (type_of(x->complex.real) != t_doublefloat)
-			output = make_complex(make_singlefloat(a),
-					      make_singlefloat(b));
+			output = ecl_make_complex(ecl_make_singlefloat(a),
+					      ecl_make_singlefloat(b));
 		else
-			output = make_complex(make_doublefloat(a),
-					      make_doublefloat(b));
+			output = ecl_make_complex(ecl_make_doublefloat(a),
+					      ecl_make_doublefloat(b));
 		break;
 	}
 	default:
@@ -564,15 +564,15 @@ cl_tanh(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		output = make_singlefloat(tanhf(number_to_float(x))); break;
+		output = ecl_make_singlefloat(tanhf(number_to_float(x))); break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 		output = make_shortfloat(tanhf(ecl_short_float(x))); break;
 #endif
 	case t_singlefloat:
-		output = make_singlefloat(tanhf(sf(x))); break;
+		output = ecl_make_singlefloat(tanhf(sf(x))); break;
 	case t_doublefloat:
-		output = make_doublefloat(tanh(df(x))); break;
+		output = ecl_make_doublefloat(tanh(df(x))); break;
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
 		output = make_longfloat(coshl(ecl_long_float(x))); break;
@@ -580,7 +580,7 @@ cl_tanh(cl_object x)
 	case t_complex: {
 		cl_object a = cl_sinh(x);
 		cl_object b = cl_cosh(x);
-		output = number_divide(a, b);
+		output = ecl_divide(a, b);
 		break;
 	}
 	default:

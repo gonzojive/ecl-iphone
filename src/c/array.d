@@ -55,7 +55,7 @@ ecl_out_of_bounds_error(cl_object fun, const char *place, cl_object value,
 }
 
 cl_index
-object_to_index(cl_object n)
+ecl_to_index(cl_object n)
 {
 	switch (type_of(n)) {
 	case t_fixnum: {
@@ -75,14 +75,14 @@ cl_object
 cl_row_major_aref(cl_object x, cl_object indx)
 {
 	cl_index j = fixnnint(indx);
-	@(return aref(x, j))
+	@(return ecl_aref(x, j))
 }
 
 cl_object
 si_row_major_aset(cl_object x, cl_object indx, cl_object val)
 {
 	cl_index j = fixnnint(indx);
-	@(return aset(x, j, val))
+	@(return ecl_aset(x, j, val))
 }
 
 @(defun aref (x &rest indx)
@@ -116,11 +116,11 @@ si_row_major_aset(cl_object x, cl_object indx, cl_object val)
 		x = ecl_type_error(@'aref',"argument",x,@'array');
 		goto AGAIN;
 	}
-	@(return aref(x, j));
+	@(return ecl_aref(x, j));
 } @)
 
 cl_object
-aref(cl_object x, cl_index index)
+ecl_aref(cl_object x, cl_index index)
 {
  AGAIN:
 	if (index >= x->array.dim) {
@@ -131,7 +131,7 @@ aref(cl_object x, cl_index index)
 		index = fix(i);
 		goto AGAIN;
 	}
-	switch ((cl_elttype)array_elttype(x)) {
+	switch ((cl_elttype)ecl_array_elttype(x)) {
 	case aet_object:
 #ifdef ECL_UNICODE
 	case aet_ch:
@@ -146,13 +146,13 @@ aref(cl_object x, cl_index index)
 		else
 			return(MAKE_FIXNUM(0));
 	case aet_fix:
-		return make_integer(x->array.self.fix[index]);
+		return ecl_make_integer(x->array.self.fix[index]);
 	case aet_index:
-		return make_unsigned_integer(x->array.self.index[index]);
+		return ecl_make_unsigned_integer(x->array.self.index[index]);
 	case aet_sf:
-		return(make_singlefloat(x->array.self.sf[index]));
+		return(ecl_make_singlefloat(x->array.self.sf[index]));
 	case aet_df:
-		return(make_doublefloat(x->array.self.df[index]));
+		return(ecl_make_doublefloat(x->array.self.df[index]));
 	case aet_b8:
 		return(MAKE_FIXNUM(x->array.self.b8[index]));
 	case aet_i8:
@@ -163,7 +163,7 @@ aref(cl_object x, cl_index index)
 }
 
 cl_object
-aref1(cl_object v, cl_index index)
+ecl_aref1(cl_object v, cl_index index)
 {
  AGAIN:
 	switch (type_of(v)) {
@@ -172,7 +172,7 @@ aref1(cl_object v, cl_index index)
 #endif
 	case t_vector:
 	case t_bitvector:
-		return aref(v, index);
+		return ecl_aref(v, index);
 	case t_base_string:
 		if (index >= v->base_string.dim) {
 			cl_object i;
@@ -226,15 +226,15 @@ aref1(cl_object v, cl_index index)
 		x = ecl_type_error(@'si::aset',"destination",v,@'array');
 		goto AGAIN;
 	}
-	@(return aset(x, j, v))
+	@(return ecl_aset(x, j, v))
 } @)
 
 cl_object
-aset(cl_object x, cl_index index, cl_object value)
+ecl_aset(cl_object x, cl_index index, cl_object value)
 {
 	if (index >= x->array.dim)
 		FEerror("The index, ~D, too large.", 1, MAKE_FIXNUM(index));
-	switch (array_elttype(x)) {
+	switch (ecl_array_elttype(x)) {
 	case aet_object:
 #ifdef ECL_UNICODE
 	case aet_ch:
@@ -261,10 +261,10 @@ aset(cl_object x, cl_index index, cl_object value)
 		x->array.self.index[index] = fixnnint(value);
 		break;
 	case aet_sf:
-		x->array.self.sf[index] = object_to_float(value);
+		x->array.self.sf[index] = ecl_to_float(value);
 		break;
 	case aet_df:
-		x->array.self.df[index] = object_to_double(value);
+		x->array.self.df[index] = ecl_to_double(value);
 		break;
 	case aet_b8: {
 		uint8_t i = ecl_fixnum_in_range(@'si::aset',"byte",value,0,255);
@@ -281,7 +281,7 @@ aset(cl_object x, cl_index index, cl_object value)
 }
 
 cl_object
-aset1(cl_object v, cl_index index, cl_object val)
+ecl_aset1(cl_object v, cl_index index, cl_object val)
 {
  AGAIN:
 	switch (type_of(v)) {
@@ -290,7 +290,7 @@ aset1(cl_object v, cl_index index, cl_object val)
 #endif
 	case t_vector:
 	case t_bitvector:
-		return(aset(v, index, val));
+		return(ecl_aset(v, index, val));
 	case t_base_string:
 		while (index >= v->base_string.dim) {
 			cl_object i = ecl_out_of_bounds_error(@'si::row-major-aset',
@@ -340,7 +340,7 @@ aset1(cl_object v, cl_index index, cl_object val)
 	x->array.dim = s;
 	x->array.adjustable = adj != Cnil;
 	if (Null(displ))
-		array_allocself(x);
+		ecl_array_allocself(x);
 	else
 		displace(x, displ, disploff);
 	@(return x);
@@ -396,20 +396,20 @@ si_make_vector(cl_object etype, cl_object dim, cl_object adj,
 	x->vector.fillp = f;
 
 	if (Null(displ))
-		array_allocself(x);
+		ecl_array_allocself(x);
 	else
 		displace(x, displ, disploff);
 	@(return x)
 }
 
 void
-array_allocself(cl_object x)
+ecl_array_allocself(cl_object x)
 {
 	cl_index i, d;
 
 	d = x->array.dim;
 	start_critical_section(); /* avoid losing elts */
-	switch (array_elttype(x)) {
+	switch (ecl_array_elttype(x)) {
 	/* assign self field only after it has been filled, for GC sake  */
 	case aet_object: {
 		cl_object *elts;
@@ -587,13 +587,13 @@ address_inc(void *address, cl_fixnum inc, cl_elttype elt_type)
 static void *
 array_address(cl_object x, cl_index inc)
 {
-	return address_inc(x->array.self.t, inc, array_elttype(x));
+	return address_inc(x->array.self.t, inc, ecl_array_elttype(x));
 }
 
 cl_object
 cl_array_element_type(cl_object a)
 {
-	@(return ecl_elttype_to_symbol(array_elttype(a)))
+	@(return ecl_elttype_to_symbol(ecl_array_elttype(a)))
 }
 
 /*
@@ -611,7 +611,7 @@ displace(cl_object from, cl_object to, cl_object offset)
 	cl_index j;
 	void *base;
 	cl_elttype totype, fromtype;
-	fromtype = array_elttype(from);
+	fromtype = ecl_array_elttype(from);
 	if (type_of(to) == t_foreign) {
 		if (fromtype == aet_bit || fromtype == aet_object) {
 			FEerror("Cannot displace arrays with element type T or BIT onto foreign data",0);
@@ -621,7 +621,7 @@ displace(cl_object from, cl_object to, cl_object offset)
 					0, MOST_POSITIVE_FIXNUM);
 		from->array.displaced = to;
 	} else {
-		totype = array_elttype(to);
+		totype = ecl_array_elttype(to);
 		if (totype != fromtype)
 			FEerror("Cannot displace the array,~%\
 because the element types don't match.", 0);
@@ -647,7 +647,7 @@ because the total size of the to-array is too small.", 0);
 }
 
 cl_elttype
-array_elttype(cl_object x)
+ecl_array_elttype(cl_object x)
 {
 	switch(type_of(x)) {
 	case t_array:
@@ -732,7 +732,7 @@ cl_array_displacement(cl_object a)
 	} else if (Null(to_array = CAR(a->array.displaced))) {
 		offset = 0;
 	} else {
-		switch (array_elttype(a)) {
+		switch (ecl_array_elttype(a)) {
 #ifdef ECL_UNICODE
 		case aet_ch:
 #endif
@@ -908,16 +908,16 @@ void
 ecl_copy_subarray(cl_object dest, cl_index i0, cl_object orig,
 		  cl_index i1, cl_index l)
 {
-	cl_elttype t = array_elttype(dest);
+	cl_elttype t = ecl_array_elttype(dest);
 	if (i0 + l > dest->array.dim) {
 		l = dest->array.dim - i0;
 	}
 	if (i1 + l > orig->array.dim) {
 		l = orig->array.dim - i1;
 	}
-	if (t != array_elttype(orig) || t == aet_bit) {
+	if (t != ecl_array_elttype(orig) || t == aet_bit) {
 		while (l--) {
-			aset(dest, i0++, aref(orig, i1++));
+			ecl_aset(dest, i0++, ecl_aref(orig, i1++));
 		}
 	} else if (t >= 0 && t <= aet_last_type) {
 		cl_index elt_size = ecl_aet_size[t];
@@ -932,7 +932,7 @@ ecl_copy_subarray(cl_object dest, cl_index i0, cl_object orig,
 void
 ecl_reverse_subarray(cl_object x, cl_index i0, cl_index i1)
 {
-	cl_elttype t = array_elttype(x);
+	cl_elttype t = ecl_array_elttype(x);
 	cl_index i, j;
 	if (x->array.dim == 0) {
 		return;

@@ -106,7 +106,7 @@ search_macro_function(cl_object name, cl_object env)
 			exp_fun = search_macro_function(head, env);
 	}
 	if (!Null(exp_fun)) {
-		cl_object hook = symbol_value(@'*macroexpand-hook*');
+		cl_object hook = ecl_symbol_value(@'*macroexpand-hook*');
 		if (hook == @'funcall')
 			form = funcall(3, exp_fun, form, env);
 		else
@@ -174,7 +174,7 @@ static cl_object
 when_macro(cl_object whole, cl_object env)
 {
 	cl_object args = CDR(whole);
-	if (endp(args))
+	if (ecl_endp(args))
 		FEprogram_error("Syntax error: ~S.", 1, whole);
 	return cl_list(3, @'if', CAR(args), CONS(@'progn', CDR(args)));
 }

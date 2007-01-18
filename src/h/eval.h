@@ -15,8 +15,8 @@
 
 #define check_symbol(x) if (!SYMBOLP(x)) FEtype_error_symbol(x);
 
-#define CONS(a,d)	make_cons((a),(d))
-#define ACONS(a,b,c)	make_cons(make_cons((a),(b)),(c))
+#define CONS(a,d)	ecl_cons((a),(d))
+#define ACONS(a,b,c)	ecl_cons(ecl_cons((a),(b)),(c))
 #define CAR(x)		(x)->cons.car
 #define CDR(x)		(x)->cons.cdr
 #define CAAR(x)		(x)->cons.car->cons.car

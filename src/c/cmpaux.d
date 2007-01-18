@@ -26,7 +26,7 @@ si_specialp(cl_object sym)
 }
 
 cl_fixnum
-ifloor(cl_fixnum x, cl_fixnum y)
+ecl_ifloor(cl_fixnum x, cl_fixnum y)
 {
 	if (y == 0)
 		FEerror("Zero divizor", 0);
@@ -43,9 +43,9 @@ ifloor(cl_fixnum x, cl_fixnum y)
 }
 
 cl_fixnum
-imod(cl_fixnum x, cl_fixnum y)
+ecl_imod(cl_fixnum x, cl_fixnum y)
 {
-	return(x - ifloor(x, y)*y);
+	return(x - ecl_ifloor(x, y)*y);
 }
 
 /*
@@ -55,7 +55,7 @@ imod(cl_fixnum x, cl_fixnum y)
  */
 
 char
-object_to_char(cl_object x)
+ecl_to_char(cl_object x)
 {
 	switch (type_of(x)) {
 	case t_fixnum:
@@ -68,7 +68,7 @@ object_to_char(cl_object x)
 }
 
 cl_fixnum
-object_to_fixnum(cl_object x)
+ecl_to_fixnum(cl_object x)
 {
 	switch (type_of(x)) {
 	case t_fixnum:
@@ -76,7 +76,7 @@ object_to_fixnum(cl_object x)
 		return fixint(x);
 /*	case t_character: return (cl_fixnum)CHAR_CODE(x); */
 	case t_ratio:
-		return (cl_fixnum)number_to_double(x);
+		return (cl_fixnum)ecl_to_double(x);
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 		return (cl_fixnum)ecl_short_float(x);
@@ -95,14 +95,14 @@ object_to_fixnum(cl_object x)
 }
 
 cl_index
-object_to_unsigned_integer(cl_object x)
+ecl_to_unsigned_integer(cl_object x)
 {
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
 		return fixnnint(x);
 	case t_ratio:
-		return (cl_index)number_to_double(x);
+		return (cl_index)ecl_to_double(x);
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 		return (cl_index)ecl_short_float(x);
@@ -121,7 +121,7 @@ object_to_unsigned_integer(cl_object x)
 }
 
 float
-object_to_float(cl_object x)
+ecl_to_float(cl_object x)
 {
 	if (FIXNUMP(x)) return(fix(x));	/* Immediate fixnum */
 
@@ -130,36 +130,7 @@ object_to_float(cl_object x)
 /*	case t_character: return CHAR_CODE(x); */
 	case t_bignum:
 	case t_ratio:
-		return number_to_double(x);
-#ifdef ECL_SHORT_FLOAT
-	case t_shortfloat:
-		return ecl_short_float(x);
-#endif
-	case t_singlefloat:
-		return sf(x);
-	case t_doublefloat:
-		return df(x);
-#ifdef ECL_LONG_FLOAT
-	case t_longfloat:
-		return ecl_long_float(x);
-#endif
-	default:
-		FEtype_error_real(x);
-	}
-}
-
-double
-object_to_double(cl_object x)
-{
-
-	if (FIXNUMP(x)) return(fix(x));	/* Immediate fixnum */
-
-	switch (type_of(x)) {
-/*	case t_fixnum: return fix(x);	*/
-/*	case t_character: return CHAR_CODE(x); */
-	case t_bignum:
-	case t_ratio:
-		return number_to_double(x);
+		return ecl_to_double(x);
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 		return ecl_short_float(x);
@@ -178,14 +149,14 @@ object_to_double(cl_object x)
 }
 
 int
-aref_bv(cl_object x, cl_index index)
+ecl_aref_bv(cl_object x, cl_index index)
 {
   index += x->vector.offset;
   return ((x->vector.self.bit[index/CHAR_BIT] & (0200>>index%CHAR_BIT)) != 0);
 }
 
 int
-aset_bv(cl_object x, cl_index index, int value)
+ecl_aset_bv(cl_object x, cl_index index, int value)
 {
   index += x->vector.offset;
   if (value == 0)
@@ -201,7 +172,7 @@ cl_throw(cl_object tag)
   ecl_frame_ptr fr = frs_sch(tag);
   if (fr == NULL)
     FEcontrol_error("THROW: The catch ~S is undefined.", 1, tag);
-  unwind(fr);
+  ecl_unwind(fr);
 }
 
 void
@@ -211,7 +182,7 @@ cl_return_from(cl_object block_id, cl_object block_name)
   if (fr == NULL)
     FEcontrol_error("RETURN-FROM: The block ~S with id ~S is missing.",
 		    2, block_name, block_id);
-  unwind(fr);
+  ecl_unwind(fr);
 }
 
 void
@@ -222,7 +193,7 @@ cl_go(cl_object tag_id, cl_object label)
     FEcontrol_error("GO: The tagbody ~S is missing.", 1, tag_id);
   VALUES(0)=label;
   NVALUES=1;
-  unwind(fr);
+  ecl_unwind(fr);
 }
 
 cl_object

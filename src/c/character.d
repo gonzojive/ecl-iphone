@@ -172,17 +172,17 @@ ecl_string_case(cl_object s)
 @(defun digit_char_p (c &optional (radix MAKE_FIXNUM(10)))
 @ {
 	cl_fixnum basis = ecl_fixnum_in_range(@'digit-char-p',"radix", radix, 2, 36);
-	cl_fixnum value = digitp(ecl_char_code(c), basis);
+	cl_fixnum value = ecl_digitp(ecl_char_code(c), basis);
 	@(return ((value < 0)? Cnil: MAKE_FIXNUM(value)));
 } @)
 
 /*
-	Digitp(i, r) returns the weight of code i
+	Ecl_Digitp(i, r) returns the weight of code i
 	as a digit of radix r, which must be 1 < r <= 36.
 	If i is not a digit, -1 is returned.
 */
 int
-digitp(int i, int r)
+ecl_digitp(int i, int r)
 {
 	if (('0' <= i) && (i <= '9') && (i < '0' + r))
 		return(i - '0');
@@ -213,15 +213,15 @@ ecl_alphanumericp(cl_index i)
 
 @(defun char= (c &rest cs)
 @
-	/* INV: char_eq() checks types of `c' and `cs' */
+	/* INV: ecl_char_eq() checks types of `c' and `cs' */
 	while (--narg)
-		if (!char_eq(c, cl_va_arg(cs)))
+		if (!ecl_char_eq(c, cl_va_arg(cs)))
 			@(return Cnil)
 	@(return Ct)
 @)
 
 bool
-char_eq(cl_object x, cl_object y)
+ecl_char_eq(cl_object x, cl_object y)
 {
 	return ecl_char_code(x) == ecl_char_code(y);
 }
@@ -230,7 +230,7 @@ char_eq(cl_object x, cl_object y)
 	int i, j;
 	cl_object c;
 @
-	/* INV: char_eq() checks types of its arguments */
+	/* INV: ecl_char_eq() checks types of its arguments */
 	if (narg == 0)
 		FEwrong_num_arguments(@'char/=');
 	c = cl_va_arg(cs);
@@ -239,7 +239,7 @@ char_eq(cl_object x, cl_object y)
 		cl_va_start(ds, narg, narg, 0);
 		c = cl_va_arg(cs);
 		for (j = 1; j<i; j++)
-			if (char_eq(cl_va_arg(ds), c))
+			if (ecl_char_eq(cl_va_arg(ds), c))
 				@(return Cnil)
 	}
 	@(return Ct)
@@ -255,14 +255,14 @@ Lchar_cmp(cl_narg narg, int s, int t, cl_va_list args)
 	c = cl_va_arg(args);
 	for (; --narg; c = d) {
 		d = cl_va_arg(args);
-		if (s*char_cmp(d, c) < t)
+		if (s*ecl_char_cmp(d, c) < t)
 			@(return Cnil)
 	}
 	@(return Ct)
 }
 
 int
-char_cmp(cl_object x, cl_object y)
+ecl_char_cmp(cl_object x, cl_object y)
 {
 	/* ecl_char_code(x) returns an integer which is well in the range
 	 * of positive fixnums. Therefore, this subtraction never
@@ -293,16 +293,16 @@ char_cmp(cl_object x, cl_object y)
 @(defun char_equal (c &rest cs)
 	int i;
 @
-	/* INV: char_equal() checks the type of its arguments */
+	/* INV: ecl_char_equal() checks the type of its arguments */
 	for (narg--, i = 0;  i < narg;  i++) {
-		if (!char_equal(c, cl_va_arg(cs)))
+		if (!ecl_char_equal(c, cl_va_arg(cs)))
 			@(return Cnil)
 	}
 	@(return Ct)
 @)
 
 bool
-char_equal(cl_object x, cl_object y)
+ecl_char_equal(cl_object x, cl_object y)
 {
 	cl_fixnum i = ecl_char_code(x);
 	cl_fixnum j = ecl_char_code(y);
@@ -318,7 +318,7 @@ char_equal(cl_object x, cl_object y)
 	int i, j;
 	cl_object c;
 @
-	/* INV: char_equal() checks the type of its arguments */
+	/* INV: ecl_char_equal() checks the type of its arguments */
 	if (narg == 0)
 		FEwrong_num_arguments(@'char-not-equal');
 	c = cl_va_arg(cs);
@@ -327,7 +327,7 @@ char_equal(cl_object x, cl_object y)
 		cl_va_start(ds, narg, narg, 0);
 		c = cl_va_arg(cs);
 		for (j=1;  j<i;  j++)
-			if (char_equal(c, cl_va_arg(ds)))
+			if (ecl_char_equal(c, cl_va_arg(ds)))
 				@(return Cnil)
 	}
 	@(return Ct)
@@ -338,20 +338,20 @@ Lchar_compare(cl_narg narg, int s, int t, cl_va_list args)
 {
 	cl_object c, d;
 
-	/* INV: char_compare() checks the types of its arguments */
+	/* INV: ecl_char_compare() checks the types of its arguments */
 	if (narg == 0)
 		FEwrong_num_arguments_anonym();
 	c = cl_va_arg(args);
 	for (; --narg; c = d) {
 		d = cl_va_arg(args);
-		if (s*char_compare(d, c) < t)
+		if (s*ecl_char_compare(d, c) < t)
 			@(return Cnil)
 	}
 	@(return Ct)
 }
 
 int
-char_compare(cl_object x, cl_object y)
+ecl_char_compare(cl_object x, cl_object y)
 {
 	cl_fixnum i = ecl_char_code(x);
 	cl_fixnum j = ecl_char_code(y);
@@ -542,7 +542,7 @@ cl_char_name(cl_object c)
 		sprintf(name, "U%04x", code);
 		output = make_base_string_copy(name);
 	} else {
-		output = gethash_safe(c, cl_core.char_names, Cnil);
+		output = ecl_gethash_safe(c, cl_core.char_names, Cnil);
 	}
 	@(return output);
 }
@@ -550,9 +550,9 @@ cl_char_name(cl_object c)
 cl_object
 cl_name_char(cl_object name)
 {
-	cl_object c = gethash_safe((name = cl_string(name)), cl_core.char_names, Cnil);
+	cl_object c = ecl_gethash_safe((name = cl_string(name)), cl_core.char_names, Cnil);
 	if (c == Cnil && type_of(name) == t_base_string &&
-	    length(name)) {
+	    ecl_length(name)) {
 		c = cl_char(name, MAKE_FIXNUM(0));
 		if (c == CODE_CHAR('u') || c == CODE_CHAR('U')) {
 			/* FIXME! This only works with base-strings */

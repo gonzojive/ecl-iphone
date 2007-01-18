@@ -6,7 +6,7 @@ EXPORTS
 
 	cl_alloc_object
 	cl_alloc_instance
-	make_cons
+	ecl_cons
 	si_gc
 	si_gc_dump
 	si_set_finalizer
@@ -45,13 +45,13 @@ EXPORTS
 	si_aset
 	si_make_pure_array
 
-	object_to_index
-	aref
-	aref1
-	aset
-	aset1
-	array_allocself
-	array_elttype
+	ecl_to_index
+	ecl_aref
+	ecl_aref1
+	ecl_aset
+	ecl_aset1
+	ecl_array_allocself
+	ecl_array_elttype
 	ecl_symbol_to_elttype
 	ecl_elttype_to_symbol
 	ecl_copy_subarray
@@ -68,7 +68,7 @@ EXPORTS
 	si_put_sysprop
 	si_rem_sysprop
 
-	clear_compiler_properties
+	ecl_clear_compiler_properties
 
 
 	; big.c
@@ -150,11 +150,11 @@ EXPORTS
 	;ecl_base_string_case
 	ecl_char_code
 	ecl_base_char_code
-	digitp
-	char_eq
-	char_cmp
-	char_equal
-	char_compare
+	ecl_digitp
+	ecl_char_eq
+	ecl_char_cmp
+	ecl_char_equal
+	ecl_char_compare
 	ecl_digit_char
 
 	; cleanup.c
@@ -171,15 +171,15 @@ EXPORTS
 
 	si_specialp
 
-	ifloor
-	imod
-	object_to_char
-	object_to_fixnum
-	object_to_unsigned_integer
-	object_to_float
-	object_to_double
-	aref_bv
-	aset_bv
+	ecl_ifloor
+	ecl_imod
+	ecl_to_char
+	ecl_to_fixnum
+	ecl_to_unsigned_integer
+	ecl_to_float
+	ecl_to_double
+	ecl_aref_bv
+	ecl_aset_bv
 	cl_throw
 	cl_return_from
 	cl_go
@@ -195,7 +195,6 @@ EXPORTS
 	si_valid_function_name_p
 	si_process_declarations
 
-	make_lambda
 	si_eval_with_env
 
 	; interpreter.c
@@ -215,8 +214,8 @@ EXPORTS
 	cl_stack_push_values
 	cl_stack_pop_values
 
-	lambda_apply
-	interpret
+	ecl_apply_lambda
+	ecl_interpret
 
 	; disassembler.c
 
@@ -228,9 +227,8 @@ EXPORTS
 	cl_error
 	cl_cerror
 
-	internal_error
-	cs_overflow
-	error
+	ecl_internal_error
+	ecl_cs_overflow
 	FEprogram_error
 	FEcontrol_error
 	FEreader_error
@@ -252,7 +250,7 @@ EXPORTS
 	FElibc_error
 	FEwin32_error
 	CEerror
-	illegal_index
+	FEillegal_index
 
 	; eval.c
 
@@ -268,7 +266,7 @@ EXPORTS
 	cl_constantp
 
 	cl_apply_from_stack
-	link_call
+	_ecl_link_call
 
 	; ffi.c
 
@@ -373,7 +371,7 @@ EXPORTS
 	;si_set_funcallable
 	si_generic_function_p
 
-	compute_method
+	_ecl_compute_method
 
 
 	; hash.c
@@ -398,10 +396,10 @@ EXPORTS
 	;hash_eq
 	;hash_eql
 	;hash_equal
-	sethash
-	gethash
-	gethash_safe
-	remhash
+	ecl_sethash
+	ecl_gethash
+	ecl_gethash_safe
+	ecl_remhash
 	ecl_search_hash
 
 	; instance.c
@@ -420,8 +418,8 @@ EXPORTS
 	si_instance_sig_set
 
 	ecl_allocate_instance
-	instance_ref
-	instance_set
+	ecl_instance_ref
+	ecl_instance_set
 	si_copy_instance
 
 
@@ -500,18 +498,18 @@ EXPORTS
 	cl_assoc
 
 	;list_length
-	append
-	endp
-	nth
-	nthcdr
-	nconc
-	member_eq
-	memql
-	member
-	assq
-	assql
-	assoc
-	assqlp
+	ecl_append
+	ecl_endp
+	ecl_nth
+	ecl_nthcdr
+	ecl_nconc
+	ecl_member_eq
+	ecl_memql
+	ecl_member
+	ecl_assq
+	ecl_assql
+	ecl_assoc
+	ecl_assqlp
 	ecl_remove_eq
 	ecl_delete_eq
 
@@ -581,16 +579,16 @@ EXPORTS
 	cl_lcm
 
 	fixnum_times
-	number_times
+	ecl_times
 	;number_to_complex
-	number_plus
-	number_minus
-	number_negate
-	number_divide
-	integer_divide
-	get_gcd
-	one_plus
-	one_minus
+	ecl_plus
+	ecl_minus
+	ecl_negate
+	ecl_divide
+	ecl_integer_divide
+	ecl_gcd
+	ecl_one_plus
+	ecl_one_minus
 
 
 	; number.c
@@ -598,14 +596,14 @@ EXPORTS
 	fixint
 	fixnnint
 	ecl_fixnum_in_range
-	make_integer
-	make_unsigned_integer
-	make_ratio
-	make_singlefloat
-	make_doublefloat
-	make_complex
+	ecl_make_integer
+	ecl_make_unsigned_integer
+	ecl_make_ratio
+	ecl_make_singlefloat
+	ecl_make_doublefloat
+	ecl_make_complex
 	cl_rational
-	number_to_double
+	ecl_to_double
 
 	; num_co.c
 
@@ -631,14 +629,14 @@ EXPORTS
 
 	double_to_integer
 	float_to_integer
-	floor1
-	ceiling1
-	truncate1
-	round1
-	floor2
-	ceiling2
-	truncate2
-	round2
+	ecl_floor1
+	ecl_ceiling1
+	ecl_truncate1
+	ecl_round1
+	ecl_floor2
+	ecl_ceiling2
+	ecl_truncate2
+	ecl_round2
 
 
 	; num_comp.c
@@ -652,8 +650,8 @@ EXPORTS
 	cl_max
 	cl_min
 
-	number_equalp
-	number_compare
+	ecl_number_equalp
+	ecl_number_compare
 
 
 	; num_log.c
@@ -689,11 +687,11 @@ EXPORTS
 	cl_oddp
 	cl_evenp
 
-	number_zerop
-	number_plusp
-	number_minusp
-	number_oddp
-	number_evenp
+	ecl_zerop
+	ecl_plusp
+	ecl_minusp
+	ecl_oddp
+	ecl_evenp
 
 
 	; num_rand.c
@@ -701,12 +699,12 @@ EXPORTS
 	cl_random_state_p
 	cl_random
 	cl_make_random_state
-	make_random_state
+	ecl_make_random_state
 
 
 	; num_sfun.c
 
-	fixnum_expt
+	ecl_fixnum_expt
 	cl_exp
 	cl_expt
 	ecl_log1
@@ -751,22 +749,22 @@ EXPORTS
 	cl_use_package
 	cl_unuse_package
 
-	make_package
-	rename_package
+	ecl_make_package
+	ecl_rename_package
 	ecl_find_package_nolock
 	si_coerce_to_package
-	current_package
+	ecl_current_package
 	ecl_find_symbol
-	intern
-	_intern
-	unintern
+	ecl_intern
+	_ecl_intern
+	ecl_unintern
 	cl_export2
 	cl_unexport2
 	cl_import2
-	shadowing_import
-	shadow
-	use_package
-	unuse_package
+	ecl_shadowing_import
+	ecl_shadow
+	ecl_use_package
+	ecl_unuse_package
 
 
 	; pathname.c
@@ -797,14 +795,14 @@ EXPORTS
 	si_default_pathname_defaults
 	cl_wild_pathname_p
 
-	make_pathname
-	parse_namestring
+	ecl_make_pathname
+	ecl_parse_namestring
 	coerce_to_physical_pathname
 	coerce_to_file_pathname
 	ecl_namestring
 	si_coerce_to_filename
-	merge_pathnames
-	logical_hostname_p
+	ecl_merge_pathnames
+	ecl_logical_hostname_p
 
 
 	; predicate.c
@@ -838,10 +836,10 @@ EXPORTS
 	cl_equalp
 	si_fixnump
 
-	numberp
-	eql
-	equal
-	equalp
+	ecl_numberp
+	ecl_eql
+	ecl_equal
+	ecl_equalp
 	ecl_stringp
 
 	; print.c
@@ -864,13 +862,13 @@ EXPORTS
 	si_write_object
 	si_write_ugly_object
 
-	princ
-	prin1
-	print
-	terpri
-	write_string
-	princ_str
-	princ_char
+	ecl_princ
+	ecl_prin1
+	ecl_print
+	ecl_terpri
+	ecl_write_string
+	ecl_princ_str
+	ecl_princ_char
 
 
 	; profile.c
@@ -906,12 +904,12 @@ EXPORTS
 	si_get_buffer_string
 	si_put_buffer_string
 
-	read_object_non_recursive
-	read_object
+	ecl_read_object_non_recursive
+	ecl_read_object
 	ecl_parse_number
 	ecl_parse_integer
 	ecl_invalid_character_p
-	copy_readtable
+	ecl_copy_readtable
 	ecl_current_readtable
 	ecl_current_read_base
 	ecl_current_read_default_float_format
@@ -942,9 +940,9 @@ EXPORTS
 	cl_subseq
 
 	ecl_alloc_simple_vector
-	elt
-	elt_set
-	length
+	ecl_elt
+	ecl_elt_set
+	ecl_length
 
 
 	; stacks.c
@@ -968,7 +966,7 @@ EXPORTS
 	bds_overflow
 	frs_overflow
 	bds_unwind
-	unwind
+	ecl_unwind
 	frs_sch
 	;frs_sch_catch
 	new_frame_id
@@ -1009,8 +1007,8 @@ EXPORTS
 	make_base_string_copy
 	ecl_cstring_to_base_string_or_nil
 	si_copy_to_simple_base_string
-	string_eq
-	member_char
+	ecl_string_eq
+	ecl_member_char
 	ecl_string_push_extend
 	get_string_start_end
 	ecl_fits_in_base_string
@@ -1027,8 +1025,8 @@ EXPORTS
 	si_structurep
 	si_make_structure
 
-	structure_ref
-	structure_set
+	ecl_structure_ref
+	ecl_structure_set
 
 
 	; symbol.c
@@ -1055,11 +1053,11 @@ EXPORTS
 
 	;cl_defvar
 	;cl_defparameter
-	make_keyword
-	symbol_value
+	ecl_make_keyword
+	ecl_symbol_value
 	ecl_getf
 	ecl_get
-	keywordp
+	ecl_keywordp
 
 
 	; tcp.c
@@ -1137,11 +1135,11 @@ EXPORTS
 	si_mkstemp
 	si_rmdir
 
-	expand_pathname
+	ecl_expand_pathname
 	ecl_cstring_to_pathname
 	ecl_backup_fopen
 	ecl_file_len
-	homedir_pathname
+	ecl_homedir_pathname
 
 
 	; unixint.c

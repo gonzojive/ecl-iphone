@@ -217,6 +217,8 @@ ECL 1.0:
    ecl_char_code(), cl_log1() -> ecl_log1(), cl_log2() -> ecl_log2(),
    NUMBER_TYPE() -> ECL_NUMBER_TYPE_P().
 
+ - Additionally, most functions have got now the prefix "ecl_"
+
  - LOAD-FOREIGN-LIBRARY accepts an additional keyword argument :SYSTEM-LIBRARY
    which, when true, tells ECL to link object files against the system version
    of that library instead of directly referencing the shared library: i.e. use

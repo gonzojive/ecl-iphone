@@ -196,7 +196,7 @@
 
 (defun wt-structure-ref (loc name-vv index)
   (if (safe-compile)
-      (wt "structure_ref(" loc "," name-vv "," `(COERCE-LOC :fixnum ,index) ")")
+      (wt "ecl_structure_ref(" loc "," name-vv "," `(COERCE-LOC :fixnum ,index) ")")
       #+clos
       (wt "(" loc ")->instance.slots[" `(COERCE-LOC :fixnum ,index) "]")
       #-clos
@@ -241,7 +241,7 @@
   (setq x (second (first locs)))
   (setq y `(coerce-loc :object ,(second (second locs))))
   (if (safe-compile)
-      (wt-nl "structure_set(" x "," name-vv "," index "," y ");")
+      (wt-nl "ecl_structure_set(" x "," name-vv "," index "," y ");")
       #+clos
       (wt-nl "(" x ")->instance.slots[" index "]= " y ";")
       #-clos

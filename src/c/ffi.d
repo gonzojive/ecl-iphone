@@ -160,7 +160,7 @@ si_foreign_data_address(cl_object f)
 	if (type_of(f) != t_foreign) {
 		FEwrong_type_argument(@'si::foreign-data', f);
 	}
-	@(return make_unsigned_integer((cl_index)f->foreign.data))
+	@(return ecl_make_unsigned_integer((cl_index)f->foreign.data))
 }
 
 cl_object
@@ -274,13 +274,13 @@ ecl_foreign_data_ref_elt(void *p, enum ecl_ffi_tag tag)
 	case ECL_FFI_UNSIGNED_SHORT:
 		return MAKE_FIXNUM(*(unsigned short *)p);
 	case ECL_FFI_INT:
-		return make_integer(*(int *)p);
+		return ecl_make_integer(*(int *)p);
 	case ECL_FFI_UNSIGNED_INT:
-		return make_unsigned_integer(*(unsigned int *)p);
+		return ecl_make_unsigned_integer(*(unsigned int *)p);
 	case ECL_FFI_LONG:
-		return make_integer(*(long *)p);
+		return ecl_make_integer(*(long *)p);
 	case ECL_FFI_UNSIGNED_LONG:
-		return make_unsigned_integer(*(unsigned long *)p);
+		return ecl_make_unsigned_integer(*(unsigned long *)p);
 	case ECL_FFI_POINTER_VOID:
 		return ecl_make_foreign_data(@':pointer-void', 0, *(void **)p);
 	case ECL_FFI_CSTRING:
@@ -288,9 +288,9 @@ ecl_foreign_data_ref_elt(void *p, enum ecl_ffi_tag tag)
 	case ECL_FFI_OBJECT:
 		return *(cl_object *)p;
 	case ECL_FFI_FLOAT:
-		return make_singlefloat(*(float *)p);
+		return ecl_make_singlefloat(*(float *)p);
 	case ECL_FFI_DOUBLE:
-		return make_doublefloat(*(double *)p);
+		return ecl_make_doublefloat(*(double *)p);
 	case ECL_FFI_VOID:
 		return Cnil;
 	}
@@ -340,10 +340,10 @@ ecl_foreign_data_set_elt(void *p, enum ecl_ffi_tag tag, cl_object value)
 		*(cl_object *)p = value;
 		break;
 	case ECL_FFI_FLOAT:
-		*(float *)p = object_to_float(value);
+		*(float *)p = ecl_to_float(value);
 		break;
 	case ECL_FFI_DOUBLE:
-		*(double *)p = object_to_double(value);
+		*(double *)p = ecl_to_double(value);
 		break;
 	case ECL_FFI_VOID:
 		break;
@@ -418,7 +418,7 @@ si_load_foreign_module(cl_object filename)
 	int i;
 
 #ifdef ECL_THREADS
-	mp_get_lock(1, symbol_value(@'mp::+load-compile-lock+'));
+	mp_get_lock(1, ecl_symbol_value(@'mp::+load-compile-lock+'));
 	CL_UNWIND_PROTECT_BEGIN {
 #endif
 	libraries = cl_core.libraries;
@@ -438,7 +438,7 @@ OUTPUT:
 #ifdef ECL_THREADS
 	(void)0; /* MSVC complains about missing ';' before '}' */
 	} CL_UNWIND_PROTECT_EXIT {
-	mp_giveup_lock(symbol_value(@'mp::+load-compile-lock+'));
+	mp_giveup_lock(ecl_symbol_value(@'mp::+load-compile-lock+'));
 	} CL_UNWIND_PROTECT_END;
 #endif
 	if (type_of(output) == t_codeblock) {
@@ -468,7 +468,7 @@ si_find_foreign_symbol(cl_object var, cl_object module, cl_object type, cl_objec
 			output = ecl_library_error(block);
 		goto OUTPUT;
 	}
-	output = ecl_make_foreign_data(type, object_to_fixnum(size), sym);
+	output = ecl_make_foreign_data(type, ecl_to_fixnum(size), sym);
 OUTPUT:
 	if (type_of(output) == t_foreign)
 		@(return output)

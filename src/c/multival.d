@@ -33,7 +33,7 @@ cl_object
 cl_values_list(cl_object list)
 {
 	VALUES(0) = Cnil;
-	for (NVALUES=0; !endp(list); list=CDR(list)) {
+	for (NVALUES=0; !ecl_endp(list); list=CDR(list)) {
 		if (NVALUES == ECL_MULTIPLE_VALUES_LIMIT)
 			FEerror("Too many values in VALUES-LIST",0);
 		VALUES(NVALUES++) = CAR(list);

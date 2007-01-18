@@ -56,7 +56,7 @@ ecl_library_open(cl_object filename) {
 	cl_index i;
 #ifdef HAVE_LSTAT
 	for (i = 0; i < libraries->vector.fillp; i++) {
-		if (string_eq(libraries->vector.self.t[i]->cblock.name, filename)) {
+		if (ecl_string_eq(libraries->vector.self.t[i]->cblock.name, filename)) {
 			cl_object copy = make_constant_base_string("TMP:ECL");
 			copy = si_coerce_to_filename(si_mkstemp(copy));
 			unlink(copy->base_string.self);
@@ -264,7 +264,7 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 	/* Loading binary code is not thread safe. When another thread tries
 	   to load the same file, we may end up initializing twice the same
 	   module. */
-	mp_get_lock(1, symbol_value(@'mp::+load-compile-lock+'));
+	mp_get_lock(1, ecl_symbol_value(@'mp::+load-compile-lock+'));
 	CL_UNWIND_PROTECT_BEGIN {
 #endif
 	/* Try to load shared object file */
@@ -280,7 +280,7 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 		goto GO_ON;
 
 	/* Next try to call "init_FILE()" where FILE is the file name */
-	prefix = symbol_value(@'si::*init-function-prefix*');
+	prefix = ecl_symbol_value(@'si::*init-function-prefix*');
 	if (Null(prefix))
 		prefix = make_constant_base_string(INIT_PREFIX);
 	else
@@ -306,7 +306,7 @@ OUTPUT:
 #ifdef ECL_THREADS
 	(void)0; /* MSVC complains about missing ';' before '}' */
 	} CL_UNWIND_PROTECT_EXIT {
-	mp_giveup_lock(symbol_value(@'mp::+load-compile-lock+'));
+	mp_giveup_lock(ecl_symbol_value(@'mp::+load-compile-lock+'));
 	} CL_UNWIND_PROTECT_END;
 #endif
 	@(return output)
@@ -350,10 +350,10 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 }
 
 @(defun load (source
-	      &key (verbose symbol_value(@'*load-verbose*'))
-		   (print symbol_value(@'*load-print*'))
+	      &key (verbose ecl_symbol_value(@'*load-verbose*'))
+		   (print ecl_symbol_value(@'*load-print*'))
 		   (if_does_not_exist @':error')
-	           (search_list symbol_value(@'si::*load-search-list*'))
+	           (search_list ecl_symbol_value(@'si::*load-search-list*'))
 	      &aux pathname pntype hooks filename function ok)
 	bool not_a_filename = 0;
 @
@@ -371,7 +371,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 	pntype   = pathname->pathname.type;
 
 	filename = Cnil;
-	hooks = symbol_value(@'si::*load-hooks*');
+	hooks = ecl_symbol_value(@'si::*load-hooks*');
 	if (Null(pathname->pathname.directory) &&
 	    Null(pathname->pathname.host) &&
 	    Null(pathname->pathname.device) &&
@@ -396,7 +396,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		if (si_file_kind(filename, Ct) != @':file') {
 			filename = Cnil;
 		} else {
-			function = cl_cdr(assoc(pathname->pathname.type, hooks));
+			function = cl_cdr(ecl_assoc(pathname->pathname.type, hooks));
 		}
 	} else loop_for_in(hooks) {
 		/* Otherwise try with known extensions until a matching
@@ -420,8 +420,8 @@ NOT_A_FILENAME:
 		cl_format(3, Ct, make_constant_base_string("~&;;; Loading ~s~%"),
 			  filename);
 	}
-	bds_bind(@'*package*', symbol_value(@'*package*'));
-	bds_bind(@'*readtable*', symbol_value(@'*readtable*'));
+	bds_bind(@'*package*', ecl_symbol_value(@'*package*'));
+	bds_bind(@'*readtable*', ecl_symbol_value(@'*readtable*'));
 	bds_bind(@'*load-pathname*', not_a_filename? Cnil : source);
 	bds_bind(@'*load-truename*', not_a_filename? Cnil : cl_truename(filename));
 	if (!Null(function)) {

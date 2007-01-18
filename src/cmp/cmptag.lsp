@@ -135,7 +135,7 @@
 	    (wt-nl "if (VALUES(0)==MAKE_FIXNUM(" (tag-index tag) "))")
 	    (wt-go (tag-label tag))))
 	(when (var-ref-ccb tag-loc)
-	  (wt-nl "internal_error(\"GO found an inexistent tag\");"))
+	  (wt-nl "ecl_internal_error(\"GO found an inexistent tag\");"))
 	(wt-nl "}")
 	(let ((*unwind-exit* (cons label *unwind-exit*)))
 	  (c2tagbody-body body))

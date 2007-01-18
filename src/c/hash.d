@@ -236,7 +236,7 @@ SCAN:		if (depth++ >= 3) {
 			return 0;
 		}
 		for (i = 0; i < len; i++) {
-			h = _hash_equalp(depth, h, aref(x, i));
+			h = _hash_equalp(depth, h, ecl_aref(x, i));
 		}
 		return h;
 	case t_fixnum:
@@ -318,10 +318,10 @@ ecl_search_hash(cl_object key, cl_object hashtable)
 		}
 		switch (htest) {
 		case htt_eq:	b = key == hkey; break;
-		case htt_eql:	b = eql(key, hkey); break;
-		case htt_equal: b = equal(key, hkey); break;
-		case htt_equalp:b = equalp(key, hkey); break;
-		case htt_pack:	b = (ho==hkey) && string_eq(key,e->value->symbol.name);
+		case htt_eql:	b = ecl_eql(key, hkey); break;
+		case htt_equal: b = ecl_equal(key, hkey); break;
+		case htt_equalp:b = ecl_equalp(key, hkey); break;
+		case htt_pack:	b = (ho==hkey) && ecl_string_eq(key,e->value->symbol.name);
 				break;
 		}
 		if (b)
@@ -331,7 +331,7 @@ ecl_search_hash(cl_object key, cl_object hashtable)
 }
 
 cl_object
-gethash(cl_object key, cl_object hashtable)
+ecl_gethash(cl_object key, cl_object hashtable)
 {
 	cl_object output;
 
@@ -343,7 +343,7 @@ gethash(cl_object key, cl_object hashtable)
 }
 
 cl_object
-gethash_safe(cl_object key, cl_object hashtable, cl_object def)
+ecl_gethash_safe(cl_object key, cl_object hashtable, cl_object def)
 {
 	struct ecl_hashtable_entry *e;
 
@@ -390,7 +390,7 @@ add_new_to_hash(cl_object key, cl_object hashtable, cl_object value)
 }
 
 void
-sethash(cl_object key, cl_object hashtable, cl_object value)
+ecl_sethash(cl_object key, cl_object hashtable, cl_object value)
 {
 	cl_index i;
 	struct ecl_hashtable_entry *e;
@@ -424,10 +424,10 @@ ecl_extend_hashtable(cl_object hashtable)
 	/* We do the computation with lisp datatypes, just in case the sizes contain
 	 * weird numbers */
 	if (FIXNUMP(hashtable->hash.rehash_size)) {
-		new_size_obj = number_plus(hashtable->hash.rehash_size, MAKE_FIXNUM(old_size));
+		new_size_obj = ecl_plus(hashtable->hash.rehash_size, MAKE_FIXNUM(old_size));
 	} else {
-		new_size_obj = number_times(hashtable->hash.rehash_size, MAKE_FIXNUM(old_size));
-		new_size_obj = ceiling1(new_size_obj);
+		new_size_obj = ecl_times(hashtable->hash.rehash_size, MAKE_FIXNUM(old_size));
+		new_size_obj = ecl_ceiling1(new_size_obj);
 	}
 	if (!FIXNUMP(new_size_obj)) {
 		/* New size is too large */
@@ -457,8 +457,8 @@ ecl_extend_hashtable(cl_object hashtable)
 
 @(defun make_hash_table (&key (test @'eql')
 			      (size MAKE_FIXNUM(1024))
-			      (rehash_size make_singlefloat(1.5))
-			      (rehash_threshold make_singlefloat(0.7))
+			      (rehash_size ecl_make_singlefloat(1.5))
+			      (rehash_threshold ecl_make_singlefloat(0.7))
 			      (lockable Cnil))
 @
 	@(return cl__make_hash_table(test, size, rehash_size, rehash_threshold,
@@ -492,7 +492,7 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 		hsize = 16;
 	}
  AGAIN:
-	if (number_minusp(rehash_size)) {
+	if (ecl_minusp(rehash_size)) {
 	ERROR1:
 		rehash_size =
 			ecl_type_error(@'make-hash-table',"rehash-size",
@@ -501,17 +501,17 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 		goto AGAIN;
 	}
 	if (floatp(rehash_size)) {
-		if (number_compare(rehash_size, MAKE_FIXNUM(1)) < 0 ||
-		    number_minusp(rehash_size)) {
+		if (ecl_number_compare(rehash_size, MAKE_FIXNUM(1)) < 0 ||
+		    ecl_minusp(rehash_size)) {
 			goto ERROR1;
 		}
-		rehash_size = make_doublefloat(number_to_double(rehash_size));
+		rehash_size = ecl_make_doublefloat(ecl_to_double(rehash_size));
 	} else if (!FIXNUMP(rehash_size)) {
 		goto ERROR1;
 	}
-	while (!numberp(rehash_threshold) ||
-	       number_minusp(rehash_threshold) ||
-	       number_compare(rehash_threshold, MAKE_FIXNUM(1)) > 0)
+	while (!ecl_numberp(rehash_threshold) ||
+	       ecl_minusp(rehash_threshold) ||
+	       ecl_number_compare(rehash_threshold, MAKE_FIXNUM(1)) > 0)
 	{
 		rehash_threshold =
 			ecl_type_error(@'make-hash-table',"rehash-threshold",
@@ -526,7 +526,7 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 	h->hash.size = hsize;
 	h->hash.rehash_size = rehash_size;
 	h->hash.threshold = rehash_threshold;
-	h->hash.factor = number_to_double(rehash_threshold);
+	h->hash.factor = ecl_to_double(rehash_threshold);
 	if (h->hash.factor < 0.1) {
 		h->hash.factor = 0.1;
 	}
@@ -568,13 +568,13 @@ cl_hash_table_p(cl_object ht)
 cl_object
 si_hash_set(cl_object key, cl_object ht, cl_object val)
 {
-	/* INV: sethash() checks the type of hashtable */
-	sethash(key, ht, val);
+	/* INV: ecl_sethash() checks the type of hashtable */
+	ecl_sethash(key, ht, val);
 	@(return val)
 }
 
 bool
-remhash(cl_object key, cl_object hashtable)
+ecl_remhash(cl_object key, cl_object hashtable)
 {
 	struct ecl_hashtable_entry *e;
 	bool output;
@@ -598,7 +598,7 @@ cl_object
 cl_remhash(cl_object key, cl_object ht)
 {
 	/* INV: ecl_search_hash() checks the type of hashtable */
-	@(return (remhash(key, ht)? Ct : Cnil));
+	@(return (ecl_remhash(key, ht)? Ct : Cnil));
 }
 
 cl_object

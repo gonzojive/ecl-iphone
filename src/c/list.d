@@ -57,19 +57,19 @@ test_eq(struct cl_test *t, cl_object x)
 static bool
 test_eql(struct cl_test *t, cl_object x)
 {
-	return eql(t->item_compared, (t->key_c_function)(t, x));
+	return ecl_eql(t->item_compared, (t->key_c_function)(t, x));
 }
 
 static bool
 test_equal(struct cl_test *t, cl_object x)
 {
-	return equal(t->item_compared, (t->key_c_function)(t, x));
+	return ecl_equal(t->item_compared, (t->key_c_function)(t, x));
 }
 
 static bool
 test_equalp(struct cl_test *t, cl_object x)
 {
-	return equalp(t->item_compared, (t->key_c_function)(t, x));
+	return ecl_equalp(t->item_compared, (t->key_c_function)(t, x));
 }
 
 static cl_object
@@ -187,7 +187,7 @@ copy_list_to(cl_object x, cl_object **z)
 @)
 
 cl_object
-append(cl_object x, cl_object y)
+ecl_append(cl_object x, cl_object y)
 {
 	cl_object w, *z;
 
@@ -252,7 +252,7 @@ defcxr(cddddr, x, cdr(cdr(cdr(cdr(x)))))
 #undef cdr
 
 #define LENTH(n) (cl_object x) {\
-	return1(nth(n, x));\
+	return1(ecl_nth(n, x));\
 }
 cl_object @fifth	LENTH(4)
 cl_object @sixth	LENTH(5)
@@ -305,7 +305,7 @@ cl_endp(cl_object x)
 }
 
 bool
-endp(cl_object x)
+ecl_endp(cl_object x)
 {
 	if (CONSP(x))
 		return(FALSE);
@@ -337,11 +337,11 @@ cl_list_length(cl_object x)
 cl_object
 cl_nth(cl_object n, cl_object x)
 {
-	@(return nth(fixint(n), x))
+	@(return ecl_nth(fixint(n), x))
 }
 
 cl_object
-nth(cl_fixnum n, cl_object x)
+ecl_nth(cl_fixnum n, cl_object x)
 {
 	if (n < 0)
 		FEtype_error_index(x, MAKE_FIXNUM(n));
@@ -359,15 +359,15 @@ nth(cl_fixnum n, cl_object x)
 cl_object
 cl_nthcdr(cl_object n, cl_object x)
 {
-	@(return nthcdr(fixint(n), x))
+	@(return ecl_nthcdr(fixint(n), x))
 }
 
 cl_object
-nthcdr(cl_fixnum n, cl_object x)
+ecl_nthcdr(cl_fixnum n, cl_object x)
 {
 	if (n < 0)
 		FEtype_error_index(x, MAKE_FIXNUM(n));
-	while (n-- > 0 && !endp(x))
+	while (n-- > 0 && !ecl_endp(x))
 		x = CDR(x);
 	return(x);
 }
@@ -464,7 +464,7 @@ cl_revappend(cl_object x, cl_object y)
 @)
 
 cl_object
-nconc(cl_object l, cl_object y)
+ecl_nconc(cl_object l, cl_object y)
 {
 	cl_object x = l, x1;
 
@@ -535,7 +535,7 @@ cl_nreconc(cl_object l, cl_object y)
 		if (delay) delay--; else r = CDR(r);
 	} end_loop_for_on;
 	if (delay > 0)
-		/* nn > length(lis) */
+		/* nn > ecl_length(lis) */
 		lis = Cnil;
 	else
 		CDR(r) = Cnil;
@@ -548,7 +548,7 @@ cl_ldiff(cl_object x, cl_object y)
 	cl_object res = Cnil, *fill = &res;
 
 	loop_for_on(x) {
-		if (eql(x, y))
+		if (ecl_eql(x, y))
 			@(return res)
 		else
 			fill = &CDR(*fill = CONS(CAR(x), Cnil));
@@ -557,7 +557,7 @@ cl_ldiff(cl_object x, cl_object y)
 	   in the list. When Y was not a member of the list, LDIFF must set
 	   this value in the output, because it produces an exact copy of the
 	   dotted list. */
-	if (!eql(x, y))
+	if (!ecl_eql(x, y))
 		*fill = x;
 	@(return res)
 }
@@ -705,7 +705,7 @@ nsublis(struct cl_test *t, cl_object alist, cl_object *treep)
 @)
 
 bool
-member_eq(cl_object x, cl_object l)
+ecl_member_eq(cl_object x, cl_object l)
 {
 	loop_for_in(l) {
 		if (x == CAR(l))
@@ -726,20 +726,20 @@ si_memq(cl_object x, cl_object l)
 
 /* Added for use by the compiler, instead of open coding them. Beppe */
 cl_object
-memql(cl_object x, cl_object l)
+ecl_memql(cl_object x, cl_object l)
 {
 	loop_for_in(l) {
-		if (eql(x, CAR(l)))
+		if (ecl_eql(x, CAR(l)))
 			return(l);
 	} end_loop_for_in;
 	return(Cnil);
 }
 
 cl_object
-member(cl_object x, cl_object l)
+ecl_member(cl_object x, cl_object l)
 {
 	loop_for_in(l) {
-		if (equal(x, CAR(l)))
+		if (ecl_equal(x, CAR(l)))
 			return(l);
 	} end_loop_for_in;
 	return(Cnil);
@@ -765,7 +765,7 @@ cl_object
 cl_tailp(cl_object y, cl_object x)
 {
 	loop_for_on(x) {
-		if (eql(x, y))
+		if (ecl_eql(x, y))
 			@(return Ct)
 	} end_loop_for_on;
 	return cl_eql(x, y);
@@ -802,12 +802,12 @@ cl_acons(cl_object x, cl_object y, cl_object z)
 	k = keys;
 	d = data;
 	loop_for_in(k) {
-		if (endp(d))
+		if (ecl_endp(d))
 			goto error;
 		a_list = CONS(CONS(CAR(k), CAR(d)), a_list);
 		d = CDR(d);
 	} end_loop_for_in;
-	if (!endp(d))
+	if (!ecl_endp(d))
 error:	    FEerror("The keys ~S and the data ~S are not of the same length",
 		    2, keys, data);
 	@(return a_list)
@@ -870,7 +870,7 @@ ecl_remove_eq(cl_object x, cl_object l)
 
 /* Added for use by the compiler, instead of open coding them. Beppe */
 cl_object
-assq(cl_object x, cl_object l)
+ecl_assq(cl_object x, cl_object l)
 {
 	loop_for_in(l) {
 		if (x == CAAR(l))
@@ -880,30 +880,30 @@ assq(cl_object x, cl_object l)
 }
 
 cl_object
-assql(cl_object x, cl_object l)
+ecl_assql(cl_object x, cl_object l)
 {
 	loop_for_in(l) {
-		if (eql(x, CAAR(l)))
+		if (ecl_eql(x, CAAR(l)))
 			return(CAR(l));
 	} end_loop_for_in;
 	return(Cnil);
 }
 
 cl_object
-assoc(cl_object x, cl_object l)
+ecl_assoc(cl_object x, cl_object l)
 {
 	loop_for_in(l) {
-		if (equal(x, CAAR(l)))
+		if (ecl_equal(x, CAAR(l)))
 			return(CAR(l));
 	} end_loop_for_in;
 	return(Cnil);
 }
 
 cl_object
-assqlp(cl_object x, cl_object l)
+ecl_assqlp(cl_object x, cl_object l)
 {
 	loop_for_in(l) {
-		if (equalp(x, CAR(CAR(l))))
+		if (ecl_equalp(x, CAR(CAR(l))))
 			return(CAR(l));
 	} end_loop_for_in;
 	return(Cnil);

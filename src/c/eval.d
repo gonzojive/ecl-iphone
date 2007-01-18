@@ -96,7 +96,7 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 				     fun->cclosure.env, cl_env.stack_top - narg);
 #ifdef CLOS
 	case t_instance:
-		fun = compute_method(narg, fun, cl_env.stack_top - narg);
+		fun = _ecl_compute_method(narg, fun, cl_env.stack_top - narg);
 		if (fun == NULL)
 			return VALUES(0);
 		goto AGAIN;
@@ -107,7 +107,7 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 		fun = SYM_FUN(fun);
 		goto AGAIN;
 	case t_bytecodes:
-		return lambda_apply(narg, fun);
+		return ecl_apply_lambda(narg, fun);
 	default:
 	ERROR:
 		FEinvalid_function(x);
@@ -119,7 +119,7 @@ cl_apply_from_stack(cl_index narg, cl_object x)
  *----------------------------------------------------------------------*/
 
 cl_object
-link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_list args)
+_ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_list args)
 {
 	cl_index sp;
 	cl_object out, fun = ecl_fdefinition(sym);
@@ -143,8 +143,8 @@ link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_lis
 		} else {
 			if (pLK) {
 				si_put_sysprop(sym, @'si::link-from',
-					       CONS(CONS(make_unsigned_integer((cl_index)pLK),
-							 make_unsigned_integer((cl_index)*pLK)),
+					       CONS(CONS(ecl_make_unsigned_integer((cl_index)pLK),
+							 ecl_make_unsigned_integer((cl_index)*pLK)),
 						    si_get_sysprop(sym, @'si::link-from')));
 				*pLK = fun->cfun.entry;
 				cblock->cblock.links =
@@ -155,7 +155,7 @@ link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_lis
 		break;
 #ifdef CLOS
 	case t_instance: {
-		fun = compute_method(narg, fun, cl_env.stack + sp);
+		fun = _ecl_compute_method(narg, fun, cl_env.stack + sp);
 		pLK = NULL;
 		if (fun == NULL) {
 			out = VALUES(0);
@@ -169,7 +169,7 @@ link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_lis
 				    fun->cclosure.env, cl_env.stack + sp);
 		break;
 	case t_bytecodes:
-		out = lambda_apply(narg, fun);
+		out = ecl_apply_lambda(narg, fun);
 		break;
 	default:
 	ERROR:
@@ -188,8 +188,8 @@ si_unlink_symbol(cl_object s)
 	if (!SYMBOLP(s))
 		FEtype_error_symbol(s);
 	pl = si_get_sysprop(s, @'si::link-from');
-	if (!endp(pl)) {
-		for (; !endp(pl); pl = CDR(pl)) {
+	if (!ecl_endp(pl)) {
+		for (; !ecl_endp(pl); pl = CDR(pl)) {
 			cl_object record = CAR(pl);
 			void **location = (void **)fixnnint(CAR(record));
 			void *original = (void *)fixnnint(CDR(record));
@@ -229,7 +229,7 @@ si_unlink_symbol(cl_object s)
 		break;
 #ifdef CLOS
 	case t_instance:
-		fun = compute_method(narg, fun, cl_env.stack + sp);
+		fun = _ecl_compute_method(narg, fun, cl_env.stack + sp);
 		if (fun == NULL) {
 			out = VALUES(0);
 			break;
@@ -242,7 +242,7 @@ si_unlink_symbol(cl_object s)
 		fun = SYM_FUN(fun);
 		goto AGAIN;
 	case t_bytecodes:
-		out = lambda_apply(narg, fun);
+		out = ecl_apply_lambda(narg, fun);
 		break;
 	default:
 	ERROR:

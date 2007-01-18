@@ -108,7 +108,7 @@ cl_alloc_object(cl_type t)
 		break;
 	default:
 		printf("\ttype = %d\n", t);
-		error("alloc botch.");
+		ecl_internal_error("alloc botch.");
 	}
 	obj->d.t = t;
 	return obj;
@@ -119,7 +119,7 @@ cl_alloc_object(cl_type t)
 #endif
 
 cl_object
-make_cons(cl_object a, cl_object d)
+ecl_cons(cl_object a, cl_object d)
 {
 	cl_object obj;
 
@@ -311,8 +311,8 @@ si_gc_stats(cl_object enable)
 	cl_object old_status = cl_core.gc_stats? Ct : Cnil;
 	cl_object origin = MAKE_FIXNUM(MOST_POSITIVE_FIXNUM);
 	cl_core.gc_stats = (enable != Cnil);
-	@(return number_minus(cl_core.bytes_consed,origin)
-	  number_minus(cl_core.gc_counter,origin)
+	@(return ecl_minus(cl_core.bytes_consed,origin)
+	  ecl_minus(cl_core.gc_counter,origin)
 	  old_status)
 }
 

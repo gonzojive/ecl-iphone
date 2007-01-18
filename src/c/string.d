@@ -50,7 +50,7 @@ do_make_string(cl_index s, cl_index code)
 	cl_index s;
 	cl_object x;
 @
-	s = object_to_index(size);
+	s = ecl_to_index(size);
 	/* INV: ecl_[base_]char_code() checks the type of initial_element() */
 	if (element_type == @'base-char' || element_type == @'standard-char') {
 		int code = ecl_base_char_code(initial_element);
@@ -302,7 +302,7 @@ AGAIN:
 cl_object
 cl_char(cl_object object, cl_object index)
 {
-	cl_index position = object_to_index(index);
+	cl_index position = ecl_to_index(index);
 	@(return CODE_CHAR(ecl_char(object, position)))
 }
 
@@ -315,12 +315,12 @@ ecl_char(cl_object object, cl_index index)
 #ifdef ECL_UNICODE
 	case t_string:
 		if (index >= object->string.dim)
-			illegal_index(object, MAKE_FIXNUM(index));
+			FEillegal_index(object, MAKE_FIXNUM(index));
 		return CHAR_CODE(object->string.self[index]);
 #endif
 	case t_base_string:
 		if (index >= object->base_string.dim)
-			illegal_index(object, MAKE_FIXNUM(index));
+			FEillegal_index(object, MAKE_FIXNUM(index));
 		return object->base_string.self[index];
 	default:
 		object = ecl_type_error(@'char',"",object,@'string');
@@ -331,7 +331,7 @@ ecl_char(cl_object object, cl_index index)
 cl_object
 si_char_set(cl_object object, cl_object index, cl_object value)
 {
-	cl_index position = object_to_index(index);
+	cl_index position = ecl_to_index(index);
 	cl_index c = ecl_char_code(value);
 	ecl_char_set(object, position, c);
 	@(return value)
@@ -346,13 +346,13 @@ ecl_char_set(cl_object object, cl_index index, cl_index value)
 #ifdef ECL_UNICODE
 	case t_string:
 		if (index >= object->string.dim)
-			illegal_index(object, MAKE_FIXNUM(index));
+			FEillegal_index(object, MAKE_FIXNUM(index));
 		object->string.self[index] = CODE_CHAR(value);
 		break;
 #endif
 	case t_base_string:
 		if (index >= object->base_string.dim)
-			illegal_index(object, MAKE_FIXNUM(index));
+			FEillegal_index(object, MAKE_FIXNUM(index));
 		/* INV: ecl_char_code() checks type of value */
 		object->base_string.self[index] = value;
 		break;
@@ -511,7 +511,7 @@ compare_base(char *s1, cl_index l1, char *s2, cl_index l2, int case_sensitive, c
 	This correponds to string= (just the string equality).
 */
 bool
-string_eq(cl_object x, cl_object y)
+ecl_string_eq(cl_object x, cl_object y)
 {
 	cl_index i, j;
  AGAIN:
@@ -539,7 +539,7 @@ string_eq(cl_object x, cl_object y)
 	case t_base_string:
 		switch(type_of(y)) {
 		case t_string:
-			return string_eq(y, x);
+			return ecl_string_eq(y, x);
 		case t_base_string:
 			return memcmp(x->base_string.self, y->base_string.self, i) == 0;
 		default:
@@ -687,7 +687,7 @@ string_compare(cl_narg narg, int sign1, int sign2, int case_sensitive, cl_va_lis
 @)
 
 bool
-member_char(int c, cl_object char_bag)
+ecl_member_char(int c, cl_object char_bag)
 {
 	cl_index i, f;
  AGAIN:
@@ -739,18 +739,18 @@ string_trim0(bool left_trim, bool right_trim, cl_object char_bag, cl_object strn
 
 	strng = cl_string(strng);
 	i = 0;
-	j = length(strng);
+	j = ecl_length(strng);
 	if (left_trim) {
 		for (;  i < j;  i++) {
 			cl_index c = ecl_char(strng, i);
-			if (!member_char(c, char_bag))
+			if (!ecl_member_char(c, char_bag))
 				break;
 		}
 	}
 	if (right_trim) {
 		for (; j > i; j--) {
 			cl_index c = ecl_char(strng, j-1);
-			if (!member_char(c, char_bag)) {
+			if (!ecl_member_char(c, char_bag)) {
 				break;
 			}
 		}

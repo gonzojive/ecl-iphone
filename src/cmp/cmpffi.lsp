@@ -150,7 +150,7 @@
 	    (wt "((" (rep-type-name dest-rep-type) ")" loc ")"))
 	   ((:object)
 	    (ensure-valid-object-type dest-type)
-	    (wt (if (subtypep (loc-type loc) 'fixnum) "fix(" "object_to_fixnum(")
+	    (wt (if (subtypep (loc-type loc) 'fixnum) "fix(" "ecl_to_fixnum(")
 		loc ")"))
 	   (otherwise
 	    (coercion-error))))
@@ -161,7 +161,7 @@
 	    (wt "((" (rep-type-name dest-rep-type) ")" loc ")"))
 	   ((:object)
 	    (ensure-valid-object-type dest-type)
-	    (wt (if (subtypep (loc-type loc) 'fixnum) "fix(" "object_to_unsigned_integer(")
+	    (wt (if (subtypep (loc-type loc) 'fixnum) "fix(" "ecl_to_unsigned_integer(")
 		loc ")"))
 	   (otherwise
 	    (coercion-error))))
@@ -183,7 +183,7 @@
 	    ;; We relax the check a bit, because it is valid in C to coerce
 	    ;; between floats of different types.
 	    (ensure-valid-object-type 'FLOAT)
-	    (wt (if (eq loc-rep-type :float) "object_to_float(" "object_to_double(")
+	    (wt (if (eq loc-rep-type :float) "ecl_to_float(" "ecl_to_double(")
 		loc ")"))
 	   (otherwise
 	    (coercion-error))))
@@ -199,19 +199,19 @@
 	((:object)
 	 (case loc-rep-type
 	   ((:int :long)
-	    (wt "make_integer(" loc ")"))
+	    (wt "ecl_make_integer(" loc ")"))
 	   ((:unsigned-int :unsigned-long)
-	    (wt "make_unsigned_integer(" loc ")"))
+	    (wt "ecl_make_unsigned_integer(" loc ")"))
 	   ((:byte :unsigned-byte :fixnum)
 	    (wt "MAKE_FIXNUM(" loc ")"))
 	   ((:float)
 	    (if (and (consp loc) (eq (first loc) 'SINGLE-FLOAT-VALUE))
 		(wt (third loc)) ;; VV index
-		(wt "make_singlefloat(" loc ")")))
+		(wt "ecl_make_singlefloat(" loc ")")))
 	   ((:double)
 	    (if (and (consp loc) (eq (first loc) 'DOUBLE-FLOAT-VALUE))
 		(wt (third loc)) ;; VV index
-		(wt "make_doublefloat(" loc ")")))
+		(wt "ecl_make_doublefloat(" loc ")")))
 	   ((:bool)
 	    (wt "((" loc ")?Ct:Cnil)"))
 	   ((:char :unsigned-char :wchar)

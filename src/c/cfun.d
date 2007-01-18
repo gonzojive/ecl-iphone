@@ -61,7 +61,7 @@ void
 cl_def_c_function(cl_object sym, void *c_function, int narg)
 {
 	si_fset(2, sym,
-		cl_make_cfun(c_function, sym, symbol_value(@'si::*cblock*'), narg));
+		cl_make_cfun(c_function, sym, ecl_symbol_value(@'si::*cblock*'), narg));
 }
 
 void
@@ -69,8 +69,8 @@ cl_def_c_macro(cl_object sym, void *c_function, int narg)
 {
 	si_fset(3, sym,
 		(narg >= 0)?
-		cl_make_cfun(c_function, sym, symbol_value(@'si::*cblock*'), 2):
-		cl_make_cfun_va(c_function, sym, symbol_value(@'si::*cblock*')),
+		cl_make_cfun(c_function, sym, ecl_symbol_value(@'si::*cblock*'), 2):
+		cl_make_cfun_va(c_function, sym, ecl_symbol_value(@'si::*cblock*')),
 		Ct);
 }
 
@@ -78,7 +78,7 @@ void
 cl_def_c_function_va(cl_object sym, void *c_function)
 {
 	si_fset(2, sym,
-		cl_make_cfun_va(c_function, sym, symbol_value(@'si::*cblock*')));
+		cl_make_cfun_va(c_function, sym, ecl_symbol_value(@'si::*cblock*')));
 }
 
 cl_object

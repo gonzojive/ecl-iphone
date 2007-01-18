@@ -393,7 +393,7 @@ si_lookup_host_entry(cl_object host_or_address)
 	for (i = 0; he->h_addr_list[i]; i++) {
 		unsigned long *s = (unsigned long*)(he->h_addr_list[i]);
 		l = *s;
-		addresses = CONS(make_integer(l), addresses);
+		addresses = CONS(ecl_make_integer(l), addresses);
 	}
 	@(return name aliases addresses)
 }

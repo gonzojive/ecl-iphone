@@ -182,7 +182,7 @@ cl_boot(int argc, char **argv)
 #endif
 
 #if !defined(MSDOS) && !defined(cygwin)
-	ecl_self = expand_pathname(ecl_self);
+	ecl_self = ecl_expand_pathname(ecl_self);
 #endif
 
 	/*
@@ -217,29 +217,29 @@ cl_boot(int argc, char **argv)
 	cl_core.packages_to_be_created = OBJNULL;
 
 	cl_core.lisp_package =
-	    make_package(make_constant_base_string("COMMON-LISP"),
+	    ecl_make_package(make_constant_base_string("COMMON-LISP"),
 			 CONS(make_constant_base_string("CL"),
 			      CONS(make_constant_base_string("LISP"),Cnil)),
 			 Cnil);
 	cl_core.user_package =
-	    make_package(make_constant_base_string("COMMON-LISP-USER"),
+	    ecl_make_package(make_constant_base_string("COMMON-LISP-USER"),
 			 CONS(make_constant_base_string("CL-USER"),
 			      CONS(make_constant_base_string("USER"),Cnil)),
 			 CONS(cl_core.lisp_package, Cnil));
-	cl_core.keyword_package = make_package(make_constant_base_string("KEYWORD"),
+	cl_core.keyword_package = ecl_make_package(make_constant_base_string("KEYWORD"),
 					       Cnil, Cnil);
-	cl_core.system_package = make_package(make_constant_base_string("SI"),
+	cl_core.system_package = ecl_make_package(make_constant_base_string("SI"),
 					      CONS(make_constant_base_string("SYSTEM"),
 						   CONS(make_constant_base_string("SYS"),
 							CONS(make_constant_base_string("EXT"),
 							     Cnil))),
 					      CONS(cl_core.lisp_package, Cnil));
 #ifdef CLOS
-	cl_core.clos_package = make_package(make_constant_base_string("CLOS"),
+	cl_core.clos_package = ecl_make_package(make_constant_base_string("CLOS"),
 					    Cnil, CONS(cl_core.lisp_package, Cnil));
 #endif
 #ifdef ECL_THREADS
-	cl_core.mp_package = make_package(make_constant_base_string("MP"),
+	cl_core.mp_package = ecl_make_package(make_constant_base_string("MP"),
 					  CONS(make_constant_base_string("MULTIPROCESSING"), Cnil),
 					  CONS(cl_core.lisp_package, Cnil));
 #endif
@@ -267,14 +267,14 @@ cl_boot(int argc, char **argv)
 	 */
 	cl_core.char_names = aux =
 	    cl__make_hash_table(@'equalp', MAKE_FIXNUM(128), /* size */
-				make_singlefloat(1.5f), /* rehash-size */
-				make_singlefloat(0.5f), /* rehash-threshold */
+				ecl_make_singlefloat(1.5f), /* rehash-size */
+				ecl_make_singlefloat(0.5f), /* rehash-threshold */
 				Cnil); /* thread-safe */
 	for (i = 0; char_names[i].code >= 0; i++) {
 		cl_object name = make_constant_base_string(char_names[i].name);
 		cl_object code = CODE_CHAR(char_names[i].code);
-		sethash(name, aux, code);
-		sethash(code, aux, name);
+		ecl_sethash(name, aux, code);
+		ecl_sethash(code, aux, name);
 	}
 
 	/* LIBRARIES is an adjustable vector of objects. It behaves as
@@ -293,8 +293,8 @@ cl_boot(int argc, char **argv)
 					    @'nil', @'nil');
 #endif
 	cl_core.to_be_finalized = Cnil;
-	cl_core.bytes_consed = make_integer(MOST_POSITIVE_FIXNUM+1);
-	cl_core.gc_counter = make_integer(MOST_POSITIVE_FIXNUM+1);
+	cl_core.bytes_consed = ecl_make_integer(MOST_POSITIVE_FIXNUM+1);
+	cl_core.gc_counter = ecl_make_integer(MOST_POSITIVE_FIXNUM+1);
 	cl_core.gc_stats = FALSE;
 
 	cl_core.null_string = make_constant_base_string("");
@@ -303,20 +303,20 @@ cl_boot(int argc, char **argv)
 
 	cl_core.system_properties =
 	    cl__make_hash_table(@'equal', MAKE_FIXNUM(1024), /* size */
-				make_singlefloat(1.5f), /* rehash-size */
-				make_singlefloat(0.75f), /* rehash-threshold */
+				ecl_make_singlefloat(1.5f), /* rehash-size */
+				ecl_make_singlefloat(0.75f), /* rehash-threshold */
 				Ct); /* thread-safe */
 
 	cl_core.gensym_prefix = make_constant_base_string("G");
 	cl_core.gentemp_prefix = make_constant_base_string("T");
 	cl_core.gentemp_counter = MAKE_FIXNUM(0);
 
-	ECL_SET(@'si::c-int-max', make_integer(INT_MAX));
-	ECL_SET(@'si::c-int-min', make_integer(INT_MIN));
-	ECL_SET(@'si::c-long-max', make_integer(LONG_MAX));
-	ECL_SET(@'si::c-long-min', make_integer(LONG_MIN));
-	ECL_SET(@'si::c-uint-max', make_unsigned_integer(UINT_MAX));
-	ECL_SET(@'si::c-ulong-max', make_unsigned_integer(ULONG_MAX));
+	ECL_SET(@'si::c-int-max', ecl_make_integer(INT_MAX));
+	ECL_SET(@'si::c-int-min', ecl_make_integer(INT_MIN));
+	ECL_SET(@'si::c-long-max', ecl_make_integer(LONG_MAX));
+	ECL_SET(@'si::c-long-min', ecl_make_integer(LONG_MIN));
+	ECL_SET(@'si::c-uint-max', ecl_make_unsigned_integer(UINT_MAX));
+	ECL_SET(@'si::c-ulong-max', ecl_make_unsigned_integer(ULONG_MAX));
 
 	init_number();
 	init_unixtime();
@@ -335,8 +335,8 @@ cl_boot(int argc, char **argv)
 
 #ifdef ECL_THREADS
 	cl_env.bindings_hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
-						   make_singlefloat(1.5f),
-						   make_singlefloat(0.75f),
+						   ecl_make_singlefloat(1.5f),
+						   ecl_make_singlefloat(0.75f),
 						   Cnil); /* no locking */
 	ECL_SET(@'mp::*current-process*', cl_env.own_process);
 #endif
@@ -355,7 +355,7 @@ cl_boot(int argc, char **argv)
 	ECL_SET(@'*default-pathname-defaults*', si_getcwd());
 #else
 	ECL_SET(@'*default-pathname-defaults*',
-		make_pathname(Cnil, Cnil, Cnil, Cnil, Cnil, Cnil));
+		ecl_make_pathname(Cnil, Cnil, Cnil, Cnil, Cnil, Cnil));
 #endif
 
 	@si::pathname-translations(2,make_constant_base_string("SYS"),
@@ -393,8 +393,8 @@ cl_boot(int argc, char **argv)
 #ifdef CLOS
 	ECL_SET(@'si::*class-name-hash-table*',
 		cl__make_hash_table(@'eq', MAKE_FIXNUM(1024), /* size */
-				    make_singlefloat(1.5f), /* rehash-size */
-				    make_singlefloat(0.75f), /* rehash-threshold */
+				    ecl_make_singlefloat(1.5f), /* rehash-size */
+				    ecl_make_singlefloat(0.75f), /* rehash-threshold */
 				    Ct)); /* thread safe */
 #endif
 
@@ -407,12 +407,12 @@ cl_boot(int argc, char **argv)
 			@'&aux', @'&whole', @'&environment', @'&body'));
 
 	features = cl_list(4,
-			   make_keyword("ECL"),
-			   make_keyword("COMMON"),
-			   make_keyword(ECL_ARCHITECTURE),
-			   make_keyword("FFI"));
+			   ecl_make_keyword("ECL"),
+			   ecl_make_keyword("COMMON"),
+			   ecl_make_keyword(ECL_ARCHITECTURE),
+			   ecl_make_keyword("FFI"));
 
-#define ADD_FEATURE(name) features = CONS(make_keyword(name),features)
+#define ADD_FEATURE(name) features = CONS(ecl_make_keyword(name),features)
 
 #ifdef WITH_GMP
         ADD_FEATURE("COMMON-LISP");
@@ -485,7 +485,7 @@ cl_boot(int argc, char **argv)
 	ECL_SET(@'*package*', cl_core.lisp_package);
 
 	/* This has to come before init_LSP/CLOS, because we need
-	 * clear_compiler_properties() to work in init_CLOS(). */
+	 * ecl_clear_compiler_properties() to work in init_CLOS(). */
 	ecl_booted = 1;
 
 	read_VV(OBJNULL,init_lib_LSP);
@@ -578,7 +578,7 @@ si_setenv(cl_object var, cl_object value)
 cl_object
 si_pointer(cl_object x)
 {
-	@(return make_unsigned_integer((cl_index)x))
+	@(return ecl_make_unsigned_integer((cl_index)x))
 }
 
 #if defined(_MSC_VER) || defined(mingw32)

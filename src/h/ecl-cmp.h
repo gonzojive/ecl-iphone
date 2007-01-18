@@ -23,4 +23,4 @@
 
 #define TRAMPOLINK(narg, vv, lk, cblock) \
 	cl_va_list args; cl_va_start(args, narg, narg, 0); \
-	return(link_call(vv, (cl_objectfn *)lk, cblock, narg, args))
+	return(_ecl_link_call(vv, (cl_objectfn *)lk, cblock, narg, args))

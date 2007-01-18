@@ -69,7 +69,7 @@ void
 ecl_register_root(cl_object *p)
 {
 	if (gc_roots >= GC_ROOT_MAX)
-		error("too many roots");
+		ecl_internal_error("too many roots");
 	gc_root[gc_roots++] = p;
 }
 
@@ -77,7 +77,7 @@ cl_object
 si_gc(cl_object area)
 {
 	if (!GC_enabled())
-		error("GC is not enabled");
+		ecl_internal_error("GC is not enabled");
 	if (Null(area))
 		ecl_gc(t_cons);
 	else
@@ -121,7 +121,7 @@ BEGIN:
 #endif
 	if (x->d.m) {
 	  if (x->d.m == FREE)
-	    error("mark_object: pointer to free object.");
+	    ecl_internal_error("mark_object: pointer to free object.");
 	  else
 	    return;
 	}
@@ -248,7 +248,7 @@ BEGIN:
 			j = x->array.dim * sizeof(int8_t);
 			break;
 		default:
-			error("Allocation botch: unknown array element type");
+			ecl_internal_error("Allocation botch: unknown array element type");
 		}
 		goto COPY_ARRAY;
 	case t_base_string:
@@ -310,7 +310,7 @@ BEGIN:
 			break;
 
 		default:
-			error("mark stream botch");
+			ecl_internal_error("mark stream botch");
 		}
 		break;
 
@@ -413,7 +413,7 @@ BEGIN:
 	default:
 		if (debug)
 			printf("\ttype = %d\n", type_of(x));
-		error("mark botch");
+		ecl_internal_error("mark botch");
 	}
 }
 
@@ -732,7 +732,7 @@ ecl_gc(cl_type t)
 		fflush(stdout);
 	}
 
-	debug = symbol_value(@'si::*gc-message*') != Cnil;
+	debug = ecl_symbol_value(@'si::*gc-message*') != Cnil;
 
 	if (GC_enter_hook != NULL)
 		(*GC_enter_hook)();

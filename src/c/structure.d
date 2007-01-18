@@ -64,7 +64,7 @@ structure_to_list(cl_object x)
 
 	s = si_get_sysprop(SNAME(x), @'si::structure-slot-descriptions');
 	p = &CDR(r = CONS(SNAME(x), Cnil));
-	for (i=0, n=SLENGTH(x);  !endp(s) && i<n;  s=CDR(s), i++) {
+	for (i=0, n=SLENGTH(x);  !ecl_endp(s) && i<n;  s=CDR(s), i++) {
 		p = &(CDR(*p = CONS(cl_car(CAR(s)), Cnil)));
 		p = &(CDR(*p = CONS(SLOT(x, i), Cnil)));
 	}
@@ -153,7 +153,7 @@ si_structure_ref(cl_object x, cl_object type, cl_object index)
 }
 
 cl_object
-structure_ref(cl_object x, cl_object name, int n)
+ecl_structure_ref(cl_object x, cl_object name, int n)
 {
 
 	if (type_of(x) != T_STRUCTURE ||
@@ -173,7 +173,7 @@ si_structure_set(cl_object x, cl_object type, cl_object index, cl_object val)
 }
 
 cl_object
-structure_set(cl_object x, cl_object name, int n, cl_object v)
+ecl_structure_set(cl_object x, cl_object name, int n, cl_object v)
 {
 
 	if (type_of(x) != T_STRUCTURE ||

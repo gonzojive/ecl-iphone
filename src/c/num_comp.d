@@ -20,16 +20,16 @@
 	int i;
 @
 	/* ANSI: Need not signal error for 1 argument */
-	/* INV: For >= 2 arguments, number_equalp() performs checks */
+	/* INV: For >= 2 arguments, ecl_number_equalp() performs checks */
 	for (i = 1; i < narg; i++)
-		if (!number_equalp(num, cl_va_arg(nums)))
+		if (!ecl_number_equalp(num, cl_va_arg(nums)))
 			@(return Cnil)
 	@(return Ct)
 @)
 
 /* Returns 1 if both numbers compare to equal */
 int
-number_equalp(cl_object x, cl_object y)
+ecl_number_equalp(cl_object x, cl_object y)
 {
 	double dx;
 	/* INV: (= fixnum bignum) => 0 */
@@ -90,8 +90,8 @@ number_equalp(cl_object x, cl_object y)
 		case t_bignum:
 			return 0;
 		case t_ratio:
-			return (number_equalp(x->ratio.num, y->ratio.num) &&
-				number_equalp(x->ratio.den, y->ratio.den));
+			return (ecl_number_equalp(x->ratio.num, y->ratio.num) &&
+				ecl_number_equalp(x->ratio.den, y->ratio.den));
 #ifdef ECL_SHORT_FLOAT
 		case t_shortfloat:
 #endif
@@ -170,16 +170,16 @@ number_equalp(cl_object x, cl_object y)
 	}
 #endif
 	Y_COMPLEX:
-		if (!number_zerop(y->complex.imag))
+		if (!ecl_zerop(y->complex.imag))
 			return 0;
-		return number_equalp(x, y->complex.real);
+		return ecl_number_equalp(x, y->complex.real);
 	case t_complex:
 		if (type_of(y) == t_complex)
-			return (number_equalp(x->complex.real, y->complex.real) &&
-				number_equalp(x->complex.imag, y->complex.imag));
+			return (ecl_number_equalp(x->complex.real, y->complex.real) &&
+				ecl_number_equalp(x->complex.imag, y->complex.imag));
 		if (REAL_TYPE(type_of(y))) {
-			if (number_zerop(x->complex.imag))
-				return number_equalp(x->complex.real, y) != 0;
+			if (ecl_zerop(x->complex.imag))
+				return ecl_number_equalp(x->complex.real, y) != 0;
 			else
 				return 0;
 		}
@@ -190,7 +190,7 @@ number_equalp(cl_object x, cl_object y)
 }
 
 /*
-	The value of number_compare(x, y) is
+	The value of ecl_number_compare(x, y) is
 
 		-1	if	x < y
 		0	if	x = y
@@ -199,7 +199,7 @@ number_equalp(cl_object x, cl_object y)
 	If x or y is not real, it fails.
 */
 int
-number_compare(cl_object x, cl_object y)
+ecl_number_compare(cl_object x, cl_object y)
 {
 	cl_fixnum ix, iy;
 	double dx, dy;
@@ -222,9 +222,9 @@ number_compare(cl_object x, cl_object y)
 			/* INV: (= x y) can't be zero since fixnum != bignum */
 			return big_sign(y) < 0? 1 : -1;
 		case t_ratio:
-			x = number_times(x, y->ratio.den);
+			x = ecl_times(x, y->ratio.den);
 			y = y->ratio.num;
-			return(number_compare(x, y));
+			return(ecl_number_compare(x, y));
 #ifdef ECL_SHORT_FLOAT
 		case t_shortfloat:
 			dx = (double)(ix);
@@ -255,9 +255,9 @@ number_compare(cl_object x, cl_object y)
 		case t_bignum:
 			return(big_compare(x, y));
 		case t_ratio:
-			x = number_times(x, y->ratio.den);
+			x = ecl_times(x, y->ratio.den);
 			y = y->ratio.num;
-			return(number_compare(x, y));
+			return(ecl_number_compare(x, y));
 #ifdef ECL_SHORT_FLOAT
 		case t_shortfloat:
 #endif
@@ -275,13 +275,13 @@ number_compare(cl_object x, cl_object y)
 		switch (ty) {
 		case t_fixnum:
 		case t_bignum:
-			y = number_times(y, x->ratio.den);
+			y = ecl_times(y, x->ratio.den);
 			x = x->ratio.num;
-			return(number_compare(x, y));
+			return(ecl_number_compare(x, y));
 		case t_ratio:
-			return(number_compare(number_times(x->ratio.num,
+			return(ecl_number_compare(ecl_times(x->ratio.num,
 							   y->ratio.den),
-					      number_times(y->ratio.num,
+					      ecl_times(y->ratio.num,
 							   x->ratio.den)));
 #ifdef ECL_SHORT_FLOAT
 		case t_shortfloat:
@@ -390,7 +390,7 @@ number_compare(cl_object x, cl_object y)
 		cl_va_start(numb, narg, narg, 0);
 		numi = cl_va_arg(nums);
 		for (j = 1; j<i; j++)
-			if (number_equalp(numi, cl_va_arg(numb)))
+			if (ecl_number_equalp(numi, cl_va_arg(numb)))
 				@(return Cnil)
 	}
 	@(return Ct)
@@ -403,10 +403,10 @@ monotonic(int s, int t, int narg, cl_va_list nums)
 
 	if (narg == 0)
 		FEwrong_num_arguments_anonym();
-	/* INV: type check occurs in number_compare() */
+	/* INV: type check occurs in ecl_number_compare() */
 	for (c = cl_va_arg(nums); --narg; c = d) {
 		d = cl_va_arg(nums);
-		if (s*number_compare(d, c) < t)
+		if (s*ecl_number_compare(d, c) < t)
 			return1(Cnil);
 	}
 	return1(Ct);
@@ -423,13 +423,13 @@ cl_object @>  MONOTONIC(-1, 1)
 
 @(defun max (max &rest nums)
 @
-	/* INV: type check occurs in number_compare() for the rest of
-	   numbers, but for the first argument it happens in number_zerop(). */
+	/* INV: type check occurs in ecl_number_compare() for the rest of
+	   numbers, but for the first argument it happens in ecl_zerop(). */
 	if (narg-- == 1) {
-		number_zerop(max);
+		ecl_zerop(max);
 	} else do {
 		cl_object numi = cl_va_arg(nums);
-		if (number_compare(max, numi) < 0)
+		if (ecl_number_compare(max, numi) < 0)
 			max = numi;
 	} while (--narg);
 	@(return max)
@@ -437,13 +437,13 @@ cl_object @>  MONOTONIC(-1, 1)
 
 @(defun min (min &rest nums)
 @
-	/* INV: type check occurs in number_compare() for the rest of
-	   numbers, but for the first argument it happens in number_zerop(). */
+	/* INV: type check occurs in ecl_number_compare() for the rest of
+	   numbers, but for the first argument it happens in ecl_zerop(). */
 	if (narg-- == 1) {
-		number_zerop(min);
+		ecl_zerop(min);
 	} else do {
 		cl_object numi = cl_va_arg(nums);
-		if (number_compare(min, numi) > 0)
+		if (ecl_number_compare(min, numi) > 0)
 			min = numi;
 	} while (--narg);
 	@(return min)

@@ -97,7 +97,7 @@ cl_resize_hole(cl_index n)
 		result = mmap(0x2E000000, bytes, PROT_READ | PROT_WRITE,
 			      MAP_ANON | MAP_FIXED | MAP_PRIVATE, -1 ,0);
 		if (result == MAP_FAILED)
-			error("Cannot allocate memory. Good-bye!");
+			ecl_internal_error("Cannot allocate memory. Good-bye!");
 		data_end = heap_end = heap_start = result;
 		last_addr = heap_start + bytes;
 		holepage = n;
@@ -111,14 +111,14 @@ cl_resize_hole(cl_index n)
 		result = mmap(data_end, bytes, PROT_READ | PROT_WRITE,
 			      MAP_ANON | MAP_FIXED | MAP_PRIVATE, -1, 0);
 		if (result == MAP_FAILED)
-			error("Cannot resize memory pool. Good-bye!");
+			ecl_internal_error("Cannot resize memory pool. Good-bye!");
 		last_addr = result + bytes;
 		if (result != data_end) {
 			cl_dealloc(heap_end, data_end - heap_end);
 			while (heap_end < result) {
 				cl_index p = page(heap_end);
 				if (p > real_maxpage)
-					error("Memory limit exceeded.");
+					ecl_internal_error("Memory limit exceeded.");
 				type_map[p] = t_other;
 				heap_end += LISP_PAGESIZE;
 			}
@@ -157,7 +157,7 @@ cl_resize_hole(cl_index n)
 		e = sbrk(n * LISP_PAGESIZE + (data_end - e));
 	}
 	if ((cl_fixnum)e < 0)
-		error("Can't allocate.  Good-bye!");
+		ecl_internal_error("Can't allocate.  Good-bye!");
 	data_end = e;
 	holepage += n;
 }
@@ -409,7 +409,7 @@ ONCE_MORE:
 	  break;
 	default:
 	  printf("\ttype = %d\n", t);
-	  error("alloc botch.");
+	  ecl_internal_error("alloc botch.");
 	}
 	end_critical_section();
 	return(obj);
@@ -439,7 +439,7 @@ Use ALLOCATE to expand the space.",
 }
 
 cl_object
-make_cons(cl_object a, cl_object d)
+ecl_cons(cl_object a, cl_object d)
 {
 	register cl_object obj;
 	register cl_ptr p;
@@ -868,7 +868,7 @@ malloc(size_t size)
 
   x = alloc_simple_base_string(size-1);
   x->base_string.self = (char *)cl_alloc(size);
-  malloc_list = make_cons(x, malloc_list);
+  malloc_list = ecl_cons(x, malloc_list);
   return(x->base_string.self);
 }
 
@@ -878,7 +878,7 @@ free(void *ptr)
   cl_object *p;
 
   if (ptr) {
-    for (p = &malloc_list;  !endp(*p);  p = &(CDR((*p))))
+    for (p = &malloc_list;  !ecl_endp(*p);  p = &(CDR((*p))))
       if ((CAR((*p)))->base_string.self == ptr) {
 	cl_dealloc(CAR((*p))->base_string.self, CAR((*p))->base_string.dim+1);
 	CAR((*p))->base_string.self = NULL;
@@ -897,7 +897,7 @@ realloc(void *ptr, size_t size)
 
   if (ptr == NULL)
     return malloc(size);
-  for (x = malloc_list;  !endp(x);  x = CDR(x))
+  for (x = malloc_list;  !ecl_endp(x);  x = CDR(x))
     if (CAR(x)->base_string.self == ptr) {
       x = CAR(x);
       if (x->base_string.dim >= size) {
@@ -943,7 +943,7 @@ void cfree(void *ptr)
 void *
 memalign(size_t align, size_t size)
 { cl_object x = alloc_simple_base_string(size);
-  malloc_list = make_cons(x, malloc_list);
+  malloc_list = ecl_cons(x, malloc_list);
   return x->base_string.self;
 }
 

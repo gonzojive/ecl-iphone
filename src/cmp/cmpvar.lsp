@@ -214,7 +214,7 @@
     (REPLACED (wt var-loc))
     ((SPECIAL GLOBAL)
      (if (safe-compile)
-	 (wt "symbol_value(" var-loc ")")
+	 (wt "ecl_symbol_value(" var-loc ")")
 	 (wt "SYM_VAL(" var-loc ")")))
     (t (wt var-loc))
     ))
@@ -341,12 +341,12 @@
     
     (let ((*destination* val-loc)) (c2expr* values))
     
-    (wt-nl "while(!endp(" sym-loc ")) {")
+    (wt-nl "while(!ecl_endp(" sym-loc ")) {")
     (when (safe-compile)
       (wt-nl "if(type_of(CAR(" sym-loc "))!=t_symbol)")
       (wt-nl
        "FEinvalid_variable(\"~s is not a symbol.\",CAR(" sym-loc "));"))
-    (wt-nl "if(endp(" val-loc "))bds_bind(CAR(" sym-loc "),OBJNULL);")
+    (wt-nl "if(ecl_endp(" val-loc "))bds_bind(CAR(" sym-loc "),OBJNULL);")
     (wt-nl "else{bds_bind(CAR(" sym-loc "),CAR(" val-loc "));")
     (wt-nl val-loc "=CDR(" val-loc ");}")
     (wt-nl sym-loc "=CDR(" sym-loc ");}")

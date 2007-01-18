@@ -360,6 +360,8 @@
 "clx/shape.lisp"
 "clx/text.lisp"
 "clx/translate.lisp"
+"../msvc/ecl.def"
+"../msvc/ecl-threads.def"
 )))
 
 (mapcar 'find-file ecl-files)

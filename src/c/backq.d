@@ -95,7 +95,7 @@ _cl_backq_cdr(cl_object *px)
 			}
 			break;
 		default:
-			error("backquote botch");
+			ecl_internal_error("backquote botch");
 		}
 	} else if (d == EVAL) {
 		switch (a) {
@@ -114,7 +114,7 @@ _cl_backq_cdr(cl_object *px)
 			out = a;
 			break;
 		default:
-			error("backquote botch");
+			ecl_internal_error("backquote botch");
 		}
 	} else if (d == a) {
 		out = d;
@@ -149,7 +149,7 @@ _cl_backq_cdr(cl_object *px)
 			dx = CONS(@'nconc', dx);
 			break;
 		default:
-			error("backquote botch");
+			ecl_internal_error("backquote botch");
 		}
 		switch (a) {
 		case QUOTE:
@@ -167,7 +167,7 @@ _cl_backq_cdr(cl_object *px)
 			out = a;
 			break;
 		default:
-			error("backquote botch");
+			ecl_internal_error("backquote botch");
 		}
 	}
  OUTPUT:
@@ -232,7 +232,7 @@ _cl_backq_car(cl_object *px)
 		break;
 
 	default:
-		error("backquote botch");
+		ecl_internal_error("backquote botch");
 	}
 	return(EVAL);
 }
@@ -253,7 +253,7 @@ backq(cl_object x)
 static cl_object
 quasiquote_macro(cl_object whole, cl_object env)
 {
-	if (length(whole) != 2) {
+	if (ecl_length(whole) != 2) {
 		FEprogram_error("Syntax error: ~S.", 1, whole);
 	}
 	@(return backq(CADR(whole)))

@@ -91,7 +91,7 @@ si_generic_function_p(cl_object x)
 }
 
 /*
- * variation of gethash from hash.d, which takes an array of objects as key
+ * variation of ecl_gethash from hash.d, which takes an array of objects as key
  * It also assumes that entries are never removed except by clrhash.
  */
 
@@ -123,7 +123,7 @@ get_meth_hash(cl_object *keys, int argno, cl_object hashtable)
 	  if (b)
 	    return(&htable[i]);
 	}
-	internal_error("get_meth_hash");
+	ecl_internal_error("get_meth_hash");
 }
 
 static void
@@ -168,7 +168,7 @@ standard_dispatch(cl_narg narg, cl_object gf, cl_object *args)
 			FEwrong_num_arguments(gf);
 		argtype[spec_no++] =
 			(ATOM(spec_type) ||
-			 Null(memql(args[spec_position], spec_type))) ?
+			 Null(ecl_memql(args[spec_position], spec_type))) ?
 			cl_class_of(args[spec_position]) :
 			args[spec_position];
 		spec_how_list = CDR(spec_how_list);
@@ -202,7 +202,7 @@ standard_dispatch(cl_narg narg, cl_object gf, cl_object *args)
 }
 
 cl_object
-compute_method(cl_narg narg, cl_object gf, cl_object *args)
+_ecl_compute_method(cl_narg narg, cl_object gf, cl_object *args)
 {
 	switch (gf->instance.isgf) {
 	case ECL_STANDARD_DISPATCH:

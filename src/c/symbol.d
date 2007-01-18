@@ -58,18 +58,18 @@ cl_make_symbol(cl_object str)
 }
 
 /*
-	Make_keyword(s) makes a keyword from C string s.
+	ecl_make_keyword(s) makes a keyword from C string s.
 */
 cl_object
-make_keyword(const char *s)
+ecl_make_keyword(const char *s)
 {
-	cl_object x = _intern(s, cl_core.keyword_package);
-	/* cl_export(x, keyword_package); this is implicit in intern() */
+	cl_object x = _ecl_intern(s, cl_core.keyword_package);
+	/* cl_export(x, keyword_package); this is implicit in ecl_intern() */
 	return x;
 }
 
 cl_object
-symbol_value(cl_object s)
+ecl_symbol_value(cl_object s)
 {
 	/* FIXME: Should we check symbol type? */
 	cl_object value = SYM_VAL(s);
@@ -180,7 +180,7 @@ remf(cl_object *place, cl_object indicator)
 }
 
 bool
-keywordp(cl_object s)
+ecl_keywordp(cl_object s)
 {
 	return (SYMBOLP(s) && s->symbol.hpack == cl_core.keyword_package);
 }
@@ -222,7 +222,7 @@ cl_get_properties(cl_object place, cl_object indicator_list)
 		cl_object cdr_l = CDR(l);
 		if (!CONSP(cdr_l))
 			break;
-		if (member_eq(CAR(l), indicator_list))
+		if (ecl_member_eq(CAR(l), indicator_list))
 			@(return CAR(l) CADR(l) l)
 		l = CDR(cdr_l);
 	}
@@ -275,16 +275,16 @@ cl_symbol_name(cl_object x)
 	output = ecl_make_string_output_stream(64);
 	bds_bind(@'*print-base*', MAKE_FIXNUM(10));
 	bds_bind(@'*print-radix*', Cnil);
-	princ(prefix, output);
-	princ(counter, output);
+	ecl_princ(prefix, output);
+	ecl_princ(counter, output);
 	bds_unwind_n(2);
 	output = cl_make_symbol(cl_get_output_stream_string(output));
 	if (increment)
-		ECL_SETQ(@'*gensym-counter*',one_plus(counter));
+		ECL_SETQ(@'*gensym-counter*',ecl_one_plus(counter));
 	@(return output);
 } @)
 
-@(defun gentemp (&optional (prefix cl_core.gentemp_prefix) (pack current_package()))
+@(defun gentemp (&optional (prefix cl_core.gentemp_prefix) (pack ecl_current_package()))
 	cl_object output, s;
 	int intern_flag;
 @
@@ -294,11 +294,11 @@ ONCE_MORE:
 	output = ecl_make_string_output_stream(64);
 	bds_bind(@'*print-base*', MAKE_FIXNUM(10));
 	bds_bind(@'*print-radix*', Cnil);
-	princ(prefix, output);
-	princ(cl_core.gentemp_counter, output);
+	ecl_princ(prefix, output);
+	ecl_princ(cl_core.gentemp_counter, output);
 	bds_unwind_n(2);
-	cl_core.gentemp_counter = one_plus(cl_core.gentemp_counter);
-	s = intern(cl_get_output_stream_string(output), pack, &intern_flag);
+	cl_core.gentemp_counter = ecl_one_plus(cl_core.gentemp_counter);
+	s = ecl_intern(cl_get_output_stream_string(output), pack, &intern_flag);
 	if (intern_flag != 0)
 		goto ONCE_MORE;
 	@(return s)
@@ -314,7 +314,7 @@ cl_symbol_package(cl_object sym)
 cl_object
 cl_keywordp(cl_object sym)
 {
-	@(return ((SYMBOLP(sym) && keywordp(sym))? Ct: Cnil))
+	@(return ((SYMBOLP(sym) && ecl_keywordp(sym))? Ct: Cnil))
 }
 
 /*

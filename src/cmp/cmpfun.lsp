@@ -32,12 +32,12 @@
 (defun c2princ (string stream-var stream)
   (cond ((eq *destination* 'TRASH)
 	 (cond ((characterp string)
-		(wt-nl "princ_char(" (char-code string) "," stream-var ");"))
+		(wt-nl "ecl_princ_char(" (char-code string) "," stream-var ");"))
 	       ((= (length string) 1)
-		(wt-nl "princ_char(" (char-code (aref string 0)) ","
+		(wt-nl "ecl_princ_char(" (char-code (aref string 0)) ","
 		       stream-var ");"))
 	       (t
-		(wt-nl "princ_str(\"")
+		(wt-nl "ecl_princ_str(\"")
 		(dotimes (n (length string))
 		  (declare (fixnum n))
 		  (let ((char (schar string n)))
@@ -134,8 +134,8 @@
    (produce-inline-loc (inline-args args) '(T T) '(:object)
 	 (case fun
 	   (EQ "si_memq(#0,#1)")
-	   (EQL "memql(#0,#1)")
-	   (EQUAL "member(#0,#1)"))
+	   (EQL "ecl_memql(#0,#1)")
+	   (EQUAL "ecl_member(#0,#1)"))
 	 nil ; side effects?
 	 t)) ; one liner?
   (close-inline-blocks))
@@ -159,10 +159,10 @@
   (unwind-exit
    (produce-inline-loc (inline-args args) '(T T) '(:object)
 	 (case fun
-	   (eq "assq(#0,#1)")
-	   (eql "assql(#0,#1)")
-	   (equal "assoc(#0,#1)")
-	   (equalp "assqlp(#0,#1)"))
+	   (eq "ecl_assq(#0,#1)")
+	   (eql "ecl_assql(#0,#1)")
+	   (equal "ecl_assoc(#0,#1)")
+	   (equalp "ecl_assqlp(#0,#1)"))
 	 nil ; side effects?
 	 t
 	 ))

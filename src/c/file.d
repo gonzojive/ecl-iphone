@@ -84,11 +84,11 @@ BEGIN:
 		return(FALSE);
 
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 }
 
@@ -133,11 +133,11 @@ BEGIN:
 		return(TRUE);
 
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 }
 
@@ -182,12 +182,12 @@ BEGIN:
 		}
 		break;
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 
 	case smm_broadcast:
 		x = strm->stream.object0;
-		if (endp(x)) {
+		if (ecl_endp(x)) {
 			output = @'t';
 			break;
 		}
@@ -196,7 +196,7 @@ BEGIN:
 
 	case smm_concatenated:
 		x = strm->stream.object0;
-		if (endp(x))
+		if (ecl_endp(x))
 			break;
 		strm = CAR(x);
 		goto BEGIN;
@@ -211,7 +211,7 @@ BEGIN:
 		break;
 
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 	@(return output)
 }
@@ -554,7 +554,7 @@ static void flush_output_stream_binary(cl_object strm);
 		break;
 
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 	strm->stream.closed = 1;
 	strm->stream.file = NULL;
@@ -632,7 +632,7 @@ ecl_write_byte8(int c, cl_object strm)
 		ecl_string_push_extend(strm->stream.object0, c);
 		break;
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 }
 
@@ -665,11 +665,11 @@ BEGIN:
 	case smm_string_output:
 		break;
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 	case smm_broadcast: {
 		cl_object x;
-		for (x = strm->stream.object0; !endp(x); x = CDR(x))
+		for (x = strm->stream.object0; !ecl_endp(x); x = CDR(x))
 			ecl_write_byte(c, CAR(x));
 		return;
 	}
@@ -688,7 +688,7 @@ BEGIN:
 	case smm_string_input:
 		not_an_output_stream(strm);
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 	/*
 	 * Here is the real output of the byte.
@@ -781,7 +781,7 @@ ecl_read_byte8(cl_object strm)
 			c = strm->stream.object0->base_string.self[strm->stream.int0++];
 		break;
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 	return c;
 }
@@ -910,12 +910,12 @@ BEGIN:
 #endif
 		break;
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 	case smm_concatenated: {
 		cl_object strmi = strm->stream.object0;
 		c = Cnil;
-		while (!endp(strmi)) {
+		while (!ecl_endp(strmi)) {
 			c = ecl_read_byte(CAR(strmi));
 			if (c != Cnil)
 				break;
@@ -946,7 +946,7 @@ BEGIN:
 	case smm_string_output:
 		not_an_input_stream(strm);
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 	/*
 	 * Here we treat the case of streams for which ecl_read_byte8 works.
@@ -1002,7 +1002,7 @@ BEGIN:
 	}
 	if (strm->stream.signed_bytes && cl_logbitp(MAKE_FIXNUM(bs-1), c) != Cnil) {
 		c = cl_logandc1(cl_ash(MAKE_FIXNUM(1), MAKE_FIXNUM(bs-1)), c);
-		c = number_minus(c, cl_ash(MAKE_FIXNUM(1), MAKE_FIXNUM(bs-1)));
+		c = ecl_minus(c, cl_ash(MAKE_FIXNUM(1), MAKE_FIXNUM(bs-1)));
 	}
 	return c;
 }
@@ -1075,13 +1075,13 @@ BEGIN:
 #endif
 
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 
 	case smm_concatenated: {
 		cl_object strmi = strm->stream.object0;
 		c = EOF;
-		while (!endp(strmi)) {
+		while (!ecl_endp(strmi)) {
 			c = ecl_read_char(CAR(strmi));
 			if (c != EOF)
 				break;
@@ -1122,7 +1122,7 @@ BEGIN:
 		not_an_input_stream(strm);
 
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 	return c;
 }
@@ -1190,13 +1190,13 @@ BEGIN:
 #endif
 
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 
 	case smm_concatenated: {
 		cl_object strmi = strm->stream.object0;
 		c = EOF;
-		while (!endp(strmi)) {
+		while (!ecl_endp(strmi)) {
 			c = ecl_peek_char(CAR(strmi));
 			if (c != EOF)
 				break;
@@ -1231,7 +1231,7 @@ BEGIN:
 		not_an_input_stream(strm);
 
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 	return c;
 }
@@ -1283,11 +1283,11 @@ BEGIN:
 #endif
 
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 
 	case smm_concatenated:
-		if (endp(strm->stream.object0))
+		if (ecl_endp(strm->stream.object0))
 			goto UNREAD_ERROR;
 		strm = CAR(strm->stream.object0);
 		goto BEGIN;
@@ -1316,7 +1316,7 @@ BEGIN:
 		not_an_input_stream(strm);
 
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 	return;
 
@@ -1382,11 +1382,11 @@ BEGIN:
 #endif
 
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 
 	case smm_broadcast:
-		for (x = strm->stream.object0; !endp(x); x = CDR(x))
+		for (x = strm->stream.object0; !ecl_endp(x); x = CDR(x))
 			ecl_write_char(c, CAR(x));
 		break;
 
@@ -1425,7 +1425,7 @@ BEGIN:
 		not_an_output_stream(strm);
 
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 	return(c);
 }
@@ -1443,10 +1443,10 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	cl_fixnum start,limit,end;
 	cl_type t;
 
-	/* Since we have called length(), we know that SEQ is a valid
+	/* Since we have called ecl_length(), we know that SEQ is a valid
 	   sequence. Therefore, we only need to check the type of the
 	   object, and seq == Cnil i.f.f. t = t_symbol */
-	limit = length(seq);
+	limit = ecl_length(seq);
 	start = ecl_fixnum_in_range(@'write-sequence',"start",s,0,limit);
 	if (e == Cnil) {
 		end = limit;
@@ -1459,7 +1459,7 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	t = type_of(seq);
 	if (t == t_cons || t == t_symbol) {
 		bool ischar = cl_stream_element_type(stream) == @'base-char';
-		cl_object s = nthcdr(start, seq);
+		cl_object s = ecl_nthcdr(start, seq);
 		loop_for_in(s) {
 			if (start < end) {
 				cl_object elt = CAR(s);
@@ -1478,7 +1478,7 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	{
 		bool ischar = cl_stream_element_type(stream) == @'base-char';
 		while (start < end) {
-			cl_object elt = aref(seq, start++);
+			cl_object elt = ecl_aref(seq, start++);
 			if (ischar) {
 				ecl_write_char(ecl_char_code(elt), stream);
 			} else {
@@ -1516,10 +1516,10 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	cl_fixnum start,limit,end;
 	cl_type t;
 
-	/* Since we have called length(), we know that SEQ is a valid
+	/* Since we have called ecl_length(), we know that SEQ is a valid
 	   sequence. Therefore, we only need to check the type of the
 	   object, and seq == Cnil i.f.f. t = t_symbol */
-	limit = length(seq);
+	limit = ecl_length(seq);
 	start = ecl_fixnum_in_range(@'read-sequence',"start",s,0,limit);
 	if (e == Cnil) {
 		end = limit;
@@ -1532,7 +1532,7 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	t = type_of(seq);
 	if (t == t_cons || t == t_symbol) {
 		bool ischar = cl_stream_element_type(stream) == @'base-char';
-		seq = nthcdr(start, seq);
+		seq = ecl_nthcdr(start, seq);
 		loop_for_in(seq) {
 			if (start >= end) {
 				goto OUTPUT;
@@ -1567,7 +1567,7 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 				c = ecl_read_byte(stream);
 				if (c == Cnil) goto OUTPUT;
 			}
-			aset(seq, start++, c);
+			ecl_aset(seq, start++, c);
 		}
 		goto OUTPUT;
 	}
@@ -1635,11 +1635,11 @@ BEGIN:
 #endif
 
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 
 	case smm_broadcast:
-		for (x = strm->stream.object0; !endp(x); x = CDR(x))
+		for (x = strm->stream.object0; !ecl_endp(x); x = CDR(x))
 			ecl_force_output(CAR(x));
 		break;
 
@@ -1659,7 +1659,7 @@ BEGIN:
 		FEerror("Cannot flush the stream ~S.", 1, strm);
 
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 }
 
@@ -1709,11 +1709,11 @@ BEGIN:
 #endif
 
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 
 	case smm_broadcast:
-		for (x = strm->stream.object0; !endp(x); x = CDR(x))
+		for (x = strm->stream.object0; !ecl_endp(x); x = CDR(x))
 			ecl_force_output(CAR(x));
 		break;
 
@@ -1733,7 +1733,7 @@ BEGIN:
 		break;
 
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 }
 
@@ -1774,11 +1774,11 @@ BEGIN:
 #endif
 
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 
 	case smm_broadcast:
-		for (x = strm->stream.object0; !endp(x); x = CDR(x))
+		for (x = strm->stream.object0; !ecl_endp(x); x = CDR(x))
 			ecl_force_output(CAR(x));
 		break;
 
@@ -1798,7 +1798,7 @@ BEGIN:
 		break;
 
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 }
 
@@ -1951,12 +1951,12 @@ BEGIN:
 #endif
 
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 
 	case smm_concatenated: {
 		cl_object l = strm->stream.object0;
-		while (!endp(l)) {
+		while (!ecl_endp(l)) {
 			int f = ecl_listen_stream(CAR(l));
 			l = CDR(l);
 			if (f == ECL_LISTEN_EOF) {
@@ -1987,7 +1987,7 @@ BEGIN:
 		not_an_input_stream(strm);
 
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 }
 
@@ -2016,7 +2016,7 @@ BEGIN:
 		small_offset = ftell(fp);
 		if (small_offset < 0)
 			io_error(strm);
-		output = make_integer(small_offset);
+		output = ecl_make_integer(small_offset);
 		break;
 	}
 	case smm_string_output:
@@ -2029,12 +2029,12 @@ BEGIN:
 		break;
 
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 
 	case smm_broadcast:
 		strm = strm->stream.object0;
-		if (endp(strm))
+		if (ecl_endp(strm))
 			return MAKE_FIXNUM(0);
 		strm = CAR(strm);
 		goto BEGIN;
@@ -2050,26 +2050,26 @@ BEGIN:
 		return Cnil;
 
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 	if (!strm->stream.char_stream_p) {
 		/* deduce header and convert to bits */
-		output = number_times(strm->stream.header != 0xFF ? one_minus(output) : output, MAKE_FIXNUM(8));
+		output = ecl_times(strm->stream.header != 0xFF ? ecl_one_minus(output) : output, MAKE_FIXNUM(8));
 		switch (strm->stream.buffer_state) {
 			case 0: break;
 			case -1:
 				/* bits left for writing, use them */
-				output = number_plus(output, MAKE_FIXNUM(strm->stream.bits_left));
+				output = ecl_plus(output, MAKE_FIXNUM(strm->stream.bits_left));
 				break;
 			case 1:
 				/* bits left for reading, deduce them */
-				output = number_minus(output, MAKE_FIXNUM(strm->stream.bits_left));
+				output = ecl_minus(output, MAKE_FIXNUM(strm->stream.bits_left));
 				break;
 		}
 		/* normalize to byte_size */
-		output = floor2(output, MAKE_FIXNUM(strm->stream.byte_size));
+		output = ecl_floor2(output, MAKE_FIXNUM(strm->stream.byte_size));
 		if (VALUES(1) != MAKE_FIXNUM(0)) {
-			internal_error("File position is not on byte boundary");
+			ecl_internal_error("File position is not on byte boundary");
 		}
 	}
 	return output;
@@ -2094,12 +2094,12 @@ BEGIN:
 	case smm_io: {
 		FILE *fp = (FILE*)strm->stream.file;
 		if (!strm->stream.char_stream_p) {
-			large_disp = floor2(number_times(large_disp, MAKE_FIXNUM(strm->stream.byte_size)),
+			large_disp = ecl_floor2(ecl_times(large_disp, MAKE_FIXNUM(strm->stream.byte_size)),
 					    MAKE_FIXNUM(8));
 			extra = fix(VALUES(1));
 			/* include the header in byte offset */
 			if (strm->stream.header != 0xFF)
-				large_disp = one_plus(large_disp);
+				large_disp = ecl_one_plus(large_disp);
 			/* flush output stream: required, otherwise internal buffer is lost */
 			flush_output_stream_binary(strm);
 			/* reset internal buffer: should be set again if extra != 0 */
@@ -2150,12 +2150,12 @@ BEGIN:
 		return Ct;
 	}
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 
 	case smm_broadcast:
 		strm = strm->stream.object0;
-		if (endp(strm))
+		if (ecl_endp(strm))
 			return Cnil;
 		strm = CAR(strm);
 		goto BEGIN;
@@ -2171,7 +2171,7 @@ BEGIN:
 		return Cnil;
 
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 	if (extra) {
 		FEerror("Unsupported stream byte size", 0);
@@ -2205,11 +2205,11 @@ BEGIN:
 		if (!strm->stream.char_stream_p) {
 			bs = strm->stream.byte_size;
 			if (strm->stream.header != 0xFF)
-				output = floor2(number_minus(number_times(one_minus(output), MAKE_FIXNUM(8)),
+				output = ecl_floor2(ecl_minus(ecl_times(ecl_one_minus(output), MAKE_FIXNUM(8)),
 				                             MAKE_FIXNUM((8-strm->stream.header)%8)),
 						MAKE_FIXNUM(bs));
 			else
-				output = floor2(number_times(output, MAKE_FIXNUM(8)),
+				output = ecl_floor2(ecl_times(output, MAKE_FIXNUM(8)),
 						MAKE_FIXNUM(bs));
 			if (VALUES(1) != MAKE_FIXNUM(0)) {
 				FEerror("File length is not on byte boundary", 0);
@@ -2218,12 +2218,12 @@ BEGIN:
 		break;
 	}
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 
 	case smm_broadcast:
 		strm = strm->stream.object0;
-		if (endp(strm)) {
+		if (ecl_endp(strm)) {
 			output = MAKE_FIXNUM(0);
 			break;
 		}
@@ -2243,7 +2243,7 @@ BEGIN:
 		FEwrong_type_argument(@'file-stream', strm);
 
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 	@(return output)
 }
@@ -2286,7 +2286,7 @@ BEGIN:
 		return(strm->stream.int1);
 
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 
 	case smm_echo:
@@ -2303,12 +2303,12 @@ BEGIN:
 	case smm_concatenated:
 	case smm_broadcast:
 		strm = strm->stream.object0;
-		if (endp(strm))
+		if (ecl_endp(strm))
 			return 0;
 		strm = CAR(strm);
 		goto BEGIN;
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 }
 
@@ -2668,7 +2668,7 @@ cl_file_string_length(cl_object stream, cl_object string)
 	if (type_of(stream) == t_stream &&
 	    stream->stream.mode == smm_broadcast) {
 		stream = stream->stream.object0;
-		if (endp(stream))
+		if (ecl_endp(stream))
 			@(return MAKE_FIXNUM(1))
 	}
 	switch (type_of(string)) {
@@ -2745,7 +2745,7 @@ cl_interactive_stream_p(cl_object strm)
 		FEclosed_stream(strm);
 	switch(strm->stream.mode) {
 	case smm_synonym:
-		strm = symbol_value(strm->stream.object0);
+		strm = ecl_symbol_value(strm->stream.object0);
 		goto BEGIN;
 	case smm_two_way:
 		strm = strm->stream.object0;
@@ -2839,13 +2839,13 @@ ecl_stream_to_handle(cl_object s, bool output)
 		f = (FILE*)s->stream.file;
 		break;
 	case smm_synonym:
-		s = symbol_value(s->stream.object0);
+		s = ecl_symbol_value(s->stream.object0);
 		goto BEGIN;
 	case smm_two_way:
 		s = output? s->stream.object1 : s->stream.object0;
 		goto BEGIN;
 	default:
-		error("illegal stream mode");
+		ecl_internal_error("illegal stream mode");
 	}
 	return fileno(f);
 }

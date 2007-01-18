@@ -147,7 +147,7 @@
       (wt-nl "VV = Cblock->cblock.data;")
       (wt-nl "#endif"))
     (when si::*compiler-constants*
-      (wt-nl "{cl_object data = symbol_value("
+      (wt-nl "{cl_object data = ecl_symbol_value("
 	     (nth-value 1 (si::mangle-name '*compiler-constants* nil))
 	     ");")
       (wt-nl "memcpy(VV, data->vector.self.t, VM*sizeof(cl_object));}"))
@@ -380,8 +380,8 @@
     (wt-nl "return " (case return-type
                             (FIXNUM "MAKE_FIXNUM")
                             (CHARACTER "CODE_CHAR")
-                            (DOUBLE-FLOAT "make_doublefloat")
-                            (SINGLE-FLOAT "make_singlefloat")
+                            (DOUBLE-FLOAT "ecl_make_doublefloat")
+                            (SINGLE-FLOAT "ecl_make_singlefloat")
 			    #+long-float
                             (LONG-FLOAT "make_longfloat")
                             (otherwise ""))

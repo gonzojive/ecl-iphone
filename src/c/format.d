@@ -144,7 +144,7 @@ fmt_go(format_stack fmt, cl_fixnum n)
 	cl_object p;
 	if (n < 0)
 		fmt_error(fmt, "can't goto");
-	if ((p = nthcdr(n, fmt->args)) == Cnil)
+	if ((p = ecl_nthcdr(n, fmt->args)) == Cnil)
 		fmt_error(fmt, "can't goto");
 	fmt->current = p;
 }
@@ -155,7 +155,7 @@ fmt_index(format_stack fmt)
 	cl_object p = fmt->args, target = fmt->current;
 	cl_index n = 0;
 	if (target == Cnil)
-		return length(p);
+		return ecl_length(p);
 	while (p != fmt->current) {
 		p = CDR(p);
 		if (p == Cnil)
@@ -180,7 +180,7 @@ fmt_more_args_p(format_stack fmt)
 static cl_index
 fmt_args_left(format_stack fmt)
 {
-	return length(fmt->current);
+	return ecl_length(fmt->current);
 }
 
 static cl_object
@@ -350,21 +350,21 @@ fmt_ascii(format_stack fmt, bool colon, bool atsign)
 	if (colon && Null(x))
 		writestr_stream("()", fmt->aux_stream);
 	else if (mincol == 0 && minpad == 0) {
-		princ(x, fmt->stream);
+		ecl_princ(x, fmt->stream);
 		return;
 	} else
-		princ(x, fmt->aux_stream);
+		ecl_princ(x, fmt->aux_stream);
 	l = fmt->aux_string->string.fillp;
 	for (i = minpad;  l + i < mincol;  i += colinc)
 		;
 	if (!atsign) {
-		write_string(fmt->aux_string, fmt->stream);
+		ecl_write_string(fmt->aux_string, fmt->stream);
 		while (i-- > 0)
 			ecl_write_char(padchar, fmt->stream);
 	} else {
 		while (i-- > 0)
 			ecl_write_char(padchar, fmt->stream);
-		write_string(fmt->aux_string, fmt->stream);
+		ecl_write_string(fmt->aux_string, fmt->stream);
 	}
 }
 
@@ -386,21 +386,21 @@ fmt_S_expression(format_stack fmt, bool colon, bool atsign)
 	if (colon && Null(x))
 		writestr_stream("()", fmt->aux_stream);
 	else if (mincol == 0 && minpad == 0) {
-		prin1(x, fmt->stream);
+		ecl_prin1(x, fmt->stream);
 		return;
 	} else
-		prin1(x, fmt->aux_stream);
+		ecl_prin1(x, fmt->aux_stream);
 	l = fmt->aux_string->string.fillp;
 	for (i = minpad;  l + i < mincol;  i += colinc)
 		;
 	if (!atsign) {
-		write_string(fmt->aux_string, fmt->stream);
+		ecl_write_string(fmt->aux_string, fmt->stream);
 		while (i-- > 0)
 			ecl_write_char(padchar, fmt->stream);
 	} else {
 		while (i-- > 0)
 			ecl_write_char(padchar, fmt->stream);
-		write_string(fmt->aux_string, fmt->stream);
+		ecl_write_string(fmt->aux_string, fmt->stream);
 	}
 }
 
@@ -699,7 +699,7 @@ fmt_plural(format_stack fmt, bool colon, bool atsign)
 	if (colon) {
 		fmt_back_up(fmt);
 	}
-	if (eql(fmt_advance(fmt), MAKE_FIXNUM(1))) {
+	if (ecl_eql(fmt_advance(fmt), MAKE_FIXNUM(1))) {
 		if (atsign)
 			ecl_write_char('y', fmt->stream);
 	      }
@@ -723,7 +723,7 @@ fmt_character(format_stack fmt, bool colon, bool atsign)
 		ecl_write_char(CHAR_CODE(x), fmt->stream);
 	} else {
 		fmt_prepare_aux_stream(fmt);
-		prin1(x, fmt->aux_stream);
+		ecl_prin1(x, fmt->aux_stream);
 		if (!colon && atsign)
 			i = 0;
 		else
@@ -759,7 +759,7 @@ fmt_fix_float(format_stack fmt, bool colon, bool atsign)
 	if (FIXNUMP(x) ||
 	    type_of(x) == t_bignum ||
 	    type_of(x) == t_ratio)
-		x = make_singlefloat(object_to_float(x));
+		x = ecl_make_singlefloat(ecl_to_float(x));
 	if (!REAL_TYPE(type_of(x))) {
 		if (fmt->nparam > 1) fmt->nparam = 1;
 		fmt_back_up(fmt);
@@ -770,10 +770,10 @@ fmt_fix_float(format_stack fmt, bool colon, bool atsign)
 		n = 16;
 	else
 		n = 7;
-	f = number_to_double(x);
+	f = ecl_to_double(x);
 	edit_double(n, f, &sign, buff, &exp);
 	if (exp + k > 100 || exp + k < -100 || d > 100) {
-		prin1(x, fmt->stream);
+		ecl_prin1(x, fmt->stream);
 		return;
 	}
 	if (d >= 0)
@@ -932,7 +932,7 @@ fmt_exponential_float(format_stack fmt, bool colon, bool atsign)
 	if (FIXNUMP(x) ||
 	    type_of(x) == t_bignum ||
 	    type_of(x) == t_ratio)
-		x = make_singlefloat(object_to_float(x));
+		x = ecl_make_singlefloat(ecl_to_float(x));
 	if (!REAL_TYPE(type_of(x))) {
 		if (fmt->nparam > 1) fmt->nparam = 1;
 		fmt_back_up(fmt);
@@ -943,7 +943,7 @@ fmt_exponential_float(format_stack fmt, bool colon, bool atsign)
 		n = 16;
 	else
 		n = 7;
-	f = number_to_double(x);
+	f = ecl_to_double(x);
 	edit_double(n, f, &sign, buff, &exp);
 	if (d >= 0) {
 		if (k > 0) {
@@ -1048,7 +1048,7 @@ fmt_exponential_float(format_stack fmt, bool colon, bool atsign)
 	else if (atsign)
 		ecl_write_char('+', fmt->stream);
 	writestr_stream(b, fmt->stream);
-	y = symbol_value(@'*read-default-float-format*');
+	y = ecl_symbol_value(@'*read-default-float-format*');
 	if (exponentchar < 0) {
 		if (y == @'long-float') {
 #ifdef ECL_LONG_FLOAT
@@ -1130,7 +1130,7 @@ fmt_general_float(format_stack fmt, bool colon, bool atsign)
 		q = 16;
 	else
 		q = 7;
-	edit_double(q, number_to_double(x), &sign, buff, &exp);
+	edit_double(q, ecl_to_double(x), &sign, buff, &exp);
 	n = exp + 1;
 	while (q >= 0)
 		if (buff[q - 1] == '0')
@@ -1202,7 +1202,7 @@ fmt_dollars_float(format_stack fmt, bool colon, bool atsign)
 	q = 7;
 	if (type_of(x) == t_doublefloat)
 		q = 16;
-	f = number_to_double(x);
+	f = ecl_to_double(x);
 	edit_double(q, f, &sign, buff, &exp);
 	if ((q = exp + d + 1) > 0)
 		edit_double(q, f, &sign, buff, &exp);
@@ -1622,12 +1622,12 @@ fmt_iteration(format_stack fmt, bool colon, bool atsign)
 		volatile cl_object l0;
 		l0 = fmt_advance(fmt);
 		fmt_copy(&fmt_old, fmt);
-		for (l = l0; !endp(l); l = CDR(l))
-		  fl += length(CAR(l));
+		for (l = l0; !ecl_endp(l); l = CDR(l))
+		  fl += ecl_length(CAR(l));
 		fmt->jmp_buf = &fmt_jmp_buf0;
 		if (colon_close)
 			goto L2;
-		while (!endp(l0)) {
+		while (!ecl_endp(l0)) {
 		L2:
 			if (n-- <= 0)
 				break;
@@ -1735,7 +1735,7 @@ fmt_justification(format_stack fmt, volatile bool colon, bool atsign)
 		} else if (fmt->ctl_str[j0] != ';')
 			fmt_error(fmt, "~; expected");
 		else if (fmt->ctl_str[--j0] == ':') {
-			if (length(fields) != 1 || !Null(special))
+			if (ecl_length(fields) != 1 || !Null(special))
 				fmt_error(fmt, "illegal ~:;");
 			special = CAR(fields);
 			fields = CDR(fields);
@@ -1761,7 +1761,7 @@ fmt_justification(format_stack fmt, volatile bool colon, bool atsign)
 	 * modifier, the first item needs padding. If the @@ modifier is
 	 * present, the last modifier also needs padding.
 	 */
-	m = length(fields) - 1;
+	m = ecl_length(fields) - 1;
 	if (m <= 0 && !colon && !atsign) {
 		m = 0;
 		colon = TRUE;
@@ -1783,7 +1783,7 @@ fmt_justification(format_stack fmt, volatile bool colon, bool atsign)
 	l = mincol + k * colinc;
 	if (special != Cnil &&
 	    ecl_file_column(fmt->stream) + l + spare_spaces > line_length)
-		princ(special, fmt->stream);
+		ecl_princ(special, fmt->stream);
 	/*
 	 * Output the text with the padding segments. The total number of
 	 * padchars is kept in "l", and it is shared equally among all segments.
@@ -1793,7 +1793,7 @@ fmt_justification(format_stack fmt, volatile bool colon, bool atsign)
 		if (p != fields || colon)
 			for (j = l / m, l -= j, --m;  j > 0;  --j)
 				ecl_write_char(padchar, fmt->stream);
-		princ(CAR(p), fmt->stream);
+		ecl_princ(CAR(p), fmt->stream);
 	}
 	if (atsign)
 		for (j = l;  j > 0;  --j)
@@ -1857,7 +1857,7 @@ doformat(cl_narg narg, cl_object strm, cl_object string, cl_va_list args, bool i
 	fmt.stream = strm;
 	fmt_set_arg_list(&fmt, output);
 	fmt.jmp_buf = &fmt_jmp_buf0;
-	if (symbol_value(@'si::*indent-formatted-output*') != Cnil)
+	if (ecl_symbol_value(@'si::*indent-formatted-output*') != Cnil)
 		fmt.indents = ecl_file_column(strm);
 	else
 		fmt.indents = 0;
@@ -1914,19 +1914,19 @@ LOOP:
 			x = parse_integer(fmt->ctl_str + i, fmt->ctl_index, &i, 10);
 		INTEGER:
 			/* FIXME! A hack to solve the problem of bignums in arguments */
-			if (x == OBJNULL || !numberp(x))
+			if (x == OBJNULL || !ecl_numberp(x))
 				fmt_error(fmt, "integer expected");
 			fmt->param[n].type = INT;
-			if (number_compare(x, MAKE_FIXNUM(FMT_VALUE_UPPER_LIMIT)) > 0) {
+			if (ecl_number_compare(x, MAKE_FIXNUM(FMT_VALUE_UPPER_LIMIT)) > 0) {
 				fmt->param[n].value = FMT_VALUE_UPPER_LIMIT;
-			} else if (number_compare(x, MAKE_FIXNUM(FMT_VALUE_LOWER_LIMIT)) < 0) {
+			} else if (ecl_number_compare(x, MAKE_FIXNUM(FMT_VALUE_LOWER_LIMIT)) < 0) {
 				fmt->param[n].value = FMT_VALUE_LOWER_LIMIT;
 			} else {
 				fmt->param[n].value = fix(x);
 			}
 			if (FIXNUMP(x)) {
 				fmt->param[n].value = fix(x);
-			} else if (number_plusp(x)) {
+			} else if (ecl_plusp(x)) {
 				fmt->param[n].value = MOST_POSITIVE_FIXNUM;
 			} else {
 				fmt->param[n].value = MOST_NEGATIVE_FIXNUM;
@@ -2105,7 +2105,7 @@ DIRECTIVE:
 		strm = cl_alloc_adjustable_base_string(64);
 		null_strm = 1;
 	} else if (strm == Ct) {
-		strm = symbol_value(@'*standard-output*');
+		strm = ecl_symbol_value(@'*standard-output*');
 	}
 	if (type_of(strm) == t_base_string) {
 		output = strm;

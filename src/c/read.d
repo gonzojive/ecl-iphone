@@ -81,13 +81,13 @@ static cl_object patch_sharp(cl_object x);
 static cl_object do_read_delimited_list(int d, cl_object strm, bool proper_list);
 
 cl_object
-read_object_non_recursive(cl_object in)
+ecl_read_object_non_recursive(cl_object in)
 {
 	cl_object x;
 
 	bds_bind(@'si::*sharp-eq-context*', Cnil);
 	bds_bind(@'si::*backq-level*', MAKE_FIXNUM(0));
-	x = read_object(in);
+	x = ecl_read_object(in);
 	if (!Null(SYM_VAL(@'si::*sharp-eq-context*')))
 		x = patch_sharp(x);
 	bds_unwind1();
@@ -135,7 +135,7 @@ invert_buffer_case(cl_object x, cl_object escape_list, int sign)
 }
 
 static cl_object
-read_object_with_delimiter(cl_object in, int delimiter, bool only_token)
+ecl_read_object_with_delimiter(cl_object in, int delimiter, bool only_token)
 {
 	cl_object x, token;
 	int c, base;
@@ -209,10 +209,10 @@ BEGIN:
 				if (cl_core.packages_to_be_created == OBJNULL) {
 					FEerror("There is no package with the name ~A.",
 						1, name);
-				} else if (!Null(p = assoc(name, cl_core.packages_to_be_created))) {
+				} else if (!Null(p = ecl_assoc(name, cl_core.packages_to_be_created))) {
 					p = CDR(p);
 				} else {
-					p = make_package(name,Cnil,Cnil);
+					p = ecl_make_package(name,Cnil,Cnil);
 					cl_core.packages = CDR(cl_core.packages);
 					cl_core.packages_to_be_created =
 						cl_acons(name, p, cl_core.packages_to_be_created);
@@ -339,10 +339,10 @@ BEGIN:
 		}
 	} else {
 		if (p == Cnil) {
-			p = current_package();
+			p = ecl_current_package();
 		}
 		/* INV: cl_make_symbol() copies the string */
-		x = intern(token, p, &intern_flag);
+		x = ecl_intern(token, p, &intern_flag);
 	}
  OUTPUT:
 	si_put_buffer_string(token);
@@ -350,13 +350,13 @@ BEGIN:
 }
 
 /*
-	Read_object(in) reads an object from stream in.
+	ecl_read_object(in) reads an object from stream in.
 	This routine corresponds to COMMON Lisp function READ.
 */
 cl_object
-read_object(cl_object in)
+ecl_read_object(cl_object in)
 {
-	return read_object_with_delimiter(in, EOF, 0);
+	return ecl_read_object_with_delimiter(in, EOF, 0);
 }
 
 #define	ecl_exponent_marker_p(i)	\
@@ -403,7 +403,7 @@ ecl_parse_number(cl_object str, cl_index start, cl_index end,
 			if (den == MAKE_FIXNUM(0)) {
 				return Cnil;
 			}
-			return make_ratio(num, den);
+			return ecl_make_ratio(num, den);
 		} else if (c == '.') {
 			/* A trailing dot denotes base-10 integer number */
 			radix = 10;
@@ -416,7 +416,7 @@ ecl_parse_number(cl_object str, cl_index start, cl_index end,
 				return aux;
 			}
 			is_float = 1;
-		} else if (digitp(c, radix) < 0) {
+		} else if (ecl_digitp(c, radix) < 0) {
 			if (ecl_exponent_marker_p(c)) {
 				exp_marker_loc = i - start;
 				is_float = 1;
@@ -495,7 +495,7 @@ ecl_parse_number(cl_object str, cl_index start, cl_index end,
 			output = make_shortfloat(d);
 #endif
 		case 'f':  case 'F':
-			output = make_singlefloat(d);
+			output = ecl_make_singlefloat(d);
 			break;
 		case 'l':  case 'L':
 #ifdef ECL_LONG_FLOAT
@@ -503,7 +503,7 @@ ecl_parse_number(cl_object str, cl_index start, cl_index end,
 			break;
 #endif
 		case 'd':  case 'D':
-			output = make_doublefloat(d);
+			output = ecl_make_doublefloat(d);
 			break;
 		default:
 			output = OBJNULL;
@@ -537,7 +537,7 @@ ecl_parse_integer(cl_object str, cl_index start, cl_index end,
 	integer_part = big_register0_get();
 	for (i = start; i < end; i++) {
 		c = ecl_char(str, i);
-		d = digitp(c, radix);
+		d = ecl_digitp(c, radix);
 		if (d < 0) {
 			break;
 		}
@@ -589,7 +589,7 @@ cl_object comma_reader(cl_object in, cl_object c)
 		x = @'si::unquote';
 	}
 	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level-1));
-	y = read_object(in);
+	y = ecl_read_object(in);
 	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level));
 	return cl_list(2, x, y);
 }
@@ -599,7 +599,7 @@ cl_object backquote_reader(cl_object in, cl_object c)
 {
 	cl_fixnum backq_level = fix(SYM_VAL(@'si::*backq-level*'));
 	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level+1));
-	in = read_object(in);
+	in = ecl_read_object(in);
 	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level));
 #if 0
 	@(return cl_macroexpand_1(2, cl_list(2, @'si::quasiquote', in), Cnil));
@@ -674,13 +674,13 @@ dispatch_reader_fun(cl_object in, cl_object dc)
 		FEreader_error("~C is not a dispatching macro character", in, 1, dc);
 
 	c = ecl_read_char_noeof(in);
-	d = digitp(c, 10);
+	d = ecl_digitp(c, 10);
 	if (d >= 0) {
 		i = 0;
 		do {
 			i = 10*i + d;
 			c = ecl_read_char_noeof(in);
-			d = digitp(c, 10);
+			d = ecl_digitp(c, 10);
 		} while (d >= 0);
 		y = MAKE_FIXNUM(i);
 	} else
@@ -693,7 +693,7 @@ dispatch_reader_fun(cl_object in, cl_object dc)
 static cl_object
 single_quote_reader(cl_object in, cl_object c)
 {
-	c = read_object(in);
+	c = ecl_read_object(in);
 	if (c == OBJNULL)
 		FEend_of_file(in);
 	@(return cl_list(2, @'quote', c))
@@ -729,17 +729,17 @@ sharp_C_reader(cl_object in, cl_object c, cl_object d)
 
 	if (d != Cnil && !read_suppress)
 		extra_argument('C', in, d);
-	x = read_object(in);
+	x = ecl_read_object(in);
 	if (x == OBJNULL)
 		FEend_of_file(in);
 	if (read_suppress)
 		@(return Cnil);
-	if (type_of(x) != t_cons || length(x) != 2)
+	if (type_of(x) != t_cons || ecl_length(x) != 2)
 		FEreader_error("Reader macro #C should be followed by a list",
 			       in, 0);
 	real = CAR(x);
 	imag = CADR(x);
-	/* INV: make_complex() checks its types. When reading circular
+	/* INV: ecl_make_complex() checks its types. When reading circular
 	   structures, we cannot check the types of the elements, and we
 	   must build the complex number by hand. */
 	if ((CONSP(real) || CONSP(imag)) &&
@@ -749,7 +749,7 @@ sharp_C_reader(cl_object in, cl_object c, cl_object d)
 		x->complex.real = real;
 		x->complex.imag = imag;
 	} else {
-		x = make_complex(real, imag);
+		x = ecl_make_complex(real, imag);
 	}
 	@(return x)
 }
@@ -765,7 +765,7 @@ sharp_backslash_reader(cl_object in, cl_object c, cl_object d)
 			/*  assuming that CHAR-FONT-LIMIT is 1  */
 	bds_bind(@'*readtable*', cl_core.standard_readtable);
 	ecl_unread_char('\\', in);
-	token = read_object_with_delimiter(in, EOF, 1);
+	token = ecl_read_object_with_delimiter(in, EOF, 1);
 	bds_unwind_n(1);
 	if (token == Cnil) {
 		c = Cnil;
@@ -792,7 +792,7 @@ sharp_single_quote_reader(cl_object in, cl_object c, cl_object d)
 	bool suppress = read_suppress;
 	if(d != Cnil && !suppress)
 		extra_argument('\'', in, d);
-	c = read_object(in);
+	c = ecl_read_object(in);
 	if (c == OBJNULL) {
 		FEend_of_file(in);
 	} else if (suppress) {
@@ -811,12 +811,12 @@ sharp_Y_reader(cl_object in, cl_object c, cl_object d)
 
 	if (d != Cnil && !read_suppress)
 		extra_argument('C', in, d);
-	x = read_object(in);
+	x = ecl_read_object(in);
 	if (x == OBJNULL)
 		FEend_of_file(in);
 	if (read_suppress)
 		@(return Cnil);
-	if (type_of(x) != t_cons || length(x) != 6)
+	if (type_of(x) != t_cons || ecl_length(x) != 6)
 		FEreader_error("Reader macro #Y should be followed by a list",
 			       in, 0);
 
@@ -829,13 +829,13 @@ sharp_Y_reader(cl_object in, cl_object c, cl_object d)
 
         rv->bytecodes.code_size = fixint(cl_list_length(CAR(x)));
         rv->bytecodes.code = cl_alloc_atomic(rv->bytecodes.code_size * sizeof(uint16_t));
-        for ( i=0, nth=CAR(x) ; !endp(nth) ; i++, nth=CDR(nth) )
+        for ( i=0, nth=CAR(x) ; !ecl_endp(nth) ; i++, nth=CDR(nth) )
              ((cl_opcode*)(rv->bytecodes.code))[i] = fixint(CAR(nth));
         x = CDR(x);
 
         rv->bytecodes.data_size = fixint(cl_list_length(CAR(x)));
         rv->bytecodes.data = cl_alloc(rv->bytecodes.data_size * sizeof(cl_object));
-        for ( i=0, nth=CAR(x) ; !endp(nth) ; i++, nth=CDR(nth) )
+        for ( i=0, nth=CAR(x) ; !ecl_endp(nth) ; i++, nth=CDR(nth) )
              ((cl_object*)(rv->bytecodes.data))[i] = CAR(nth);
 
         @(return rv);
@@ -896,17 +896,17 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 		cl_index i;
 		v = ecl_alloc_simple_vector(dim, aet_object);
 		for (i = 0, last = Cnil;; i++) {
-			cl_object aux = read_object_with_delimiter(in, ')', 0);
+			cl_object aux = ecl_read_object_with_delimiter(in, ')', 0);
 			if (aux == OBJNULL)
 				break;
 			if (i >= dim) {
 				FEreader_error("Vector larger than specified length, ~D.", in, 1, d);
 			}
-			aset1(v, i, last = aux);
+			ecl_aset1(v, i, last = aux);
 		}
 		/* ... we fill the vector with the last element read (or NIL). */
 		for (; i < dim; i++) {
-			aset1(v, i, last);
+			ecl_aset1(v, i, last);
 		}
 	}
 	@(return v)
@@ -1027,12 +1027,12 @@ sharp_dot_reader(cl_object in, cl_object c, cl_object d)
 {
 	if (d != Cnil && !read_suppress)
 		extra_argument('.', in, d);
-	c = read_object(in);
+	c = ecl_read_object(in);
 	if (c == OBJNULL)
 		FEend_of_file(in);
 	if (read_suppress)
 		@(return Cnil);
-	if (symbol_value(@'*read-eval*') == Cnil)
+	if (ecl_symbol_value(@'*read-eval*') == Cnil)
 		FEreader_error("Cannot evaluate the form #.~A", in, 1, c);
 	c = si_eval_with_env(1, c);
 	@(return c)
@@ -1116,11 +1116,11 @@ sharp_eq_reader(cl_object in, cl_object c, cl_object d)
 	if (read_suppress) @(return)
 	if (Null(d))
 		FEreader_error("The #= readmacro requires an argument.", in, 0);
-	if (assql(d, sharp_eq_context) != Cnil)
+	if (ecl_assql(d, sharp_eq_context) != Cnil)
 		FEreader_error("Duplicate definitions for #~D=.", in, 1, d);
 	pair = CONS(d, Cnil);
 	ECL_SETQ(@'si::*sharp-eq-context*', CONS(pair, sharp_eq_context));
-	value = read_object(in);
+	value = ecl_read_object(in);
 	if (value == pair)
 		FEreader_error("#~D# is defined by itself.", in, 1, d);
 	@(return (CDR(pair) = value))
@@ -1134,7 +1134,7 @@ sharp_sharp_reader(cl_object in, cl_object c, cl_object d)
 	if (read_suppress) @(return Cnil)
 	if (Null(d))
 		FEreader_error("The ## readmacro requires an argument.", in, 0);
-	pair = assq(d, SYM_VAL(@'si::*sharp-eq-context*'));
+	pair = ecl_assq(d, SYM_VAL(@'si::*sharp-eq-context*'));
 	if (pair != Cnil)
 		@(return pair)
 	FEreader_error("#~D# is undefined.", in, 1, d);
@@ -1179,7 +1179,7 @@ do_patch_sharp(cl_object x)
 		cl_object r = do_patch_sharp(x->complex.real);
 		cl_object i = do_patch_sharp(x->complex.imag);
 		if (r != x->complex.real || i != x->complex.imag) {
-			cl_object c = make_complex(r, i);
+			cl_object c = ecl_make_complex(r, i);
 			x->complex = c->complex;
 		}
 	}
@@ -1258,7 +1258,7 @@ sharp_P_reader(cl_object in, cl_object c, cl_object d)
 	bool suppress = read_suppress;
 	if (d != Cnil && !suppress)
 		extra_argument('P', in, d);
-	d = read_object(in);
+	d = ecl_read_object(in);
 	if (suppress) {
 		d = Cnil;
 	} else {
@@ -1277,7 +1277,7 @@ sharp_dollar_reader(cl_object in, cl_object c, cl_object d)
 	cl_object rs;
 	if (d != Cnil && !read_suppress)
 		extra_argument('$', in, d);
-	c = read_object(in);
+	c = ecl_read_object(in);
 	rs = cl_alloc_object(t_random);
 	rs->random.value = fixnnint(c);
 	@(return rs)
@@ -1288,7 +1288,7 @@ sharp_dollar_reader(cl_object in, cl_object c, cl_object d)
 */
 
 cl_object
-copy_readtable(cl_object from, cl_object to)
+ecl_copy_readtable(cl_object from, cl_object to)
 {
 	struct ecl_readtable_entry *rtab;
 	cl_index i;
@@ -1336,7 +1336,7 @@ ecl_current_readtable(void)
 	/* INV: *readtable* always has a value */
 	r = SYM_VAL(@'*readtable*');
 	if (type_of(r) != t_readtable) {
-		ECL_SETQ(@'*readtable*', copy_readtable(cl_core.standard_readtable, Cnil));
+		ECL_SETQ(@'*readtable*', ecl_copy_readtable(cl_core.standard_readtable, Cnil));
 		FEerror("The value of *READTABLE*, ~S, was not a readtable.",
 			1, r);
 	}
@@ -1390,9 +1390,9 @@ stream_or_default_input(cl_object stream)
 @
 	strm = stream_or_default_input(strm);
 	if (Null(recursivep)) {
-		x = read_object_non_recursive(strm);
+		x = ecl_read_object_non_recursive(strm);
 	} else {
-		x = read_object(strm);
+		x = ecl_read_object(strm);
 	}
 	if (x == OBJNULL) {
 		if (Null(eof_errorp))
@@ -1419,9 +1419,9 @@ stream_or_default_input(cl_object stream)
 @
 	strm = stream_or_default_input(strm);
 	if (Null(recursivep)) {
-		x = read_object_non_recursive(strm);
+		x = ecl_read_object_non_recursive(strm);
 	} else {
-		x = read_object(strm);
+		x = ecl_read_object(strm);
 	}
 	if (x == OBJNULL) {
 		if (Null(eof_errorp))
@@ -1439,7 +1439,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 	cl_object x, y = Cnil;
 	cl_object *p = &y;
 	do {
-		x = read_object_with_delimiter(in, d, 0);
+		x = ecl_read_object_with_delimiter(in, d, 0);
 		if (x == OBJNULL) {
 			/* End of the list. */
 			if (after_dot == 1) {
@@ -1575,7 +1575,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 			do {
 				/* If the character belongs to the given class,
 				 * we're done. */
-				if (char_eq(CODE_CHAR(c), peek_type))
+				if (ecl_char_eq(CODE_CHAR(c), peek_type))
 					break;
 				/* Otherwise, consume the character and
 				 * peek the next one. */
@@ -1710,7 +1710,7 @@ CANNOT_PARSE:		FEparse_error("Cannot parse an integer in the string ~S.",
 		from = cl_core.standard_readtable;
 		if (to != Cnil)
 			assert_type_readtable(to);
-		to = copy_readtable(from, to);
+		to = ecl_copy_readtable(from, to);
 		to->readtable.table['#'].dispatch_table['!']
 		= cl_core.default_dispatch_macro;
 		/*  We must forget #! macro.  */
@@ -1719,7 +1719,7 @@ CANNOT_PARSE:		FEparse_error("Cannot parse an integer in the string ~S.",
 	assert_type_readtable(from);
 	if (to != Cnil)
 		assert_type_readtable(to);
-	@(return copy_readtable(from, to))
+	@(return ecl_copy_readtable(from, to))
 @)
 
 cl_object
@@ -1890,7 +1890,7 @@ ecl_invalid_character_p(int c)
 	if (entry->macro != cl_core.dispatch_reader || entry->dispatch_table == NULL)
 		FEerror("~S is not a dispatch character.", 1, dspchr);
 	subcode = ecl_char_code(subchr);
-	if (digitp(subcode, 10) >= 0)
+	if (ecl_digitp(subcode, 10) >= 0)
 		@(return Cnil)
 	@(return entry->dispatch_table[subcode])
 @)
@@ -1909,7 +1909,7 @@ si_string_to_object(cl_object x)
 	/* FIXME! Restricted to base string */
 	x = ecl_check_cl_type(@'si::string-to-object', x, t_base_string);
 	in = ecl_make_string_input_stream(x, 0, x->base_string.fillp);
-	x = read_object(in);
+	x = ecl_read_object(in);
 	if (x == OBJNULL)
 		FEend_of_file(in);
 	@(return x)
@@ -2028,7 +2028,7 @@ init_read(void)
 	init_backq();
 
 	ECL_SET(@'*readtable*',
-		readtable=copy_readtable(cl_core.standard_readtable, Cnil));
+		readtable=ecl_copy_readtable(cl_core.standard_readtable, Cnil));
 	readtable->readtable.table['#'].dispatch_table['!']
 	    = cl_core.default_dispatch_macro; /*  We must forget #! macro.  */
 	ECL_SET(@'*read-default-float-format*', @'single-float');
@@ -2095,7 +2095,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 		bds_bind(@'*package*', cl_core.lisp_package);
 		bds_bind(@'si::*sharp-eq-context*', Cnil);
 		for (i = 0 ; i < len; i++) {
-			x = read_object(in);
+			x = ecl_read_object(in);
 			if (x == OBJNULL)
 				break;
 			if (i < perm_len)
@@ -2120,7 +2120,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 		(*entry_point)(MAKE_FIXNUM(0));
 		x = cl_core.packages_to_be_created;
 		loop_for_on(x) {
-			if (!member(x, old_eptbc)) {
+			if (!ecl_member(x, old_eptbc)) {
 				CEerror("The following package was referenced in a~"
 				"compiled file, but has not been created: ~A",
 				2, block->cblock.name, CAR(x));

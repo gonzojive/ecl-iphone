@@ -73,7 +73,7 @@ si_instance_class_set(cl_object x, cl_object y)
 }
 
 cl_object
-instance_ref(cl_object x, cl_fixnum i)
+ecl_instance_ref(cl_object x, cl_fixnum i)
 {
 	if (type_of(x) != t_instance)
 		FEwrong_type_argument(@'ext::instance', x);
@@ -112,7 +112,7 @@ si_instance_ref_safe(cl_object x, cl_object index)
 }
 
 cl_object
-instance_set(cl_object x, cl_fixnum i, cl_object v)
+ecl_instance_set(cl_object x, cl_fixnum i, cl_object v)
 {
         if (type_of(x) != t_instance)
                 FEwrong_type_argument(@'ext::instance', x);
@@ -187,7 +187,7 @@ si_copy_instance(cl_object x)
 @(defun find-class (name &optional (errorp Ct) env)
 	cl_object class;
 @
-	class = gethash_safe(name, SYM_VAL(@'si::*class-name-hash-table*'), Cnil);
+	class = ecl_gethash_safe(name, SYM_VAL(@'si::*class-name-hash-table*'), Cnil);
 	if (class == Cnil) {
 		if (!Null(errorp))
 			FEerror("No class named ~S.", 1, name);
@@ -282,7 +282,7 @@ cl_class_of(cl_object x)
 		t = @'mp::lock'; break;
 #endif
 	default:
-		error("not a lisp data object");
+		ecl_internal_error("not a lisp data object");
 	}
 	t = cl_find_class(2, t, Cnil);
 	if (t == Cnil)

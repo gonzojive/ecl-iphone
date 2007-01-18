@@ -86,7 +86,7 @@ static cl_object si_simple_toplevel ()
 	  sentence = @read(3, Cnil, Cnil, OBJNULL);
 	  if (sentence == OBJNULL)
 	    @(return);
-	  prin1(si_eval_with_env(1, sentence), Cnil);
+	  ecl_prin1(si_eval_with_env(1, sentence), Cnil);
 	}
 }
 
@@ -105,8 +105,8 @@ main(int argc, char **args)
 	SYM_VAL(@'*load-verbose*') = Cnil;
 #endif
 	SYM_VAL(@'*package*') = cl_core.system_package;
-	SYM_VAL(@'*features*') = CONS(make_keyword("ECL-MIN"), SYM_VAL(@'*features*'));
-	top_level = _intern("TOP-LEVEL", cl_core.system_package);
+	SYM_VAL(@'*features*') = CONS(ecl_make_keyword("ECL-MIN"), SYM_VAL(@'*features*'));
+	top_level = _ecl_intern("TOP-LEVEL", cl_core.system_package);
 	cl_def_c_function(top_level, si_simple_toplevel, 0);
 	funcall(1, top_level);
 	return(0);

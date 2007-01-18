@@ -62,7 +62,7 @@ big_alloc(int size)
 {
   volatile cl_object x = cl_alloc_object(t_bignum);
   if (size <= 0)
-    error("negative or zero size for bignum in big_alloc");
+    ecl_internal_error("negative or zero size for bignum in big_alloc");
   x->big.big_num = 0ll;
   return x;
 }

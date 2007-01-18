@@ -51,18 +51,18 @@ ecl_alloc_simple_vector(cl_index l, cl_elttype aet)
 		x->vector.self.t = NULL;
 		x->vector.elttype = (short)aet;
 	}
-	array_allocself(x);
+	ecl_array_allocself(x);
 	return(x);
 }
 
 cl_object
 cl_elt(cl_object x, cl_object i)
 {
-	@(return elt(x, fixint(i)))
+	@(return ecl_elt(x, fixint(i)))
 }
 
 cl_object
-elt(cl_object seq, cl_fixnum index)
+ecl_elt(cl_object seq, cl_fixnum index)
 {
 	cl_fixnum i;
 	cl_object l;
@@ -72,11 +72,11 @@ elt(cl_object seq, cl_fixnum index)
 	switch (type_of(seq)) {
 	case t_cons:
 		for (i = index, l = seq;  i > 0;  --i)
-			if (endp(l))
+			if (ecl_endp(l))
 				goto E;
 			else
 				l = CDR(l);
-		if (endp(l))
+		if (ecl_endp(l))
 			goto E;
 		return(CAR(l));
 
@@ -87,7 +87,7 @@ elt(cl_object seq, cl_fixnum index)
 	case t_bitvector:
 		if (index >= seq->vector.fillp)
 			goto E;
-		return(aref(seq, index));
+		return(ecl_aref(seq, index));
 
 	case t_base_string:
 		if (index >= seq->base_string.fillp)
@@ -107,11 +107,11 @@ E:
 cl_object
 si_elt_set(cl_object seq, cl_object index, cl_object val)
 {
-	@(return elt_set(seq, fixint(index), val))
+	@(return ecl_elt_set(seq, fixint(index), val))
 }
 
 cl_object
-elt_set(cl_object seq, cl_fixnum index, cl_object val)
+ecl_elt_set(cl_object seq, cl_fixnum index, cl_object val)
 {
 	cl_fixnum i;
 	cl_object l;
@@ -121,11 +121,11 @@ elt_set(cl_object seq, cl_fixnum index, cl_object val)
 	switch (type_of(seq)) {
 	case t_cons:
 		for (i = index, l = seq;  i > 0;  --i)
-			if (endp(l))
+			if (ecl_endp(l))
 				goto E;
 			else
 				l = CDR(l);
-		if (endp(l))
+		if (ecl_endp(l))
 			goto E;
 		return(CAR(l) = val);
 
@@ -136,7 +136,7 @@ elt_set(cl_object seq, cl_fixnum index, cl_object val)
 	case t_bitvector:
 		if (index >= seq->vector.fillp)
 			goto E;
-		return(aset(seq, index, val));
+		return(ecl_aset(seq, index, val));
 
 	case t_base_string:
 		if (index >= seq->base_string.fillp)
@@ -205,7 +205,7 @@ E:
 			e = sequence->vector.fillp;
 		else if (e < s || e > sequence->vector.fillp)
 			goto ILLEGAL_START_END;
-		x = ecl_alloc_simple_vector(e - s, array_elttype(sequence));
+		x = ecl_alloc_simple_vector(e - s, ecl_array_elttype(sequence));
 		ecl_copy_subarray(x, 0, sequence, s, e-s);
 		@(return x)
 
@@ -227,11 +227,11 @@ cl_copy_seq(cl_object x)
 cl_object
 cl_length(cl_object x)
 {
-	@(return MAKE_FIXNUM(length(x)))
+	@(return MAKE_FIXNUM(ecl_length(x)))
 }
 
 cl_fixnum
-length(cl_object x)
+ecl_length(cl_object x)
 {
 	cl_fixnum i;
 
@@ -275,7 +275,7 @@ cl_reverse(cl_object seq)
 			FEwrong_type_argument(@'sequence', seq);
 		break;
 	case t_cons: {
-		for (x = seq, output = Cnil;  !endp(x);  x = CDR(x))
+		for (x = seq, output = Cnil;  !ecl_endp(x);  x = CDR(x))
 			output = CONS(CAR(x), output);
 		break;
 	}
@@ -285,7 +285,7 @@ cl_reverse(cl_object seq)
 	case t_vector:
 	case t_bitvector:
 	case t_base_string:
-		output = ecl_alloc_simple_vector(seq->vector.fillp, array_elttype(seq));
+		output = ecl_alloc_simple_vector(seq->vector.fillp, ecl_array_elttype(seq));
 		ecl_copy_subarray(output, 0, seq, 0, seq->vector.fillp);
 		ecl_reverse_subarray(output, 0, seq->vector.fillp);
 		break;
@@ -306,7 +306,7 @@ cl_nreverse(cl_object seq)
 		break;
 	case t_cons: {
 		cl_object x, y, z;
-		for (x = Cnil, y = seq;  !endp(CDR(y));) {
+		for (x = Cnil, y = seq;  !ecl_endp(CDR(y));) {
 			z = y;
 			y = CDR(y);
 			CDR(z) = x;

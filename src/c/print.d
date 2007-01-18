@@ -289,7 +289,7 @@ stream_or_default_output(cl_object stream)
 cl_fixnum
 ecl_print_base(void)
 {
-	cl_object object = symbol_value(@'*print-base*');
+	cl_object object = ecl_symbol_value(@'*print-base*');
 	cl_fixnum base;
 	if (!FIXNUMP(object) || (base = fix(object)) < 2 || base > 36) {
 		ECL_SETQ(@'*print-base*', MAKE_FIXNUM(10));
@@ -301,7 +301,7 @@ ecl_print_base(void)
 cl_fixnum
 ecl_print_level(void)
 {
-	cl_object object = symbol_value(@'*print-level*');
+	cl_object object = ecl_symbol_value(@'*print-level*');
 	cl_fixnum level;
 	if (object == Cnil) {
 		level = MOST_POSITIVE_FIXNUM;
@@ -322,7 +322,7 @@ ecl_print_level(void)
 cl_fixnum
 ecl_print_length(void)
 {
-	cl_object object = symbol_value(@'*print-length*');
+	cl_object object = ecl_symbol_value(@'*print-length*');
 	cl_fixnum length;
 	if (object == Cnil) {
 		length = MOST_POSITIVE_FIXNUM;
@@ -343,13 +343,13 @@ ecl_print_length(void)
 bool
 ecl_print_radix(void)
 {
-	return symbol_value(@'*print-radix*') != Cnil;
+	return ecl_symbol_value(@'*print-radix*') != Cnil;
 }
 
 cl_object
 ecl_print_case(void)
 {
-	cl_object output = symbol_value(@'*print-case*');
+	cl_object output = ecl_symbol_value(@'*print-case*');
 	if (output != @':upcase' && output != @':downcase' &&
 	    output != @':capitalize') {
 		ECL_SETQ(@'*print-case*', @':downcase');
@@ -361,31 +361,31 @@ ecl_print_case(void)
 bool
 ecl_print_gensym(void)
 {
-	return symbol_value(@'*print-gensym*') != Cnil;
+	return ecl_symbol_value(@'*print-gensym*') != Cnil;
 }
 
 bool
 ecl_print_array(void)
 {
-	return symbol_value(@'*print-array*') != Cnil;
+	return ecl_symbol_value(@'*print-array*') != Cnil;
 }
 
 bool
 ecl_print_readably(void)
 {
-	return symbol_value(@'*print-readably*') != Cnil;
+	return ecl_symbol_value(@'*print-readably*') != Cnil;
 }
 
 bool
 ecl_print_escape(void)
 {
-	return symbol_value(@'*print-escape*') != Cnil;
+	return ecl_symbol_value(@'*print-escape*') != Cnil;
 }
 
 bool
 ecl_print_circle(void)
 {
-	return symbol_value(@'*print-circle*') != Cnil;
+	return ecl_symbol_value(@'*print-circle*') != Cnil;
 }
 
 static void
@@ -655,12 +655,12 @@ do_write_integer(cl_object x, struct powers *powers, cl_index len,
 			write_positive_fixnum(fix(x), powers->base, len, stream);
 			return;
 		}
-		while (number_compare(x, powers->number) < 0) {
+		while (ecl_number_compare(x, powers->number) < 0) {
 			if (len)
 				write_positive_fixnum(0, powers->base, len, stream);
 			powers--;
 		}
-		floor2(x, powers->number);
+		ecl_floor2(x, powers->number);
 		left = VALUES(0);
 		x = VALUES(1);
 		if (len) len -= powers->n_digits;
@@ -688,13 +688,13 @@ write_bignum(cl_object x, cl_object stream)
 		powers[0].n_digits = n_digits = 1;
 		powers[0].base = base;
 		for (i = 1; i < num_powers; i++) {
-			powers[i].number = p = number_times(p, p);
+			powers[i].number = p = ecl_times(p, p);
 			powers[i].n_digits = n_digits = 2*n_digits;
 			powers[i].base = base;
 		}
-		if (number_minusp(x)) {
+		if (ecl_minusp(x)) {
 			write_ch('-', stream);
-			x = number_negate(x);
+			x = ecl_negate(x);
 		}
 		do_write_integer(x, &powers[num_powers-1], 0, stream);
 #ifndef __GNUC__
@@ -817,7 +817,7 @@ write_symbol_string(cl_object s, int action, cl_object print_case,
 static void
 write_symbol(cl_object x, cl_object stream)
 {
-	cl_object print_package = symbol_value(@'si::*print-package*');
+	cl_object print_package = ecl_symbol_value(@'si::*print-package*');
 	cl_object readtable = ecl_current_readtable();
 	cl_object print_case = ecl_print_case();
 	cl_object package = x->symbol.hpack;
@@ -840,7 +840,7 @@ write_symbol(cl_object x, cl_object stream)
 	} else if (package == cl_core.keyword_package) {
 		write_ch(':', stream);
 	} else if ((print_package != Cnil && package != print_package)
-		   || ecl_find_symbol(x, current_package(), &intern_flag)!=x
+		   || ecl_find_symbol(x, ecl_current_package(), &intern_flag)!=x
 		   || intern_flag == 0)
 	{
 		cl_object name = package->pack.name;
@@ -848,7 +848,7 @@ write_symbol(cl_object x, cl_object stream)
 				    print_case, stream,
 				    needs_to_be_escaped(name, readtable, print_case));
 		if (ecl_find_symbol(x, package, &intern_flag) != x)
-			error("can't print symbol");
+			ecl_internal_error("can't print symbol");
 		if ((print_package != Cnil && package != print_package)
 		    || intern_flag == INTERNAL) {
 			write_str("::", stream);
@@ -979,7 +979,7 @@ write_array(bool vector, cl_object x, cl_object stream)
 		}
 		/* FIXME: This conses! */
 		if (print_level >= 0)
-			si_write_object_recursive(aref(x, m), stream);
+			si_write_object_recursive(ecl_aref(x, m), stream);
 		else
 			write_ch('#', stream);
 		j = n-1;
@@ -1078,31 +1078,31 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
-		r = symbol_value(@'*read-default-float-format*');
+		r = ecl_symbol_value(@'*read-default-float-format*');
 		write_double(ecl_short_float(x), (r == @'short-float')? 0 : 'f', FLT_SIG, stream);
 		break;
 	case t_singlefloat:
-		r = symbol_value(@'*read-default-float-format*');
+		r = ecl_symbol_value(@'*read-default-float-format*');
 		write_double(sf(x), (r == @'single-float')? 0 : 's', FLT_SIG, stream);
 		break;
 #else
 	case t_singlefloat:
-		r = symbol_value(@'*read-default-float-format*');
+		r = ecl_symbol_value(@'*read-default-float-format*');
 		write_double(sf(x), (r == @'single-float' || r == @'short-float')? 0 : 's', FLT_SIG, stream);
 		break;
 #endif
 #ifdef ECL_LONG_FLOAT
 	case t_doublefloat:
-		r = symbol_value(@'*read-default-float-format*');
+		r = ecl_symbol_value(@'*read-default-float-format*');
 		write_double(df(x), (r == @'double-float')? 0 : 'd', DBL_SIG, stream);
 		break;
 	case t_longfloat:
-		r = symbol_value(@'*read-default-float-format*');
+		r = ecl_symbol_value(@'*read-default-float-format*');
 		write_double(ecl_long_float(x), (r == @'long-float')? 0 : 'l', LDBL_SIG, stream);
 		break;
 #else
 	case t_doublefloat:
-		r = symbol_value(@'*read-default-float-format*');
+		r = ecl_symbol_value(@'*read-default-float-format*');
 		write_double(df(x), (r == @'double-float' || r == @'long-float')? 0 : 'd', DBL_SIG, stream);
 		break;
 #endif
@@ -1402,14 +1402,14 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			break;
 
 		default:
-			error("illegal stream mode");
+			ecl_internal_error("illegal stream mode");
 		}
 		write_ch('>', stream);
 		break;
 
 	case t_random:
 		write_str("#$", stream);
-		si_write_ugly_object(make_unsigned_integer(x->random.value), stream);
+		si_write_ugly_object(ecl_make_unsigned_integer(x->random.value), stream);
 		break;
 
 #ifndef CLOS
@@ -1460,9 +1460,9 @@ si_write_ugly_object(cl_object x, cl_object stream)
 	                cl_index i;
                         cl_object code_l=Cnil, data_l=Cnil;
                         for ( i=x->bytecodes.code_size-1 ; i<(cl_index)(-1l) ; i-- )
-                             code_l = make_cons(MAKE_FIXNUM(((cl_opcode*)(x->bytecodes.code))[i]), code_l);
+                             code_l = ecl_cons(MAKE_FIXNUM(((cl_opcode*)(x->bytecodes.code))[i]), code_l);
                         for ( i=x->bytecodes.data_size-1 ; i<(cl_index)(-1l) ; i-- )
-                             data_l = make_cons(x->bytecodes.data[i], data_l);
+                             data_l = ecl_cons(x->bytecodes.data[i], data_l);
 
                         write_str("#Y", stream);
                         si_write_ugly_object(
@@ -1554,7 +1554,7 @@ si_write_object_recursive(cl_object x, cl_object stream)
 {
 	bool circle;
 #if defined(ECL_CMU_FORMAT)
-	if (symbol_value(@'*print-pretty*') != Cnil) {
+	if (ecl_symbol_value(@'*print-pretty*') != Cnil) {
 		cl_object f = funcall(2, @'pprint-dispatch', x);
 		if (VALUES(1) != Cnil) {
 			funcall(3, f, stream, x);
@@ -1569,13 +1569,13 @@ si_write_object_recursive(cl_object x, cl_object stream)
 		cl_object circle_counter;
 		cl_fixnum code;
 		bool print;
-		circle_counter = symbol_value(@'si::*circle-counter*');
+		circle_counter = ecl_symbol_value(@'si::*circle-counter*');
 		if (circle_counter == Cnil) {
 			cl_object hash =
 				cl__make_hash_table(@'eq',
 						    MAKE_FIXNUM(1024),
-						    make_singlefloat(1.5f),	
-						    make_singlefloat(0.75f), Cnil);
+						    ecl_make_singlefloat(1.5f),	
+						    ecl_make_singlefloat(0.75f), Cnil);
 			bds_bind(@'si::*circle-counter*', Ct);
 			bds_bind(@'si::*circle-stack*', hash);
 			si_write_object(x, cl_core.null_stream);
@@ -1611,7 +1611,7 @@ si_write_object_recursive(cl_object x, cl_object stream)
 #if !defined(ECL_CMU_FORMAT)
 cl_object
 si_write_object(cl_object x, cl_object stream) {
-	if (symbol_value(@'*print-pretty*') == Cnil) {
+	if (ecl_symbol_value(@'*print-pretty*') == Cnil) {
 		cl_env.print_pretty = 0;
 	} else {
 		cl_env.print_pretty = 1;
@@ -1628,14 +1628,14 @@ si_write_object(cl_object x, cl_object stream) {
 static bool
 object_will_print_as_hash(cl_object x)
 {
-	cl_object circle_counter = symbol_value(@'si::*circle-counter*');
-	cl_object circle_stack = symbol_value(@'si::*circle-stack*');
-	cl_object code = gethash_safe(x, circle_stack, OBJNULL);
+	cl_object circle_counter = ecl_symbol_value(@'si::*circle-counter*');
+	cl_object circle_stack = ecl_symbol_value(@'si::*circle-stack*');
+	cl_object code = ecl_gethash_safe(x, circle_stack, OBJNULL);
 	if (FIXNUMP(circle_counter)) {
 		return !(code == OBJNULL || code == Cnil);
 	} else if (code == OBJNULL) {
 		/* Was not found before */
-		sethash(x, circle_stack, Cnil);
+		ecl_sethash(x, circle_stack, Cnil);
 		return 0;
 	} else {
 		return 1;
@@ -1653,34 +1653,34 @@ object_will_print_as_hash(cl_object x)
 static cl_fixnum
 search_print_circle(cl_object x)
 {
-	cl_object circle_counter = symbol_value(@'si::*circle-counter*');
-	cl_object circle_stack = symbol_value(@'si::*circle-stack*');
+	cl_object circle_counter = ecl_symbol_value(@'si::*circle-counter*');
+	cl_object circle_stack = ecl_symbol_value(@'si::*circle-stack*');
 	cl_object code;
 
 	if (!FIXNUMP(circle_counter)) {
-		code = gethash_safe(x, circle_stack, OBJNULL);
+		code = ecl_gethash_safe(x, circle_stack, OBJNULL);
 		if (code == OBJNULL) {
 			/* Was not found before */
-			sethash(x, circle_stack, Cnil);
+			ecl_sethash(x, circle_stack, Cnil);
 			return 0;
 		} else if (code == Cnil) {
 			/* This object is referenced twice */
-			sethash(x, circle_stack, Ct);
+			ecl_sethash(x, circle_stack, Ct);
 			return 1;
 		} else {
 			return 2;
 		}
 	} else {
-		code = gethash_safe(x, circle_stack, OBJNULL);
+		code = ecl_gethash_safe(x, circle_stack, OBJNULL);
 		if (code == OBJNULL || code == Cnil) {
 			/* Is not referenced or was not found before */
-			/* sethash(x, circle_stack, Cnil); */
+			/* ecl_sethash(x, circle_stack, Cnil); */
 			return 0;
 		} else if (code == Ct) {
 			/* This object is referenced twice, but has no code yet */
 			cl_fixnum new_code = fix(circle_counter) + 1;
 			circle_counter = MAKE_FIXNUM(new_code);
-			sethash(x, circle_stack, circle_counter);
+			ecl_sethash(x, circle_stack, circle_counter);
 			ECL_SETQ(@'si::*circle-counter*', circle_counter);
 			return -new_code;
 		} else {
@@ -1709,7 +1709,7 @@ potential_number_p(cl_object strng, int base)
 	c = s[0];
 
 	/* A potential number must begin with a digit, sign or extension character (^ _) */
-	if ((digitp(c, base) < 0) && c != '+' && c != '-' && c != '^' && c != '_')
+	if ((ecl_digitp(c, base) < 0) && c != '+' && c != '-' && c != '^' && c != '_')
 		return FALSE;
 
 	/* A potential number cannot end with a sign */
@@ -1721,7 +1721,7 @@ potential_number_p(cl_object strng, int base)
 		/* It can only contain digits, signs, ratio markers, extension characters and
 		 * number markers. Number markers are letters, but two adjacent letters fail
 		 * to be a number marker. */
-		if (digitp(c, base) >= 0 || c == '+' && c == '-' && c == '/' && c == '.' &&
+		if (ecl_digitp(c, base) >= 0 || c == '+' && c == '-' && c == '/' && c == '.' &&
 		    c == '^' && c == '_') {
 			continue;
 		}
@@ -1735,21 +1735,21 @@ potential_number_p(cl_object strng, int base)
 
 @(defun write (x
 	       &key ((:stream strm) Cnil)
-		    (array symbol_value(@'*print-array*'))
-		    (base symbol_value(@'*print-base*'))
-		    ((:case cas) symbol_value(@'*print-case*'))
-		    (circle symbol_value(@'*print-circle*'))
-		    (escape symbol_value(@'*print-escape*'))
-		    (gensym symbol_value(@'*print-gensym*'))
-		    (length symbol_value(@'*print-length*'))
-		    (level symbol_value(@'*print-level*'))
-		    (lines symbol_value(@'*print-lines*'))
-		    (miser_width symbol_value(@'*print-miser-width*'))
-		    (pprint_dispatch symbol_value(@'*print-pprint-dispatch*'))
-		    (pretty symbol_value(@'*print-pretty*'))
-		    (radix symbol_value(@'*print-radix*'))
-		    (readably symbol_value(@'*print-readably*'))
-		    (right_margin symbol_value(@'*print-right-margin*')))
+		    (array ecl_symbol_value(@'*print-array*'))
+		    (base ecl_symbol_value(@'*print-base*'))
+		    ((:case cas) ecl_symbol_value(@'*print-case*'))
+		    (circle ecl_symbol_value(@'*print-circle*'))
+		    (escape ecl_symbol_value(@'*print-escape*'))
+		    (gensym ecl_symbol_value(@'*print-gensym*'))
+		    (length ecl_symbol_value(@'*print-length*'))
+		    (level ecl_symbol_value(@'*print-level*'))
+		    (lines ecl_symbol_value(@'*print-lines*'))
+		    (miser_width ecl_symbol_value(@'*print-miser-width*'))
+		    (pprint_dispatch ecl_symbol_value(@'*print-pprint-dispatch*'))
+		    (pretty ecl_symbol_value(@'*print-pretty*'))
+		    (radix ecl_symbol_value(@'*print-radix*'))
+		    (readably ecl_symbol_value(@'*print-readably*'))
+		    (right_margin ecl_symbol_value(@'*print-right-margin*')))
 @{
 	bds_bind(@'*print-array*', array);
 	bds_bind(@'*print-base*', base);
@@ -1777,13 +1777,13 @@ potential_number_p(cl_object strng, int base)
 
 @(defun prin1 (obj &optional strm)
 @
-	prin1(obj, strm);
+	ecl_prin1(obj, strm);
 	@(return obj)
 @)
 
 @(defun print (obj &optional strm)
 @
-	print(obj, strm);
+	ecl_print(obj, strm);
 	@(return obj)
 @)
 
@@ -1801,7 +1801,7 @@ potential_number_p(cl_object strng, int base)
 
 @(defun princ (obj &optional strm)
 @
-	princ(obj, strm);
+	ecl_princ(obj, strm);
 	@(return obj)
 @)
 
@@ -1838,7 +1838,7 @@ potential_number_p(cl_object strng, int base)
 
 @(defun terpri (&optional strm)
 @
-	terpri(strm);
+	ecl_terpri(strm);
 	@(return Cnil)
 @)
 
@@ -1901,7 +1901,7 @@ cl_write_byte(cl_object integer, cl_object binary_output_stream)
 @)
 
 cl_object
-princ(cl_object obj, cl_object strm)
+ecl_princ(cl_object obj, cl_object strm)
 {
 	strm = stream_or_default_output(strm);
 	bds_bind(@'*print-escape*', Cnil);
@@ -1912,7 +1912,7 @@ princ(cl_object obj, cl_object strm)
 }
 
 cl_object
-prin1(cl_object obj, cl_object strm)
+ecl_prin1(cl_object obj, cl_object strm)
 {
 	strm = stream_or_default_output(strm);
 	bds_bind(@'*print-escape*', Ct);
@@ -1923,17 +1923,17 @@ prin1(cl_object obj, cl_object strm)
 }
 
 cl_object
-print(cl_object obj, cl_object strm)
+ecl_print(cl_object obj, cl_object strm)
 {
 	strm = stream_or_default_output(strm);
-	terpri(strm);
-	prin1(obj, strm);
-	princ_char(' ', strm);
+	ecl_terpri(strm);
+	ecl_prin1(obj, strm);
+	ecl_princ_char(' ', strm);
 	return obj;
 }
 
 cl_object
-terpri(cl_object strm)
+ecl_terpri(cl_object strm)
 {
 	strm = stream_or_default_output(strm);
 #ifdef ECL_CLOS_STREAMS
@@ -1947,7 +1947,7 @@ terpri(cl_object strm)
 }
 
 void
-write_string(cl_object strng, cl_object strm)
+ecl_write_string(cl_object strng, cl_object strm)
 {
 	cl_index i;
 
@@ -1974,14 +1974,14 @@ write_string(cl_object strng, cl_object strm)
 	THE ULTRA-SPECIAL-DINNER-SERVICE OPTIMIZATION
 */
 void
-princ_str(const char *s, cl_object strm)
+ecl_princ_str(const char *s, cl_object strm)
 {
 	strm = stream_or_default_output(strm);
 	writestr_stream(s, strm);
 }
 
 void
-princ_char(int c, cl_object strm)
+ecl_princ_char(int c, cl_object strm)
 {
 	strm = stream_or_default_output(strm);
 	ecl_write_char(c, strm);

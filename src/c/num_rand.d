@@ -23,7 +23,7 @@ rando(cl_object x, cl_object rs)
 	cl_object z;
 	double d = (double)(rs->random.value>>1) / (4294967296.0/2.0);
  AGAIN:
-	if (!number_plusp(x)) {
+	if (!ecl_plusp(x)) {
 		goto ERROR;
 	}
 	switch (type_of(x)) {
@@ -31,7 +31,7 @@ rando(cl_object x, cl_object rs)
 		z = MAKE_FIXNUM((cl_fixnum)(fix(x) * d));
 		break;
 	case t_bignum:
-		z = floor1(number_times(x, cl_rational(make_doublefloat(d))));
+		z = ecl_floor1(ecl_times(x, cl_rational(ecl_make_doublefloat(d))));
 		break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
@@ -39,10 +39,10 @@ rando(cl_object x, cl_object rs)
 		break;
 #endif
 	case t_singlefloat:
-		z = make_singlefloat(sf(x) * (float)d);
+		z = ecl_make_singlefloat(sf(x) * (float)d);
 		break;
 	case t_doublefloat:
-		z = make_doublefloat(df(x) * d);
+		z = ecl_make_doublefloat(df(x) * d);
 		break;
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
@@ -59,7 +59,7 @@ rando(cl_object x, cl_object rs)
 }
 
 cl_object
-make_random_state(cl_object rs)
+ecl_make_random_state(cl_object rs)
 {
         cl_object z = cl_alloc_object(t_random);
 
@@ -67,7 +67,7 @@ make_random_state(cl_object rs)
 		z->random.value = time(0);
 	} else {
 		if (Null(rs)) {
-			rs = symbol_value(@'*random-state*');
+			rs = ecl_symbol_value(@'*random-state*');
 		}
 		if (type_of(rs) != t_random) {
 			FEwrong_type_argument(@'random-state', rs);
@@ -89,7 +89,7 @@ advance_random_state(cl_object rs)
 }
 
 
-@(defun random (x &optional (rs symbol_value(@'*random-state*')))
+@(defun random (x &optional (rs ecl_symbol_value(@'*random-state*')))
 @
 	rs = ecl_check_cl_type(@'random', rs, t_random);
 	advance_random_state(rs);
@@ -98,7 +98,7 @@ advance_random_state(cl_object rs)
 
 @(defun make_random_state (&optional (rs Cnil))
 @
-	@(return make_random_state(rs))
+	@(return ecl_make_random_state(rs))
 @)
 
 cl_object

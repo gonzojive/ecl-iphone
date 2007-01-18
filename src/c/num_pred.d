@@ -17,7 +17,7 @@
 #include <ecl/ecl.h>
 
 int
-number_zerop(cl_object x)
+ecl_zerop(cl_object x)
 {
 	switch (type_of(x)) {
 	case t_fixnum:
@@ -41,8 +41,8 @@ number_zerop(cl_object x)
 #endif
 
 	case t_complex:
-		return(number_zerop(x->complex.real) &&
-		       number_zerop(x->complex.imag));
+		return(ecl_zerop(x->complex.real) &&
+		       ecl_zerop(x->complex.imag));
 
 	default:
 		FEtype_error_number(x);
@@ -50,7 +50,7 @@ number_zerop(cl_object x)
 }
 
 int
-number_plusp(cl_object x)
+ecl_plusp(cl_object x)
 {
  RESTART:
 	switch (type_of(x)) {
@@ -82,7 +82,7 @@ number_plusp(cl_object x)
 }
 
 int
-number_minusp(cl_object x)
+ecl_minusp(cl_object x)
 {
  RESTART:
 	switch (type_of(x)) {
@@ -116,7 +116,7 @@ number_minusp(cl_object x)
 }
 
 int
-number_oddp(cl_object x)
+ecl_oddp(cl_object x)
 {
 	if (FIXNUMP(x))
 		return fix(x) & 1;
@@ -126,7 +126,7 @@ number_oddp(cl_object x)
 }
 
 int
-number_evenp(cl_object x)
+ecl_evenp(cl_object x)
 {
 	if (FIXNUMP(x))
 		return ~fix(x) & 1;
@@ -137,30 +137,30 @@ number_evenp(cl_object x)
 
 cl_object
 cl_zerop(cl_object x)
-{	/* INV: number_zerop() checks type */
-	@(return (number_zerop(x) ? Ct : Cnil))
+{	/* INV: ecl_zerop() checks type */
+	@(return (ecl_zerop(x) ? Ct : Cnil))
 }
 
 cl_object
 cl_plusp(cl_object x)
-{	/* INV: number_plusp()  checks type */
-	@(return (number_plusp(x) ? Ct : Cnil))
+{	/* INV: ecl_plusp()  checks type */
+	@(return (ecl_plusp(x) ? Ct : Cnil))
 }
 
 cl_object
 cl_minusp(cl_object x)
-{	/* INV: number_minusp() checks type */
-	@(return (number_minusp(x) ? Ct : Cnil))
+{	/* INV: ecl_minusp() checks type */
+	@(return (ecl_minusp(x) ? Ct : Cnil))
 }
 
 cl_object
 cl_oddp(cl_object x)
-{	/* INV: number_oddp() checks type */
-	@(return (number_oddp(x) ? Ct : Cnil))
+{	/* INV: ecl_oddp() checks type */
+	@(return (ecl_oddp(x) ? Ct : Cnil))
 }
 
 cl_object
 cl_evenp(cl_object x)
-{	/* INV: number_evenp() checks_type */
-	@(return (number_evenp(x) ? Ct : Cnil))
+{	/* INV: ecl_evenp() checks_type */
+	@(return (ecl_evenp(x) ? Ct : Cnil))
 }

@@ -44,7 +44,7 @@ cl_set(cl_object var, cl_object val)
 	if (SYMBOLP(fname)) {
 		sym->symbol.mflag = mflag;
 		SYM_FUN(sym) = def;
-		clear_compiler_properties(sym);
+		ecl_clear_compiler_properties(sym);
 #ifndef ECL_CMU_FORMAT
 		if (pprint == Cnil)
 			si_rem_sysprop(sym, @'si::pretty-print-format');
@@ -85,7 +85,7 @@ cl_fmakunbound(cl_object fname)
 				"Ignore lock and proceed", fname->symbol.hpack, 1, fname);
 	}
 	if (SYMBOLP(fname)) {
-		clear_compiler_properties(sym);
+		ecl_clear_compiler_properties(sym);
 #ifdef PDE
 		si_rem_sysprop(fname, @'defun');
 #endif
@@ -101,7 +101,7 @@ cl_fmakunbound(cl_object fname)
 }
 
 void
-clear_compiler_properties(cl_object sym)
+ecl_clear_compiler_properties(cl_object sym)
 {
 	if (ecl_booted) {
 		si_unlink_symbol(sym);
@@ -113,7 +113,7 @@ clear_compiler_properties(cl_object sym)
 void
 record_source_pathname(cl_object sym, cl_object def)
 {
-  if (symbol_value(@'si::*record-source-pathname-p*') != Cnil)
+  if (ecl_symbol_value(@'si::*record-source-pathname-p*') != Cnil)
     (void)funcall(3, @'si::record-source-pathname', sym, def);
 }
 #endif /* PDE */
@@ -121,7 +121,7 @@ record_source_pathname(cl_object sym, cl_object def)
 cl_object
 si_get_sysprop(cl_object sym, cl_object prop)
 {
-	cl_object plist = gethash_safe(sym, cl_core.system_properties, Cnil);
+	cl_object plist = ecl_gethash_safe(sym, cl_core.system_properties, Cnil);
 	prop = ecl_getf(plist, prop, OBJNULL);
 	if (prop == OBJNULL) {
 		@(return Cnil Cnil);
@@ -134,8 +134,8 @@ cl_object
 si_put_sysprop(cl_object sym, cl_object prop, cl_object value)
 {
 	cl_object plist;
-	plist = gethash_safe(sym, cl_core.system_properties, Cnil);
-	sethash(sym, cl_core.system_properties, si_put_f(plist, value, prop));
+	plist = ecl_gethash_safe(sym, cl_core.system_properties, Cnil);
+	ecl_sethash(sym, cl_core.system_properties, si_put_f(plist, value, prop));
 	@(return value);
 }
 
@@ -143,9 +143,9 @@ cl_object
 si_rem_sysprop(cl_object sym, cl_object prop)
 {
 	cl_object plist, found;
-	plist = gethash_safe(sym, cl_core.system_properties, Cnil);
+	plist = ecl_gethash_safe(sym, cl_core.system_properties, Cnil);
 	plist = si_rem_f(plist, prop);
 	found = VALUES(1);
-	sethash(sym, cl_core.system_properties, plist);
+	ecl_sethash(sym, cl_core.system_properties, plist);
 	@(return found);
 }

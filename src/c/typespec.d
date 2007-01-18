@@ -88,7 +88,7 @@ FEtype_error_index(cl_object seq, cl_object ndx)
 	cl_error(9, @'simple-type-error', @':format-control',
 		    make_constant_base_string("~S is not a valid index into the object ~S"),
 		    @':format-arguments', cl_list(2, ndx, seq),
-		    @':expected-type', cl_list(3, @'integer', MAKE_FIXNUM(0), MAKE_FIXNUM(length(seq)-1)),
+		    @':expected-type', cl_list(3, @'integer', MAKE_FIXNUM(0), MAKE_FIXNUM(ecl_length(seq)-1)),
 		    @':datum', ndx);
 }
 
@@ -182,7 +182,7 @@ ecl_type_to_symbol(cl_type t)
 		return @'mp::lock';
 #endif
 	default:
-		error("not a lisp data object");
+		ecl_internal_error("not a lisp data object");
 	}
 }
 
@@ -343,16 +343,16 @@ cl_type_of(cl_object x)
 			t = @'array';
 		else
 			t = @'simple-array';
-		t = cl_list(3, t, ecl_elttype_to_symbol(array_elttype(x)), cl_array_dimensions(1, x));
+		t = cl_list(3, t, ecl_elttype_to_symbol(ecl_array_elttype(x)), cl_array_dimensions(1, x));
 		break;
 	case t_vector:
 		if (x->vector.adjustable ||
 		    !Null(CAR(x->vector.displaced))) {
-			t = cl_list(3, @'vector', ecl_elttype_to_symbol(array_elttype(x)),
+			t = cl_list(3, @'vector', ecl_elttype_to_symbol(ecl_array_elttype(x)),
 				    MAKE_FIXNUM(x->vector.dim));
 		} else if (x->vector.hasfillp ||
 			   (cl_elttype)x->vector.elttype != aet_object) {
-			t = cl_list(3, @'simple-array', ecl_elttype_to_symbol(array_elttype(x)),
+			t = cl_list(3, @'simple-array', ecl_elttype_to_symbol(ecl_array_elttype(x)),
 				    cl_array_dimensions(1, x));
 		} else {
 			t = cl_list(2, @'simple-vector', MAKE_FIXNUM(x->vector.dim));

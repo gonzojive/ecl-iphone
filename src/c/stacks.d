@@ -32,7 +32,7 @@ bds_bind(cl_object s, cl_object value)
 		/* The previous binding was at most global */
 		slot->symbol = s;
 		slot->value = OBJNULL;
-		sethash(s, cl_env.bindings_hash, value);
+		ecl_sethash(s, cl_env.bindings_hash, value);
 	} else {
 		/* We have to save a dynamic binding */
 		slot->symbol = h->key;
@@ -51,7 +51,7 @@ bds_push(cl_object s)
 		/* The previous binding was at most global */
 		slot->symbol = s;
 		slot->value = OBJNULL;
-		sethash(s, cl_env.bindings_hash, s->symbol.value);
+		ecl_sethash(s, cl_env.bindings_hash, s->symbol.value);
 	} else {
 		/* We have to save a dynamic binding */
 		slot->symbol = h->key;
@@ -112,7 +112,7 @@ bds_overflow(void)
 {
 	--cl_env.bds_top;
 	if (cl_env.bds_limit > cl_env.bds_org + cl_env.bds_size)
-		error("bind stack overflow.");
+		ecl_internal_error("bind stack overflow.");
 	cl_env.bds_limit += BDSGETA;
 	FEerror("Bind stack overflow.", 0);
 }
@@ -249,7 +249,7 @@ frs_overflow(void)		/* used as condition in list.d */
 {
 	--cl_env.frs_top;
 	if (cl_env.frs_limit > cl_env.frs_org + cl_env.frs_size)
-		error("frame stack overflow.");
+		ecl_internal_error("frame stack overflow.");
 	cl_env.frs_limit += FRSGETA;
 	FEerror("Frame stack overflow.", 0);
 }
@@ -268,7 +268,7 @@ _frs_push(register cl_object val)
 }
 
 void
-unwind(ecl_frame_ptr fr)
+ecl_unwind(ecl_frame_ptr fr)
 {
 	cl_env.nlj_fr = fr;
 	while (cl_env.frs_top != fr && cl_env.frs_top->frs_val != ECL_PROTECT_TAG)
@@ -351,11 +351,11 @@ si_reset_stack_limits()
 	if (cl_env.bds_top < cl_env.bds_org + (cl_env.bds_size - 2*BDSGETA))
 		cl_env.bds_limit = cl_env.bds_org + (cl_env.bds_size - 2*BDSGETA);
 	else
-		error("can't reset bds_limit.");
+		ecl_internal_error("can't reset bds_limit.");
 	if (cl_env.frs_top < cl_env.frs_org + (cl_env.frs_size - 2*FRSGETA))
 		cl_env.frs_limit = cl_env.frs_org + (cl_env.frs_size - 2*FRSGETA);
 	else
-		error("can't reset frs_limit.");
+		ecl_internal_error("can't reset frs_limit.");
 #ifdef DOWN_STACK
 	if (&foo > cl_env.cs_org - cl_env.cs_size + 16)
 		cl_env.cs_limit = cl_env.cs_org - cl_env.cs_size;
@@ -364,7 +364,7 @@ si_reset_stack_limits()
 		cl_env.cs_limit = cl_env.cs_org + cl_env.cs_size;
 #endif
 	else
-		error("can't reset cl_env.cs_limit.");
+		ecl_internal_error("can't reset cl_env.cs_limit.");
 
 	@(return Cnil)
 }

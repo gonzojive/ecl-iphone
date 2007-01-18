@@ -198,7 +198,7 @@ cl_truename(cl_object orig_pathname)
 
 	cl_object pathname = coerce_to_file_pathname(orig_pathname);
 	if (pathname->pathname.directory == Cnil)
-		pathname = merge_pathnames(previous, pathname, @':newest');
+		pathname = ecl_merge_pathnames(previous, pathname, @':newest');
 
 	/* We process the directory part of the filename, removing all
 	 * possible symlinks. To do so, we only have to change to the
@@ -219,9 +219,9 @@ cl_truename(cl_object orig_pathname)
 			/* The link might be a relative pathname. In that case we have
 			 * to merge with the original pathname */
 			filename = cl_merge_pathnames(2, si_readlink(filename),
-						      make_pathname(Cnil, Cnil,
-								    cl_pathname_directory(1,filename),
-								    Cnil, Cnil, Cnil));
+						      ecl_make_pathname(Cnil, Cnil,
+									cl_pathname_directory(1,filename),
+									Cnil, Cnil, Cnil));
 #endif
 		} else {
 			filename = OBJNULL;
@@ -257,7 +257,7 @@ ERROR:					FElibc_error("Can't change the current directory to ~S",
 			goto BEGIN;
 		}
 #endif
-		pathname = merge_pathnames(si_getcwd(), pathname, @':newest');
+		pathname = ecl_merge_pathnames(si_getcwd(), pathname, @':newest');
 	} CL_UNWIND_PROTECT_EXIT {
 		chdir(previous->base_string.self);
 	} CL_UNWIND_PROTECT_END;
@@ -288,7 +288,7 @@ ecl_file_len(void *fp)
 	struct stat filestatus;
 
 	fstat(fileno((FILE*)fp), &filestatus);
-	return make_integer(filestatus.st_size);
+	return ecl_make_integer(filestatus.st_size);
 }
 
 cl_object
@@ -304,7 +304,7 @@ cl_rename_file(cl_object oldn, cl_object newn)
 	old_truename = cl_truename(oldn);
 
 	/* 2) Create the new file name. */
-	newn = merge_pathnames(newn, oldn, @':newest');
+	newn = ecl_merge_pathnames(newn, oldn, @':newest');
 	new_filename = si_coerce_to_filename(newn);
 
 	/* 3) Try renaming and signal an error when it was not possible. */
@@ -367,13 +367,13 @@ cl_file_author(cl_object file)
 }
 
 const char *
-expand_pathname(const char *name)
+ecl_expand_pathname(const char *name)
 {
   const char *path, *p;
   static char pathname[255], *pn;
 
   if (IS_DIR_SEPARATOR(name[0])) return(name);
-  if ((path = getenv("PATH")) == NULL) error("No PATH in environment");
+  if ((path = getenv("PATH")) == NULL) ecl_internal_error("No PATH in environment");
   p = path;
   pn = pathname;
   do {
@@ -400,7 +400,7 @@ LAST: strcpy(pn, name);
 }
 
 cl_object
-homedir_pathname(cl_object user)
+ecl_homedir_pathname(cl_object user)
 {
 	cl_index i;
 	cl_object namestring;
@@ -424,7 +424,7 @@ homedir_pathname(cl_object user)
 			i--;
 		}
 		if (i == 0)
-			return homedir_pathname(Cnil);
+			return ecl_homedir_pathname(Cnil);
 #ifdef HAVE_PWD_H
 		pwent = getpwnam(p);
 		if (pwent == NULL)
@@ -443,7 +443,7 @@ homedir_pathname(cl_object user)
 @(defun user_homedir_pathname (&optional host)
 @
 	/* Ignore optional host argument. */
-	@(return homedir_pathname(Cnil));
+	@(return ecl_homedir_pathname(Cnil));
 @)
 
 /*
@@ -598,7 +598,7 @@ dir_files(cl_object basedir, cl_object pathname)
 	if (name == Cnil && type == Cnil) {
 		return cl_list(1, basedir);
 	}
-	mask = make_pathname(Cnil, Cnil, Cnil, name, type, pathname->pathname.version);
+	mask = ecl_make_pathname(Cnil, Cnil, Cnil, name, type, pathname->pathname.version);
 	all_files = list_current_directory(NULL, FALSE);
 	loop_for_in(all_files) {
 		cl_object new = CAR(all_files);
@@ -665,7 +665,7 @@ dir_recursive(cl_object pathname, cl_object directory)
 			if (chdir(text) < 0)
 				continue;
 			item = dir_recursive(pathname, CDR(directory));
-			output = nconc(item, output);
+			output = ecl_nconc(item, output);
 			chdir(prev_dir->base_string.self);
 		} end_loop_for_in;
 	} else if (item == @':absolute') {
@@ -704,10 +704,10 @@ dir_recursive(cl_object pathname, cl_object directory)
 			if (chdir(text) < 0)
 				continue;
 			item = dir_recursive(pathname, directory);
-			output = nconc(item, output);
+			output = ecl_nconc(item, output);
 			chdir(prev_dir->base_string.self);
 		} end_loop_for_in;
-		output = nconc(output, dir_recursive(pathname, CDR(directory)));
+		output = ecl_nconc(output, dir_recursive(pathname, CDR(directory)));
 	}
 	return output;
 }
@@ -743,7 +743,7 @@ si_get_library_pathname(void)
 	cl_index len, ep;
 	if ((len = GetModuleFileName(hnd, buffer, MAXPATHLEN-1)) == 0)
 		FEerror("GetModuleFileName failed (last error = ~S)", 1, MAKE_FIXNUM(GetLastError()));
-	return parse_namestring(buffer, 0, len, &ep, Cnil);
+	return ecl_parse_namestring(buffer, 0, len, &ep, Cnil);
 }
 #endif
 

@@ -132,8 +132,8 @@ initialize_process_bindings(cl_object process, cl_object initial_bindings)
 	 * bindings */
 	if (initial_bindings != OBJNULL) {
 		hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
-					   make_singlefloat(1.5),
-					   make_singlefloat(0.7),
+					   ecl_make_singlefloat(1.5),
+					   ecl_make_singlefloat(0.7),
 					   Cnil); /* no need for locking */
 	} else {
 		hash = si_copy_hash_table(cl_env.bindings_hash);
@@ -231,7 +231,7 @@ mp_exit_process(void)
 		   back to the thread entry point, going through all possible
 		   UNWIND-PROTECT.
 		*/
-		unwind(cl_env.frs_org);
+		ecl_unwind(cl_env.frs_org);
 	}
 }
 

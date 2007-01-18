@@ -67,7 +67,7 @@ big_register_free(cl_object x)
 	else if (x == cl_env.big_register[2])
 	  x->big.big_limbs = cl_env.big_register_limbs[2];
 	else
-	  error("big_register_free: unknown register");
+	  ecl_internal_error("big_register_free: unknown register");
 	x->big.big_size = 0;
 	x->big.big_dim = BIGNUM_REGISTER_SIZE;
 }
@@ -116,7 +116,7 @@ big_alloc(int size)
 {
   volatile cl_object x = cl_alloc_object(t_bignum);
   if (size <= 0)
-    error("negative or zero size for bignum in big_alloc");
+    ecl_internal_error("negative or zero size for bignum in big_alloc");
   x->big.big_dim = size;
   x->big.big_size = 0;
   x->big.big_limbs = (mp_limb_t *)cl_alloc_atomic_align(size * sizeof(mp_limb_t), sizeof(mp_limb_t));

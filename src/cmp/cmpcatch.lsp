@@ -80,7 +80,7 @@
     (wt-nl "cl_stack_pop_values(" nargs ");")
     ;; Finally, if the protected form was aborted, jump to the
     ;; next catch point...
-    (wt-nl "if (unwinding) unwind(next_fr);")
+    (wt-nl "if (unwinding) ecl_unwind(next_fr);")
     ;; ... or simply return the values of the protected form.
     (unwind-exit 'VALUES)
     (wt "}")))

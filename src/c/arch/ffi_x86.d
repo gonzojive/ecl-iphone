@@ -114,7 +114,7 @@ ecl_dynamic_callback_execute(cl_object cbk_info, char *arg_buffer)
 	argtypes = CADDR(cbk_info);
 
 	arg_buffer += 4; /* Skip return address */
-	for (i=0; !endp(argtypes); argtypes = CDR(argtypes), i++) {
+	for (i=0; !ecl_endp(argtypes); argtypes = CDR(argtypes), i++) {
 		tag = ecl_foreign_type_code(CAR(argtypes));
 		size = fix(si_size_of_foreign_elt_type(CAR(argtypes)));
 		result = ecl_foreign_data_ref_elt(arg_buffer, tag);

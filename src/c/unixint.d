@@ -128,7 +128,7 @@ signal_catcher(int sig)
 #endif
 {
 	if (!ecl_interrupt_enable ||
-	    symbol_value(@'si::*interrupt-enable*') == Cnil) {
+	    ecl_symbol_value(@'si::*interrupt-enable*') == Cnil) {
 		mysignal(sig, signal_catcher);
 		cl_env.interrupt_pending = sig;
 		return;

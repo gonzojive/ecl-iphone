@@ -131,7 +131,7 @@ mangle_name(cl_object output, char *source, int l)
 	symbol = symbol->symbol.name;
 	l      = symbol->base_string.fillp;
 	source = symbol->base_string.self;
-	output = cl_alloc_simple_base_string(length(package) + l + 1);
+	output = cl_alloc_simple_base_string(ecl_length(package) + l + 1);
 	if (is_symbol && source[0] == '*') {
 		if (l > 2 && source[l-1] == '*') l--;
 		c = 'V';
@@ -199,7 +199,7 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 	s->symbol.hpack = package;
 	s->symbol.name = make_constant_base_string(name);
 	if (package == cl_core.keyword_package) {
-		sethash(s->symbol.name, package->pack.external, s);
+		ecl_sethash(s->symbol.name, package->pack.external, s);
 		ECL_SET(s, s);
 	} else {
 		ECL_SET(s, value);

@@ -225,7 +225,7 @@ extern void cl_write_object(cl_object x, cl_object stream);
 
 /* time.d */
 
-#define UTC_time_to_universal_time(x) number_plus(make_integer(x),cl_core.Jan1st1970UT)
+#define UTC_time_to_universal_time(x) ecl_plus(ecl_make_integer(x),cl_core.Jan1st1970UT)
 extern cl_fixnum ecl_runtime(void);
 
 /* unixint.d */

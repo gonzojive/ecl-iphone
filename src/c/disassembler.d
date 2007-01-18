@@ -22,27 +22,27 @@ static cl_opcode *base = NULL;
 
 static void
 print_noarg(const char *s) {
-	princ_str(s, Cnil);
+	ecl_princ_str(s, Cnil);
 }
 
 static void
 print_oparg(const char *s, cl_fixnum n) {
-	princ_str(s, Cnil);
-	princ(MAKE_FIXNUM(n), Cnil);
+	ecl_princ_str(s, Cnil);
+	ecl_princ(MAKE_FIXNUM(n), Cnil);
 }
 
 static void
 print_arg(const char *s, cl_object x) {
-	princ_str(s, Cnil);
-	princ(x, Cnil);
+	ecl_princ_str(s, Cnil);
+	ecl_princ(x, Cnil);
 }
 
 static void
 print_oparg_arg(const char *s, cl_fixnum n, cl_object x) {
-	princ_str(s, Cnil);
-	princ(MAKE_FIXNUM(n), Cnil);
-	princ_str(",", Cnil);
-	princ(x, Cnil);
+	ecl_princ_str(s, Cnil);
+	ecl_princ(MAKE_FIXNUM(n), Cnil);
+	ecl_princ_str(",", Cnil);
+	ecl_princ(x, Cnil);
 }
 
 static cl_object *
@@ -51,10 +51,10 @@ disassemble_vars(const char *message, cl_object *data, cl_index step) {
 	cl_index n = fix(o);
 
 	if (n) {
-	  terpri(Cnil);
+	  ecl_terpri(Cnil);
 	  print_noarg(message);
 	  for (; n; n--, data+=step) {
-	    prin1(data[0], Cnil);
+	    ecl_prin1(data[0], Cnil);
 	    if (n > 1) print_noarg(", ");
 	  }
 	}

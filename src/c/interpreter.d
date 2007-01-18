@@ -187,7 +187,7 @@ ecl_lex_env_get_record(register int s) {
 static void
 lambda_bind_var(cl_object var, cl_object val, cl_object specials)
 {
-	if (!member_eq(var, specials))
+	if (!ecl_member_eq(var, specials))
 		bind_var(var, val);
 	else
 		bds_bind(var, val);
@@ -218,7 +218,7 @@ lambda_bind(cl_narg narg, cl_object lambda, cl_index sp)
 	  } else {
 	    cl_object defaults = data[1];
 	    if (FIXNUMP(defaults)) {
-	      interpret(lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
+	      ecl_interpret(lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
 	      defaults = VALUES(0);
 	    }
 	    lambda_bind_var(data[0], defaults, specials);
@@ -304,7 +304,7 @@ lambda_bind(cl_narg narg, cl_object lambda, cl_index sp)
 	    else {
 	      cl_object defaults = data[2];
 	      if (FIXNUMP(defaults)) {
-		      interpret(lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
+		      ecl_interpret(lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
 		      defaults = VALUES(0);
 	      }
 	      lambda_bind_var(data[1],defaults,specials);
@@ -316,7 +316,7 @@ lambda_bind(cl_narg narg, cl_object lambda, cl_index sp)
 }
 
 cl_object
-lambda_apply(cl_narg narg, cl_object fun)
+ecl_apply_lambda(cl_narg narg, cl_object fun)
 {
 	cl_index args = cl_stack_index() - narg;
 	cl_object name;
@@ -338,7 +338,7 @@ lambda_apply(cl_narg narg, cl_object fun)
 	VALUES(0) = Cnil;
 	NVALUES = 0;
 	name = fun->bytecodes.name;
-	interpret(fun, fun->bytecodes.code);
+	ecl_interpret(fun, fun->bytecodes.code);
 	bds_unwind(old_bds_top);
 	ihs_pop();
 	returnn(VALUES(0));
@@ -394,7 +394,7 @@ interpret_funcall(cl_narg narg, cl_object fun) {
 	}
 #ifdef CLOS
 	case t_instance:
-		fun = compute_method(narg, fun, args);
+		fun = _ecl_compute_method(narg, fun, args);
 		if (fun == NULL) {
 			x = VALUES(0);
 			break;
@@ -402,7 +402,7 @@ interpret_funcall(cl_narg narg, cl_object fun) {
 		goto AGAIN;
 #endif
 	case t_bytecodes:
-		x = lambda_apply(narg, fun);
+		x = ecl_apply_lambda(narg, fun);
 		break;
 	case t_symbol: {
 		cl_object function = SYM_FUN(fun);
@@ -557,7 +557,7 @@ interpret_progv(cl_object bytecodes, cl_opcode *vector) {
 	cl_object old_lex_env = cl_env.lex_env;
 
 	/* 2) Add new bindings */
-	while (!endp(vars)) {
+	while (!ecl_endp(vars)) {
 		if (values == Cnil)
 			bds_bind(CAR(vars), OBJNULL);
 		else {
@@ -566,7 +566,7 @@ interpret_progv(cl_object bytecodes, cl_opcode *vector) {
 		}
 		vars = CDR(vars);
 	}
-	vector = interpret(bytecodes, vector);
+	vector = ecl_interpret(bytecodes, vector);
 
 	/* 3) Restore environment */
 	cl_env.lex_env = old_lex_env;
@@ -575,7 +575,7 @@ interpret_progv(cl_object bytecodes, cl_opcode *vector) {
 }
 
 void *
-interpret(cl_object bytecodes, void *pc) {
+ecl_interpret(cl_object bytecodes, void *pc) {
 	cl_opcode *vector = pc;
 	cl_object reg0 = VALUES(0), reg1;
 	static int i = 0;
@@ -833,14 +833,14 @@ interpret(cl_object bytecodes, void *pc) {
 	case OP_JEQL: {
 		cl_oparg value = GET_OPARG(vector);
 		cl_oparg jump = GET_OPARG(vector);
-		if (eql(reg0, bytecodes->bytecodes.data[value]))
+		if (ecl_eql(reg0, bytecodes->bytecodes.data[value]))
 			vector += jump - OPARG_SIZE;
 		break;
 	}
 	case OP_JNEQL: {
 		cl_oparg value = GET_OPARG(vector);
 		cl_oparg jump = GET_OPARG(vector);
-		if (!eql(reg0, bytecodes->bytecodes.data[value]))
+		if (!ecl_eql(reg0, bytecodes->bytecodes.data[value]))
 			vector += jump - OPARG_SIZE;
 		break;
 	}
@@ -1163,7 +1163,7 @@ interpret(cl_object bytecodes, void *pc) {
 		reg0 = VALUES(0);
 		n = fix(cl_stack_pop());
 		if (n <= 0)
-			unwind(cl_env.frs_top + n);
+			ecl_unwind(cl_env.frs_top + n);
 		break;
 	}
 	case OP_STEPIN: {

@@ -69,23 +69,23 @@ cl_sleep(cl_object z)
 #ifdef HAVE_NANOSLEEP
 	struct timespec tm;
 #endif
-	/* INV: number_minusp() makes sure `z' is real */
-	if (number_minusp(z))
+	/* INV: ecl_minusp() makes sure `z' is real */
+	if (ecl_minusp(z))
 		cl_error(9, @'simple-type-error', @':format-control',
 			    make_constant_base_string("Not a non-negative number ~S"),
 			    @':format-arguments', cl_list(1, z),
 			    @':expected-type', @'real', @':datum', z);
 #ifdef HAVE_NANOSLEEP
-	r = object_to_double(z);
+	r = ecl_to_double(z);
 	tm.tv_sec = (time_t)floor(r);
 	tm.tv_nsec = (long)((r - floor(r)) * 1e9);
 	nanosleep(&tm, NULL);
 #else
 #if defined (mingw32) || defined(_MSC_VER)
-	r = object_to_double(z) * 1000;
+	r = ecl_to_double(z) * 1000;
 	Sleep((long)r);
 #else
-	z = round1(z);
+	z = ecl_round1(z);
 	if (FIXNUMP(z))
 		sleep(fix(z));
 	else
@@ -130,6 +130,6 @@ init_unixtime(void)
 	ECL_SET(@'internal-time-units-per-second', MAKE_FIXNUM(HZ));
 
 	cl_core.Jan1st1970UT =
-	    number_times(MAKE_FIXNUM(24 * 60 * 60),
+	    ecl_times(MAKE_FIXNUM(24 * 60 * 60),
 			 MAKE_FIXNUM(17 + 365 * 70));
 }

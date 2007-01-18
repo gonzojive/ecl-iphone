@@ -129,7 +129,7 @@
   (let* ((env-var (env-var-name *env-lvl*))
 	 (expected-env-size (fun-env fun)))
     (if (< expected-env-size *env*)
-	(format nil "nthcdr(~D,~A)" (- *env* expected-env-size) env-var)
+	(format nil "ecl_nthcdr(~D,~A)" (- *env* expected-env-size) env-var)
 	env-var)))
 
 (defun wt-make-closure (fun &aux (cfun (fun-cfun fun)))
