@@ -250,7 +250,7 @@ mp_exit_process(void)
 		   back to the thread entry point, going through all possible
 		   UNWIND-PROTECT.
 		*/
-		unwind(cl_env.frs_org);
+		ecl_unwind(cl_env.frs_org);
 	}
 }
 
