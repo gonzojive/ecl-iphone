@@ -336,7 +336,7 @@ mp_giveup_lock(cl_object lock)
 			output = Cnil;
 			break;
 		case WAIT_ABANDONED:
-			internal_error("");
+			ecl_internal_error("");
 			break;
 		case WAIT_FAILED:
 			FEwin32_error("Unable to lock Win32 Mutex", 0);

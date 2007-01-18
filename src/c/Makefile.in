@@ -32,7 +32,7 @@ includedir=@includedir@
 # Files
 
 HDIR	= ../ecl
-HFILES	= ../ecl/config.h $(HDIR)/ecl.h $(HDIR)/ecl-cmp.h\
+HFILES	= $(HDIR)/config.h $(HDIR)/ecl.h $(HDIR)/ecl-cmp.h\
 	$(HDIR)/object.h $(HDIR)/cs.h $(HDIR)/stacks.h\
 	$(HDIR)/external.h $(HDIR)/eval.h\
 	$(HDIR)/number.h $(HDIR)/page.h $(HDIR)/unify.h
@@ -57,7 +57,7 @@ all:	$(DPP) ../libeclmin.a ../cinit.o
 
 .c.o: $(HFILES)
 	$(CC) $(CFLAGS) -o $@ $<
-.d.c: $(DPP) $(HFILES)
+.d.c: $(DPP)
 	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
 ffi_x86.c: arch/ffi_x86.d $(DPP) $(HFILES)
 	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
@@ -105,5 +105,5 @@ all_symbols2.o: all_symbols.c
 #
 # This is in another directory
 #
-../cinit.o: cinit.c
+../cinit.o: cinit.c $(HFILES)
 	$(CC) $(CFLAGS) -I./ cinit.c -o $@

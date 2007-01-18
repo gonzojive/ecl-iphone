@@ -198,14 +198,14 @@ extern void cl_write_object(cl_object x, cl_object stream);
 #   define PTHREAD_MUTEX_ERROR_CHECK_NP PTHREAD_MUTEX_ERROR_CHECK_NP
 #  endif
 # endif
-# define HASH_TABLE_LOCK(h) if ((h)->hash.lockable) if (pthread_mutex_lock(&(h)->hash.lock)) internal_error("")
-# define PACKAGE_LOCK(p) if (pthread_mutex_lock(&(p)->pack.lock)) internal_error("")
-# define PACKAGE_OP_LOCK() if (pthread_mutex_lock(&cl_core.global_lock)) internal_error("")
-# define THREAD_OP_LOCK() if (pthread_mutex_lock(&cl_core.global_lock)) internal_error("")
-# define HASH_TABLE_UNLOCK(h) if ((h)->hash.lockable) if (pthread_mutex_unlock(&(h)->hash.lock)) internal_error("")
-# define PACKAGE_UNLOCK(p) if (pthread_mutex_unlock(&(p)->pack.lock)) internal_error("")
-# define PACKAGE_OP_UNLOCK() if (pthread_mutex_unlock(&cl_core.global_lock)) internal_error("")
-# define THREAD_OP_UNLOCK() if (pthread_mutex_unlock(&cl_core.global_lock)) internal_error("")
+# define HASH_TABLE_LOCK(h) if ((h)->hash.lockable) if (pthread_mutex_lock(&(h)->hash.lock)) ecl_internal_error("")
+# define PACKAGE_LOCK(p) if (pthread_mutex_lock(&(p)->pack.lock)) ecl_internal_error("")
+# define PACKAGE_OP_LOCK() if (pthread_mutex_lock(&cl_core.global_lock)) ecl_internal_error("")
+# define THREAD_OP_LOCK() if (pthread_mutex_lock(&cl_core.global_lock)) ecl_internal_error("")
+# define HASH_TABLE_UNLOCK(h) if ((h)->hash.lockable) if (pthread_mutex_unlock(&(h)->hash.lock)) ecl_internal_error("")
+# define PACKAGE_UNLOCK(p) if (pthread_mutex_unlock(&(p)->pack.lock)) ecl_internal_error("")
+# define PACKAGE_OP_UNLOCK() if (pthread_mutex_unlock(&cl_core.global_lock)) ecl_internal_error("")
+# define THREAD_OP_UNLOCK() if (pthread_mutex_unlock(&cl_core.global_lock)) ecl_internal_error("")
 #else
 # define HASH_TABLE_LOCK(h)
 # define HASH_TABLE_UNLOCK(h)

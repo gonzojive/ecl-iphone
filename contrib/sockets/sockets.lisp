@@ -185,7 +185,7 @@ weird stuff - see gethostbyname(3) for grisly details."
                 int length = hostent->h_length;
 
 		funcall(3,#2,make_simple_base_string(hostent->h_name),#1);
-                funcall(3,#4,make_integer(hostent->h_addrtype),#1);
+                funcall(3,#4,ecl_make_integer(hostent->h_addrtype),#1);
 
                 for (aliases = hostent->h_aliases; *aliases != NULL; aliases++) {
                         aliases_list = CONS(make_simple_base_string(*aliases),aliases_list);
@@ -196,7 +196,7 @@ weird stuff - see gethostbyname(3) for grisly details."
                         int pos;
                         cl_object vector = funcall(2,@make-array,MAKE_FIXNUM(length));
                         for (pos = 0; pos < length; pos++)
-                                aset(vector, pos, MAKE_FIXNUM((unsigned char)((*addrs)[pos])));
+                                ecl_aset(vector, pos, MAKE_FIXNUM((unsigned char)((*addrs)[pos])));
                         addr_list = CONS(vector, addr_list);
 
 
@@ -225,10 +225,10 @@ weird stuff - see gethostbyname(3) for grisly details."
 	       (t t t t t t) t
 	       "
 {
-        unsigned char vector[4] = { fixint(aref(#0,0)),
-                                    fixint(aref(#0,1)),
-                                    fixint(aref(#0,2)),
-                                    fixint(aref(#0,3)) };
+        unsigned char vector[4] = { fixint(ecl_aref(#0,0)),
+                                    fixint(ecl_aref(#0,1)),
+                                    fixint(ecl_aref(#0,2)),
+                                    fixint(ecl_aref(#0,3)) };
 	struct hostent *hostent = gethostbyaddr(vector,4,AF_INET);
 
 	if (hostent != NULL) {
@@ -239,7 +239,7 @@ weird stuff - see gethostbyname(3) for grisly details."
                 int length = hostent->h_length;
 
 		funcall(3,#2,make_simple_base_string(hostent->h_name),#1);
-                funcall(3,#4,make_integer(hostent->h_addrtype),#1);
+                funcall(3,#4,ecl_make_integer(hostent->h_addrtype),#1);
 
                 for (aliases = hostent->h_aliases; *aliases != NULL; aliases++) {
                         aliases_list = CONS(make_simple_base_string(*aliases),aliases_list);
@@ -250,7 +250,7 @@ weird stuff - see gethostbyname(3) for grisly details."
                         int pos;
                         cl_object vector = funcall(2,@make-array,MAKE_FIXNUM(length));
                         for (pos = 0; pos < length; pos++)
-                                aset(vector, pos, MAKE_FIXNUM((unsigned char)((*addrs)[pos])));
+                                ecl_aset(vector, pos, MAKE_FIXNUM((unsigned char)((*addrs)[pos])));
                         addr_list = CONS(vector, addr_list);
 
 
@@ -576,10 +576,10 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
                 uint16_t port = ntohs(sockaddr.sin_port);
                 cl_object vector = cl_make_array(1,MAKE_FIXNUM(4));
 
-                aset(vector,0, MAKE_FIXNUM( ip>>24 ));
-		aset(vector,1, MAKE_FIXNUM( (ip>>16) & 0xFF));
-		aset(vector,2, MAKE_FIXNUM( (ip>>8) & 0xFF));
-                aset(vector,3, MAKE_FIXNUM( ip & 0xFF ));
+                ecl_aset(vector,0, MAKE_FIXNUM( ip>>24 ));
+		ecl_aset(vector,1, MAKE_FIXNUM( (ip>>16) & 0xFF));
+		ecl_aset(vector,2, MAKE_FIXNUM( (ip>>8) & 0xFF));
+                ecl_aset(vector,3, MAKE_FIXNUM( ip & 0xFF ));
 
 		@(return 1) = vector;
 	}
@@ -625,10 +625,10 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
                 uint32_t ip = ntohl(name.sin_addr.s_addr);
                 uint16_t port = ntohs(name.sin_port);
 
-                aset(#1,0, MAKE_FIXNUM( ip>>24 ));
-		aset(#1,1, MAKE_FIXNUM( (ip>>16) & 0xFF));
-		aset(#1,2, MAKE_FIXNUM( (ip>>8) & 0xFF));
-                aset(#1,3, MAKE_FIXNUM( ip & 0xFF ));
+                ecl_aset(#1,0, MAKE_FIXNUM( ip>>24 ));
+		ecl_aset(#1,1, MAKE_FIXNUM( (ip>>16) & 0xFF));
+		ecl_aset(#1,2, MAKE_FIXNUM( (ip>>8) & 0xFF));
+                ecl_aset(#1,3, MAKE_FIXNUM( ip & 0xFF ));
 
                 @(return) = port;
          } else {
@@ -652,10 +652,10 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
                 uint32_t ip = ntohl(name.sin_addr.s_addr);
                 uint16_t port = ntohs(name.sin_port);
 
-                aset(#1,0, MAKE_FIXNUM( ip>>24 ));
-		aset(#1,1, MAKE_FIXNUM( (ip>>16) & 0xFF));
-		aset(#1,2, MAKE_FIXNUM( (ip>>8) & 0xFF));
-                aset(#1,3, MAKE_FIXNUM( ip & 0xFF ));
+                ecl_aset(#1,0, MAKE_FIXNUM( ip>>24 ));
+		ecl_aset(#1,1, MAKE_FIXNUM( (ip>>16) & 0xFF));
+		ecl_aset(#1,2, MAKE_FIXNUM( (ip>>8) & 0xFF));
+                ecl_aset(#1,3, MAKE_FIXNUM( ip & 0xFF ));
 
                 @(return) = port;
          } else {
@@ -1311,7 +1311,7 @@ GET-NAME-SERVICE-ERRNO")
         socklen_t socklen = sizeof(int);
         int ret = getsockopt(#0,SOL_SOCKET,#1,&sockopt,&socklen);
 
-        @(return) = (ret == 0) ? make_integer(sockopt) : Cnil;
+        @(return) = (ret == 0) ? ecl_make_integer(sockopt) : Cnil;
 }")))
     (if ret
 	ret
