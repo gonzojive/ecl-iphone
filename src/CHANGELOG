@@ -128,6 +128,13 @@ ECL 1.0:
  - ENOUGH-NAMESTRING did not simplify a pathname when it had the same directory
    as the default pathname.
 
+ - Some toplevel forms with closures caused the compiler to abort, for example
+	(let ((data '(a b)))
+	  (flet ((get-it ()
+	          (second data)))
+	    (defun print-it-1 ()
+	      (print (get-it)))))
+
 * Unicode:
 
  - MAKE-STRING only allowed :ELEMENT-TYPE to be one of CHARACTER, BASE-CHAR, or

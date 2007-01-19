@@ -72,6 +72,15 @@
     ;; in a LABELS can reference each other.
     (setf local-funs (remove-if-not #'plusp local-funs :key #'fun-ref))
 
+    ;; Keep on inspecting the functions until the closure type does not
+    ;; change.
+    (loop while
+	 (let ((x nil))
+	   (loop for f in local-funs
+	      when (compute-fun-closure-type f)
+	      do (setf x t))
+	   x))
+
     (if local-funs
 	(make-c1form* 'LOCALS :type (c1form-type body-c1form)
 		      :args local-funs body-c1form (eq origin 'LABELS))
@@ -130,6 +139,10 @@
       (setf (fun-closure fun) new-type)
       ;; All external, non-global variables become of type closure
       (when (eq new-type 'CLOSURE)
+	(when (fun-global fun)
+	  (error "Function ~A is global but is closed over some variables.~%~
+~{~A ~}"
+	       (fun-name fun) (mapcar #'var-name (fun-referred-vars fun))))
 	(dolist (var (fun-referred-local-vars fun))
 	  (setf (var-ref-clb var) nil
 		(var-ref-ccb var) t
