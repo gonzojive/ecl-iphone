@@ -185,7 +185,7 @@ ecl_dynamic_callback_execute(long i1, long i2, long i3, long i4, long i5, long i
 	f_reg[7] = f8;
 
 	arg_buffer += 2*sizeof(void*); /* Skip return address and base pointer */
-	for (i=0; !endp(argtypes); argtypes = CDR(argtypes), i++) {
+	for (i=0; !ecl_endp(argtypes); argtypes = CDR(argtypes), i++) {
 		tag = ecl_foreign_type_code(CAR(argtypes));
 		size = fix(si_size_of_foreign_elt_type(CAR(argtypes)));
 		if (tag <= ECL_FFI_OBJECT) {
