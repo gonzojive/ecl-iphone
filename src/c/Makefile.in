@@ -61,6 +61,8 @@ all:	$(DPP) ../libeclmin.a ../cinit.o
 	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
 ffi_x86.c: arch/ffi_x86.d $(DPP) $(HFILES)
 	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
+ffi_x86_64.c: arch/ffi_x86_64.d $(DPP) $(HFILES)
+	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
 
 ../libeclmin.a: $(OBJS) all_symbols.o all_symbols2.o
 	$(RM) $@
