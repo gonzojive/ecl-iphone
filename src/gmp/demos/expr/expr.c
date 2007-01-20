@@ -1,7 +1,6 @@
-/* mpexpr_evaluate -- shared code for simple expression evaluation */
+/* mpexpr_evaluate -- shared code for simple expression evaluation
 
-/*
-Copyright 2000, 2001 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002, 2004 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -17,12 +16,12 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA.
-*/
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <ctype.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "gmp.h"
 #include "expr-impl.h"
@@ -34,35 +33,21 @@ MA 02111-1307, USA.
    mpz/mpq/mpf being run (if you have the wrong trace function it'll
    probably segv).  */
 
-#define TRACE(x)   
-#define MPX_TRACE  mpfr_trace
-
-
-#if 0
-#include "tests.h"
-
-/* Print "name=value\n" to stdout for an mpf_t value. */
-void
-mpfr_trace (__gmp_const char *name, mpfr_srcptr f)
-{
-  mp_trace_start (name);
-  mpfr_out_str (stdout, mp_trace_base, 0, f, GMP_RNDZ);
-  printf ("\n");
-}
-#endif
+#define TRACE(x) 
+#define MPX_TRACE  mpz_trace
 
 
 /* A few helper macros copied from gmp-impl.h */
-#define __GMP_ALLOCATE_FUNC_TYPE(n,type) \
-  ((type *) (*__gmp_allocate_func) ((n) * sizeof (type)))
-#define __GMP_ALLOCATE_FUNC_LIMBS(n)   __GMP_ALLOCATE_FUNC_TYPE (n, mp_limb_t)
-#define __GMP_REALLOCATE_FUNC_TYPE(p, old_size, new_size, type) \
-  ((type *) (*__gmp_reallocate_func)                            \
+#define ALLOCATE_FUNC_TYPE(n,type) \
+  ((type *) (*allocate_func) ((n) * sizeof (type)))
+#define ALLOCATE_FUNC_LIMBS(n)   ALLOCATE_FUNC_TYPE (n, mp_limb_t)
+#define REALLOCATE_FUNC_TYPE(p, old_size, new_size, type) \
+  ((type *) (*reallocate_func)                            \
    (p, (old_size) * sizeof (type), (new_size) * sizeof (type)))
-#define __GMP_REALLOCATE_FUNC_LIMBS(p, old_size, new_size) \
-  __GMP_REALLOCATE_FUNC_TYPE(p, old_size, new_size, mp_limb_t)
-#define __GMP_FREE_FUNC_TYPE(p,n,type) (*__gmp_free_func) (p, (n) * sizeof (type))
-#define __GMP_FREE_FUNC_LIMBS(p,n)     __GMP_FREE_FUNC_TYPE (p, n, mp_limb_t)
+#define REALLOCATE_FUNC_LIMBS(p, old_size, new_size) \
+  REALLOCATE_FUNC_TYPE(p, old_size, new_size, mp_limb_t)
+#define FREE_FUNC_TYPE(p,n,type) (*free_func) (p, (n) * sizeof (type))
+#define FREE_FUNC_LIMBS(p,n)     FREE_FUNC_TYPE (p, n, mp_limb_t)
 #define ASSERT(x)
 
 
@@ -77,22 +62,25 @@ mpfr_trace (__gmp_const char *name, mpfr_srcptr f)
   }
 
 
-#define REALLOC(ptr, alloc, incr, type)                                 \
-  do {                                                                  \
-    int  new_alloc = (alloc) + (incr);                                  \
-    ptr = __GMP_REALLOCATE_FUNC_TYPE (ptr, alloc, new_alloc, type);     \
-    (alloc) = new_alloc;                                                \
+#define REALLOC(ptr, alloc, incr, type)                         \
+  do {                                                          \
+    int  new_alloc = (alloc) + (incr);                          \
+    ptr = REALLOCATE_FUNC_TYPE (ptr, alloc, new_alloc, type);   \
+    (alloc) = new_alloc;                                        \
   } while (0)
 
 
 /* data stack top element */
 #define SP   (p->data_stack + p->data_top)
 
-/* make sure there's room for another data element above current top */
+/* Make sure there's room for another data element above current top.
+   reallocate_func is fetched for when this macro is used in lookahead(). */
 #define DATA_SPACE()                                                    \
   do {                                                                  \
     if (p->data_top + 1 >= p->data_alloc)                               \
       {                                                                 \
+        void *(*reallocate_func) (void *, size_t, size_t);              \
+        mp_get_memory_functions (NULL, &reallocate_func, NULL);         \
         TRACE (printf ("grow stack from %d\n", p->data_alloc));         \
         REALLOC (p->data_stack, p->data_alloc, 20, union mpX_t);        \
       }                                                                 \
@@ -156,7 +144,7 @@ lookahead (struct mpexpr_parse_t *p, int prefix)
 
   /* skip white space */
   while (p->elen > 0 && isasciispace (*p->e))
-    p->e++, p->elen--;  
+    p->e++, p->elen--;
 
   if (p->elen == 0)
     {
@@ -232,7 +220,7 @@ lookahead (struct mpexpr_parse_t *p, int prefix)
           return 1;
         }
       else
-        {      
+        {
           TRACE (printf ("lookahead operator: %s\n", op_found->name));
           p->token = TOKEN_OPERATOR;
           p->token_op = op_found;
@@ -373,6 +361,12 @@ lookahead (struct mpexpr_parse_t *p, int prefix)
 int
 mpexpr_evaluate (struct mpexpr_parse_t *p)
 {
+  void *(*allocate_func) (size_t);
+  void *(*reallocate_func) (void *, size_t, size_t);
+  void (*free_func) (void *, size_t);
+
+  mp_get_memory_functions (&allocate_func, &reallocate_func, &free_func);
+
   TRACE (printf ("mpexpr_evaluate() base %d \"%.*s\"\n",
                  p->base, (int) p->elen, p->e));
 
@@ -381,10 +375,10 @@ mpexpr_evaluate (struct mpexpr_parse_t *p)
   {
     static __gmp_const struct mpexpr_operator_t  operator_done
       = { "DONE", NULL, MPEXPR_TYPE_DONE, -1 };
-  
+
     p->control_alloc = 20;
-    p->control_stack = __GMP_ALLOCATE_FUNC_TYPE (p->control_alloc,
-                                                 struct mpexpr_control_t);
+    p->control_stack = ALLOCATE_FUNC_TYPE (p->control_alloc,
+                                           struct mpexpr_control_t);
     p->control_top = 0;
     CP->op = &operator_done;
     CP->argcount = 1;
@@ -392,7 +386,7 @@ mpexpr_evaluate (struct mpexpr_parse_t *p)
 
   p->data_inited = 0;
   p->data_alloc = 20;
-  p->data_stack = __GMP_ALLOCATE_FUNC_TYPE (p->data_alloc, union mpX_t);
+  p->data_stack = ALLOCATE_FUNC_TYPE (p->data_alloc, union mpX_t);
   p->data_top = -1;
 
   p->error_code = MPEXPR_RESULT_OK;
@@ -402,11 +396,11 @@ mpexpr_evaluate (struct mpexpr_parse_t *p)
   LOOKAHEAD (MPEXPR_TYPE_PREFIX);
   TRACE (printf ("another expr\n"));
 
- /*another_expr:*/
+  /*another_expr:*/
   switch (p->token) {
   case TOKEN_VALUE:
     goto another_operator_lookahead;
-    
+
   case TOKEN_OPERATOR:
     TRACE (printf ("operator %s\n", p->token_op->name));
     if (! (p->token_op->type & MPEXPR_TYPE_PREFIX))
@@ -414,7 +408,7 @@ mpexpr_evaluate (struct mpexpr_parse_t *p)
 
     CONTROL_PUSH (p->token_op, 1);
     goto another_expr_lookahead;
-    
+
   case TOKEN_FUNCTION:
     CONTROL_PUSH (p->token_op, 1);
 
@@ -459,9 +453,9 @@ mpexpr_evaluate (struct mpexpr_parse_t *p)
        the next operator again later.  */
 
 #define PRECEDENCE_TEST_REDUCE(tprec,cprec,ttype,ctype)                 \
-  ((tprec) < (cprec)                                                    \
-   || ((tprec) == (cprec) && ! ((ttype) & MPEXPR_TYPE_RIGHTASSOC)))
-    
+    ((tprec) < (cprec)                                                  \
+     || ((tprec) == (cprec) && ! ((ttype) & MPEXPR_TYPE_RIGHTASSOC)))
+
     if (PRECEDENCE_TEST_REDUCE (p->token_op->precedence, CP->op->precedence,
                                 p->token_op->type,       CP->op->type))
       {
@@ -483,8 +477,8 @@ mpexpr_evaluate (struct mpexpr_parse_t *p)
                        CP->op->name, CP->argcount));
 
 #define IS_PAIRWISE(type)                                               \
-  (((type) & (MPEXPR_TYPE_MASK_ARGCOUNT | MPEXPR_TYPE_PAIRWISE))        \
-   == (MPEXPR_TYPE_BINARY | MPEXPR_TYPE_PAIRWISE))
+        (((type) & (MPEXPR_TYPE_MASK_ARGCOUNT | MPEXPR_TYPE_PAIRWISE))  \
+         == (MPEXPR_TYPE_BINARY | MPEXPR_TYPE_PAIRWISE))
 
         if (IS_PAIRWISE (CP->op->type) && CP->argcount >= 2)
           {
@@ -519,7 +513,7 @@ mpexpr_evaluate (struct mpexpr_parse_t *p)
       CONTROL_PUSH (p->token_op, 1);
       goto another_expr_lookahead;
     }
-    
+
     TRACE (printf ("unrecognised operator \"%s\" type: 0x%X",
                    CP->op->name, CP->op->type));
     ERROR ("", MPEXPR_RESULT_PARSE_ERROR);
@@ -537,13 +531,13 @@ mpexpr_evaluate (struct mpexpr_parse_t *p)
   /* Apply the top element CP of the control stack.  Data values are SP,
      SP-1, etc.  Result is left as stack top SP after popping consumed
      values.
- 
+
      The use of sp as a duplicate of SP will help compilers that can't
      otherwise recognise the various uses of SP as common subexpressions.  */
 
   TRACE (printf ("apply control: nested %d, \"%s\" 0x%X, %d args\n",
                  p->control_top, CP->op->name, CP->op->type, CP->argcount));
-  
+
   TRACE (printf ("apply 0x%X-ary\n",
                  CP->op->type & MPEXPR_TYPE_MASK_ARGCOUNT));
   switch (CP->op->type & MPEXPR_TYPE_MASK_ARGCOUNT) {
@@ -572,7 +566,7 @@ mpexpr_evaluate (struct mpexpr_parse_t *p)
       mpX_ptr  sp = SP;
       CHECK_ARGCOUNT ("unary", 1);
       TRACE (MPX_TRACE ("before", sp));
-      
+
       switch (CP->op->type & MPEXPR_TYPE_MASK_SPECIAL) {
       case 0:
         /* not a special */
@@ -644,14 +638,14 @@ mpexpr_evaluate (struct mpexpr_parse_t *p)
       if ((CP->op->type & MPEXPR_TYPE_PAIRWISE)
           && CP->op->precedence == 0
           && CP->argcount == 1)
-        goto apply_control_done;          
+        goto apply_control_done;
 
       CHECK_ARGCOUNT ("binary", 2);
       DATA_POP (1);
       sp = SP;
       TRACE (MPX_TRACE ("lhs", sp);
              MPX_TRACE ("rhs", sp+1));
-      
+
       if (CP->op->type & MPEXPR_TYPE_MASK_CMP)
         {
           int  type = CP->op->type;
@@ -673,7 +667,7 @@ mpexpr_evaluate (struct mpexpr_parse_t *p)
 
       case MPEXPR_TYPE_QUESTION & MPEXPR_TYPE_MASK_SPECIAL:
         ERROR ("'?' without ':'", MPEXPR_RESULT_PARSE_ERROR);
-          
+
       case MPEXPR_TYPE_COLON & MPEXPR_TYPE_MASK_SPECIAL:
         TRACE (printf ("special colon\n"));
         CONTROL_POP ();
@@ -695,7 +689,7 @@ mpexpr_evaluate (struct mpexpr_parse_t *p)
         TRACE (printf ("special logical and\n"));
         (*p->mpX_set_si)
           (sp,
-           (long) 
+           (long)
            ((* (mpexpr_fun_i_unary_t) CP->op->fun) (sp)
             && (* (mpexpr_fun_i_unary_t) CP->op->fun) (sp+1)));
         goto apply_control_done;
@@ -704,7 +698,7 @@ mpexpr_evaluate (struct mpexpr_parse_t *p)
         TRACE (printf ("special logical and\n"));
         (*p->mpX_set_si)
           (sp,
-           (long) 
+           (long)
            ((* (mpexpr_fun_i_unary_t) CP->op->fun) (sp)
             || (* (mpexpr_fun_i_unary_t) CP->op->fun) (sp+1)));
         goto apply_control_done;
@@ -824,9 +818,8 @@ mpexpr_evaluate (struct mpexpr_parse_t *p)
       }
   }
 
-  __GMP_FREE_FUNC_TYPE (p->data_stack, p->data_alloc, union mpX_t);
-  __GMP_FREE_FUNC_TYPE (p->control_stack, p->control_alloc,
-                        struct mpexpr_control_t);
+  FREE_FUNC_TYPE (p->data_stack, p->data_alloc, union mpX_t);
+  FREE_FUNC_TYPE (p->control_stack, p->control_alloc, struct mpexpr_control_t);
 
   return p->error_code;
 }

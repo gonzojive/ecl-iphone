@@ -1,4 +1,0 @@
-@set UPDATED 21 September 2004
-@set UPDATED-MONTH September 2004
-@set EDITION 4.1.4
-@set VERSION 4.1.4

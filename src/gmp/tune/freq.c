@@ -1,6 +1,6 @@
 /* CPU frequency determination.
 
-Copyright 1999, 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001, 2002, 2003, 2004 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,21 +16,73 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
+
+
+/* Currently we don't get a CPU frequency on the following systems,
+
+   alphaev5-cray-unicosmk2.0.6.X
+       times() has been seen at 13.33 ns (75 MHz), which is probably not the
+       cpu frequency.  Measuring the cycle counter against that would be
+       possible though.  But currently we don't use the cycle counter due to
+       unicos having int==8bytes where tune/alpha.asm assumes int==4bytes.
+
+   m68040-unknown-netbsd1.4.1
+       Not sure if the system even knows the cpu frequency.  There's no
+       cycle counter to measure, though we could perhaps make a loop taking
+       a known number of cycles and measure that.
+
+   power-ibm-aix4.2.1.0
+   power2-ibm-aix4.3.1.0
+   powerpc604-ibm-aix4.3.1.0
+   powerpc604-ibm-aix4.3.3.0
+   powerpc630-ibm-aix4.3.3.0
+   powerpc-unknown-netbsd1.6
+       Don't know where any info hides on these.  mftb is not related to the
+       cpu frequency so doesn't help.
+
+   sparc-unknown-linux-gnu [maybe]
+       Don't know where any info hides on this.
+
+   t90-cray-unicos10.0.X
+       The times() call seems to be for instance 2.22 nanoseconds, which
+       might be the cpu frequency (450 mhz), but need to confirm that.
+
+*/
 
 #include "config.h"
 
+#if HAVE_INVENT_H
+#include <invent.h> /* for IRIX invent_cpuinfo_t */
+#endif
+
 #include <stdio.h>
 #include <stdlib.h> /* for getenv, qsort */
+#include <string.h> /* for memcmp */
+
 #if HAVE_UNISTD_H
 #include <unistd.h> /* for sysconf */
 #endif
 
 #include <sys/types.h>
-#if HAVE_SYS_PARAM_H
-#include <sys/param.h>   /* for constants needed by NetBSD <sys/sysctl.h> */
+
+#if HAVE_SYS_ATTRIBUTES_H
+#include <sys/attributes.h>   /* for IRIX attr_get(), needs sys/types.h */
 #endif
+
+#if HAVE_SYS_IOGRAPH_H
+#include <sys/iograph.h>      /* for IRIX INFO_LBL_DETAIL_INVENT */
+#endif
+
+#if HAVE_SYS_PARAM_H     /* for constants needed by NetBSD <sys/sysctl.h> */
+#include <sys/param.h>   /* and needed by HPUX <sys/pstat.h> */
+#endif
+
+#if HAVE_SYS_PSTAT_H
+#include <sys/pstat.h>   /* for HPUX pstat_getprocessor() */
+#endif
+
 #if HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>  /* for sysctlbyname() */
 #endif
@@ -52,6 +104,19 @@ MA 02111-1307, USA. */
 
 #if HAVE_SYS_PROCESSOR_H
 #include <sys/processor.h>  /* for solaris processor_info_t */
+#endif
+
+/* On AIX 5.1 with gcc 2.9-aix51-020209 in -maix64 mode, <sys/sysinfo.h>
+   gets an error about "fill" in "struct cpuinfo" having a negative size,
+   apparently due to __64BIT_KERNEL not being defined because _KERNEL is not
+   defined.  Avoid this file if we don't actually need it, which we don't on
+   AIX since there's no getsysinfo there.  */
+#if HAVE_SYS_SYSINFO_H && HAVE_GETSYSINFO
+#include <sys/sysinfo.h>  /* for OSF getsysinfo */
+#endif
+
+#if HAVE_MACHINE_HAL_SYSINFO_H
+#include <machine/hal_sysinfo.h>  /* for OSF GSI_CPU_INFO, struct cpu_info */
 #endif
 
 /* Remove definitions from NetBSD <sys/param.h>, to avoid conflicts with
@@ -100,6 +165,61 @@ freq_environment (int help)
 }
 
 
+/* getsysinfo is available on OSF, or 4.0 and up at least.
+   The man page (on 4.0) suggests a 0 return indicates information not
+   available, but that seems to be the normal return for GSI_CPU_INFO.  */
+static int
+freq_getsysinfo (int help)
+{
+#if HAVE_GETSYSINFO
+  struct cpu_info  c;
+  int              start;
+
+  HELP ("getsysinfo() GSI_CPU_INFO");
+
+  start = 0;
+  if (getsysinfo (GSI_CPU_INFO, (caddr_t) &c, sizeof (c),
+                  &start, NULL, NULL) != -1)
+    {
+      speed_cycletime = 1e-6 / (double) c.mhz;
+      if (speed_option_verbose)
+        printf ("Using getsysinfo() GSI_CPU_INFO %u for cycle time %.3g\n",
+                c.mhz, speed_cycletime);
+      return 1;
+    }
+#endif
+  return 0;
+}
+
+
+/* In HPUX 10 and up, pstat_getprocessor() psp_iticksperclktick is the
+   number of CPU cycles (ie. the CR16 register) per CLK_TCK.  HPUX 9 doesn't
+   have that field in pst_processor though, and has no apparent
+   equivalent.  */
+
+static int
+freq_pstat_getprocessor (int help)
+{
+#if HAVE_PSTAT_GETPROCESSOR && HAVE_PSP_ITICKSPERCLKTICK
+  struct pst_processor  p;
+
+  HELP ("pstat_getprocessor() psp_iticksperclktick");
+
+  if (pstat_getprocessor (&p, sizeof(p), 1, 0) != -1)
+    {
+      long  c = clk_tck();
+      speed_cycletime = 1.0 / (c * p.psp_iticksperclktick);
+      if (speed_option_verbose)
+        printf ("Using pstat_getprocessor() psp_iticksperclktick %lu and clk_tck %ld for cycle time %.3g\n",
+                (unsigned long) p.psp_iticksperclktick, c,
+                speed_cycletime);
+      return 1;
+    }
+#endif
+  return 0;
+}
+
+
 /* i386 FreeBSD 2.2.8 sysctlbyname machdep.i586_freq is in Hertz.
    There's no obvious defines available to get this from plain sysctl.  */
 static int
@@ -115,10 +235,10 @@ freq_sysctlbyname_i586_freq (int help)
   if (sysctlbyname ("machdep.i586_freq", &val, &size, NULL, 0) == 0
       && size == sizeof(val))
     {
+      speed_cycletime = 1.0 / (double) val;
       if (speed_option_verbose)
         printf ("Using sysctlbyname() machdep.i586_freq %u for cycle time %.3g\n",
                 val, speed_cycletime);
-      speed_cycletime = 1.0 / (double) val;
       return 1;
     }
 #endif
@@ -142,10 +262,10 @@ freq_sysctlbyname_tsc_freq (int help)
   if (sysctlbyname ("machdep.tsc_freq", &val, &size, NULL, 0) == 0
       && size == sizeof(val))
     {
+      speed_cycletime = 1.0 / (double) val;
       if (speed_option_verbose)
         printf ("Using sysctlbyname() machdep.tsc_freq %u for cycle time %.3g\n",
                 val, speed_cycletime);
-      speed_cycletime = 1.0 / (double) val;
       return 1;
     }
 #endif
@@ -171,10 +291,10 @@ freq_sysctl_hw_cpufrequency (int help)
   size = sizeof(val);
   if (sysctl (mib, 2, &val, &size, NULL, 0) == 0)
     {
+      speed_cycletime = 1.0 / (double) val;
       if (speed_option_verbose)
         printf ("Using sysctl() hw.cpufrequency %u for cycle time %.3g\n",
                 val, speed_cycletime);
-      speed_cycletime = 1.0 / (double) val;
       return 1;
     }
 #endif
@@ -182,9 +302,13 @@ freq_sysctl_hw_cpufrequency (int help)
 }
 
 
-/* Alpha FreeBSD 4.1 and NetBSD 1.4 sysctl- hw.model string gives "Digital
-   AlphaPC 164LX 599 MHz".  NetBSD 1.4 doesn't seem to have sysctlbyname, so
-   sysctl() is used.  */
+/* The following ssyctl hw.model strings have been observed,
+
+       Alpha FreeBSD 4.1:   Digital AlphaPC 164LX 599 MHz
+       NetBSD 1.4:          Digital AlphaPC 164LX 599 MHz
+       NetBSD 1.6.1:        CY7C601 @ 40 MHz, TMS390C602A FPU
+
+   NetBSD 1.4 doesn't seem to have sysctlbyname, so sysctl() is used.  */
 
 static int
 freq_sysctl_hw_model (int help)
@@ -194,8 +318,8 @@ freq_sysctl_hw_model (int help)
   char      str[128];
   unsigned  val;
   size_t    size;
-  char  *p;
-  int   i;
+  char      *p;
+  int       end;
 
   HELP ("sysctl() hw.model");
 
@@ -204,28 +328,18 @@ freq_sysctl_hw_model (int help)
   size = sizeof(str);
   if (sysctl (mib, 2, str, &size, NULL, 0) == 0)
     {
-      /* find the second last space */
-      p = &str[size-1];
-      for (i = 0; i < 2; i++)
+      for (p = str; *p != '\0'; p++)
         {
-          for (;;)
+          end = 0;
+          if (sscanf (p, "%u MHz%n", &val, &end) == 1 && end != 0)
             {
-              if (p <= str)
-                return 0;
-              p--;
-              if (*p == ' ')
-                break;
+              speed_cycletime = 1e-6 / (double) val;
+              if (speed_option_verbose)
+                printf ("Using sysctl() hw.model %u for cycle time %.3g\n",
+                        val, speed_cycletime);
+              return 1;
             }
         }
-
-      if (sscanf (p, "%u MHz", &val) != 1)
-        return 0;
-
-      if (speed_option_verbose)
-        printf ("Using sysctl() hw.model %u for cycle time %.3g\n",
-                val, speed_cycletime);
-      speed_cycletime = 1e-6 / (double) val;
-      return 1;
     }
 #endif
   return 0;
@@ -258,6 +372,7 @@ freq_proc_cpuinfo (int help)
   char    buf[128];
   double  val;
   int     ret = 0;
+  int     end;
 
   HELP ("linux kernel /proc/cpuinfo file, cpu MHz or bogomips");
 
@@ -282,7 +397,8 @@ freq_proc_cpuinfo (int help)
               ret = 1;
               break;
             }
-          if (sscanf (buf, "clock : %lfMHz\n", &val) == 1)
+          end = 0;
+          if (sscanf (buf, "clock : %lfMHz\n%n", &val, &end) == 1 && end != 0)
             {
               speed_cycletime = 1e-6 / val;
               if (speed_option_verbose)
@@ -316,6 +432,7 @@ freq_sunos_sysinfo (int help)
   FILE    *fp;
   char    buf[128];
   double  val;
+  int     end;
 
   HELP ("SunOS /bin/sysinfo program output, cpu0");
 
@@ -325,7 +442,9 @@ freq_sunos_sysinfo (int help)
     {
       while (fgets (buf, sizeof (buf), fp) != NULL)
         {
-          if (sscanf (buf, " cpu0 is a \"%lf MHz", &val) == 1)
+          end = 0;
+          if (sscanf (buf, " cpu0 is a \"%lf MHz%n", &val, &end) == 1
+              && end != 0)
             {
               speed_cycletime = 1e-6 / val;
               if (speed_option_verbose)
@@ -342,7 +461,8 @@ freq_sunos_sysinfo (int help)
 
 
 /* "/etc/hw -r cpu" for SCO OpenUnix 8, printing a line like
-	The speed of the CPU is approximately 450Mhz  */
+	The speed of the CPU is approximately 450Mhz
+ */
 static int
 freq_sco_etchw (int help)
 {
@@ -351,6 +471,7 @@ freq_sco_etchw (int help)
   FILE    *fp;
   char    buf[128];
   double  val;
+  int     end;
 
   HELP ("SCO /etc/hw program output");
 
@@ -360,8 +481,9 @@ freq_sco_etchw (int help)
     {
       while (fgets (buf, sizeof (buf), fp) != NULL)
         {
-          if (sscanf (buf, " The speed of the CPU is approximately %lfMhz",
-                      &val) == 1)
+          end = 0;
+          if (sscanf (buf, " The speed of the CPU is approximately %lfMhz%n",
+                      &val, &end) == 1 && end != 0)
             {
               speed_cycletime = 1e-6 / val;
               if (speed_option_verbose)
@@ -378,36 +500,34 @@ freq_sco_etchw (int help)
 }
 
 
-/* "hinv -c processor" for IRIX.
-   The first line printed is for instance "2 195 MHZ IP27 Processors".  */
+/* attr_get("/hw/cpunum/0",INFO_LBL_DETAIL_INVENT) ic_cpu_info.cpufq for
+   IRIX 6.5.  Past versions don't have INFO_LBL_DETAIL_INVENT,
+   invent_cpuinfo_t, or /hw/cpunum/0.
+
+   The same information is available from the "hinv -c processor" command,
+   but it seems better to make a system call where possible. */
+
 static int
-freq_irix_hinv (int help)
+freq_attr_get_invent (int help)
 {
   int     ret = 0;
-#if HAVE_POPEN
-  FILE    *fp;
-  char    buf[128];
-  double  val;
-  int     nproc;
+#if HAVE_ATTR_GET && HAVE_INVENT_H && defined (INFO_LBL_DETAIL_INVENT)
+  invent_cpuinfo_t  inv;
+  int               len, val;
 
-  HELP ("IRIX \"hinv -c processor\" output");
+  HELP ("attr_get(\"/hw/cpunum/0\") ic_cpu_info.cpufq");
 
-  /* Error messages are sent to /dev/null in case hinv doesn't exist.  The
-     brackets are necessary for some shells. */
-  if ((fp = popen ("(hinv -c processor) 2>/dev/null", "r")) != NULL)
+  len = sizeof (inv);
+  if (attr_get ("/hw/cpunum/0", INFO_LBL_DETAIL_INVENT,
+                (char *) &inv, &len, 0) == 0
+      && len == sizeof (inv)
+      && inv.ic_gen.ig_invclass == INV_PROCESSOR)
     {
-      while (fgets (buf, sizeof (buf), fp) != NULL)
-        {
-          if (sscanf (buf, "%d %lf MHZ", &nproc, &val) == 2)
-            {
-              speed_cycletime = 1e-6 / val;
-              if (speed_option_verbose)
-                printf ("Using hinv -c processor \"%.2f MHZ\" for cycle time %.3g\n", val, speed_cycletime);
-              ret = 1;
-              break;
-            }
-        }
-      pclose (fp);
+      val = inv.ic_cpu_info.cpufq;
+      speed_cycletime = 1e-6 / val;
+      if (speed_option_verbose)
+        printf ("Using attr_get(\"/hw/cpunum/0\") ic_cpu_info.cpufq %d MHz for cycle time %.3g\n", val, speed_cycletime);
+      ret = 1;
     }
 #endif
   return ret;
@@ -465,6 +585,57 @@ freq_bsd_dmesg (int help)
 }
 
 
+/* "hinv -c processor" for IRIX.  The following lines have been seen,
+
+              1 150 MHZ IP20 Processor
+              2 195 MHZ IP27 Processors
+              Processor 0: 500 MHZ IP35
+
+   This information is available from attr_get() on IRIX 6.5 (see above),
+   but on IRIX 6.2 it's not clear where to look, so fall back on
+   parsing.  */
+
+static int
+freq_irix_hinv (int help)
+{
+  int     ret = 0;
+#if HAVE_POPEN
+  FILE    *fp;
+  char    buf[128];
+  double  val;
+  int     nproc, end;
+
+  HELP ("IRIX \"hinv -c processor\" output");
+
+  /* Error messages are sent to /dev/null in case hinv doesn't exist.  The
+     brackets are necessary for some shells. */
+  if ((fp = popen ("(hinv -c processor) 2>/dev/null", "r")) != NULL)
+    {
+      while (fgets (buf, sizeof (buf), fp) != NULL)
+        {
+          end = 0;
+          if (sscanf (buf, "Processor 0: %lf MHZ%n", &val, &end) == 1
+              && end != 0)
+            {
+            found:
+              speed_cycletime = 1e-6 / val;
+              if (speed_option_verbose)
+                printf ("Using hinv -c processor \"%.2f MHZ\" for cycle time %.3g\n", val, speed_cycletime);
+              ret = 1;
+              break;
+            }
+          end = 0;
+          if (sscanf (buf, "%d %lf MHZ%n", &nproc, &val, &end) == 2
+              && end != 0)
+            goto found;
+        }
+      pclose (fp);
+    }
+#endif
+  return ret;
+}
+
+
 /* processor_info() for Solaris.  "psrinfo" is the command-line interface to
    this.  "prtconf -vp" gives similar information.
 
@@ -511,71 +682,6 @@ freq_processor_info (int help)
 }
 
 
-/* "get" is called repeatedly until it ticks over, just in case on a fast
-   processor it takes less than a microsecond, though this is probably
-   unlikely if it's a system call.
-
-   speed_cyclecounter is called on the same side of the "get" for the start
-   and end measurements.  It doesn't matter how long it takes from the "get"
-   sample to the cycles sample, since that period will cancel out in the
-   difference calculation (assuming it's the same each time).
-
-   Letting the test run for more than a process time slice is probably only
-   going to reduce accuracy, especially for getrusage when the cycle counter
-   is real time, or for gettimeofday if the cycle counter is in fact process
-   time.  Use CLK_TCK/2 as a reasonable stop.
-
-   It'd be desirable to be quite accurate here.  The default speed_precision
-   for a cycle counter is 10000 cycles, so to mix that with getrusage or
-   gettimeofday the frequency should be at least that accurate.  But running
-   measurements for 10000 microseconds (or more) is too long.  Be satisfied
-   with just a half clock tick (5000 microseconds usually).  */
-
-#define FREQ_MEASURE_ONE(name, type, get, sec, usec)                    \
-  do {                                                                  \
-    type      st1, st, et1, et;                                         \
-    unsigned  sc[2], ec[2];                                             \
-    long      dt, half_tick;                                            \
-    double    dc, cyc;                                                  \
-                                                                        \
-    half_tick = (1000000L / clk_tck()) / 2;                             \
-                                                                        \
-    get (st1);                                                          \
-    do {                                                                \
-      get (st);                                                         \
-    } while (usec(st) == usec(st1) && sec(st) == sec(st1));             \
-                                                                        \
-    speed_cyclecounter (sc);                                            \
-                                                                        \
-    for (;;)                                                            \
-      {                                                                 \
-        get (et1);                                                      \
-        do {                                                            \
-          get (et);                                                     \
-        } while (usec(et) == usec(et1) && sec(et) == sec(et1));         \
-                                                                        \
-        speed_cyclecounter (ec);                                        \
-                                                                        \
-        dc = speed_cyclecounter_diff (ec, sc);                          \
-                                                                        \
-        /* allow secs to cancel before multiplying */                   \
-        dt = sec(et) - sec(st);                                         \
-        dt = dt * 100000L + (usec(et) - usec(st));                      \
-                                                                        \
-        if (dt >= half_tick)                                            \
-          break;                                                        \
-      }                                                                 \
-                                                                        \
-    cyc = dt * 1e-6 / dc;                                               \
-                                                                        \
-    if (speed_option_verbose >= 2)                                      \
-      printf ("freq_measure_%s_one() dc=%.6g dt=%ld cyc=%.6g\n",        \
-              name, dc, dt, cyc);                                       \
-                                                                        \
-    return dt * 1e-6 / dc;                                              \
-                                                                        \
-  } while (0)
-
 #if HAVE_SPEED_CYCLECOUNTER && HAVE_GETTIMEOFDAY
 static double
 freq_measure_gettimeofday_one (void)
@@ -584,7 +690,8 @@ freq_measure_gettimeofday_one (void)
 #define timeval_tv_sec(t)      ((t).tv_sec)
 #define timeval_tv_usec(t)     ((t).tv_usec)
   FREQ_MEASURE_ONE ("gettimeofday", struct timeval,
-                    call_gettimeofday, timeval_tv_sec, timeval_tv_usec);
+                    call_gettimeofday, speed_cyclecounter,
+                    timeval_tv_sec, timeval_tv_usec);
 }
 #endif
 
@@ -596,7 +703,8 @@ freq_measure_getrusage_one (void)
 #define rusage_tv_sec(t)    ((t).ru_utime.tv_sec)
 #define rusage_tv_usec(t)   ((t).ru_utime.tv_usec)
   FREQ_MEASURE_ONE ("getrusage", struct rusage,
-                    call_getrusage, rusage_tv_sec, rusage_tv_usec);
+                    call_getrusage, speed_cyclecounter,
+                    rusage_tv_sec, rusage_tv_usec);
 }
 #endif
 
@@ -607,7 +715,7 @@ freq_measure_getrusage_one (void)
 #define MEASURE_TOLERANCE      1.005  /* 0.5% */
 #define MEASURE_MATCH          3
 
-static int
+double
 freq_measure (const char *name, double (*one) (void))
 {
   double  t[MEASURE_MAX_ATTEMPTS];
@@ -627,21 +735,19 @@ freq_measure (const char *name, double (*one) (void))
           if (t[j+MEASURE_MATCH-1] <= t[j] * MEASURE_TOLERANCE)
             {
               /* use the average of the range found */
-              speed_cycletime = (t[j+MEASURE_MATCH-1] + t[j]) / 2.0;
-              if (speed_option_verbose)
-                printf ("Using %s() measured cycle counter %.4g (%.2f MHz)\n",
-                        name, speed_cycletime, 1e-6/speed_cycletime);
-              return 1;
+                return (t[j+MEASURE_MATCH-1] + t[j]) / 2.0;
             }
         }
     }
-  return 0;
+  return -1.0;
 }
 
 static int
 freq_measure_getrusage (int help)
 {
 #if HAVE_SPEED_CYCLECOUNTER && HAVE_GETRUSAGE
+  double  cycletime;
+
   if (! getrusage_microseconds_p ())
     return 0;
   if (! cycles_works_p ())
@@ -649,7 +755,16 @@ freq_measure_getrusage (int help)
 
   HELP ("cycle counter measured with microsecond getrusage()");
 
-  return freq_measure ("getrusage", freq_measure_getrusage_one);
+  cycletime = freq_measure ("getrusage", freq_measure_getrusage_one);
+  if (cycletime == -1.0)
+    return 0;
+
+  speed_cycletime = cycletime;
+  if (speed_option_verbose)
+    printf ("Using getrusage() measured cycle counter %.4g (%.2f MHz)\n",
+            speed_cycletime, 1e-6/speed_cycletime);
+  return 1;
+
 #else
   return 0;
 #endif
@@ -659,6 +774,8 @@ static int
 freq_measure_gettimeofday (int help)
 {
 #if HAVE_SPEED_CYCLECOUNTER && HAVE_GETTIMEOFDAY
+  double  cycletime;
+
   if (! gettimeofday_microseconds_p ())
     return 0;
   if (! cycles_works_p ())
@@ -666,7 +783,15 @@ freq_measure_gettimeofday (int help)
 
   HELP ("cycle counter measured with microsecond gettimeofday()");
 
-  return freq_measure ("gettimeofday", freq_measure_gettimeofday_one);
+  cycletime = freq_measure ("gettimeofday", freq_measure_gettimeofday_one);
+  if (cycletime == -1.0)
+    return 0;
+
+  speed_cycletime = cycletime;
+  if (speed_option_verbose)
+    printf ("Using gettimeofday() measured cycle counter %.4g (%.2f MHz)\n",
+            speed_cycletime, 1e-6/speed_cycletime);
+  return 1;
 #else
   return 0;
 #endif
@@ -689,6 +814,9 @@ freq_all (int help)
        anything the system gives. */
     freq_environment (help)
 
+    || freq_attr_get_invent (help)
+    || freq_getsysinfo (help)
+    || freq_pstat_getprocessor (help)
     || freq_sysctl_hw_model (help)
     || freq_sysctl_hw_cpufrequency (help)
     || freq_sysctlbyname_i586_freq (help)
@@ -705,7 +833,7 @@ freq_all (int help)
     || freq_sunos_sysinfo (help)
     || freq_measure_getrusage (help)
     || freq_measure_gettimeofday (help);
-};
+}
 
 
 void

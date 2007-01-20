@@ -1,6 +1,6 @@
 /* Implementation specifics for expression evaluation.
 
-Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002, 2004 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,11 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
-
-
-#include "expr-config.h"
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 
 /* Same tests as gmp.h. */
@@ -30,7 +27,7 @@ MA 02111-1307, USA. */
   || defined (__DECC)                                   \
   || (defined (__mips) && defined (_SYSTYPE_SVR4))      \
   || defined (_MSC_VER)                                 \
-  || defined(_WIN32)
+  || defined (_WIN32)
 #define HAVE_STDARG 1
 #include <stdarg.h>
 #else
@@ -38,15 +35,7 @@ MA 02111-1307, USA. */
 #include <varargs.h>
 #endif
 
-#if HAVE_MPFR
-#include "mpfr.h"
-#endif
-
 #include "expr.h"
-
-
-/* Rouding mode for mpfr_expr.  Change as desired.  */
-#define ROUND  GMP_RNDZ
 
 
 #define isasciidigit(c)   (isascii (c) && isdigit (c))
@@ -63,9 +52,6 @@ union mpX_t {
   mpz_t   z;
   mpq_t   q;
   mpf_t   f;
-#if HAVE_MPFR
-  mpfr_t  r;
-#endif
 };
 
 typedef union mpX_t *mpX_ptr;

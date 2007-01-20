@@ -1,32 +1,40 @@
 dnl  AMD K7 mpn_addmul_1/mpn_submul_1 -- add or subtract mpn multiple.
 
-dnl  Copyright 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
-dnl 
+dnl  Copyright 1999, 2000, 2001, 2002, 2005 Free Software Foundation, Inc.
+dnl
 dnl  This file is part of the GNU MP Library.
-dnl 
+dnl
 dnl  The GNU MP Library is free software; you can redistribute it and/or
 dnl  modify it under the terms of the GNU Lesser General Public License as
 dnl  published by the Free Software Foundation; either version 2.1 of the
 dnl  License, or (at your option) any later version.
-dnl 
+dnl
 dnl  The GNU MP Library is distributed in the hope that it will be useful,
 dnl  but WITHOUT ANY WARRANTY; without even the implied warranty of
 dnl  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 dnl  Lesser General Public License for more details.
-dnl 
+dnl
 dnl  You should have received a copy of the GNU Lesser General Public
 dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
-dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
-dnl  Suite 330, Boston, MA 02111-1307, USA.
+dnl  not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+dnl  Fifth Floor, Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
 
-C K7: 3.9 cycles/limb.
-C
-C Future: It should be possible to avoid the separate mul after the
-C unrolled loop by moving the movl/adcl to the top.
-
+C                           cycles/limb
+C P5:
+C P6 model 0-8,10-12)            6.35
+C P6 model 9  (Banias)
+C P6 model 13 (Dothan)           6.25
+C P4 model 0  (Willamette)
+C P4 model 1  (?)
+C P4 model 2  (Northwood)
+C P4 model 3  (Prescott)
+C P4 model 4  (Nocona)
+C K6:
+C K7:                            3.9
+C K8:
 
 
 dnl  K7: UNROLL_COUNT  cycles/limb
@@ -219,14 +227,14 @@ L(unroll):
 	C esi	src
 	C edi	dst
 	C ebp	multiplier
-	
+
 dnl  overlapping with parameters no longer needed
 define(VAR_COUNTER,`PARAM_SIZE')
 define(VAR_JUMP,   `PARAM_MULTIPLIER')
 
 	subl	$2, %ebx	C (size-2)-1
 	decl	%edx		C size-2
-	
+
 	shrl	$UNROLL_LOG2, %ebx
 	negl	%edx
 
@@ -268,7 +276,7 @@ L(pic_calc):
 	leal	(%edx,%ebx,1), %edx
 	addl	$L(entry)-L(here), %edx
 	addl	(%esp), %edx
-	ret
+	ret_internal
 ')
 
 
@@ -311,7 +319,7 @@ Zdisp(	M4_inst,%ecx, disp0,(%edi))
 	adcl	%eax, %ebx
 
 Zdisp(	movl,	disp0,(%esi), %eax)
-	adcl	%edx, %ecx	
+	adcl	%edx, %ecx
 
 
 	mull	%ebp

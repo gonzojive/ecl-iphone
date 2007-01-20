@@ -16,14 +16,12 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <iostream>
-#include <strstream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+
 #include "gmp.h"
 #include "gmp-impl.h"
 #include "tests.h"
@@ -44,29 +42,27 @@ int   option_check_standard = 0;
     else                                                \
       got.fill (data[i].fill);                          \
                                                         \
-    expr;                                               \
-                                                        \
-    if (!got)                                           \
+    if (! (expr))                                       \
       {                                                 \
-        printf ("\"got\" output error\n");              \
+        cout << "\"got\" output error\n";               \
         abort ();                                       \
       }                                                 \
     if (got.width() != 0)                               \
       {                                                 \
-        printf ("\"got\" width not reset to 0\n");      \
+        cout << "\"got\" width not reset to 0\n";       \
         abort ();                                       \
       }                                                 \
                                                         \
   } while (0)
 
 
-#define DUMP()                                                  \
-  do {                                                          \
-    printf ("  want:  |%s|\n", data[i].want);                   \
-    printf ("  got:   |%s|\n", got.str());                      \
-    printf ("  width: %d\n",   data[i].width);                  \
-    printf ("  prec:  %d\n",   got.precision());                \
-    printf ("  flags: 0x%lX\n", (unsigned long) got.flags());   \
+#define DUMP()                                                          \
+  do {                                                                  \
+    cout << "  want:  |" << data[i].want << "|\n";                      \
+    cout << "  got:   |" << got.str() << "|\n";                         \
+    cout << "  width: " << data[i].width << "\n";                       \
+    cout << "  prec:  " << got.precision() << "\n";                     \
+    cout << "  flags: " << hex << (unsigned long) got.flags() << "\n";  \
   } while (0)
 
 #define ABORT() \
@@ -107,9 +103,12 @@ check_mpz (void)
     { "1", "0x   1", ios::hex | ios::showbase | ios::internal, 6 },
     { "1", "0x1   ", ios::hex | ios::showbase | ios::left,     6 },
 
-    { "1", "   +0x1", ios::hex | ios::showbase | ios::showpos | ios::right,    7 },
-    { "1", "+0x   1", ios::hex | ios::showbase | ios::showpos | ios::internal, 7 },
-    { "1", "+0x1   ", ios::hex | ios::showbase | ios::showpos | ios::left,     7 },
+    { "1", "   +0x1", ios::hex | ios::showbase | ios::showpos | ios::right,
+      7 },
+    { "1", "+0x   1", ios::hex | ios::showbase | ios::showpos | ios::internal,
+      7 },
+    { "1", "+0x1   ", ios::hex | ios::showbase | ios::showpos | ios::left,
+      7 },
 
     {  "123",    "7b", ios::hex },
     {  "123",    "7B", ios::hex | ios::uppercase },
@@ -139,7 +138,7 @@ check_mpz (void)
       if (option_check_standard
           && mpz_fits_slong_p (z)
 
-          /* no negatives or showpos in hex or oct */
+          // no negatives or showpos in hex or oct
           && (((data[i].flags & ios::basefield) == ios::hex
                || (data[i].flags & ios::basefield) == ios::oct)
               ? (mpz_sgn (z) >= 0
@@ -147,26 +146,26 @@ check_mpz (void)
               : 1)
           )
         {
-          ostrstream  got;
+          ostringstream  got;
           long  n = mpz_get_si (z);
-          CALL (got << n << '\0');
-          if (strcmp (got.str(), data[i].want) != 0)
+          CALL (got << n);
+          if (got.str().compare (data[i].want) != 0)
             {
-              printf ("check_mpz data[%d] doesn't match standard ostream output\n", i);
-              printf ("  z:     %s\n", data[i].z);
-              printf ("  n:     %ld\n", n);
+              cout << "check_mpz data[" << i
+		   << "] doesn't match standard ostream output\n";
+              cout << "  z:     " << data[i].z << "\n";
+              cout << "  n:     " << n << "\n";
               DUMP ();
             }
         }
 
       {
-        ostrstream  got;
-        CALL (operator<< (got, z) << '\0');
-        if (strcmp (got.str(), data[i].want) != 0)
+        ostringstream  got;
+        CALL (got << z);
+        if (got.str().compare (data[i].want) != 0)
           {
-            printf ("mpz operator<< wrong, data[%d]\n", i);
-            printf ("  z:     %s\n", data[i].z);
-            mpz_trace ("  z", z);
+            cout << "mpz operator<< wrong, data[" << i << "]\n";
+            cout << "  z:     " << data[i].z << "\n";
             ABORT ();
           }
       }
@@ -196,7 +195,7 @@ check_mpq (void)
     { "5/8", "5/8", ios::dec },
     { "5/8", "0X5/0X8", ios::hex | ios::showbase | ios::uppercase },
 
-    /* zero denominator with showbase */
+    // zero denominator with showbase
     { "0/0",   "       0/0", ios::oct | ios::showbase, 10 },
     { "0/0",   "       0/0", ios::dec | ios::showbase, 10 },
     { "0/0",   "   0x0/0x0", ios::hex | ios::showbase, 10 },
@@ -227,26 +226,26 @@ check_mpq (void)
           && mpz_fits_slong_p (mpq_numref(q))
           && mpq_integer_p (q))
         {
-          ostrstream  got;
+          ostringstream  got;
           long  n = mpz_get_si (mpq_numref(q));
-          CALL (got << n << '\0');
-          if (strcmp (got.str(), data[i].want) != 0)
+          CALL (got << n);
+          if (got.str().compare (data[i].want) != 0)
             {
-              printf ("check_mpq data[%d] doesn't match standard ostream output\n", i);
-              printf ("  q:     %s\n", data[i].q);
-              printf ("  n:     %ld\n", n);
+              cout << "check_mpq data[" << i
+		   << "] doesn't match standard ostream output\n";
+              cout << "  q:     " << data[i].q << "\n";
+              cout << "  n:     " << n << "\n";
               DUMP ();
             }
         }
 
       {
-        ostrstream  got;
-        CALL (operator<< (got, q) << '\0');
-        if (strcmp (got.str(), data[i].want) != 0)
+        ostringstream  got;
+        CALL (got << q);
+        if (got.str().compare (data[i].want) != 0)
           {
-            printf ("mpq operator<< wrong, data[%d]\n", i);
-            printf ("  q:     %s\n", data[i].q);
-            mpq_trace ("  q", q);
+            cout << "mpq operator<< wrong, data[" << i << "]\n";
+            cout << "  q:     " << data[i].q << "\n";
             ABORT ();
           }
       }
@@ -339,10 +338,12 @@ check_mpf (void)
     { "123",   "7.b@+01", ios::hex | ios::scientific, 0, 1 },
     { "123",   "7.B@+01", ios::hex | ios::scientific | ios::uppercase, 0, 1 },
     { "123", "0x7.b@+01", ios::hex | ios::scientific | ios::showbase, 0, 1 },
-    { "123", "0X7.B@+01", ios::hex | ios::scientific | ios::showbase | ios::uppercase, 0, 1 },
+    { "123", "0X7.B@+01",
+      ios::hex | ios::scientific | ios::showbase | ios::uppercase, 0, 1 },
 
     { "1099511627776", "1.0@+10", ios::hex | ios::scientific, 0, 1 },
-    { "1099511627776", "1.0@+10", ios::hex | ios::scientific | ios::uppercase, 0, 1 },
+    { "1099511627776", "1.0@+10",
+      ios::hex | ios::scientific | ios::uppercase, 0, 1 },
 
     { "0.0625", "1.00@-01", ios::hex | ios::scientific, 0, 2 },
 
@@ -350,7 +351,7 @@ check_mpf (void)
     { "123",  "173", ios::oct },
     { "123", "0173", ios::oct | ios::showbase },
 
-    /* octal showbase suppressed for 0 */
+    // octal showbase suppressed for 0
     { "0", "0", ios::oct | ios::showbase },
     { ".125",    "00.1",  ios::oct | ios::showbase, 0, 1 },
     { ".015625", "00.01", ios::oct | ios::showbase, 0, 2 },
@@ -367,16 +368,24 @@ check_mpf (void)
     { "256",  "4.000e+02", ios::oct | ios::scientific, 0, 3 },
     { "256", "04.000e+02", ios::oct | ios::scientific | ios::showbase, 0, 3 },
     { "256",  "4.000E+02", ios::oct | ios::scientific | ios::uppercase, 0, 3 },
-    { "256", "04.000E+02", ios::oct | ios::scientific | ios::showbase | ios::uppercase, 0, 3 },
+    { "256", "04.000E+02",
+      ios::oct | ios::scientific | ios::showbase | ios::uppercase, 0, 3 },
 
     { "16777216",    "1.000000e+08", ios::oct | ios::scientific },
-    { "16777216",    "1.000000E+08", ios::oct | ios::scientific | ios::uppercase },
-    { "16777216",   "01.000000e+08", ios::oct | ios::scientific | ios::showbase },
-    { "16777216",   "01.000000E+08", ios::oct | ios::scientific | ios::showbase | ios::uppercase },
-    { "16777216",  "+01.000000e+08", ios::oct | ios::scientific | ios::showbase | ios::showpos },
-    { "16777216",  "+01.000000E+08", ios::oct | ios::scientific | ios::showbase | ios::showpos | ios::uppercase },
-    { "-16777216", "-01.000000e+08", ios::oct | ios::scientific | ios::showbase | ios::showpos },
-    { "-16777216", "-01.000000E+08", ios::oct | ios::scientific | ios::showbase | ios::showpos | ios::uppercase },
+    { "16777216",    "1.000000E+08",
+      ios::oct | ios::scientific | ios::uppercase },
+    { "16777216",   "01.000000e+08",
+      ios::oct | ios::scientific | ios::showbase },
+    { "16777216",   "01.000000E+08",
+      ios::oct | ios::scientific | ios::showbase | ios::uppercase },
+    { "16777216",  "+01.000000e+08",
+      ios::oct | ios::scientific | ios::showbase | ios::showpos },
+    { "16777216",  "+01.000000E+08", ios::oct | ios::scientific
+      | ios::showbase | ios::showpos | ios::uppercase },
+    { "-16777216", "-01.000000e+08",
+      ios::oct | ios::scientific | ios::showbase | ios::showpos },
+    { "-16777216", "-01.000000E+08", ios::oct | ios::scientific
+      | ios::showbase | ios::showpos | ios::uppercase },
 
   };
 
@@ -396,25 +405,25 @@ check_mpf (void)
       if (option_check_standard && mpf_cmp (f, f2) == 0
           && ! (data[i].flags & (ios::hex | ios::oct | ios::showbase)))
         {
-          ostrstream  got;
-          CALL (got << d << '\0');
-          if (strcmp (got.str(), data[i].want) != 0)
+          ostringstream  got;
+          CALL (got << d);
+          if (got.str().compare (data[i].want) != 0)
             {
-              printf ("check_mpf data[%d] doesn't match standard ostream output\n", i);
-              printf ("  f:     %s\n", data[i].f);
-              printf ("  d:     %g\n", d);
+              cout << "check_mpf data[" << i
+		   << "] doesn't match standard ostream output\n";
+              cout << "  f:     " << data[i].f << "\n";
+              cout << "  d:     " << d << "\n";
               DUMP ();
             }
         }
 
       {
-        ostrstream  got;
-        CALL (operator<< (got, f) << '\0');
-        if (strcmp (got.str(), data[i].want) != 0)
+        ostringstream  got;
+        CALL (got << f);
+        if (got.str().compare (data[i].want) != 0)
           {
-            printf ("mpf operator<< wrong, data[%d]\n", i);
-            printf ("  f:     %s\n", data[i].f);
-            mpf_trace ("  f", f);
+            cout << "mpf operator<< wrong, data[" << i << "]\n";
+            cout << "  f:     " << data[i].f << "\n";
             ABORT ();
           }
       }
@@ -439,5 +448,5 @@ main (int argc, char *argv[])
   check_mpf ();
 
   tests_end ();
-  exit (0);
+  return 0;
 }

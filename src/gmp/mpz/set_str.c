@@ -4,8 +4,8 @@
    the base in the C standard way, i.e.  0xhh...h means base 16,
    0oo...o means base 8, otherwise assume base 10.
 
-Copyright 1991, 1993, 1994, 1996, 1997, 1998, 2000, 2001, 2002 Free Software
-Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996, 1997, 1998, 2000, 2001, 2002, 2003, 2005
+Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -21,33 +21,16 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <string.h>
 #include <ctype.h>
 #include "gmp.h"
 #include "gmp-impl.h"
-#include "longlong.h"
 
-static int
-digit_value_in_base (int c, int base)
-{
-  int digit;
-
-  if (isdigit (c))
-    digit = c - '0';
-  else if (islower (c))
-    digit = c - 'a' + 10;
-  else if (isupper (c))
-    digit = c - 'A' + 10;
-  else
-    return -1;
-
-  if (digit < base)
-    return digit;
-  return -1;
-}
+extern const unsigned char __gmp_digit_value_tab[];
+#define digit_value_tab __gmp_digit_value_tab
 
 int
 mpz_set_str (mpz_ptr x, const char *str, int base)
@@ -58,22 +41,33 @@ mpz_set_str (mpz_ptr x, const char *str, int base)
   mp_size_t xsize;
   int c;
   int negative;
-  TMP_DECL (marker);
+  const unsigned char *digit_value;
+  TMP_DECL;
+
+  digit_value = digit_value_tab;
+  if (base > 36)
+    {
+      /* For bases > 36, use the collating sequence
+	 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.  */
+      digit_value += 224;
+      if (base > 62)
+	return -1;		/* too large base */
+    }
 
   /* Skip whitespace.  */
   do
-    c = *str++;
+    c = (unsigned char) *str++;
   while (isspace (c));
 
   negative = 0;
   if (c == '-')
     {
       negative = 1;
-      c = *str++;
+      c = (unsigned char) *str++;
     }
 
-  if (digit_value_in_base (c, base == 0 ? 10 : base) < 0)
-    return -1;			/* error if no digits */
+  if (digit_value[c] >= (base == 0 ? 10 : base))
+    return -1;			/* error if no valid digits */
 
   /* If BASE is 0, try to find out the base by looking at the initial
      characters.  */
@@ -83,23 +77,23 @@ mpz_set_str (mpz_ptr x, const char *str, int base)
       if (c == '0')
 	{
 	  base = 8;
-	  c = *str++;
+	  c = (unsigned char) *str++;
 	  if (c == 'x' || c == 'X')
 	    {
 	      base = 16;
-	      c = *str++;
+	      c = (unsigned char) *str++;
 	    }
 	  else if (c == 'b' || c == 'B')
 	    {
 	      base = 2;
-	      c = *str++;
+	      c = (unsigned char) *str++;
 	    }
 	}
     }
 
   /* Skip leading zeros and white space.  */
   while (c == '0' || isspace (c))
-    c = *str++;
+    c = (unsigned char) *str++;
   /* Make sure the string does not become empty, mpn_set_str would fail.  */
   if (c == 0)
     {
@@ -107,7 +101,7 @@ mpz_set_str (mpz_ptr x, const char *str, int base)
       return 0;
     }
 
-  TMP_MARK (marker);
+  TMP_MARK;
   str_size = strlen (str - 1);
   s = begs = (char *) TMP_ALLOC (str_size + 1);
 
@@ -117,28 +111,27 @@ mpz_set_str (mpz_ptr x, const char *str, int base)
     {
       if (!isspace (c))
 	{
-	  int dig = digit_value_in_base (c, base);
-	  if (dig < 0)
+	  int dig = digit_value[c];
+	  if (dig >= base)
 	    {
-	      TMP_FREE (marker);
+	      TMP_FREE;
 	      return -1;
 	    }
 	  *s++ = dig;
 	}
-      c = *str++;
+      c = (unsigned char) *str++;
     }
 
   str_size = s - begs;
 
   xsize = (((mp_size_t) (str_size / __mp_bases[base].chars_per_bit_exactly))
 	   / GMP_NUMB_BITS + 2);
-  if (x->_mp_alloc < xsize)
-    _mpz_realloc (x, xsize);
+  MPZ_REALLOC (x, xsize);
 
   /* Convert the byte array in base BASE to our bignum format.  */
   xsize = mpn_set_str (x->_mp_d, (unsigned char *) begs, str_size, base);
   x->_mp_size = negative ? -xsize : xsize;
 
-  TMP_FREE (marker);
+  TMP_FREE;
   return 0;
 }

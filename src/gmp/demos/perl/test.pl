@@ -18,8 +18,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-# the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-# MA 02111-1307, USA.
+# the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
 
 
 # These tests aim to exercise the many possible combinations of operands
@@ -527,6 +527,64 @@ ok (bin(3,3) == 1);
   ok (tied($a));
 }
 
+#------------------------------------------------------------------------------
+# GMP::Mpz::combit
+
+{ my $a = mpz(3); combit ($a, 1); ok ($a == 1);
+  ok (UNIVERSAL::isa($a,"GMP::Mpz")); }
+{ my $a = mpz(3); combit ($a, 2); ok ($a == 7);
+  ok (UNIVERSAL::isa($a,"GMP::Mpz")); }
+
+{ my $a = 3; combit ($a, 1); ok ($a == 1);
+  ok (UNIVERSAL::isa($a,"GMP::Mpz")); }
+{ my $a = 3; combit ($a, 2); ok ($a == 7);
+  ok (UNIVERSAL::isa($a,"GMP::Mpz")); }
+
+# mutate only given variable
+{ my $a = mpz(3);
+  my $b = $a;
+  combit ($a, 0);
+  ok ($a == 2);
+  ok ($b == 3);
+}
+{ my $a = 3;
+  my $b = $a;
+  combit ($a, 0);
+  ok ($a == 2);
+  ok ($b == 3);
+}
+
+{ tie my $a, 'Mytie', mpz(3);
+  combit ($a, 2);
+  ok ($Mytie::fetched > 0);    # used fetch
+  ok ($Mytie::stored > 0);     # used store
+  ok ($a == 7);                # expected result
+  ok (UNIVERSAL::isa($a,"GMP::Mpz"));
+  ok (tied($a));               # still tied
+}
+{ tie my $a, 'Mytie', 3;
+  combit ($a, 2);
+  ok ($Mytie::fetched > 0);    # used fetch
+  ok ($Mytie::stored > 0);     # used store
+  ok ($a == 7);                # expected result
+  ok (UNIVERSAL::isa($a,"GMP::Mpz"));
+  ok (tied($a));               # still tied
+}
+
+{ my $b = mpz(3);
+  tie my $a, 'Mytie', $b;
+  combit ($a, 0);
+  ok ($a == 2);
+  ok ($b == 3);
+  ok (tied($a));
+}
+{ my $b = 3;
+  tie my $a, 'Mytie', $b;
+  combit ($a, 0);
+  ok ($a == 2);
+  ok ($b == 3);
+  ok (tied($a));
+}
 
 #------------------------------------------------------------------------------
 # GMP::Mpz::congruent_p
@@ -869,6 +927,20 @@ ok (root(243,5) == 3);
   ok ($r == 3);
   ok (! $e);
 }
+
+#------------------------------------------------------------------------------
+# GMP::Mpz::rootrem
+
+{ my ($root, $rem) = rootrem (mpz(0), 1);
+  ok ($root == 0); ok ($rem == 0); }
+{ my ($root, $rem) = rootrem (mpz(0), 2);
+  ok ($root == 0); ok ($rem == 0); }
+{ my ($root, $rem) = rootrem (mpz(64), 2);
+  ok ($root == 8); ok ($rem == 0); }
+{ my ($root, $rem) = rootrem (mpz(64), 3);
+  ok ($root == 4); ok ($rem == 0); }
+{ my ($root, $rem) = rootrem (mpz(65), 3);
+  ok ($root == 4); ok ($rem == 1); }
 
 #------------------------------------------------------------------------------
 # GMP::Mpz::scan0
@@ -1671,6 +1743,18 @@ ok (trunc(mpf(7.5)) == 7.0);
 { my $r = randstate('lc_2exp', 1, 2, 3);        ok (defined $r); }
 { my $r = randstate('lc_2exp_size', 64);        ok (defined $r); }
 { my $r = randstate('lc_2exp_size', 999999999); ok (! defined $r); }
+{ my $r = randstate('mt');                      ok (defined $r); }
+
+{ # copying a randstate results in same sequence
+  my $r1 = randstate('lc_2exp_size', 64);
+  $r1->seed(123);
+  my $r2 = randstate($r1);
+  for (1 .. 20) {
+    my $z1 = mpz_urandomb($r1, 20);
+    my $z2 = mpz_urandomb($r2, 20);
+    ok ($z1 == $z2);
+  }
+}
 
 #------------------------------------------------------------------------------
 # GMP::Rand::seed
@@ -1708,6 +1792,28 @@ ok (trunc(mpf(7.5)) == 7.0);
   my $z = mpz_urandomm($r, mpz(3)**100);
   ok (UNIVERSAL::isa($z,"GMP::Mpz")); }
   
+#------------------------------------------------------------------------------
+# GMP::Rand::mpz_urandomb_ui
+
+{ my $r = randstate();
+  foreach (1 .. 20) {
+    my $u = gmp_urandomb_ui($r,8);
+    ok ($u >= 0);
+    ok ($u < 256);
+  }
+}
+
+#------------------------------------------------------------------------------
+# GMP::Rand::mpz_urandomm_ui
+
+{ my $r = randstate();
+  foreach (1 .. 20) {
+    my $u = gmp_urandomm_ui($r,8);
+    ok ($u >= 0);
+    ok ($u < 8);
+  }
+}
+
 
 
 

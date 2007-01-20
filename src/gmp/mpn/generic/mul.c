@@ -6,8 +6,8 @@
    THAT THEY'LL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
 
-Copyright 1991, 1993, 1994, 1996, 1997, 1999, 2000, 2001, 2002 Free Software
-Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996, 1997, 1999, 2000, 2001, 2002, 2003, 2005
+Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -23,11 +23,16 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
+
+
+#ifndef MUL_BASECASE_MAX_UN
+#define MUL_BASECASE_MAX_UN 500
+#endif
 
 /* Multiply the natural numbers u (pointed to by UP, with UN limbs) and v
    (pointed to by VP, with VN limbs), and store the result at PRODP.  The
@@ -40,59 +45,6 @@ MA 02111-1307, USA. */
    1. UN >= VN.
    2. PRODP != UP and PRODP != VP, i.e. the destination must be distinct from
       the multiplier and the multiplicand.  */
-
-void
-mpn_sqr_n (mp_ptr prodp,
-	   mp_srcptr up, mp_size_t un)
-{
-  ASSERT (un >= 1);
-  ASSERT (! MPN_OVERLAP_P (prodp, 2*un, up, un));
-
-  /* FIXME: Can this be removed? */
-  if (un == 0)
-    return;
-
-  if (BELOW_THRESHOLD (un, SQR_BASECASE_THRESHOLD))
-    { /* mul_basecase is faster than sqr_basecase on small sizes sometimes */
-      mpn_mul_basecase (prodp, up, un, up, un);
-    }
-  else if (BELOW_THRESHOLD (un, SQR_KARATSUBA_THRESHOLD))
-    { /* plain schoolbook multiplication */
-      mpn_sqr_basecase (prodp, up, un);
-    }
-  else if (BELOW_THRESHOLD (un, SQR_TOOM3_THRESHOLD))
-    { /* karatsuba multiplication */
-      mp_ptr tspace;
-      TMP_DECL (marker);
-      TMP_MARK (marker);
-      tspace = TMP_ALLOC_LIMBS (MPN_KARA_SQR_N_TSIZE (un));
-      mpn_kara_sqr_n (prodp, up, un, tspace);
-      TMP_FREE (marker);
-    }
-#if WANT_FFT || TUNE_PROGRAM_BUILD
-  else if (BELOW_THRESHOLD (un, SQR_FFT_THRESHOLD))
-#else
-  else
-#endif
-    { /* Toom3 multiplication.
-	 Use workspace from the heap, as stack may be limited.  Since n is
-	 at least MUL_TOOM3_THRESHOLD, the multiplication will take much
-	 longer than malloc()/free().  */
-      mp_ptr     tspace;
-      mp_size_t  tsize;
-      tsize = MPN_TOOM3_SQR_N_TSIZE (un);
-      tspace = __GMP_ALLOCATE_FUNC_LIMBS (tsize);
-      mpn_toom3_sqr_n (prodp, up, un, tspace);
-      __GMP_FREE_FUNC_LIMBS (tspace, tsize);
-    }
-#if WANT_FFT || TUNE_PROGRAM_BUILD
-  else
-    {
-      /* schoenhage multiplication */
-      mpn_mul_fft_full (prodp, up, un, up, un);
-    }
-#endif
-}
 
 mp_limb_t
 mpn_mul (mp_ptr prodp,
@@ -114,8 +66,72 @@ mpn_mul (mp_ptr prodp,
     }
 
   if (vn < MUL_KARATSUBA_THRESHOLD)
-    { /* long multiplication */
-      mpn_mul_basecase (prodp, up, un, vp, vn);
+    { /* plain schoolbook multiplication */
+      if (un <= MUL_BASECASE_MAX_UN)
+	mpn_mul_basecase (prodp, up, un, vp, vn);
+      else
+	{
+	  /* We have un >> MUL_BASECASE_MAX_UN > vn.  For better memory
+	     locality, split up[] into MUL_BASECASE_MAX_UN pieces and multiply
+	     these pieces with the vp[] operand.  After each such partial
+	     multiplication (but the last) we copy the most significant vn
+	     limbs into a temporary buffer since that part would otherwise be
+	     overwritten by the next multiplication.  After the next
+	     multiplication, we add it back.  This illustrates the situation:
+
+                                                    -->vn<--
+                                                      |  |<------- un ------->|
+                                                         _____________________|
+                                                        X                    /|
+                                                      /XX__________________/  |
+                                    _____________________                     |
+                                   X                    /                     |
+                                 /XX__________________/                       |
+               _____________________                                          |
+              /                    /                                          |
+            /____________________/                                            |
+	    ==================================================================
+
+	    The parts marked with X are the parts whose sums are copied into
+	    the temporary buffer.  */
+
+	  mp_limb_t tp[MUL_KARATSUBA_THRESHOLD_LIMIT];
+	  mp_limb_t cy;
+          ASSERT (MUL_KARATSUBA_THRESHOLD <= MUL_KARATSUBA_THRESHOLD_LIMIT);
+
+	  mpn_mul_basecase (prodp, up, MUL_BASECASE_MAX_UN, vp, vn);
+	  prodp += MUL_BASECASE_MAX_UN;
+	  MPN_COPY (tp, prodp, vn);		/* preserve high triangle */
+	  up += MUL_BASECASE_MAX_UN;
+	  un -= MUL_BASECASE_MAX_UN;
+	  while (un > MUL_BASECASE_MAX_UN)
+	    {
+	      mpn_mul_basecase (prodp, up, MUL_BASECASE_MAX_UN, vp, vn);
+	      cy = mpn_add_n (prodp, prodp, tp, vn); /* add back preserved triangle */
+	      mpn_incr_u (prodp + vn, cy);		/* safe? */
+	      prodp += MUL_BASECASE_MAX_UN;
+	      MPN_COPY (tp, prodp, vn);		/* preserve high triangle */
+	      up += MUL_BASECASE_MAX_UN;
+	      un -= MUL_BASECASE_MAX_UN;
+	    }
+	  if (un > vn)
+	    {
+	      mpn_mul_basecase (prodp, up, un, vp, vn);
+	    }
+	  else
+	    {
+	      ASSERT_ALWAYS (un > 0);
+	      mpn_mul_basecase (prodp, vp, vn, up, un);
+	    }
+	  cy = mpn_add_n (prodp, prodp, tp, vn); /* add back preserved triangle */
+	  mpn_incr_u (prodp + vn, cy);		/* safe? */
+	}
+      return prodp[un + vn - 1];
+    }
+
+  if (ABOVE_THRESHOLD (vn, MUL_FFT_THRESHOLD))
+    {
+      mpn_mul_fft_full (prodp, up, un, vp, vn);
       return prodp[un + vn - 1];
     }
 
@@ -123,8 +139,8 @@ mpn_mul (mp_ptr prodp,
   if (un != vn)
     { mp_limb_t t;
       mp_ptr ws;
-      TMP_DECL (marker);
-      TMP_MARK (marker);
+      TMP_DECL;
+      TMP_MARK;
 
       prodp += vn;
       l = vn;
@@ -137,8 +153,7 @@ mpn_mul (mp_ptr prodp,
 	  MPN_SRCPTR_SWAP (up,un, vp,vn);
 	}
 
-      ws = (mp_ptr) TMP_ALLOC (((vn >= MUL_KARATSUBA_THRESHOLD ? vn : un) + vn)
-			       * BYTES_PER_MP_LIMB);
+      ws = TMP_ALLOC_LIMBS ((vn >= MUL_KARATSUBA_THRESHOLD ? vn : un) + vn);
 
       t = 0;
       while (vn >= MUL_KARATSUBA_THRESHOLD)
@@ -185,7 +200,7 @@ mpn_mul (mp_ptr prodp,
 	    }
 	}
 
-      TMP_FREE (marker);
+      TMP_FREE;
     }
   return prodp[un + vn - 1];
 }

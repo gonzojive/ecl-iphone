@@ -16,8 +16,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-# the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-# MA 02111-1307, USA.
+# the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
 
 
 # Usage:  cd $builddir/tune
@@ -282,7 +282,7 @@ if (defined $ENV{directories}) { push @DIRECTORIES, @{$ENV{directories}} }
 my @table =
     (
      {
-       'regexp'=> 'add_n|sub_n',
+       'regexp'=> 'add_n|sub_n|addlsh1_n|sublsh1_n|rsh1add_n|rsh1sub_n',
        'ret'   => 'mp_limb_t',
        'args'  => 'mp_ptr wp, mp_srcptr xp, mp_srcptr yp, mp_size_t size',
        'speed' => 'SPEED_ROUTINE_MPN_BINARY_N',
@@ -311,6 +311,63 @@ my @table =
        'args'  => 'mp_ptr wp, mp_srcptr xp, mp_size_t size, mp_limb_t mult',
        'speed' => 'SPEED_ROUTINE_MPN_UNARY_1',
        'speed_flags'=> 'FLAG_R',
+     },
+
+     {
+       'regexp'=> 'addmul_2|submul_2',
+       'ret'   => 'mp_limb_t',
+       'args'  => 'mp_ptr wp, mp_srcptr xp, mp_size_t size, mp_srcptr yp',
+       'speed' => 'SPEED_ROUTINE_MPN_UNARY_2',
+       'speed_flags'=> 'FLAG_R_OPTIONAL',
+       'try-minsize' => 2,
+     },
+     {
+       'regexp'=> 'addmul_3|submul_3',
+       'ret'   => 'mp_limb_t',
+       'args'  => 'mp_ptr wp, mp_srcptr xp, mp_size_t size, mp_srcptr yp',
+       'speed' => 'SPEED_ROUTINE_MPN_UNARY_3',
+       'speed_flags'=> 'FLAG_R_OPTIONAL',
+       'try-minsize' => 3,
+     },
+     {
+       'regexp'=> 'addmul_4|submul_4',
+       'ret'   => 'mp_limb_t',
+       'args'  => 'mp_ptr wp, mp_srcptr xp, mp_size_t size, mp_srcptr yp',
+       'speed' => 'SPEED_ROUTINE_MPN_UNARY_4',
+       'speed_flags'=> 'FLAG_R_OPTIONAL',
+       'try-minsize' => 4,
+     },
+     {
+       'regexp'=> 'addmul_5|submul_5',
+       'ret'   => 'mp_limb_t',
+       'args'  => 'mp_ptr wp, mp_srcptr xp, mp_size_t size, mp_srcptr yp',
+       'speed' => 'SPEED_ROUTINE_MPN_UNARY_5',
+       'speed_flags'=> 'FLAG_R_OPTIONAL',
+       'try-minsize' => 5,
+     },
+     {
+       'regexp'=> 'addmul_6|submul_6',
+       'ret'   => 'mp_limb_t',
+       'args'  => 'mp_ptr wp, mp_srcptr xp, mp_size_t size, mp_srcptr yp',
+       'speed' => 'SPEED_ROUTINE_MPN_UNARY_6',
+       'speed_flags'=> 'FLAG_R_OPTIONAL',
+       'try-minsize' => 6,
+     },
+     {
+       'regexp'=> 'addmul_7|submul_7',
+       'ret'   => 'mp_limb_t',
+       'args'  => 'mp_ptr wp, mp_srcptr xp, mp_size_t size, mp_srcptr yp',
+       'speed' => 'SPEED_ROUTINE_MPN_UNARY_7',
+       'speed_flags'=> 'FLAG_R_OPTIONAL',
+       'try-minsize' => 7,
+     },
+     {
+       'regexp'=> 'addmul_8|submul_8',
+       'ret'   => 'mp_limb_t',
+       'args'  => 'mp_ptr wp, mp_srcptr xp, mp_size_t size, mp_srcptr yp',
+       'speed' => 'SPEED_ROUTINE_MPN_UNARY_8',
+       'speed_flags'=> 'FLAG_R_OPTIONAL',
+       'try-minsize' => 8,
      },
 
      {
@@ -461,7 +518,6 @@ my @table =
        'regexp'=> 'gcd_1',
        'ret'   => 'mp_limb_t',
        'args'  => 'mp_ptr xp, mp_size_t xsize, mp_limb_t y',
-       'attrib'=> '__GMP_ATTRIBUTE_PURE',
        'speed_flags'=> 'FLAG_R_OPTIONAL',
        'speed_suffixes' => ['N'],
      },
@@ -474,7 +530,6 @@ my @table =
        'regexp'=> 'gcd_finda',
        'ret'   => 'mp_limb_t',
        'args'  => 'mp_srcptr cp',
-       'attrib'=> '__GMP_ATTRIBUTE_PURE',
      },
      
 
@@ -484,7 +539,6 @@ my @table =
        'mpX'   => 'mpz',
        'ret'   => 'int',
        'args'  => 'mpz_srcptr a, mpz_srcptr b',
-       'attrib'=> '__GMP_ATTRIBUTE_PURE',
        'try-legendre' => 'TYPE_MPZ_JACOBI',
      },
      {
@@ -492,7 +546,6 @@ my @table =
        'funs'  => ['jacobi_base'],
        'ret'   => 'mp_limb_t',
        'args'  => 'mp_limb_t a, mp_limb_t b, int bit1',
-       'attrib'=> 'ATTRIBUTE_CONST',
        'speed' => 'SPEED_ROUTINE_MPN_JACBASE',
        'try'   => 'none',
      },
@@ -520,7 +573,6 @@ my @table =
        'ret'   => 'mp_limb_t',
        'args_mod_1'       => 'mp_srcptr xp, mp_size_t size, mp_limb_t divisor',
        'args_preinv_mod_1'=> 'mp_srcptr xp, mp_size_t size, mp_limb_t divisor, mp_limb_t inverse',
-       'attrib'=> '__GMP_ATTRIBUTE_PURE',
        'speed_flags'=> 'FLAG_R',
      },
      {
@@ -528,20 +580,17 @@ my @table =
        'funs'  => ['preinv_mod_1'],
        'ret'   => 'mp_limb_t',
        'args'  => 'mp_srcptr xp, mp_size_t size, mp_limb_t divisor, mp_limb_t inverse',
-       'attrib'=> '__GMP_ATTRIBUTE_PURE',
        'speed_flags'=> 'FLAG_R',
      },
      {
        'regexp'=> 'mod_34lsub1',
        'ret'   => 'mp_limb_t',
        'args'  => 'mp_srcptr src, mp_size_t len',
-       'attrib'=> '__GMP_ATTRIBUTE_PURE',
      },
      {
        'regexp'=> 'invert_limb',
        'ret'   => 'mp_limb_t',
        'args'  => 'mp_limb_t divisor',
-       'attrib'=> 'ATTRIBUTE_CONST',
        'speed_flags'=> 'FLAG_R_OPTIONAL',
        'try'   => 'none',
      },
@@ -549,9 +598,10 @@ my @table =
      {
        # not for use with hppa reversed argument versions of mpn_umul_ppmm
        'regexp'=> 'udiv',
-       'funs'  => ['udiv_qrnnd'],
+       'funs'  => ['udiv_qrnnd','udiv_qrnnd_r'],
        'ret'   => 'mp_limb_t',
-       'args'  => 'mp_limb_t *remptr, mp_limb_t n1, mp_limb_t n0, mp_limb_t d',
+       'args_udiv_qrnnd'   => 'mp_limb_t *, mp_limb_t, mp_limb_t, mp_limb_t',
+       'args_udiv_qrnnd_r' => 'mp_limb_t, mp_limb_t, mp_limb_t, mp_limb_t *',
        'speed' => 'none',
        'try-minsize' => 2,
      },
@@ -561,7 +611,6 @@ my @table =
        'funs'  => ['modexact_1_odd'],
        'ret'   => 'mp_limb_t',
        'args'  => 'mp_srcptr src, mp_size_t size, mp_limb_t divisor',
-       'attrib'=> '__GMP_ATTRIBUTE_PURE',
        'speed_flags'=> 'FLAG_R',
      },
      {
@@ -569,7 +618,6 @@ my @table =
        'funs'  => ['modlimb_invert'],
        'ret'   => 'mp_limb_t',
        'args'  => 'mp_limb_t v',
-       'attrib'=> 'ATTRIBUTE_CONST',
        'carrys'=> [''],
        'try'   => 'none',
      },
@@ -585,6 +633,8 @@ my @table =
        'regexp'=> 'mul_2',
        'ret'   => 'mp_limb_t',
        'args'  => 'mp_ptr wp, mp_srcptr xp, mp_size_t size, mp_srcptr mult',
+       'speed' => 'SPEED_ROUTINE_MPN_UNARY_2',
+       'speed_flags'=> 'FLAG_R',
      },
      
      {
@@ -600,11 +650,11 @@ my @table =
        'rename'=> ['kara_mul_n','kara_sqr_n','toom3_mul_n','toom3_sqr_n'],
      },
      {
-       # not for use with hppa reversed argument versions of mpn_umul_ppmm
        'regexp'=> 'umul',
-       'funs'  => ['umul_ppmm'],
+       'funs'  => ['umul_ppmm','umul_ppmm_r'],
        'ret'   => 'mp_limb_t',
-       'args'  => 'mp_limb_t *lowptr, mp_limb_t m1, mp_limb_t m2',
+       'args_umul_ppmm'   => 'mp_limb_t *lowptr, mp_limb_t m1, mp_limb_t m2',
+       'args_umul_ppmm_r' => 'mp_limb_t m1, mp_limb_t m2, mp_limb_t *lowptr',
        'speed' => 'none',
        'try-minsize' => 3,
      },
@@ -616,19 +666,16 @@ my @table =
        'ret'   => 'unsigned long',
        'args_popcount'=> 'mp_srcptr xp, mp_size_t size',
        'args_hamdist' => 'mp_srcptr xp, mp_srcptr yp, mp_size_t size',
-       'attrib'=> '__GMP_ATTRIBUTE_PURE',
      },
      {
        'regexp'=> 'popcount',
        'ret'   => 'unsigned long',
        'args'  => 'mp_srcptr xp, mp_size_t size',
-       'attrib'=> '__GMP_ATTRIBUTE_PURE',
      },
      {
        'regexp'=> 'hamdist',
        'ret'   => 'unsigned long',
        'args'  => 'mp_srcptr xp, mp_srcptr yp, mp_size_t size',
-       'attrib'=> '__GMP_ATTRIBUTE_PURE',
        # extra renaming to support sharing a data table with mpn_popcount
        'rename'=> ['popcount'],
      },
@@ -659,7 +706,6 @@ my @table =
        'funs'  => ['count_leading_zeros'],
        'ret'   => 'unsigned',
        'args'  => 'mp_limb_t',
-       'attrib'=> 'ATTRIBUTE_CONST',
        'macro-before' => "#undef COUNT_LEADING_ZEROS_0",
        'macro-speed'  =>
 '#ifdef COUNT_LEADING_ZEROS_0
@@ -678,7 +724,6 @@ my @table =
        'funs'  => ['count_trailing_zeros'],
        'ret'   => 'unsigned',
        'args'  => 'mp_limb_t',
-       'attrib'=> 'ATTRIBUTE_CONST',
        'macro-speed' => '
   SPEED_ROUTINE_COUNT_ZEROS_A (0, 0);
   $fun (c, n);
@@ -749,7 +794,8 @@ my $top_builddir = "${builddir}/..";
 
 
 open(MAKEFILE, "<${builddir}/Makefile")
-    or die "Cannot open Makefile: $!\nIs this a tune build directory?";
+  or die "Cannot open ${builddir}/Makefile: $!\n"
+       . "Is this a tune build directory?";
 my ($srcdir, $top_srcdir);
 while (<MAKEFILE>) {
   if (/^srcdir = (.*)/) {     $srcdir = $1;     }
@@ -1108,7 +1154,7 @@ EOF
           print "fun_carry $fun_carry\n" if $opt{'t'};
 		    
 	  if ($lang =~ /\.(asm|S)/
-	      && ! grep(m"PROLOGUE\((.* )?$mpX$fun_carry[ )]",@file_contents)) {
+	      && ! grep(m"PROLOGUE\((.* )?$mpX$fun_carry[ ,)]",@file_contents)) {
 	    print "no PROLOGUE $mpX$fun_carry\n" if $opt{'t'};
 	    next;
 	  }
@@ -1135,11 +1181,7 @@ EOF
 	  print "funfull $funfull\n" if $opt{'t'};
 
 	  if ($lang ne '.h') {
-	    my $attrib = $t->{'attrib'};
-	    if (defined $attrib) { $attrib = " $attrib"; }
-	    else { $attrib = ''; }
-
-	    my $proto = "$t->{'ret'} $funfull _PROTO (($args$carryarg))$attrib; \\\n";
+	    my $proto = "$t->{'ret'} $funfull _PROTO (($args$carryarg)); \\\n";
 	    $SPEED_EXTRA_PROTOS .= $proto;
 	    $TRY_EXTRA_PROTOS .= $proto;
 	  }
@@ -1281,6 +1323,7 @@ CFLAGS_TESTS = -DSIZE=50 -DTIMES=1 -DRANDOM -DCLOCK=333000000
 CFLAGS_TESTS_SP = -DSIZE=1024 -DNOCHECK -DOPS=200000000 -DCLOCK=333000000
 EOF
 
+close MAKEFILE or die;
 
 print "Total $count_files files, $count_functions functions\n";    
 

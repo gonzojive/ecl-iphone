@@ -1,4 +1,4 @@
-Copyright 1996, 1999, 2001 Free Software Foundation, Inc.
+Copyright 1996, 1999, 2001, 2002, 2004 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -14,8 +14,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-02111-1307, USA.
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+02110-1301, USA.
 
 
 
@@ -127,12 +127,22 @@ Gas on hppa GNU/Linux however requires a colon,
 
 	L$loop: ldws,mb -4(0,%r25),%r22
 
-Fortunately both accept a ".label" pseudo-op,
+This is covered by using LDEF() from asm-defs.m4.  An alternative would be
+to use ".label" which is accepted by both,
 
 		.label  L$loop
 		ldws,mb -4(0,%r25),%r22
 
+but that's not as nice to look at, not if you're used to assembler code
+having labels in column 0.
 
+
+
+
+REFERENCES
+
+Hewlett Packard, "HP Assembler Reference Manual", 9th edition, June 1998,
+part number 92432-90012.
 
 
 

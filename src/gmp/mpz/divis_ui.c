@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -31,10 +31,10 @@ mpz_divisible_ui_p (mpz_srcptr a, unsigned long d)
   mp_ptr     ap;
   unsigned   twos;
 
-  if (d == 0)
-    DIVIDE_BY_ZERO;
-
   asize = SIZ(a);
+  if (UNLIKELY (d == 0))
+    return (asize == 0);
+
   if (asize == 0)  /* 0 divisible by any d */
     return 1;
 

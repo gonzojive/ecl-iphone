@@ -1,6 +1,6 @@
 /* mpf_reldiff -- Generate the relative difference of two floats.
 
-Copyright 1996, 2001 Free Software Foundation, Inc.
+Copyright 1996, 2001, 2004, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,30 +16,42 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
 
+
+/* The precision we use for d = x-y is based on what mpf_div will want from
+   the dividend.  It calls mpn_tdiv_qr to produce a quotient of rprec+1
+   limbs.  So rprec+1 == dsize - xsize + 1, hence dprec = rprec+xsize.  */
+
 void
 mpf_reldiff (mpf_t rdiff, mpf_srcptr x, mpf_srcptr y)
 {
-  if (mpf_cmp_ui (x, 0) == 0)
+  if (UNLIKELY (SIZ(x) == 0))
     {
       mpf_set_ui (rdiff, (unsigned long int) (mpf_sgn (y) != 0));
     }
   else
     {
+      mp_size_t dprec;
       mpf_t d;
-      mp_limb_t tmp_limb[2];
+      TMP_DECL;
 
-      d->_mp_prec = 1;
-      d->_mp_d = tmp_limb;
+      TMP_MARK;
+      dprec = PREC(rdiff) + ABSIZ(x);
+      ASSERT (PREC(rdiff)+1 == dprec - ABSIZ(x) + 1);
+
+      PREC(d) = dprec;
+      PTR(d) = TMP_ALLOC_LIMBS (dprec + 1);
 
       mpf_sub (d, x, y);
-      mpf_abs (d, d);
+      SIZ(d) = ABSIZ(d);
       mpf_div (rdiff, d, x);
+
+      TMP_FREE;
     }
 }
 

@@ -1,6 +1,6 @@
 /* mpz_powm(res,base,exp,mod) -- Set RES to (base**exp) mod MOD.
 
-Copyright 1991, 1993, 1994, 1996, 1997, 2000, 2001, 2002 Free Software
+Copyright 1991, 1993, 1994, 1996, 1997, 2000, 2001, 2002, 2005 Free Software
 Foundation, Inc.  Contributed by Paul Zimmermann.
 
 This file is part of the GNU MP Library.
@@ -17,8 +17,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 
 #include "gmp.h"
@@ -29,8 +29,8 @@ MA 02111-1307, USA. */
 #endif
 
 
-/* Set c <- tp/R^n mod m.
-   tp should have space for 2*n+1 limbs; clobber its most significant limb. */
+/* Set cp[] <- tp[]/R^n mod mp[].  Clobber tp[].
+   mp[] is n limbs; tp[] is 2n limbs.  */
 #if ! WANT_REDC_GLOBAL
 static
 #endif
@@ -41,20 +41,17 @@ redc (mp_ptr cp, mp_srcptr mp, mp_size_t n, mp_limb_t Nprim, mp_ptr tp)
   mp_limb_t q;
   mp_size_t j;
 
-  tp[2 * n] = 0;		/* carry guard */
+  ASSERT_MPN (tp, 2*n);
 
   for (j = 0; j < n; j++)
     {
-      q = tp[0] * Nprim;
-      cy = mpn_addmul_1 (tp, mp, n, q);
-      mpn_incr_u (tp + n, cy);
+      q = (tp[0] * Nprim) & GMP_NUMB_MASK;
+      tp[0] = mpn_addmul_1 (tp, mp, n, q);
       tp++;
     }
-
-  if (tp[n] != 0)
-    mpn_sub_n (cp, tp, mp, n);
-  else
-    MPN_COPY (cp, tp, n);
+  cy = mpn_add_n (cp, tp, tp - n, n);
+  if (cy != 0)
+    mpn_sub_n (cp, cp, mp, n);
 }
 
 /* Compute t = a mod m, a is defined by (ap,an), m is defined by (mp,mn), and
@@ -63,14 +60,14 @@ static void
 reduce (mp_ptr tp, mp_srcptr ap, mp_size_t an, mp_srcptr mp, mp_size_t mn)
 {
   mp_ptr qp;
-  TMP_DECL (marker);
+  TMP_DECL;
 
-  TMP_MARK (marker);
+  TMP_MARK;
   qp = TMP_ALLOC_LIMBS (an - mn + 1);
 
   mpn_tdiv_qr (qp, tp, 0L, ap, an, mp, mn);
 
-  TMP_FREE (marker);
+  TMP_FREE;
 }
 
 #if REDUCE_EXPONENT
@@ -169,14 +166,14 @@ pow (mpz_srcptr b, mpz_srcptr e, mpz_srcptr m, mpz_ptr r)
 #if REDUCE_EXPONENT
   mpz_t new_e;
 #endif
-  TMP_DECL (marker);
+  TMP_DECL;
 
   mp = PTR(m);
   mn = ABSIZ (m);
   if (mn == 0)
     DIVIDE_BY_ZERO;
 
-  TMP_MARK (marker);
+  TMP_MARK;
 
   es = SIZ (e);
   if (es <= 0)
@@ -187,7 +184,7 @@ pow (mpz_srcptr b, mpz_srcptr e, mpz_srcptr m, mpz_ptr r)
 	     m equals 1.  */
 	  SIZ(r) = (mn == 1 && mp[0] == 1) ? 0 : 1;
 	  PTR(r)[0] = 1;
-	  TMP_FREE (marker);	/* we haven't really allocated anything here */
+	  TMP_FREE;	/* we haven't really allocated anything here */
 	  return;
 	}
 #if HANDLE_NEGATIVE_EXPONENT
@@ -246,9 +243,11 @@ pow (mpz_srcptr b, mpz_srcptr e, mpz_srcptr m, mpz_ptr r)
     {
       k++;
       K *= 2;
+      if (k == 10)			/* cap allocation */
+	break;
     }
 
-  tp = TMP_ALLOC_LIMBS (2 * mn + 1);
+  tp = TMP_ALLOC_LIMBS (2 * mn);
   qp = TMP_ALLOC_LIMBS (mn + 1);
 
   gp = __GMP_ALLOCATE_FUNC_LIMBS (K / 2 * mn);
@@ -448,7 +447,7 @@ pow (mpz_srcptr b, mpz_srcptr e, mpz_srcptr m, mpz_ptr r)
 
   if ((ep[0] & 1) && SIZ(b) < 0 && xn != 0)
     {
-      mp = PTR(m);                    /* want original, unnormalized m */
+      mp = PTR(m);			/* want original, unnormalized m */
       mpn_sub (xp, mp, mn, xp, xn);
       xn = mn;
       MPN_NORMALIZE (xp, xn);
@@ -458,5 +457,5 @@ pow (mpz_srcptr b, mpz_srcptr e, mpz_srcptr m, mpz_ptr r)
   MPN_COPY (PTR(r), xp, xn);
 
   __GMP_FREE_FUNC_LIMBS (gp, K / 2 * mn);
-  TMP_FREE (marker);
+  TMP_FREE;
 }

@@ -1,6 +1,6 @@
 /* Check the values of some constants.
 
-Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,12 +16,14 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include "gmp.h"
+#include "tests.h"
+
 
 #ifdef ULONG_MAX
 char *ulong_max_def = "defined";
@@ -245,17 +247,53 @@ main (int argc, char *argv[])
     CHECK_CONDITION (2*bits_per_UHWtype >= bits_per_UWtype);
   }
 
+  ASSERT_ALWAYS_LIMB (MODLIMB_INVERSE_3);
   {
     mp_limb_t  modlimb_inverse_3_calc;
     modlimb_invert (modlimb_inverse_3_calc, CNST_LIMB(3));
-    CHECK_LIMB (MODLIMB_INVERSE_3 & GMP_NUMB_MASK,
-                modlimb_inverse_3_calc & GMP_NUMB_MASK);
+    ASSERT_ALWAYS_LIMB (modlimb_inverse_3_calc);
+    CHECK_LIMB (MODLIMB_INVERSE_3, modlimb_inverse_3_calc);
   }
-
   {
     mp_limb_t  MODLIMB_INVERSE_3_times_3
       = (MODLIMB_INVERSE_3 * CNST_LIMB(3)) & GMP_NUMB_MASK;
     CHECK_LIMB (MODLIMB_INVERSE_3_times_3, CNST_LIMB(1));
+  }
+
+  {
+    mp_limb_t  hi, lo;
+    hi = refmpn_umul_ppmm (&lo, GMP_NUMB_CEIL_MAX_DIV3-1,
+                           CNST_LIMB(3) << GMP_NAIL_BITS);
+    if (! (hi < 1))
+      {
+        printf ("GMP_NUMB_CEIL_MAX_DIV3 too big\n");
+        error = 1;
+      }
+    hi = refmpn_umul_ppmm (&lo, GMP_NUMB_CEIL_MAX_DIV3,
+                           CNST_LIMB(3) << GMP_NAIL_BITS);
+    if (! (hi >= 1))
+      {
+        printf ("GMP_NUMB_CEIL_MAX_DIV3 too small\n");
+        error = 1;
+      }
+  }
+
+  {
+    mp_limb_t  hi, lo;
+    hi = refmpn_umul_ppmm (&lo, GMP_NUMB_CEIL_2MAX_DIV3-1,
+                           CNST_LIMB(3) << GMP_NAIL_BITS);
+    if (! (hi < 2))
+      {
+        printf ("GMP_NUMB_CEIL_2MAX_DIV3 too big\n");
+        error = 1;
+      }
+    hi = refmpn_umul_ppmm (&lo, GMP_NUMB_CEIL_2MAX_DIV3,
+                           CNST_LIMB(3) << GMP_NAIL_BITS);
+    if (! (hi >= 2))
+      {
+        printf ("GMP_NUMB_CEIL_2MAX_DIV3 too small\n");
+        error = 1;
+      }
   }
 
 #ifdef PP_INVERTED

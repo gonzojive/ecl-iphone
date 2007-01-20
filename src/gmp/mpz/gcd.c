@@ -1,7 +1,7 @@
 /* mpz/gcd.c:   Calculate the greatest common divisor of two integers.
 
-Copyright 1991, 1993, 1994, 1996, 2000, 2001, 2002 Free Software Foundation,
-Inc.
+Copyright 1991, 1993, 1994, 1996, 2000, 2001, 2002, 2005 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -17,8 +17,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -43,7 +43,7 @@ gcd (mpz_srcptr u, mpz_srcptr v, mpz_ptr g)
   mp_ptr vp = v->_mp_d;
   mp_size_t vsize = ABS (v->_mp_size);
   mp_size_t gsize;
-  TMP_DECL (marker);
+  TMP_DECL;
 
   /* GCD(0, V) == V.  */
   if (usize == 0)
@@ -83,7 +83,7 @@ gcd (mpz_srcptr u, mpz_srcptr v, mpz_ptr g)
       return;
     }
 
-  TMP_MARK (marker);
+  TMP_MARK;
 
   /*  Eliminate low zero bits from U and V and move to temporary storage.  */
   while (*up == 0)
@@ -161,5 +161,5 @@ gcd (mpz_srcptr u, mpz_srcptr v, mpz_ptr g)
     }
 
   g->_mp_size = gsize;
-  TMP_FREE (marker);
+  TMP_FREE;
 }

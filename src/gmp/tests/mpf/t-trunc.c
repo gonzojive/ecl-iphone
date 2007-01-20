@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,10 +35,10 @@ check_print (mpf_srcptr src, mpf_srcptr got, mpf_srcptr want)
   mpf_trace ("want", want);
 
   printf ("got  size=%d exp=%ld\n", SIZ(got), EXP(got));
-  mpn_trace ("     limbs=", PTR(got), ABSIZ(got));
+  mpn_trace ("     limbs=", PTR(got), (mp_size_t) ABSIZ(got));
 
   printf ("want size=%d exp=%ld\n", SIZ(want), EXP(want));
-  mpn_trace ("     limbs=", PTR(want), ABSIZ(want));
+  mpn_trace ("     limbs=", PTR(want), (mp_size_t) ABSIZ(want));
 }
 
 void

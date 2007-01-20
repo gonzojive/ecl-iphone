@@ -1,6 +1,6 @@
 /* Test mpz_add, mpz_add_ui, mpz_cmp, mpz_cmp, mpz_mul, mpz_sqrtrem.
 
-Copyright 1991, 1993, 1994, 1996, 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996, 2000, 2001 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,7 +32,7 @@ int
 main (int argc, char **argv)
 {
   mpz_t x2;
-  mpz_t x;
+  mpz_t root1, root2, rem2;
   mpz_t temp, temp2;
   mp_size_t x2_size;
   int i;
@@ -51,7 +51,9 @@ main (int argc, char **argv)
      reps = atoi (argv[1]);
 
   mpz_init (x2);
-  mpz_init (x);
+  mpz_init (root1);
+  mpz_init (root2);
+  mpz_init (rem2);
   mpz_init (temp);
   mpz_init (temp2);
 
@@ -67,14 +69,14 @@ main (int argc, char **argv)
       mpz_urandomb (bs, rands, 15);
       nth = mpz_getlimbn (bs, 0) % mpz_sizeinbase (x2, 2) + 2;
 
-      mpz_root (x, x2, nth);
+      mpz_root (root1, x2, nth);
 
       mpz_urandomb (bs, rands, 4);
       bsi = mpz_get_ui (bs);
       if ((bsi & 1) != 0)
 	{
 	  /* With 50% probability, set x2 near a perfect power.  */
-	  mpz_pow_ui (x2, x, nth);
+	  mpz_pow_ui (x2, root1, nth);
 	  if ((bsi & 2) != 0)
 	    {
 	      mpz_sub_ui (x2, x2, bsi >> 2);
@@ -82,19 +84,22 @@ main (int argc, char **argv)
 	    }
 	  else
 	    mpz_add_ui (x2, x2, bsi >> 2);
-	  mpz_root (x, x2, nth);
+	  mpz_root (root1, x2, nth);
 	}
 
       /* printf ("%ld %lu\n", SIZ (x2), nth); */
 
-      mpz_pow_ui (temp, x, nth);
+      mpz_rootrem (root2, rem2, x2, nth);
+      mpz_pow_ui (temp, root1, nth);
+      mpz_add (temp2, temp, rem2);
 
       /* Is power of result > argument?  */
-      if (mpz_cmp (temp, x2) > 0)
+      if (mpz_cmp (root1, root2) != 0 || mpz_cmp (x2, temp2) != 0 || mpz_cmp (temp, x2) > 0)
 	{
 	  fprintf (stderr, "ERROR after test %d\n", i);
 	  debug_mp (x2, 10);
-	  debug_mp (x, 10);
+	  debug_mp (root1, 10);
+	  debug_mp (root2, 10);
 	  fprintf (stderr, "nth: %lu\n", nth);
 	  abort ();
 	}
@@ -103,7 +108,7 @@ main (int argc, char **argv)
 	{
 	  fprintf (stderr, "ERROR in mpz_perfect_power_p after test %d\n", i);
 	  debug_mp (temp, 10);
-	  debug_mp (x, 10);
+	  debug_mp (root1, 10);
 	  fprintf (stderr, "nth: %lu\n", nth);
 	  abort ();
 	}
@@ -111,7 +116,7 @@ main (int argc, char **argv)
       if (nth > 10000)
 	continue;		/* skip too expensive test */
 
-      mpz_add_ui (temp2, x, 1L);
+      mpz_add_ui (temp2, root1, 1L);
       mpz_pow_ui (temp2, temp2, nth);
 
       /* Is square of (result + 1) <= argument?  */
@@ -119,7 +124,7 @@ main (int argc, char **argv)
 	{
 	  fprintf (stderr, "ERROR after test %d\n", i);
 	  debug_mp (x2, 10);
-	  debug_mp (x, 10);
+	  debug_mp (root1, 10);
 	  fprintf (stderr, "nth: %lu\n", nth);
 	  abort ();
 	}
@@ -127,7 +132,9 @@ main (int argc, char **argv)
 
   mpz_clear (bs);
   mpz_clear (x2);
-  mpz_clear (x);
+  mpz_clear (root1);
+  mpz_clear (root2);
+  mpz_clear (rem2);
   mpz_clear (temp);
   mpz_clear (temp2);
 

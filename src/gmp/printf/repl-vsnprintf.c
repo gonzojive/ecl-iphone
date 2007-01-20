@@ -21,12 +21,15 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
-
-#define _GNU_SOURCE    /* for strnlen prototype */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "config.h"
+
+#if ! HAVE_VSNPRINTF   /* only need this file if we don't have vsnprintf */
+
+
+#define _GNU_SOURCE    /* for strnlen prototype */
 
 #if HAVE_STDARG
 #include <stdarg.h>
@@ -35,11 +38,14 @@ MA 02111-1307, USA. */
 #endif
 
 #include <ctype.h>     /* for isdigit */
-#include <float.h>     /* for DBL_MAX_10_EXP etc */
 #include <stddef.h>    /* for ptrdiff_t */
 #include <string.h>
 #include <stdio.h>     /* for NULL */
 #include <stdlib.h>
+
+#if HAVE_FLOAT_H
+#include <float.h>     /* for DBL_MAX_10_EXP etc */
+#endif
 
 #if HAVE_INTTYPES_H
 # include <inttypes.h> /* for intmax_t */
@@ -83,8 +89,8 @@ strnlen (const char *s, size_t n)
 
    mingw32 - doesn't have vsnprintf, it seems.  Because gcc is used a full
        set of types are available, but "long double" is just a plain IEEE
-       64-bit "double", so we avoid the big 15-bit exponent estimate
-       (LDBL_MAX_EXP_10 is defined).  */
+       64-bit "double" and LDBL_MAX_EXP_10 is correspondingly defined, so we
+       avoid the big 15-bit exponent estimate.  */
 
 int
 __gmp_replacement_vsnprintf (char *buf, size_t buf_size,
@@ -121,7 +127,7 @@ __gmp_replacement_vsnprintf (char *buf, size_t buf_size,
      exponent, but we don't bother trying to detect that directly.  */
   double_digits = 308;
 #ifdef DBL_MAX_10_EXP
-  /* but case prefer a value the compiler says */
+  /* but in any case prefer a value the compiler says */
   double_digits = DBL_MAX_10_EXP;
 #endif                
 
@@ -381,3 +387,5 @@ __gmp_replacement_vsnprintf (char *buf, size_t buf_size,
 
   return len;
 }
+
+#endif /* ! HAVE_VSNPRINTF */

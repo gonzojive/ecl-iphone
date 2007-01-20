@@ -1,4 +1,4 @@
-dnl  Alpha __gmpn_mul_1 -- Multiply a limb vector with a limb and store
+dnl  Alpha mpn_mul_1 -- Multiply a limb vector with a limb and store
 dnl  the result in a second limb vector.
 
 dnl  Copyright 1992, 1994, 1995, 2000, 2002 Free Software Foundation, Inc.
@@ -16,11 +16,16 @@ dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 dnl  License for more details.
 
 dnl  You should have received a copy of the GNU Lesser General Public License
-dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-dnl  MA 02111-1307, USA.
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+dnl  to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl  Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
+
+C      cycles/limb
+C EV4:     42
+C EV5:     18
+C EV6:      7
 
 C  INPUT PARAMETERS
 C  rp	r16
@@ -29,8 +34,6 @@ C  n	r18
 C  vl	r19
 C  cl	r20
 
-C  This code runs at 42 cycles/limb on EV4, 18 cycles/limb on EV5, and 7
-C  cycles/limb on EV6.
 
 ASM_START()
 PROLOGUE(mpn_mul_1c)

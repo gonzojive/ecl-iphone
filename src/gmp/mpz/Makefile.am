@@ -1,7 +1,7 @@
 ## Process this file with automake to generate Makefile.in
 
-# Copyright 1996, 1998, 1999, 2000, 2001, 2002 Free Software Foundation,
-# Inc.
+# Copyright 1996, 1998, 1999, 2000, 2001, 2002, 2003 Free Software
+# Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -17,11 +17,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-# the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-# MA 02111-1307, USA.
+# the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
 
-
-AUTOMAKE_OPTIONS = gnu no-dependencies $(top_builddir)/ansi2knr
 
 INCLUDES = -D__GMP_WITHIN_GMP -I$(top_srcdir)
 
@@ -33,7 +31,7 @@ libmpz_la_SOURCES = aors.h aors_ui.h fits_s.h mul_i.h \
   cfdiv_q_2exp.c cfdiv_r_2exp.c \
   clear.c clrbit.c \
   cmp.c cmp_d.c cmp_si.c cmp_ui.c cmpabs.c cmpabs_d.c cmpabs_ui.c \
-  com.c \
+  com.c combit.c \
   cong.c cong_2exp.c cong_ui.c \
   divexact.c divegcd.c dive_ui.c divis.c divis_ui.c divis_2exp.c \
   dump.c export.c fac_ui.c fdiv_q.c fdiv_q_ui.c \
@@ -49,10 +47,16 @@ libmpz_la_SOURCES = aors.h aors_ui.h fits_s.h mul_i.h \
   lcm.c lcm_ui.c lucnum_ui.c lucnum2_ui.c millerrabin.c \
   mod.c mul.c mul_2exp.c mul_si.c mul_ui.c n_pow_ui.c neg.c nextprime.c \
   out_raw.c out_str.c perfpow.c perfsqr.c popcount.c pow_ui.c powm.c \
-  powm_ui.c pprime_p.c \
-  random.c random2.c realloc.c realloc2.c remove.c root.c rrandomb.c \
+  powm_ui.c pprime_p.c random.c random2.c \
+  realloc.c realloc2.c remove.c root.c rootrem.c rrandomb.c \
   scan0.c scan1.c set.c set_d.c set_f.c set_q.c set_si.c set_str.c \
   set_ui.c setbit.c size.c sizeinbase.c sqrt.c sqrtrem.c sub.c sub_ui.c \
   swap.c tdiv_ui.c tdiv_q.c tdiv_q_2exp.c tdiv_q_ui.c tdiv_qr.c \
   tdiv_qr_ui.c tdiv_r.c tdiv_r_2exp.c tdiv_r_ui.c tstbit.c ui_pow_ui.c \
   ui_sub.c urandomb.c urandomm.c xor.c
+
+# These are BUILT_SOURCES at the top-level, so normally they're built before
+# recursing into this directory.
+#
+fac_ui.h:
+	cd ..; $(MAKE) $(AM_MAKEFLAGS) mpz/fac_ui.h

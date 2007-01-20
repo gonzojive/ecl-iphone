@@ -1,6 +1,6 @@
 /* Time routines for speed measurments.
 
-Copyright 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001, 2002, 2003, 2004 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,49 +16,76 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 
-/* speed_time_init() - initialize timing things.  speed_starttime() calls
-   this if it hasn't been done yet, so you only need to call this explicitly
-   if you want to use the global variables before the first measurement.
-  
-   speed_starttime() - start a time measurment.
+/* Usage:
 
-   speed_endtime() - end a time measurment, return time taken (seconds or
-   cycles).
+   The code in this file implements the lowest level of time measuring,
+   simple one-time measuring of time between two points.
 
-   speed_time_string - a string describing the time method in use.
+   void speed_starttime (void)
+   double speed_endtime (void)
+       Call speed_starttime to start measuring, and then call speed_endtime
+       when done.
 
-   speed_unittime - global variable with the unit of time measurement
-   accuracy (seconds or cycles).
+       speed_endtime returns the time taken, in seconds.  Or if the timebase
+       is in CPU cycles and the CPU frequency is unknown then speed_endtime
+       returns cycles.  Applications can identify the cycles return by
+       checking for speed_cycletime (described below) equal to 1.0.
 
-   speed_precision - global variable which is the intended accuracy of time
-   measurements.  speed_measure() for instance runs target routines with
-   enough repetitions so it takes at least speed_unittime*speed_precision.
-   A program can provide an option so the user can set this, otherwise it
-   gets a default based on the measuring method chosen.
+       If some sort of temporary glitch occurs then speed_endtime returns
+       0.0.  Currently this is for various cases where a negative time has
+       occurred.  This unfortunately occurs with getrusage on some systems,
+       and with the hppa cycle counter on hpux.
 
-   speed_cycletime - the time in seconds for each CPU cycle, for example on
-   a 100 MHz CPU this would be 1.0e-8.  If the CPU frequency is unknown this
-   is 0.0 if the time base is in seconds, or 1.0 if it's in cycles.
+   double speed_cycletime
+       The time in seconds for each CPU cycle.  For example on a 100 MHz CPU
+       this would be 1.0e-8.
 
+       If the CPU frequency is unknown, then speed_cycletime is either 0.0
+       or 1.0.  It's 0.0 when speed_endtime is returning seconds, or it's
+       1.0 when speed_endtime is returning cycles.
 
-   speed_endtime() and speed_unittime are normally in seconds, but if a
-   cycle counter is being used to measure and the CPU frequency is unknown,
-   then speed_endtime() returns cycles and speed_cycletime and
-   speed_unittime are 1.0.
+       It may be noted that "speed_endtime() / speed_cycletime" gives a
+       measured time in cycles, irrespective of whether speed_endtime is
+       returning cycles or seconds.  (Assuming cycles can be had, ie. it's
+       either cycles already or the cpu frequency is known.  See also
+       speed_cycletime_need_cycles below.)
 
-   Notice that speed_unittime*speed_precision is the target duration for
-   speed_endtime(), irrespective of whether that's in seconds or cycles.
+   double speed_unittime
+       The unit of time measurement accuracy for the timing method in use.
+       This is in seconds or cycles, as per speed_endtime.
 
-   Call speed_cycletime_need_seconds() to demand that speed_endtime() is in
-   seconds and not perhaps in cycles.
+   char speed_time_string[]
+       A null-terminated string describing the time method in use.
 
-   Call speed_cycletime_need_cycles() to demand that speed_cycletime is
-   non-zero, so that speed_endtime()/speed_cycletime will work to give times
-   in cycles.
+   void speed_time_init (void)
+       Initialize time measuring.  speed_starttime() does this
+       automatically, so it's only needed if an application wants to inspect
+       the above global variables before making a measurement.
+
+   int speed_precision
+       The intended accuracy of time measurements.  speed_measure() in
+       common.c for instance runs target routines with enough repetitions so
+       it takes at least "speed_unittime * speed_precision" (this expression
+       works for both cycles or seconds from speed_endtime).
+
+       A program can provide an option so the user to set speed_precision.
+       If speed_precision is zero when speed_time_init or speed_starttime
+       first run then it gets a default based on the measuring method
+       chosen.  (More precision for higher accuracy methods.)
+
+   void speed_cycletime_need_seconds (void)
+       Call this to demand that speed_endtime will return seconds, and not
+       cycles.  If only cycles are available then an error is printed and
+       the program exits.
+
+   void speed_cycletime_need_cycles (void)
+       Call this to demand that speed_cycletime is non-zero, so that
+       "speed_endtime() / speed_cycletime" will give times in cycles.
+
 
 
    Notes:
@@ -85,9 +112,12 @@ MA 02111-1307, USA. */
    the code compares values from the two.
 
 
+   Not done:
+
    Solaris gethrtime() seems no more than a slow way to access the Sparc V9
-   cycle counter.  gethrvtime() seems to be relevant only to LWP, it doesn't
-   for instance give nanosecond virtual time.  So neither of these are used.
+   cycle counter.  gethrvtime() seems to be relevant only to light weight
+   processes, it doesn't for instance give nanosecond virtual time.  So
+   neither of these are used.
 
 
    Bugs:
@@ -95,6 +125,7 @@ MA 02111-1307, USA. */
    getrusage_microseconds_p is fundamentally flawed, getrusage and
    gettimeofday can have resolutions other than clock ticks or microseconds,
    for instance IRIX 5 has a tick of 10 ms but a getrusage of 1 ms.
+
 
    Enhancements:
 
@@ -108,7 +139,7 @@ MA 02111-1307, USA. */
 
    On PowerPC the timebase registers could be used, but would have to do
    something to find out the speed.  On 6xx chips it's normally 1/4 bus
-   speed, on 4xx chips it's wither that or an external clock.  Measuring
+   speed, on 4xx chips it's either that or an external clock.  Measuring
    against gettimeofday might be ok.  */
 
 
@@ -173,6 +204,12 @@ MA 02111-1307, USA. */
 #include "speed.h"
 
 
+/* strerror is only used for some stuff on newish systems, no need to have a
+   proper replacement */
+#if ! HAVE_STRERROR
+#define strerror(n)  "<strerror not available>"
+#endif
+
 
 char    speed_time_string[256];
 int     speed_precision = 0;
@@ -229,6 +266,39 @@ typedef unsigned long  stck_t;   /* dummy */
 #define STCK(timestamp)  ASSERT_FAIL (stck instruction not available)
 #endif
 #define STCK_PERIOD      (1.0 / 4096e6)   /* 2^-12 microseconds */
+
+/* mftb
+   Enhancement: On 64-bit chips mftb gives a 64-bit value, no need for mftbu
+   and a loop (see powerpc64.asm).  */
+#if HAVE_HOST_CPU_FAMILY_powerpc
+static const int  have_mftb = 1;
+#if defined (__GNUC__) && ! defined (NO_ASM)
+#define MFTB(a)                         \
+  do {                                  \
+    unsigned  __h1, __l, __h2;          \
+    do {                                \
+      asm volatile ("mftbu %0\n"        \
+                    "mftb  %1\n"        \
+                    "mftbu %2"          \
+                    : "=r" (__h1),      \
+                      "=r" (__l),       \
+                      "=r" (__h2));     \
+    } while (__h1 != __h2);             \
+    a[0] = __l;                         \
+    a[1] = __h1;                        \
+  } while (0)
+#else
+#define MFTB(a)   mftb_function (a)
+#endif
+#else /* ! powerpc */
+static const int  have_mftb = 0;
+#define MFTB(a)                         \
+  do {                                  \
+    a[0] = 0;                           \
+    a[1] = 0;                           \
+    ASSERT_FAIL (mftb not available);   \
+  } while (0)
+#endif
 
 /* Unicos 10.X has syssgi(), but not mmap(). */
 #if HAVE_SYSSGI && HAVE_MMAP
@@ -306,6 +376,7 @@ struct timespec_dummy {
 };
 
 static int  use_cycles;
+static int  use_mftb;
 static int  use_sgi;
 static int  use_rrt;
 static int  use_cgt;
@@ -316,6 +387,7 @@ static int  use_tick_boundary;
 
 static unsigned         start_cycles[2];
 static stck_t           start_stck;
+static unsigned         start_mftb[2];
 static unsigned         start_sgi;
 static timebasestruct_t start_rrt;
 static struct_timespec  start_cgt;
@@ -324,6 +396,7 @@ static struct_timeval   start_gtod;
 static struct_tms       start_times;
 
 static double  cycles_limit = 1e100;
+static double  mftb_unittime;
 static double  sgi_unittime;
 static double  cgt_unittime;
 static double  grus_unittime;
@@ -381,38 +454,39 @@ int
 cycles_works_p (void)
 {
   static int  result = -1;
-  RETSIGTYPE (*old_handler) _PROTO ((int));
-  unsigned  cycles[2];
-
-  /* suppress a warning about cycles[] unused */
-  cycles[0] = 0;
 
   if (result != -1)
     goto done;
 
 #ifdef SIGILL
-  old_handler = signal (SIGILL, cycles_works_handler);
-  if (old_handler == SIG_ERR)
-    {
-      if (speed_option_verbose)
-        printf ("cycles_works_p(): SIGILL not supported, assuming speed_cyclecounter() works\n");
-      goto yes;
-    }
-  if (setjmp (cycles_works_buf))
-    {
-      if (speed_option_verbose)
-        printf ("cycles_works_p(): SIGILL during speed_cyclecounter(), so doesn't work\n");
-      result = 0;
-      goto done;
-    }
-  speed_cyclecounter (cycles);
-  signal (SIGILL, old_handler);
-  if (speed_option_verbose)
-    printf ("cycles_works_p(): speed_cyclecounter() works\n");
+  {
+    RETSIGTYPE (*old_handler) _PROTO ((int));
+    unsigned  cycles[2];
+
+    old_handler = signal (SIGILL, cycles_works_handler);
+    if (old_handler == SIG_ERR)
+      {
+        if (speed_option_verbose)
+          printf ("cycles_works_p(): SIGILL not supported, assuming speed_cyclecounter() works\n");
+        goto yes;
+      }
+    if (setjmp (cycles_works_buf))
+      {
+        if (speed_option_verbose)
+          printf ("cycles_works_p(): SIGILL during speed_cyclecounter(), so doesn't work\n");
+        result = 0;
+        goto done;
+      }
+    speed_cyclecounter (cycles);
+    signal (SIGILL, old_handler);
+    if (speed_option_verbose)
+      printf ("cycles_works_p(): speed_cyclecounter() works\n");
+  }
 #else
 
   if (speed_option_verbose)
     printf ("cycles_works_p(): SIGILL not defined, assuming speed_cyclecounter() works\n");
+  goto yes;
 #endif
 
  yes:
@@ -465,8 +539,8 @@ clk_tck (void)
    value twice, for the benefit of applications using it for a timestamp.
    This is obviously very stupid given the speed of CPUs these days.
 
-   Making "reps" calls to noop_1() is designed to waste some CPU, with a
-   view to getting measurements 2 microseconds (or more) apart.  "reps" is
+   Making "reps" many calls to noop_1() is designed to waste some CPU, with
+   a view to getting measurements 2 microseconds (or more) apart.  "reps" is
    increased progressively until such a period is seen.
 
    The outer loop "attempts" are just to allow for any random nonsense or
@@ -559,6 +633,63 @@ getrusage_microseconds_p (void)
                   call_getrusage, rusage_tv_sec, rusage_tv_usec);
 }
 
+/* Test whether getrusage goes backwards, return non-zero if it does
+   (suggesting it's flawed).
+
+   On a macintosh m68040-unknown-netbsd1.4.1 getrusage looks like it's
+   microsecond accurate, but has been seen remaining unchanged after many
+   microseconds have elapsed.  It also regularly goes backwards by 1000 to
+   5000 usecs, this has been seen after between 500 and 4000 attempts taking
+   perhaps 0.03 seconds.  We consider this too broken for good measuring.
+   We used to have configure pretend getrusage didn't exist on this system,
+   but a runtime test should be more reliable, since we imagine the problem
+   is not confined to just this exact system tuple.  */
+
+int
+getrusage_backwards_p (void)
+{
+  static int result = -1;
+  struct rusage  start, prev, next;
+  long  d;
+  int   i;
+
+  if (result != -1)
+    return result;
+
+  getrusage (0, &start);
+  memcpy (&next, &start, sizeof (next));
+
+  result = 0;
+  i = 0;
+  for (;;)
+    {
+      memcpy (&prev, &next, sizeof (prev));
+      getrusage (0, &next);
+
+      if (next.ru_utime.tv_sec < prev.ru_utime.tv_sec
+          || (next.ru_utime.tv_sec == prev.ru_utime.tv_sec
+              && next.ru_utime.tv_usec < prev.ru_utime.tv_usec))
+        {
+          if (speed_option_verbose)
+            printf ("getrusage went backwards (attempt %d: %ld.%06ld -> %ld.%06ld)\n",
+                    i,
+                    prev.ru_utime.tv_sec, prev.ru_utime.tv_usec,
+                    next.ru_utime.tv_sec, next.ru_utime.tv_usec);
+          result = 1;
+          break;
+        }
+
+      /* minimum 1000 attempts, then stop after either 0.1 seconds or 50000
+         attempts, whichever comes first */
+      d = 1000000 * (next.ru_utime.tv_sec - start.ru_utime.tv_sec)
+        + (next.ru_utime.tv_usec - start.ru_utime.tv_usec);
+      i++;
+      if (i > 50000 || (i > 1000 && d > 100000))
+        break;
+    }
+
+  return result;
+}
 
 /* CLOCK_PROCESS_CPUTIME_ID looks like it's going to be in a future version
    of glibc (some time post 2.2).
@@ -574,9 +705,9 @@ getrusage_microseconds_p (void)
 # endif
 #endif
 #ifdef CGT_ID
-# define HAVE_CGT_ID  1
+const int  have_cgt_id = 1;
 #else
-# define HAVE_CGT_ID  0
+const int  have_cgt_id = 0;
 # define CGT_ID       (ASSERT_FAIL (CGT_ID not determined), -1)
 #endif
 
@@ -589,7 +720,7 @@ cgt_works_p (void)
   if (! have_cgt)
     return 0;
 
-  if (! HAVE_CGT_ID)
+  if (! have_cgt_id)
     {
       if (speed_option_verbose)
         printf ("clock_gettime don't know what ID to use\n");
@@ -623,6 +754,84 @@ cgt_works_p (void)
           unittime_string (cgt_unittime));
   result = 1;
   return result;
+}
+
+
+static double
+freq_measure_mftb_one (void)
+{
+#define call_gettimeofday(t)   gettimeofday (&(t), NULL)
+#define timeval_tv_sec(t)      ((t).tv_sec)
+#define timeval_tv_usec(t)     ((t).tv_usec)
+  FREQ_MEASURE_ONE ("mftb", struct_timeval,
+                    call_gettimeofday, MFTB,
+                    timeval_tv_sec, timeval_tv_usec);
+}
+
+
+static jmp_buf  mftb_works_buf;
+
+static RETSIGTYPE
+mftb_works_handler (int sig)
+{
+  longjmp (mftb_works_buf, 1);
+}
+
+int
+mftb_works_p (void)
+{
+  unsigned   a[2];
+  RETSIGTYPE (*old_handler) __GMP_PROTO ((int));
+  double     cycletime;
+
+  /* suppress a warning about a[] unused */
+  a[0] = 0;
+
+  if (! have_mftb)
+    return 0;
+
+#ifdef SIGILL
+  old_handler = signal (SIGILL, mftb_works_handler);
+  if (old_handler == SIG_ERR)
+    {
+      if (speed_option_verbose)
+        printf ("mftb_works_p(): SIGILL not supported, assuming mftb works\n");
+      return 1;
+    }
+  if (setjmp (mftb_works_buf))
+    {
+      if (speed_option_verbose)
+        printf ("mftb_works_p(): SIGILL during mftb, so doesn't work\n");
+      return 0;
+    }
+  MFTB (a);
+  signal (SIGILL, old_handler);
+  if (speed_option_verbose)
+    printf ("mftb_works_p(): mftb works\n");
+#else
+
+  if (speed_option_verbose)
+    printf ("mftb_works_p(): SIGILL not defined, assuming mftb works\n");
+#endif
+
+#if ! HAVE_GETTIMEOFDAY
+  if (speed_option_verbose)
+    printf ("mftb_works_p(): no gettimeofday available to measure mftb\n");
+  return 0;
+#endif
+
+  /* The time base is normally 1/4 of the bus speed on 6xx and 7xx chips, on
+     other chips it can be driven from an external clock. */
+  cycletime = freq_measure ("mftb", freq_measure_mftb_one);
+  if (cycletime == -1.0)
+    {
+      if (speed_option_verbose)
+        printf ("mftb_works_p(): cannot measure mftb period\n");
+      return 0;
+    }
+
+  mftb_unittime = cycletime;
+  return 1;
 }
 
 
@@ -746,7 +955,7 @@ speed_time_init (void)
       cycles_limit = (have_cycles == 1 ? M_2POW32 : M_2POW64) / 2.0
         * speed_cycletime;
 
-      if (have_grus && getrusage_microseconds_p())
+      if (have_grus && getrusage_microseconds_p() && ! getrusage_backwards_p())
         {
           /* this is a good combination */
           use_grus = 1;
@@ -813,6 +1022,14 @@ speed_time_init (void)
       speed_unittime = MAX (speed_cycletime, STCK_PERIOD);
       DEFAULT (speed_precision, 10000);
     }
+  else if (have_mftb && mftb_works_p ())
+    {
+      use_mftb = 1;
+      DEFAULT (speed_precision, 10000);
+      speed_unittime = mftb_unittime;
+      sprintf (speed_time_string, "mftb counter (%s)",
+               unittime_string (speed_unittime));
+    }
   else if (have_sgi && sgi_works_p ())
     {
       use_sgi = 1;
@@ -859,7 +1076,14 @@ speed_time_init (void)
       DEFAULT (speed_precision, (cgt_unittime <= 0.1e-6 ? 10000 : 1000));
       strcpy (speed_time_string, "microsecond accurate getrusage()");
     }
-  else if (have_grus && getrusage_microseconds_p())
+  else if (have_times && clk_tck() > 1000000)
+    {
+      /* Cray vector systems have times() which is clock cycle resolution
+         (eg. 450 MHz).  */
+      DEFAULT (speed_precision, 10000);
+      goto choose_times;
+    }
+  else if (have_grus && getrusage_microseconds_p() && ! getrusage_backwards_p())
     {
       use_grus = 1;
       speed_unittime = grus_unittime = 1.0e-6;
@@ -880,10 +1104,11 @@ speed_time_init (void)
     }
   else if (have_times)
     {
-      use_times = 1;
       use_tick_boundary = 1;
-      speed_unittime = times_unittime = 1.0 / (double) clk_tck ();
       DEFAULT (speed_precision, 200);
+    choose_times:
+      use_times = 1;
+      speed_unittime = times_unittime = 1.0 / (double) clk_tck ();
       sprintf (speed_time_string, "%s clock tick times()",
                unittime_string (speed_unittime));
     }
@@ -1001,6 +1226,9 @@ speed_starttime (void)
   if (have_sgi && use_sgi)
     start_sgi = *sgi_addr;
 
+  if (have_mftb && use_mftb)
+    MFTB (start_mftb);
+
   if (have_stck && use_stck)
     STCK (start_stck);
 
@@ -1035,6 +1263,19 @@ speed_cyclecounter_diff (const unsigned end[2], const unsigned start[2])
       t = d - (d > end[0] ? M_2POWU : 0.0);
       t += (end[1] - start[1]) * M_2POW32;
     }
+  return t;
+}
+
+
+double
+speed_mftb_diff (const unsigned end[2], const unsigned start[2])
+{
+  unsigned  d;
+  double    t;
+
+  d = end[0] - start[0];
+  t = (double) d - (d > end[0] ? M_2POW32 : 0.0);
+  t += (end[1] - start[1]) * M_2POW32;
   return t;
 }
 
@@ -1118,6 +1359,7 @@ speed_endtime (void)
 
   unsigned          end_cycles[2];
   stck_t            end_stck;
+  unsigned          end_mftb[2];
   unsigned          end_sgi;
   timebasestruct_t  end_rrt;
   struct_timespec   end_cgt;
@@ -1125,7 +1367,7 @@ speed_endtime (void)
   struct_rusage     end_grus;
   struct_tms        end_times;
   double            t_gtod, t_grus, t_times, t_cgt;
-  double            t_rrt, t_sgi, t_stck, t_cycles;
+  double            t_rrt, t_sgi, t_mftb, t_stck, t_cycles;
   double            result;
 
   /* Cycles sampled first for maximum accuracy.
@@ -1133,6 +1375,7 @@ speed_endtime (void)
 
   if (have_cycles && use_cycles)  speed_cyclecounter (end_cycles);
   if (have_stck   && use_stck)    STCK (end_stck);
+  if (have_mftb   && use_mftb)    MFTB (end_mftb);
   if (have_sgi    && use_sgi)     end_sgi = *sgi_addr;
   if (have_rrt    && use_rrt)     read_real_time (&end_rrt, sizeof(end_rrt));
   if (have_cgt    && use_cgt)     clock_gettime (CGT_ID, &end_cgt);
@@ -1152,6 +1395,11 @@ speed_endtime (void)
 
       if (use_stck)
         printf ("   stck  0x%lX -> 0x%lX\n", start_stck, end_stck);
+
+      if (use_mftb)
+        printf ("   mftb  0x%X,%08X -> 0x%X,%08X\n",
+                start_mftb[1], start_mftb[0],
+                end_mftb[1], end_mftb[0]);
 
       if (use_sgi)
         printf ("   sgi  0x%X -> 0x%X\n", start_sgi, end_sgi);
@@ -1238,6 +1486,12 @@ speed_endtime (void)
         }
     }
   
+  if (use_mftb)
+    {
+      t_mftb = speed_mftb_diff (end_mftb, start_mftb) * mftb_unittime;
+      END_USE ("mftb", t_mftb);
+    }
+
   if (use_stck)  
     {
       t_stck = (end_stck - start_stck) * STCK_PERIOD;
@@ -1273,10 +1527,9 @@ speed_endtime (void)
  done:
   if (result < 0.0)
     {
-      fprintf (stderr,
-               "speed_endtime(): fatal error: negative time measured: %.9f\n",
-               result);
-      abort ();
+      if (speed_option_verbose >= 2)
+        fprintf (stderr, "speed_endtime(): warning, treating negative time as zero: %.9f\n", result);
+      result = 0.0;
     }
   return result;
 }

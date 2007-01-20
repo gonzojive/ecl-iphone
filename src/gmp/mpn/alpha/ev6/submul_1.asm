@@ -1,7 +1,7 @@
 dnl Alpha ev6 mpn_submul_1 -- Multiply a limb vector with a limb and subtract
 dnl the result from a second limb vector.
 
-dnl  Copyright 2000 Free Software Foundation, Inc.
+dnl  Copyright 2000, 2002 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 
@@ -16,9 +16,9 @@ dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 dnl  License for more details.
 
 dnl  You should have received a copy of the GNU Lesser General Public License
-dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-dnl  MA 02111-1307, USA.
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+dnl  to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl  Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
@@ -292,7 +292,7 @@ $Loop:
 	ldq	r3,	24(r17)		C L1
 
 	umulh	r19,	r0,	r10	C U1
-	subq	r6,	r13,	r13	C L0 lo + acc
+	subq	r6,	r13,	r13	C U0 lo + acc
 	stq	r22,	-32(r16)	C L0
 	stq	r28,	-24(r16)	C L1
 
@@ -362,7 +362,7 @@ $Loop:
 	ldq	r3,	-8(r17)		C L1
 
 	umulh	r19,	r0,	r10	C U1
-	subq	r6,	r13,	r13	C L0 lo + acc
+	subq	r6,	r13,	r13	C U0 lo + acc
 	stq	r22,	0(r16)		C L0
 	stq	r28,	8(r16)		C L1
 
@@ -397,7 +397,7 @@ $Loop:
 	ldq	r1,	8(r17)		C L1
 
 	umulh	r19,	r2,	r14	C U1
-	subq	r4,	r9,	r9	C L0 lo + acc
+	subq	r4,	r9,	r9	C U0 lo + acc
 	stq	r22,	-48(r16)	C L0
 	stq	r28,	-40(r16)	C L1
 

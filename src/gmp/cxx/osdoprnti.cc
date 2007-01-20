@@ -20,17 +20,15 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <iostream>
-#include <stdarg.h>    /* for va_list and hence doprnt_funs_t */
-#include <string.h>
+#include <cstdarg>    /* for va_list and hence doprnt_funs_t */
+#include <cstring>    /* for strlen */
 
 #include "gmp.h"
 #include "gmp-impl.h"
-
-#include <stdio.h>
 
 using namespace std;
 
@@ -49,13 +47,13 @@ __gmp_doprnt_integer_ostream (ostream &o, struct doprnt_params_t *p,
 
   /* don't show leading zeros the way printf does */
   p->prec = -1;
-  
+
   GMP_ASPRINTF_T_INIT (d, &result);
   ret = __gmp_doprnt_integer (&__gmp_asprintf_funs_noformat, &d, p, s);
   ASSERT (ret != -1);
   __gmp_asprintf_final (&d);
   (*__gmp_free_func) (s, strlen(s)+1);
 
-  gmp_allocated_string alloc = result;
-  return o.write (result, strlen (result));
+  gmp_allocated_string  t (result);
+  return o.write (t.str, t.len);
 }

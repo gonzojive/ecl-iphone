@@ -1,6 +1,7 @@
 /* Support for diagnostic traces.
 
-Copyright 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005 Free Software Foundation,
+Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +17,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 
 /* Future: Would like commas printed between limbs in hex or binary, but
@@ -111,7 +112,7 @@ mpf_trace (const char *name, mpf_srcptr f)
       return;
     }
 
-  mpf_out_str (stdout, mp_trace_base, 0, f);
+  mpf_out_str (stdout, ABS (mp_trace_base), 0, f);
   printf ("\n");
 }
 
@@ -145,6 +146,20 @@ mpn_trace (const char *name, mp_srcptr ptr, mp_size_t size)
   SIZ(z) = size;
   ALLOC(z) = size;
   mpz_trace (name, z);
+}
+
+/* Print "name=value\n" to stdout for a limb, nail doesn't have to be zero. */
+void
+mp_limb_trace (const char *name, mp_limb_t n)
+{
+#if GMP_NAIL_BITS != 0
+  mp_limb_t  a[2];
+  a[0] = n & GMP_NUMB_MASK;
+  a[1] = n >> GMP_NUMB_BITS;
+  mpn_trace (name, a, (mp_size_t) 2);
+#else
+  mpn_trace (name, &n, (mp_size_t) 1);
+#endif
 }
 
 
@@ -234,9 +249,9 @@ mpn_tracea_file (const char *filename,
 {
   char  *s;
   int   i;
-  TMP_DECL (marker);
+  TMP_DECL;
 
-  TMP_MARK (marker);
+  TMP_MARK;
   s = (char *) TMP_ALLOC (strlen (filename) + 50);
 
   for (i = 0; i < count; i++)
@@ -245,7 +260,7 @@ mpn_tracea_file (const char *filename,
       mpn_trace_file (s, a[i], size);
     }
 
-  TMP_FREE (marker);
+  TMP_FREE;
 }
 
 
@@ -279,4 +294,28 @@ byte_tracen (const char *name, int num, const void *ptr, mp_size_t size)
       putchar ('=');
     }
   byte_trace (NULL, ptr, size);
+}
+
+
+void
+d_trace (const char *name, double d)
+{
+  union {
+    double         d;
+    unsigned char  b[sizeof(double)];
+  } u;
+  int  i;
+
+  if (name != NULL && name[0] != '\0')
+    printf ("%s=", name);
+
+  u.d = d;
+  printf ("[");
+  for (i = 0; i < sizeof (u.b); i++)
+    {
+      if (i != 0)
+        printf (" ");
+      printf ("%02X", (int) u.b[i]);
+    }
+  printf ("] %.20g\n", d);
 }

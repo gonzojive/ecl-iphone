@@ -17,8 +17,8 @@ dnl  Lesser General Public License for more details.
 dnl
 dnl  You should have received a copy of the GNU Lesser General Public
 dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
-dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
-dnl  Suite 330, Boston, MA 02111-1307, USA.
+dnl  not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+dnl  Fifth Floor, Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
@@ -54,7 +54,7 @@ deflit(`FRAME',16)
 	movl	PARAM_SIZE,%ebp
 	movl	PARAM_SHIFT,%ecx
 
-C We can use faster code for shift-by-1 under certain conditions. 
+C We can use faster code for shift-by-1 under certain conditions.
 	cmp	$1,%ecx
 	jne	L(normal)
 	leal	4(%edi),%eax

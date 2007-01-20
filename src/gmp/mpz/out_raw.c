@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include "gmp.h"
@@ -32,52 +32,19 @@ MA 02111-1307, USA. */
 #define HTON_LIMB_STORE(dst, limb)  do { *(dst) = (limb); } while (0)
 #endif
 
-/* The generic implementations below very likely come out as lots of
-   separate byte stores, so if we know the host is little endian then
-   instead use a purely arithmetic BSWAP_LIMB and a single store.  */
 #if HAVE_LIMB_LITTLE_ENDIAN
 #define HTON_LIMB_STORE(dst, limb)  BSWAP_LIMB_STORE (dst, limb)
 #endif
 
-#if ! defined (HTON_LIMB_STORE)
-#if BITS_PER_MP_LIMB == 8
-#define HTON_LIMB_STORE(dst, limb)  do { *(dst) = (limb); } while (0)
-#endif
-#if BITS_PER_MP_LIMB == 16
-#define HTON_LIMB_STORE(dst, limb)      \
-  do {                                  \
-    mp_limb_t  __limb = (limb);         \
-    char  *__p = (char *) (dst);        \
-    __p[1] = (__limb);                  \
-    __p[0] = (__limb) >> 8;             \
+#ifndef HTON_LIMB_STORE
+#define HTON_LIMB_STORE(dst, limb)                                      \
+  do {                                                                  \
+    mp_limb_t  __limb = (limb);                                         \
+    char      *__p = (char *) (dst);                                    \
+    int        __i;                                                     \
+    for (__i = 0; __i < BYTES_PER_MP_LIMB; __i++)                       \
+      __p[__i] = (char) (__limb >> ((BYTES_PER_MP_LIMB-1 - __i) * 8));  \
   } while (0)
-#endif
-#if BITS_PER_MP_LIMB == 32
-#define HTON_LIMB_STORE(dst, limb)      \
-  do {                                  \
-    mp_limb_t  __limb = (limb);         \
-    char  *__p = (char *) (dst);        \
-    __p[3] = (__limb);                  \
-    __p[2] = (__limb) >> 8;             \
-    __p[1] = (__limb) >> 16;            \
-    __p[0] = (__limb) >> 24;            \
-  } while (0)
-#endif
-#if BITS_PER_MP_LIMB == 64
-#define HTON_LIMB_STORE(dst, limb)      \
-  do {                                  \
-    mp_limb_t  __limb = (limb);         \
-    char  *__p = (char *) (dst);        \
-    __p[7] = (__limb);                  \
-    __p[6] = (__limb) >> 8;             \
-    __p[5] = (__limb) >> 16;            \
-    __p[4] = (__limb) >> 24;            \
-    __p[3] = (__limb) >> 32;            \
-    __p[2] = (__limb) >> 40;            \
-    __p[1] = (__limb) >> 48;            \
-    __p[0] = (__limb) >> 56;            \
-  } while (0)
-#endif
 #endif
 
 

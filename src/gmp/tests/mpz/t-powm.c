@@ -17,8 +17,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,7 +36,7 @@ main (int argc, char **argv)
   mpz_t r1, r2, t1, exp2, base2;
   mp_size_t base_size, exp_size, mod_size;
   int i;
-  int reps = 200;
+  int reps = 100;
   gmp_randstate_ptr rands;
   mpz_t bs;
   unsigned long bsi, size_range;

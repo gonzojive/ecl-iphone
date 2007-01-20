@@ -1,6 +1,6 @@
-/* double mpf_get_d (mpf_t src) -- Return the double approximation to SRC.
+/* double mpf_get_d (mpf_t src) -- return SRC truncated to a double.
 
-Copyright 1996, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1996, 2001, 2002, 2003, 2004 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -25,25 +25,14 @@ MA 02111-1307, USA. */
 double
 mpf_get_d (mpf_srcptr src)
 {
-  double res;
-  mp_size_t size, i, n_limbs_to_use;
-  int negative;
-  mp_ptr qp;
+  mp_size_t  size, abs_size;
+  long       exp;
 
-  size = SIZ(src);
-  if (size == 0)
+  size = SIZ (src);
+  if (UNLIKELY (size == 0))
     return 0.0;
 
-  negative = size < 0;
-  size = ABS (size);
-  qp = PTR(src);
-
-  res = qp[size - 1];
-  n_limbs_to_use = MIN (LIMBS_PER_DOUBLE, size);
-  for (i = 2; i <= n_limbs_to_use; i++)
-    res = res * MP_BASE_AS_DOUBLE + qp[size - i];
-
-  res = __gmp_scale2 (res, (EXP(src) - n_limbs_to_use) * GMP_NUMB_BITS);
-
-  return negative ? -res : res;
+  abs_size = ABS (size);
+  exp = (EXP (src) - abs_size) * GMP_NUMB_BITS;
+  return mpn_get_d (PTR (src), abs_size, size, exp);
 }

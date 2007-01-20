@@ -3,7 +3,7 @@ divert(-1)
 dnl  m4 macros for alpha assembler on unicos.
 
 
-dnl  Copyright 2000, 2002 Free Software Foundation, Inc.
+dnl  Copyright 2000, 2002, 2003, 2004 Free Software Foundation, Inc.
 dnl
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -19,8 +19,8 @@ dnl  Lesser General Public License for more details.
 dnl
 dnl  You should have received a copy of the GNU Lesser General Public
 dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
-dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
-dnl  Suite 330, Boston, MA 02111-1307, USA.
+dnl  not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+dnl  Fifth Floor, Boston, MA 02110-1301, USA.
 
 
 dnl  Note that none of the standard GMP_ASM_ autoconf tests are done for
@@ -60,6 +60,17 @@ define(`EPILOGUE_cpu',
 m4_assert_numargs(1)
 `	.endp')
 
+
+dnl  Usage: LDGP(dst,src)
+dnl
+dnl  Emit an "ldgp dst,src", but only on systems using a GOT (which unicos
+dnl  doesn't).
+
+define(LDGP,
+m4_assert_numargs(2)
+)
+
+
 dnl  Usage: EXTERN(variable_name)
 define(`EXTERN',
 m4_assert_numargs(1)
@@ -78,11 +89,6 @@ define(`ASM_END',
 m4_assert_numargs(0)
 `	.end')
 
-dnl  Unicos assembler lacks unop
-define(`unop',
-m4_assert_numargs(-1)
-`bis r31,r31,r31')
-
 define(`cvttqc',
 m4_assert_numargs(-1)
 `cvttq/c')
@@ -95,14 +101,21 @@ m4_assert_numargs(2)
 	lalm	$1,  $2($1)
 	lal	$1,  $2($1)')
 
-dnl  Need some stuff for extwl just for bigend systems, like Unicos.
-define(`bigend',
-m4_assert_numargs(1)
-`$1')
 
-dnl  Unicos assembler seems to align using garbage, so disable aligning
+dnl  Usage: ALIGN(bytes)
+dnl
+dnl  Unicos assembler .align emits zeros, even in code segments, so disable
+dnl  aligning.
+dnl
+dnl  GCC uses a macro emiting nops until the desired alignment is reached
+dnl  (see unicosmk_file_start in alpha.c).  Could do something like that if
+dnl  we cared.  The maximum desired alignment must be established at the
+dnl  start of the section though, since of course emitting nops only
+dnl  advances relative to the section beginning.
+
 define(`ALIGN',
 m4_assert_numargs(1)
 )
+
 
 divert

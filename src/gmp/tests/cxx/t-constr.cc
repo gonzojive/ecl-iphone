@@ -1,6 +1,6 @@
 /* Test mp*_class constructors.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2003 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,330 +16,743 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
+
+#include "config.h"
 
 #include <iostream>
-#include <strstream>
 #include <string>
-#include <cstdlib>
+
 #include "gmp.h"
-#include "gmp-impl.h"
 #include "gmpxx.h"
+#include "gmp-impl.h"
 #include "tests.h"
 
 using namespace std;
 
 
-#define CHECK_MPZ(args, want)                                          \
-  do {                                                                 \
-    mpz_set_str (ref, want, 0);                                        \
-    if (mpz_cmp (z.get_mpz_t(), ref) != 0)                             \
-      {                                                                \
-        cout << "mpz_class constructor wrong, args: " << args << "\n"; \
-        cout << "  want:  " << ref << "\n";                            \
-        cout << "  got:   " << z.get_mpz_t() << "\n";                  \
-        abort ();                                                      \
-      }                                                                \
-  } while (0)
-
-#define CHECK_MPQ(args, want)                                          \
-  do {                                                                 \
-    mpq_set_str (ref, want, 0);                                        \
-    if (mpq_cmp (q.get_mpq_t(), ref) != 0)                             \
-      {                                                                \
-        cout << "mpq_class constructor wrong, args: " << args << "\n"; \
-        cout << "  want:  " << ref << "\n";                            \
-        cout << "  got:   " << q.get_mpq_t() << "\n";                  \
-        abort ();                                                      \
-      }                                                                \
-  } while (0)
-
-#define CHECK_MPF(args, want)                                          \
-  do {                                                                 \
-    mpf_set_str (ref, want, 10);                                       \
-    if (mpf_cmp (f.get_mpf_t(), ref) != 0)                             \
-      {                                                                \
-        cout << "mpf_class constructor wrong, args: " << args << "\n"; \
-        cout << "  want:  " << ref << "\n";                            \
-        cout << "  got:   " << f.get_mpf_t() << "\n";                  \
-        abort ();                                                      \
-      }                                                                \
-  } while (0)
-
 void
 check_mpz (void)
 {
-  mpz_t ref;
-  mpz_init (ref);
-
-  { // no arguments
-    mpz_class z;
-    CHECK_MPZ ("none", "0");
+  // mpz_class()
+  {
+    mpz_class a; ASSERT_ALWAYS(a == 0);
   }
 
-  { // argument: mpz_class
-    mpz_class w;
-    mpz_class z (w);
-    CHECK_MPZ ("w [mpz_class]", "0");
+  // mpz_class(const mpz_class &)
+  // see below
+
+  // template <class T, class U> mpz_class(const __gmp_expr<T, U> &)
+  // not tested here, see t-unary.cc, t-binary.cc
+
+  // mpz_class(signed char)
+  {
+    signed char a = -127;
+    mpz_class b(a); ASSERT_ALWAYS(b == -127);
   }
 
-  { // argument: int
-    mpz_class z (0);
-    CHECK_MPZ ("0", "0");
+  // mpz_class(unsigned char)
+  {
+    unsigned char a = 255;
+    mpz_class b(a); ASSERT_ALWAYS(b == 255);
   }
 
-  { // argument: bool
-    mpz_class z (true);
-    CHECK_MPZ ("true", "1");
+  // either signed or unsigned char, machine dependent
+  {
+    mpz_class a('A'); ASSERT_ALWAYS(a == 65);
+  }
+  {
+    mpz_class a('z'); ASSERT_ALWAYS(a == 122);
   }
 
-  { // argument: unsigned short
-    mpz_class z ((unsigned short) 1);
-    CHECK_MPZ ("(unsigned short) 1", "1");
+  // mpz_class(signed int)
+  {
+    signed int a = 0;
+    mpz_class b(a); ASSERT_ALWAYS(b == 0);
+  }
+  {
+    signed int a = -123;
+    mpz_class b(a); ASSERT_ALWAYS(b == -123);
+  }
+  {
+    signed int a = 4567;
+    mpz_class b(a); ASSERT_ALWAYS(b == 4567);
   }
 
-  { // argument: long
-    mpz_class z (-1234567890L);
-    CHECK_MPZ ("-1234567890L", "-1234567890");
+  // mpz_class(unsigned int)
+  {
+    unsigned int a = 890;
+    mpz_class b(a); ASSERT_ALWAYS(b == 890);
   }
 
-  { // argument: double
-    mpz_class z (3.141592653589793238);
-    CHECK_MPZ ("3.141592653589793238", "3");
+  // mpz_class(signed short int)
+  {
+    signed short int a = -12345;
+    mpz_class b(a); ASSERT_ALWAYS(b == -12345);
   }
 
-  { // argument: char *
-    mpz_class z ("12345678901234567890");
-    CHECK_MPZ ("\"12345678901234567890\"", "12345678901234567890");
+  // mpz_class(unsigned short int)
+  {
+    unsigned short int a = 54321u;
+    mpz_class b(a); ASSERT_ALWAYS(b == 54321u);
   }
 
-  { // arguments: char *, int
-    mpz_class z ("FFFF", 16);
-    CHECK_MPZ ("\"FFFF\", 16", "65535");
+  // mpz_class(signed long int)
+  {
+    signed long int a = -1234567890L;
+    mpz_class b(a); ASSERT_ALWAYS(b == -1234567890L);
   }
 
-  { // argument: string
-    mpz_class z (string ("1234567890"));
-    CHECK_MPZ ("string (\"1234567890\")", "1234567890");
+  // mpz_class(unsigned long int)
+  {
+    unsigned long int a = 1UL << 30;
+    mpz_class b(a); ASSERT_ALWAYS(b == 1073741824L);
   }
 
-  { // arguments: string, int
-    mpz_class z (string ("7777"), 8);
-    CHECK_MPZ ("string (\"7777\", 8)", "4095");
+  // mpz_class(float)
+  {
+    float a = 123.45;
+    mpz_class b(a); ASSERT_ALWAYS(b == 123);
   }
 
-  { // argument: mpz_t
-    mpz_class z (ref);
-    CHECK_MPZ ("ref [mpz_t]", "4095");
+  // mpz_class(double)
+  {
+    double a = 3.141592653589793238;
+    mpz_class b(a); ASSERT_ALWAYS(b == 3);
   }
 
-  mpz_clear (ref);
+  // mpz_class(long double)
+  // currently not implemented
+
+  // mpz_class(const char *)
+  {
+    const char *a = "1234567890";
+    mpz_class b(a); ASSERT_ALWAYS(b == 1234567890L);
+  }
+
+  // mpz_class(const char *, int)
+  {
+    const char *a = "FFFF";
+    int base = 16;
+    mpz_class b(a, base); ASSERT_ALWAYS(b == 65535u);
+  }
+
+  // mpz_class(const std::string &)
+  {
+    string a("1234567890");
+    mpz_class b(a); ASSERT_ALWAYS(b == 1234567890L);
+  }
+
+  // mpz_class(const std::string &, int)
+  {
+    string a("7777");
+    int base = 8;
+    mpz_class b(a, base); ASSERT_ALWAYS(b == 4095);
+  }
+
+  // mpz_class(const char *) with invalid
+  {
+    try {
+      const char *a = "ABC";
+      mpz_class b(a);
+      ASSERT_ALWAYS (0);  /* should not be reached */
+    } catch (invalid_argument) {
+    }
+  }
+
+  // mpz_class(const char *, int) with invalid
+  {
+    try {
+      const char *a = "GHI";
+      int base = 16;
+      mpz_class b(a, base);
+      ASSERT_ALWAYS (0);  /* should not be reached */
+    } catch (invalid_argument) {
+    }
+  }
+
+  // mpz_class(const std::string &) with invalid
+  {
+    try {
+      string a("abc");
+      mpz_class b(a);
+      ASSERT_ALWAYS (0);  /* should not be reached */
+    } catch (invalid_argument) {
+    }
+  }
+
+  // mpz_class(const std::string &, int) with invalid
+  {
+    try {
+      string a("ZZZ");
+      int base = 8;
+      mpz_class b(a, base);
+      ASSERT_ALWAYS (0);  /* should not be reached */
+    } catch (invalid_argument) {
+    }
+  }
+
+  // mpz_class(mpz_srcptr)
+  {
+    mpz_t a;
+    mpz_init_set_ui(a, 100);
+    mpz_class b(a); ASSERT_ALWAYS(b == 100);
+    mpz_clear(a);
+  }
+
+  // mpz_class(const mpz_class &)
+  {
+    mpz_class a(12345); // tested above, assume it works
+    mpz_class b(a); ASSERT_ALWAYS(b == 12345);
+  }
+
+  // no constructor for bool, but it gets casted to int
+  {
+    bool a = true;
+    mpz_class b(a); ASSERT_ALWAYS(b == 1);
+  }
+  {
+    bool a = false;
+    mpz_class b(a); ASSERT_ALWAYS(b == 0);
+  }
 }
 
 void
 check_mpq (void)
 {
-  mpq_t ref;
-  mpq_init (ref);
-
-  { // no arguments
-    mpq_class q;
-    CHECK_MPQ ("none", "0");
+  // mpq_class()
+  {
+    mpq_class a; ASSERT_ALWAYS(a == 0);
   }
 
-  { // argument: mpq_class
-    mpq_class r;
-    mpq_class q (r);
-    CHECK_MPQ ("r [mpq_class]", "0");
+  // mpq_class(const mpq_class &)
+  // see below
+
+  // template <class T, class U> mpq_class(const __gmp_expr<T, U> &)
+  // not tested here, see t-unary.cc, t-binary.cc
+
+  // mpq_class(signed char)
+  {
+    signed char a = -127;
+    mpq_class b(a); ASSERT_ALWAYS(b == -127);
   }
 
-  { // argument: int
-    mpq_class q (0);
-    CHECK_MPQ ("0", "0");
+  // mpq_class(unsigned char)
+  {
+    unsigned char a = 255;
+    mpq_class b(a); ASSERT_ALWAYS(b == 255);
   }
 
-  { // argument: bool
-    mpq_class q (true);
-    CHECK_MPQ ("true", "1");
+  // either signed or unsigned char, machine dependent
+  {
+    mpq_class a('A'); ASSERT_ALWAYS(a == 65);
+  }
+  {
+    mpq_class a('z'); ASSERT_ALWAYS(a == 122);
   }
 
-  { // argument: unsigned short
-    mpq_class q ((unsigned short) 1);
-    CHECK_MPQ ("(unsigned short) 1", "1");
+  // mpq_class(signed int)
+  {
+    signed int a = 0;
+    mpq_class b(a); ASSERT_ALWAYS(b == 0);
+  }
+  {
+    signed int a = -123;
+    mpq_class b(a); ASSERT_ALWAYS(b == -123);
+  }
+  {
+    signed int a = 4567;
+    mpq_class b(a); ASSERT_ALWAYS(b == 4567);
   }
 
-  { // argument: long
-    mpq_class q (-1234567890L);
-    CHECK_MPQ ("-1234567890L", "-1234567890");
+  // mpq_class(unsigned int)
+  {
+    unsigned int a = 890;
+    mpq_class b(a); ASSERT_ALWAYS(b == 890);
   }
 
-  { // argument: double
-    mpq_class q (1.25);
-    CHECK_MPQ ("1.25", "5/4");
+  // mpq_class(signed short int)
+  {
+    signed short int a = -12345;
+    mpq_class b(a); ASSERT_ALWAYS(b == -12345);
   }
 
-  { // argument: char *
-    mpq_class q ("12345678901234567890");
-    CHECK_MPQ ("\"12345678901234567890\"", "12345678901234567890");
+  // mpq_class(unsigned short int)
+  {
+    unsigned short int a = 54321u;
+    mpq_class b(a); ASSERT_ALWAYS(b == 54321u);
   }
 
-  { // arguments: char *, int
-    mpq_class q ("FFFF", 16);
-    CHECK_MPQ ("\"FFFF\", 16", "65535");
+  // mpq_class(signed long int)
+  {
+    signed long int a = -1234567890L;
+    mpq_class b(a); ASSERT_ALWAYS(b == -1234567890L);
   }
 
-  { // argument: string
-    mpq_class q (string ("1234567890"));
-    CHECK_MPQ ("string (\"1234567890\")", "1234567890");
+  // mpq_class(unsigned long int)
+  {
+    unsigned long int a = 1UL << 30;
+    mpq_class b(a); ASSERT_ALWAYS(b == 1073741824L);
   }
 
-  { // arguments: string, int
-    mpq_class q (string ("7777"), 8);
-    CHECK_MPQ ("string (\"7777\", 8)", "4095");
+  // mpq_class(float)
+  {
+    float a = 0.625;
+    mpq_class b(a); ASSERT_ALWAYS(b == 0.625);
   }
 
-  { // argument: mpz_t
-    mpq_class q (ref);
-    CHECK_MPQ ("ref [mpq_t]", "4095");
+  // mpq_class(double)
+  {
+    double a = 1.25;
+    mpq_class b(a); ASSERT_ALWAYS(b == 1.25);
   }
 
-  { // arguments: int, int
-    mpq_class q (1, 2);
-    CHECK_MPQ ("1, 2", "1/2");
+  // mpq_class(long double)
+  // currently not implemented
+
+  // mpq_class(const char *)
+  {
+    const char *a = "1234567890";
+    mpq_class b(a); ASSERT_ALWAYS(b == 1234567890L);
   }
 
-  { // arguments: mpz_class, mpz_class
-    mpz_class z (3), w (4);
-    mpq_class q (z, w);
-    CHECK_MPQ ("z, w [mpz_class, mpz_class]", "3/4");
+  // mpq_class(const char *, int)
+  {
+    const char *a = "FFFF";
+    int base = 16;
+    mpq_class b(a, base); ASSERT_ALWAYS(b == 65535u);
   }
 
-  { // arguments: int, mpz_class
-    mpz_class z (5);
-    mpq_class q (6, z);
-    CHECK_MPQ ("11, z [mpz_class]", "6/5");
+  // mpq_class(const std::string &)
+  {
+    string a("1234567890");
+    mpq_class b(a); ASSERT_ALWAYS(b == 1234567890L);
   }
 
-  mpq_clear (ref);
+  // mpq_class(const std::string &, int)
+  {
+    string a("7777");
+    int base = 8;
+    mpq_class b(a, base); ASSERT_ALWAYS(b == 4095);
+  }
+
+  // mpq_class(const char *) with invalid
+  {
+    try {
+      const char *a = "abc";
+      mpq_class b(a);
+      ASSERT_ALWAYS (0);  /* should not be reached */
+    } catch (invalid_argument) {
+    }
+  }
+
+  // mpq_class(const char *, int) with invalid
+  {
+    try {
+      const char *a = "ZZZ";
+      int base = 16;
+      mpq_class b (a, base);
+      ASSERT_ALWAYS (0);  /* should not be reached */
+    } catch (invalid_argument) {
+    }
+  }
+
+  // mpq_class(const std::string &) with invalid
+  {
+    try {
+      string a("abc");
+      mpq_class b(a);
+      ASSERT_ALWAYS (0);  /* should not be reached */
+    } catch (invalid_argument) {
+    }
+  }
+
+  // mpq_class(const std::string &, int) with invalid
+  {
+    try {
+      string a("ZZZ");
+      int base = 8;
+      mpq_class b (a, base);
+      ASSERT_ALWAYS (0);  /* should not be reached */
+    } catch (invalid_argument) {
+    }
+  }
+
+  // mpq_class(mpq_srcptr)
+  {
+    mpq_t a;
+    mpq_init(a);
+    mpq_set_ui(a, 100, 1);
+    mpq_class b(a); ASSERT_ALWAYS(b == 100);
+    mpq_clear(a);
+  }
+
+  // mpq_class(const mpz_class &, const mpz_class &)
+  {
+    mpz_class a(123), b(4); // tested above, assume it works
+    mpq_class c(a, b); ASSERT_ALWAYS(c == 30.75);
+  }
+  {
+    mpz_class a(-1), b(2);  // tested above, assume it works
+    mpq_class c(a, b); ASSERT_ALWAYS(c == -0.5);
+  }
+  {
+    mpz_class a(5), b(4); // tested above, assume it works
+    mpq_class c(a, b); ASSERT_ALWAYS(c == 1.25);
+  }
+
+  // mpq_class(const mpz_class &)
+  {
+    mpq_class a(12345); // tested above, assume it works
+    mpq_class b(a); ASSERT_ALWAYS(b == 12345);
+  }
+
+  // no constructor for bool, but it gets casted to int
+  {
+    bool a = true;
+    mpq_class b(a); ASSERT_ALWAYS(b == 1);
+  }
+  {
+    bool a = false;
+    mpq_class b(a); ASSERT_ALWAYS(b == 0);
+  }
 }
 
 void
 check_mpf (void)
 {
-  mpf_t ref;
-  mpf_init (ref);
-
-  { // no arguments
-    mpf_class f;
-    CHECK_MPF ("none", "0.0");
+  // mpf_class()
+  {
+    mpf_class a; ASSERT_ALWAYS(a == 0);
   }
 
-  { // argument: mpf_class
-    mpf_class g;
-    mpf_class f (g);
-    CHECK_MPF ("g [mpf_class]", "0.0");
+  // mpf_class(const mpf_class &)
+  // mpf_class(const mpf_class &, unsigned long int)
+  // see below
+
+  // template <class T, class U> mpf_class(const __gmp_expr<T, U> &)
+  // template <class T, class U> mpf_class(const __gmp_expr<T, U> &,
+  //                                       unsigned long int)
+  // not tested here, see t-unary.cc, t-binary.cc
+
+  // mpf_class(signed char)
+  {
+    signed char a = -127;
+    mpf_class b(a); ASSERT_ALWAYS(b == -127);
   }
 
-  { // argument: int
-    mpf_class f (0);
-    CHECK_MPF ("0", "0.0");
+  // mpf_class(signed char, unsigned long int)
+  {
+    signed char a = -1;
+    int prec = 64;
+    mpf_class b(a, prec); ASSERT_ALWAYS(b == -1);
   }
 
-  { // argument: bool
-    mpf_class f (true);
-    CHECK_MPF ("true", "1.0");
+  // mpf_class(unsigned char)
+  {
+    unsigned char a = 255;
+    mpf_class b(a); ASSERT_ALWAYS(b == 255);
   }
 
-  { // argument: unsigned short
-    mpf_class f ((unsigned short) 1);
-    CHECK_MPF ("(unsigned short) 1", "1.0");
+  // mpf_class(unsigned char, unsigned long int)
+  {
+    unsigned char a = 128;
+    int prec = 128;
+    mpf_class b(a, prec); ASSERT_ALWAYS(b == 128);
   }
 
-  { // argument: long
-    mpf_class f (-1234567890L);
-    CHECK_MPF ("-1234567890L", "-1234567890.0");
+  // either signed or unsigned char, machine dependent
+  {
+    mpf_class a('A'); ASSERT_ALWAYS(a == 65);
+  }
+  {
+    int prec = 256;
+    mpf_class a('z', prec); ASSERT_ALWAYS(a == 122);
   }
 
-  { // argument: double
-    mpf_class f (3.125e+4);
-    CHECK_MPF ("3.125e+4", "31250.0");
+  // mpf_class(signed int)
+  {
+    signed int a = 0;
+    mpf_class b(a); ASSERT_ALWAYS(b == 0);
+  }
+  {
+    signed int a = -123;
+    mpf_class b(a); ASSERT_ALWAYS(b == -123);
+  }
+  {
+    signed int a = 4567;
+    mpf_class b(a); ASSERT_ALWAYS(b == 4567);
   }
 
-  { // argument: char *
-    mpf_class f ("12345678901234567890");
-    CHECK_MPF ("\"12345678901234567890\"", "12345678901234567890.0");
+  // mpf_class(signed int, unsigned long int)
+  {
+    signed int a = -123;
+    int prec = 64;
+    mpf_class b(a, prec); ASSERT_ALWAYS(b == -123);
   }
 
-  { // argument: string
-    mpf_class f (string ("1234567890"));
-    CHECK_MPF ("string (\"1234567890\")", "1234567890.0");
+  // mpf_class(unsigned int)
+  {
+    unsigned int a = 890;
+    mpf_class b(a); ASSERT_ALWAYS(b == 890);
   }
 
-  { // argument: mpf_t
-    mpf_class f (ref);
-    CHECK_MPF ("ref [mpf_t]", "1234567890.0");
+  // mpf_class(unsigned int, unsigned long int)
+  {
+    unsigned int a = 890;
+    int prec = 128;
+    mpf_class b(a, prec); ASSERT_ALWAYS(b == 890);
   }
 
-  { // arguments: mpf_class, int
-    mpf_class g;
-    mpf_class f (g, 64);
-    CHECK_MPF ("g [mpf_class], 64", "0.0");
+  // mpf_class(signed short int)
+  {
+    signed short int a = -12345;
+    mpf_class b(a); ASSERT_ALWAYS(b == -12345);
   }
 
-  { // arguments: int, int
-    mpf_class f (0, 128);
-    CHECK_MPF ("0, 128", "0.0");
+  // mpf_class(signed short int, unsigned long int)
+  {
+    signed short int a = 6789;
+    int prec = 256;
+    mpf_class b(a, prec); ASSERT_ALWAYS(b == 6789);
   }
 
-  { // arguments: bool, int
-    mpf_class f (true, 192);
-    CHECK_MPF ("true, 192", "1.0");
+  // mpf_class(unsigned short int)
+  {
+    unsigned short int a = 54321u;
+    mpf_class b(a); ASSERT_ALWAYS(b == 54321u);
   }
 
-  { // arguments: unsigned short, int
-    mpf_class f ((unsigned short) 1, 256);
-    CHECK_MPF ("(unsigned short) 1, 256", "1.0");
+  // mpf_class(unsigned short int, unsigned long int)
+  {
+    unsigned short int a = 54321u;
+    int prec = 64;
+    mpf_class b(a, prec); ASSERT_ALWAYS(b == 54321u);
   }
 
-  { // arguments: long, unsigned
-    mpf_class f (-1234567890L, 64u);
-    CHECK_MPF ("-1234567890L, 64u", "-1234567890.0");
+  // mpf_class(signed long int)
+  {
+    signed long int a = -1234567890L;
+    mpf_class b(a); ASSERT_ALWAYS(b == -1234567890L);
   }
 
-  { // argument: double, unsigned
-    mpf_class f (3.125e+4, 128u);
-    CHECK_MPF ("3.125e+4, 128u", "31250.0");
+  // mpf_class(signed long int, unsigned long int)
+  {
+    signed long int a = -1234567890L;
+    int prec = 128;
+    mpf_class b(a, prec); ASSERT_ALWAYS(b == -1234567890L);
   }
 
-  { // argument: char *, unsigned
-    mpf_class f ("12345678901234567890", 192u);
-    CHECK_MPF ("\"12345678901234567890\", 192u", "12345678901234567890.0");
+  // mpf_class(unsigned long int)
+  {
+    unsigned long int a = 3456789012UL;
+    mpf_class b(a); ASSERT_ALWAYS(b == 3456789012UL);
   }
 
-  { // argument: string, unsigned
-    mpf_class f (string ("1234567890", 256u));
-    CHECK_MPF ("string (\"1234567890\", 256u)", "1234567890.0");
+  // mpf_class(unsigned long int, unsigned long int)
+  {
+    unsigned long int a = 3456789012UL;
+    int prec = 256;
+    mpf_class b(a, prec); ASSERT_ALWAYS(b == 3456789012UL);
   }
 
-  { // argument: mpf_t, long
-    mpf_class f (ref, 64L);
-    CHECK_MPF ("ref [mpf_t], 64L", "1234567890.0");
+  // mpf_class(float)
+  {
+    float a = 1234.5;
+    mpf_class b(a); ASSERT_ALWAYS(b == 1234.5);
   }
 
-  mpf_clear (ref);
+  // mpf_class(float, unsigned long int)
+  {
+    float a = 1234.5;
+    int prec = 64;
+    mpf_class b(a, prec); ASSERT_ALWAYS(b == 1234.5);
+  }
+
+  // mpf_class(double)
+  {
+    double a = 12345.0;
+    mpf_class b(a); ASSERT_ALWAYS(b == 12345);
+  }
+  {
+    double a = 1.2345e+4;
+    mpf_class b(a); ASSERT_ALWAYS(b == 12345);
+  }
+  {
+    double a = 312.5e-2;
+    mpf_class b(a); ASSERT_ALWAYS(b == 3.125);
+  }
+
+  // mpf_class(double, unsigned long int)
+  {
+    double a = 5.4321e+4;
+    int prec = 128;
+    mpf_class b(a, prec); ASSERT_ALWAYS(b == 54321L);
+  }
+
+  // mpf_class(long double)
+  // mpf_class(long double, unsigned long int)
+  // currently not implemented
+
+  // mpf_class(const char *)
+  {
+    const char *a = "1234567890";
+    mpf_class b(a); ASSERT_ALWAYS(b == 1234567890L);
+  }
+
+  // mpf_class(const char *, unsigned long int, int = 0)
+  {
+    const char *a = "1234567890";
+    int prec = 256;
+    mpf_class b(a, prec); ASSERT_ALWAYS(b == 1234567890L);
+  }
+  {
+    const char *a = "777777";
+    int prec = 64, base = 8;
+    mpf_class b(a, prec, base); ASSERT_ALWAYS(b == 262143L);
+  }
+
+  // mpf_class(const std::string &)
+  {
+    string a("1234567890");
+    mpf_class b(a); ASSERT_ALWAYS(b == 1234567890L);
+  }
+
+  // mpf_class(const std::string &, unsigned long int, int = 0)
+  {
+    string a("1234567890");
+    int prec = 128;
+    mpf_class b(a, prec); ASSERT_ALWAYS(b == 1234567890L);
+  }
+  {
+    string a("FFFF");
+    int prec = 256, base = 16;
+    mpf_class b(a, prec, base); ASSERT_ALWAYS(b == 65535u);
+  }
+
+  // mpf_class(const char *) with invalid
+  {
+    try {
+      const char *a = "abc";
+      mpf_class b(a);
+      ASSERT_ALWAYS (0);  /* should not be reached */
+    } catch (invalid_argument) {
+    }
+  }
+
+  // mpf_class(const char *, unsigned long int, int = 0) with invalid
+  {
+    try {
+      const char *a = "def";
+      int prec = 256;
+      mpf_class b(a, prec); ASSERT_ALWAYS(b == 1234567890L);
+      ASSERT_ALWAYS (0);  /* should not be reached */
+    } catch (invalid_argument) {
+    }
+  }
+  {
+    try {
+      const char *a = "ghi";
+      int prec = 64, base = 8;
+      mpf_class b(a, prec, base); ASSERT_ALWAYS(b == 262143L);
+      ASSERT_ALWAYS (0);  /* should not be reached */
+    } catch (invalid_argument) {
+    }
+  }
+
+  // mpf_class(const std::string &) with invalid
+  {
+    try {
+      string a("abc");
+      mpf_class b(a); ASSERT_ALWAYS(b == 1234567890L);
+      ASSERT_ALWAYS (0);  /* should not be reached */
+    } catch (invalid_argument) {
+    }
+  }
+
+  // mpf_class(const std::string &, unsigned long int, int = 0) with invalid
+  {
+    try {
+      string a("def");
+      int prec = 128;
+      mpf_class b(a, prec); ASSERT_ALWAYS(b == 1234567890L);
+      ASSERT_ALWAYS (0);  /* should not be reached */
+    } catch (invalid_argument) {
+    }
+  }
+  {
+    try {
+      string a("ghi");
+      int prec = 256, base = 16;
+      mpf_class b(a, prec, base); ASSERT_ALWAYS(b == 65535u);
+      ASSERT_ALWAYS (0);  /* should not be reached */
+    } catch (invalid_argument) {
+    }
+  }
+
+  // mpf_class(mpf_srcptr)
+  {
+    mpf_t a;
+    mpf_init_set_ui(a, 100);
+    mpf_class b(a); ASSERT_ALWAYS(b == 100);
+    mpf_clear(a);
+  }
+
+  // mpf_class(mpf_srcptr, unsigned long int)
+  {
+    mpf_t a;
+    int prec = 64;
+    mpf_init_set_ui(a, 100);
+    mpf_class b(a, prec); ASSERT_ALWAYS(b == 100);
+    mpf_clear(a);
+  }
+
+  // mpf_class(const mpf_class &)
+  {
+    mpf_class a(12345); // tested above, assume it works
+    mpf_class b(a); ASSERT_ALWAYS(b == 12345);
+  }
+
+  // mpf_class(const mpf_class &, unsigned long int)
+  {
+    mpf_class a(12345); // tested above, assume it works
+    int prec = 64;
+    mpf_class b(a, prec); ASSERT_ALWAYS(b == 12345);
+  }
+
+  // no constructors for bool, but it gets casted to int
+  {
+    bool a = true;
+    mpf_class b(a); ASSERT_ALWAYS(b == 1);
+  }
+  {
+    bool a = false;
+    mpf_class b(a); ASSERT_ALWAYS(b == 0);
+  }
+  {
+    bool a = true;
+    int prec = 128;
+    mpf_class b(a, prec); ASSERT_ALWAYS(b == 1);
+  }
+  {
+    bool a = false;
+    int prec = 256;
+    mpf_class b(a, prec); ASSERT_ALWAYS(b == 0);
+  }
 }
 
 
+
 int
-main (int argc, char *argv[])
+main (void)
 {
-  tests_start ();
+  tests_start();
 
-  check_mpz ();
-  check_mpq ();
-  check_mpf ();
+  check_mpz();
+  check_mpq();
+  check_mpf();
 
-  tests_end ();
-  exit (0);
+  tests_end();
+  return 0;
 }

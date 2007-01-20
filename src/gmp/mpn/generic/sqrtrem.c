@@ -1,7 +1,6 @@
-/* mpn_sqrtrem -- square root and remainder */
+/* mpn_sqrtrem -- square root and remainder
 
-/*
-Copyright 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001, 2002, 2004, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -17,9 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA.
-*/
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 
 /* Contributed by Paul Zimmermann.
@@ -193,14 +191,14 @@ mpn_dc_sqrtrem (mp_ptr sp, mp_ptr np, mp_size_t n)
         c = mpn_add_n (np + l, np + l, sp + l, h);
       mpn_sqr_n (np + n, sp, l);
       b = q + mpn_sub_n (np, np, np + n, 2 * l);
-      c -= (l == h) ? b : mpn_sub_1 (np + 2 * l, np + 2 * l, 1, b);
+      c -= (l == h) ? b : mpn_sub_1 (np + 2 * l, np + 2 * l, 1, (mp_limb_t) b);
       q = mpn_add_1 (sp + l, sp + l, h, q);
 
       if (c < 0)
         {
-          c += mpn_addmul_1 (np, sp, n, 2) + 2 * q;
-          c -= mpn_sub_1 (np, np, n, 1);
-          q -= mpn_sub_1 (sp, sp, n, 1);
+          c += mpn_addmul_1 (np, sp, n, CNST_LIMB(2)) + 2 * q;
+          c -= mpn_sub_1 (np, np, n, CNST_LIMB(1));
+          q -= mpn_sub_1 (sp, sp, n, CNST_LIMB(1));
         }
     }
 
@@ -214,9 +212,10 @@ mpn_sqrtrem (mp_ptr sp, mp_ptr rp, mp_srcptr np, mp_size_t nn)
   mp_limb_t *tp, s0[1], cc, high, rl;
   int c;
   mp_size_t rn, tn;
-  TMP_DECL (marker);
+  TMP_DECL;
 
   ASSERT (nn >= 0);
+  ASSERT_MPN (np, nn);
 
   /* If OP is zero, both results are zero.  */
   if (nn == 0)
@@ -236,7 +235,7 @@ mpn_sqrtrem (mp_ptr sp, mp_ptr rp, mp_srcptr np, mp_size_t nn)
   c = c / 2; /* we have to shift left by 2c bits to normalize {np, nn} */
   tn = (nn + 1) / 2; /* 2*tn is the smallest even integer >= nn */
 
-  TMP_MARK (marker);
+  TMP_MARK;
   if (nn % 2 != 0 || c > 0)
     {
       tp = TMP_ALLOC_LIMBS (2 * tn);
@@ -282,6 +281,6 @@ mpn_sqrtrem (mp_ptr sp, mp_ptr rp, mp_srcptr np, mp_size_t nn)
 
   MPN_NORMALIZE (rp, rn);
 
-  TMP_FREE (marker);
+  TMP_FREE;
   return rn;
 }

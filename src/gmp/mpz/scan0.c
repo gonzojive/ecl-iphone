@@ -1,6 +1,6 @@
 /* mpz_scan0 -- search for a 0 bit.
 
-Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002, 2004 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -115,10 +115,7 @@ mpz_scan0 (mpz_srcptr u, unsigned long starting_bit)
         }
     }
 
-  /* Mask to 0 all bits above the lowest 1 bit. */
   ASSERT (limb != 0);
-  limb &= -limb;
-
-  count_leading_zeros (cnt, limb);
-  return (p - u_ptr) * GMP_NUMB_BITS + GMP_LIMB_BITS - 1 - cnt;
+  count_trailing_zeros (cnt, limb);
+  return (p - u_ptr) * GMP_NUMB_BITS + cnt;
 }

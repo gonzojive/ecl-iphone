@@ -1,6 +1,6 @@
 /* mpz_congruent_p -- test congruence of two mpz's.
 
-Copyright 2001, 2002 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -57,11 +57,12 @@ mpz_congruent_p (mpz_srcptr a, mpz_srcptr c, mpz_srcptr d)
   mp_ptr     xp;
   mp_limb_t  alow, clow, dlow, dmask, r;
   int        result;
-  TMP_DECL (marker);
+  TMP_DECL;
 
   dsize = SIZ(d);
-  if (dsize == 0)
-    DIVIDE_BY_ZERO;
+  if (UNLIKELY (dsize == 0))
+    return (mpz_cmp (a, c) == 0);
+
   dsize = ABS(dsize);
   dp = PTR(d);
 
@@ -144,7 +145,7 @@ mpz_congruent_p (mpz_srcptr a, mpz_srcptr c, mpz_srcptr d)
         }
     }
 
-  TMP_MARK (marker);
+  TMP_MARK;
   xp = TMP_ALLOC_LIMBS (asize+1);
 
   /* calculate abs(a-c) */
@@ -168,6 +169,6 @@ mpz_congruent_p (mpz_srcptr a, mpz_srcptr c, mpz_srcptr d)
 
   result = mpn_divisible_p (xp, asize, dp, dsize);
 
-  TMP_FREE (marker);
+  TMP_FREE;
   return result;
 }

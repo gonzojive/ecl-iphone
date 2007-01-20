@@ -18,8 +18,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -30,11 +30,8 @@ mpz_urandomb (mpz_ptr rop, gmp_randstate_t rstate, unsigned long int nbits)
   mp_ptr rp;
   mp_size_t size;
 
-  size = (nbits + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS;
-  if (ALLOC (rop) < size)
-    _mpz_realloc (rop, size);
-
-  rp = PTR (rop);
+  size = BITS_TO_LIMBS (nbits);
+  rp = MPZ_REALLOC (rop, size);
 
   _gmp_rand (rp, rstate, nbits);
   MPN_NORMALIZE (rp, size);

@@ -1,6 +1,6 @@
 /* mpz_tdiv_r(rem, dividend, divisor) -- Set REM to DIVIDEND mod DIVISOR.
 
-Copyright 1991, 1993, 1994, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 2000, 2001, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -29,7 +29,7 @@ mpz_tdiv_r (mpz_ptr rem, mpz_srcptr num, mpz_srcptr den)
   mp_size_t ql;
   mp_size_t ns, ds, nl, dl;
   mp_ptr np, dp, qp, rp;
-  TMP_DECL (marker);
+  TMP_DECL;
 
   ns = SIZ (num);
   ds = SIZ (den);
@@ -55,7 +55,7 @@ mpz_tdiv_r (mpz_ptr rem, mpz_srcptr num, mpz_srcptr den)
       return;
     }
 
-  TMP_MARK (marker);
+  TMP_MARK;
   qp = (mp_ptr) TMP_ALLOC (ql * BYTES_PER_MP_LIMB);
   rp = PTR (rem);
   np = PTR (num);
@@ -87,5 +87,5 @@ mpz_tdiv_r (mpz_ptr rem, mpz_srcptr num, mpz_srcptr den)
   MPN_NORMALIZE (rp, dl);
 
   SIZ (rem) = ns >= 0 ? dl : -dl;
-  TMP_FREE (marker);
+  TMP_FREE;
 }

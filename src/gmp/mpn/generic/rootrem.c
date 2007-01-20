@@ -7,7 +7,7 @@
    FUTURE GNU MP RELEASE.
 
 
-Copyright 2002 Free Software Foundation, Inc.
+Copyright 2002, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -22,9 +22,9 @@ or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
-along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+Boston, MA 02110-1301, USA. */
 
 /*
   We use Newton's method to compute the root of a:
@@ -62,13 +62,13 @@ mpn_rootrem (mp_ptr rootp, mp_ptr remp,
   unsigned int cnt;
   mp_size_t i;
   unsigned long int n_valid_bits, adj;
-  TMP_DECL (marker);
+  TMP_DECL;
 
-  TMP_MARK (marker);
+  TMP_MARK;
 
   /* The extra factor 1.585 = log(3)/log(2) here is for the worst case
      overestimate of the root, i.e., when the code rounds a root that is
-     2+epsilon to 3, and the powers this to a potentially huge power.  We
+     2+epsilon to 3, and then powers this to a potentially huge power.  We
      could generalize the code for detecting root=1 a few lines below to deal
      with xnb <= k, for some small k.  For example, when xnb <= 2, meaning
      the root should be 1, 2, or 3, we could replace this factor by the much
@@ -88,13 +88,13 @@ mpn_rootrem (mp_ptr rootp, mp_ptr remp,
       mpn_sub_1 (remp, up, un, (mp_limb_t) 1);
       MPN_NORMALIZE (remp, un);
       rootp[0] = 1;
-      TMP_FREE (marker);
+      TMP_FREE;
       return un;
     }
 
   xn = (xnb + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS;
 
-  qp = TMP_ALLOC_LIMBS (un + 1);
+  qp = TMP_ALLOC_LIMBS (PP_ALLOC);
   xp = TMP_ALLOC_LIMBS (xn + 1);
 
   /* Set initial root to only ones.  This is an overestimate of the actual root
@@ -125,8 +125,8 @@ mpn_rootrem (mp_ptr rootp, mp_ptr remp,
   adj = n_valid_bits - 1;
 
   /* Newton loop.  Converges downwards towards root(U,nth).  Currently we use
-   full precision from iteration 1.  Clearly, we should use just n_valid_bits
-   of precision in each step, and thus save most of the computations.  */
+     full precision from iteration 1.  Clearly, we should use just n_valid_bits
+     of precision in each step, and thus save most of the computations.  */
   while (n_valid_bits <= xnb)
     {
       mp_limb_t cy;
@@ -172,6 +172,6 @@ mpn_rootrem (mp_ptr rootp, mp_ptr remp,
   mpn_sub (remp, up, un, pp, pn);
   MPN_NORMALIZE (remp, un);
   MPN_COPY (rootp, xp, xn);
-  TMP_FREE (marker);
+  TMP_FREE;
   return un;
 }

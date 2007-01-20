@@ -1,6 +1,6 @@
 /* Test mpz_cmp_d and mpz_cmpabs_d.
 
-Copyright 2001, 2002 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2003, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,7 +52,7 @@ check_one (const char *name, mpz_srcptr x, double y, int cmp, int cmpabs)
       printf    ("  y %g\n", y);
       mp_trace_base=-16;
       mpz_trace ("  x", x);
-      printf    ("  y %A\n", y);
+      printf    ("  y %g\n", y);
       printf    ("  y");
       for (i = 0; i < sizeof(y); i++)
         printf (" %02X", (unsigned) ((unsigned char *) &y)[i]);
@@ -237,6 +237,44 @@ check_one_2exp (void)
   mpz_clear (x);
 }
 
+void
+check_infinity (void)
+{
+  mpz_t   x;
+  double  y = tests_infinity_d ();
+  if (y == 0.0)
+    return;
+
+  mpz_init (x);
+
+  /* 0 cmp inf */
+  mpz_set_ui (x, 0L);
+  check_one ("check_infinity", x,  y, -1, -1);
+  check_one ("check_infinity", x, -y,  1, -1);
+
+  /* 123 cmp inf */
+  mpz_set_ui (x, 123L);
+  check_one ("check_infinity", x,  y, -1, -1);
+  check_one ("check_infinity", x, -y,  1, -1);
+
+  /* -123 cmp inf */
+  mpz_set_si (x, -123L);
+  check_one ("check_infinity", x,  y, -1, -1);
+  check_one ("check_infinity", x, -y,  1, -1);
+
+  /* 2^5000 cmp inf */
+  mpz_set_ui (x, 1L);
+  mpz_mul_2exp (x, x, 5000L);
+  check_one ("check_infinity", x,  y, -1, -1);
+  check_one ("check_infinity", x, -y,  1, -1);
+
+  /* -2^5000 cmp inf */
+  mpz_neg (x, x);
+  check_one ("check_infinity", x,  y, -1, -1);
+  check_one ("check_infinity", x, -y,  1, -1);
+
+  mpz_clear (x);
+}
 
 int
 main (int argc, char *argv[])
@@ -247,6 +285,7 @@ main (int argc, char *argv[])
   check_onebits ();
   check_low_z_one ();
   check_one_2exp ();
+  check_infinity ();
 
   tests_end ();
   exit (0);

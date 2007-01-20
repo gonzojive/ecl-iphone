@@ -1,6 +1,7 @@
 /* mpf_div_ui -- Divide a float with an unsigned integer.
 
-Copyright 1993, 1994, 1996, 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1996, 2000, 2001, 2002, 2004, 2005 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +17,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -34,9 +35,9 @@ mpf_div_ui (mpf_ptr r, mpf_srcptr u, unsigned long int v)
   mp_size_t prec;
   mp_limb_t q_limb;
   mp_exp_t rexp;
-  TMP_DECL (marker);
+  TMP_DECL;
 
-#if GMP_NAIL_BITS != 0
+#if BITS_PER_ULONG > GMP_NUMB_BITS  /* avoid warnings about shift amount */
   if (v > GMP_NUMB_MAX)
     {
       mpf_t vf;
@@ -66,7 +67,7 @@ mpf_div_ui (mpf_ptr r, mpf_srcptr u, unsigned long int v)
       return;
     }
 
-  TMP_MARK (marker);
+  TMP_MARK;
 
   rp = r->_mp_d;
   up = u->_mp_d;
@@ -96,5 +97,5 @@ mpf_div_ui (mpf_ptr r, mpf_srcptr u, unsigned long int v)
   rexp = u->_mp_exp - (q_limb == 0);
   r->_mp_size = sign_quotient >= 0 ? rsize : -rsize;
   r->_mp_exp = rexp;
-  TMP_FREE (marker);
+  TMP_FREE;
 }

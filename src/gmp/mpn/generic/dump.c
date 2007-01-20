@@ -3,7 +3,7 @@
    FUNCTION WILL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
 
-Copyright 1996, 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1996, 2000, 2001, 2002, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -19,8 +19,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA.
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA.
 */
 
 #include <stdio.h>
@@ -82,11 +82,11 @@ void
 mpn_dump (mp_srcptr p, mp_size_t n)
 {
   mp_ptr tp;
-  TMP_DECL (marker);
-  TMP_MARK (marker);
+  TMP_DECL;
+  TMP_MARK;
   tp = TMP_ALLOC_LIMBS (n);
   MPN_COPY (tp, p, n);
-  TMP_FREE (marker);
+  TMP_FREE;
 }
 
 #endif

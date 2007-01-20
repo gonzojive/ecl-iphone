@@ -16,9 +16,9 @@ dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 dnl  License for more details.
 
 dnl  You should have received a copy of the GNU Lesser General Public License
-dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-dnl  MA 02111-1307, USA.
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+dnl  to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl  Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
@@ -40,14 +40,14 @@ PROLOGUE(mpn_sub_n)
 	addib,=		-1,%r23,L(end)	C check for (SIZE == 1)
 	 sub		%r20,%r19,%r28	C subtract first limbs ignoring cy
 
-	.label	L(loop)
+LDEF(loop)
 	ldws,ma		4(0,%r25),%r20
 	ldws,ma		4(0,%r24),%r19
 	stws,ma		%r28,4(0,%r26)
 	addib,<>	-1,%r23,L(loop)
 	 subb		%r20,%r19,%r28
 
-	.label	L(end)
+LDEF(end)
 	stws		%r28,0(0,%r26)
 	addc		%r0,%r0,%r28
 	bv		0(%r2)

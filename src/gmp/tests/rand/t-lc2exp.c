@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -117,10 +117,6 @@ check_bigc (void)
   gmp_randclear (r);
 }
 
-/* In the past c bigger than m2exp bits was not truncated, and could end up
-   producing extra bits from _gmp_rand and consequently into mpz_urandomb.
-   The following tries a=0 c=ULONG_MAX m2exp=2 expecting to see mpz_urandomb
-   ask for 1 bit give a value 1 every time.  */
 void
 check_bigc1 (void)
 {

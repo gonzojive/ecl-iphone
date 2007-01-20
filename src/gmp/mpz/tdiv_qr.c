@@ -1,7 +1,7 @@
 /* mpz_tdiv_qr(quot,rem,dividend,divisor) -- Set QUOT to DIVIDEND/DIVISOR,
    and REM to DIVIDEND mod DIVISOR.
 
-Copyright 1991, 1993, 1994, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 2000, 2001, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -17,8 +17,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -37,7 +37,7 @@ mdiv (mpz_srcptr num, mpz_srcptr den, mpz_ptr quot, mpz_ptr rem)
   mp_size_t ql;
   mp_size_t ns, ds, nl, dl;
   mp_ptr np, dp, qp, rp;
-  TMP_DECL (marker);
+  TMP_DECL;
 
   ns = SIZ (num);
   ds = SIZ (den);
@@ -68,7 +68,7 @@ mdiv (mpz_srcptr num, mpz_srcptr den, mpz_ptr quot, mpz_ptr rem)
 
   MPZ_REALLOC (quot, ql);
 
-  TMP_MARK (marker);
+  TMP_MARK;
   qp = PTR (quot);
   rp = PTR (rem);
   np = PTR (num);
@@ -104,5 +104,5 @@ mdiv (mpz_srcptr num, mpz_srcptr den, mpz_ptr quot, mpz_ptr rem)
 
   SIZ (quot) = (ns ^ ds) >= 0 ? ql : -ql;
   SIZ (rem) = ns >= 0 ? dl : -dl;
-  TMP_FREE (marker);
+  TMP_FREE;
 }

@@ -2,7 +2,8 @@
    negative based on if U > V, U == V, or U < V.  Vn and Vd may have
    common factors.
 
-Copyright 1993, 1994, 1996, 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1996, 2000, 2001, 2002, 2003, 2005 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -18,8 +19,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -33,7 +34,7 @@ _mpq_cmp_ui (const MP_RAT *op1, unsigned long int num2, unsigned long int den2)
   mp_ptr tmp1_ptr, tmp2_ptr;
   mp_limb_t cy_limb;
   int cc;
-  TMP_DECL (marker);
+  TMP_DECL;
 
 #if GMP_NAIL_BITS != 0
   if ((num2 | den2) > GMP_NUMB_MAX)
@@ -70,20 +71,22 @@ _mpq_cmp_ui (const MP_RAT *op1, unsigned long int num2, unsigned long int den2)
     /* NUM1 x DEN2 is surely smaller in magnitude than NUM2 x DEN1.  */
     return -num1_size;
 
-  TMP_MARK (marker);
+  TMP_MARK;
   tmp1_ptr = (mp_ptr) TMP_ALLOC ((num1_size + 1) * BYTES_PER_MP_LIMB);
   tmp2_ptr = (mp_ptr) TMP_ALLOC ((den1_size + 1) * BYTES_PER_MP_LIMB);
 
-  cy_limb = mpn_mul_1 (tmp1_ptr, op1->_mp_num._mp_d, num1_size, den2);
+  cy_limb = mpn_mul_1 (tmp1_ptr, op1->_mp_num._mp_d, num1_size,
+                       (mp_limb_t) den2);
   tmp1_ptr[num1_size] = cy_limb;
   tmp1_size = num1_size + (cy_limb != 0);
 
-  cy_limb = mpn_mul_1 (tmp2_ptr, op1->_mp_den._mp_d, den1_size, num2);
+  cy_limb = mpn_mul_1 (tmp2_ptr, op1->_mp_den._mp_d, den1_size,
+                       (mp_limb_t) num2);
   tmp2_ptr[den1_size] = cy_limb;
   tmp2_size = den1_size + (cy_limb != 0);
 
   cc = tmp1_size - tmp2_size != 0
     ? tmp1_size - tmp2_size : mpn_cmp (tmp1_ptr, tmp2_ptr, tmp1_size);
-  TMP_FREE (marker);
+  TMP_FREE;
   return cc;
 }

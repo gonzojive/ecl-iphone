@@ -1,6 +1,6 @@
 /* Test count_leading_zeros and count_trailing_zeros.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2003 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,10 +33,10 @@ check_clz (int want, mp_limb_t n)
   count_leading_zeros (got, n);
   if (got != want)
     {
-      printf ("count_leading_zeros wrong\n");
-      printf    ("  n    %lX\n", n);
-      printf    ("  want %d\n", want);
-      printf    ("  got  %d\n", got);
+      printf        ("count_leading_zeros wrong\n");
+      mp_limb_trace ("  n    ", n);
+      printf        ("  want %d\n", want);
+      printf        ("  got  %d\n", got);
       abort ();
     }
 }
@@ -59,14 +59,13 @@ check_ctz (int want, mp_limb_t n)
 void
 check_various (void)
 {
-  mp_limb_t  n;
   int        i;
 
 #ifdef COUNT_LEADING_ZEROS_0
   check_clz (COUNT_LEADING_ZEROS_0, CNST_LIMB(0));
 #endif
 
-  for (n=1, i=0; i < BITS_PER_MP_LIMB; n<<=1, i++)
+  for (i=0; i < BITS_PER_MP_LIMB; i++)
     {
       check_clz (i, CNST_LIMB(1) << (BITS_PER_MP_LIMB-1-i));
       check_ctz (i, CNST_LIMB(1) << i);

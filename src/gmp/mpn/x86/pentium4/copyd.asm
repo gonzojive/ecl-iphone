@@ -2,29 +2,28 @@ dnl  Pentium-4 mpn_copyd -- copy limb vector, decrementing.
 dnl
 
 dnl  Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
-dnl 
+dnl
 dnl  This file is part of the GNU MP Library.
-dnl 
+dnl
 dnl  The GNU MP Library is free software; you can redistribute it and/or
 dnl  modify it under the terms of the GNU Lesser General Public License as
 dnl  published by the Free Software Foundation; either version 2.1 of the
 dnl  License, or (at your option) any later version.
-dnl 
+dnl
 dnl  The GNU MP Library is distributed in the hope that it will be useful,
 dnl  but WITHOUT ANY WARRANTY; without even the implied warranty of
 dnl  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 dnl  Lesser General Public License for more details.
-dnl 
+dnl
 dnl  You should have received a copy of the GNU Lesser General Public
 dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
-dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
-dnl  Suite 330, Boston, MA 02111-1307, USA.
+dnl  not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+dnl  Fifth Floor, Boston, MA 02110-1301, USA.
 
 
 dnl  The std/rep/movsl/cld is very slow for small blocks on pentium4.  Its
-dnl  startup time seems to be about 165 cycles.  It then copies at a rate of
-dnl  one limb per cycle.  We therefore fall back to an open-coded 2 c/l
-dnl  copying loop for smaller sizes.
+dnl  startup time seems to be about 165 cycles.  It then needs 2.6 c/l.
+dnl  We therefore use an open-coded 2 c/l copying loop.
 
 dnl  Ultimately, we may want to use 64-bit movq or 128-bit movdqu in some
 dnl  nifty unrolled arrangement.  Clearly, that could reach much higher

@@ -4,8 +4,8 @@
    result.  If STRING is not NULL, the caller must ensure enough space is
    available to store the result.
 
-Copyright 1991, 1993, 1994, 1996, 2000, 2001, 2002 Free Software Foundation,
-Inc.
+Copyright 1991, 1993, 1994, 1996, 2000, 2001, 2002, 2005 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -21,8 +21,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <string.h> /* for strlen */
 #include "gmp.h"
@@ -40,13 +40,19 @@ mpz_get_str (char *res_str, int base, mpz_srcptr x)
   size_t alloc_size = 0;
   char *num_to_text;
   int i;
-  TMP_DECL (marker);
+  TMP_DECL;
 
   if (base >= 0)
     {
+      num_to_text = "0123456789abcdefghijklmnopqrstuvwxyz";
       if (base == 0)
 	base = 10;
-      num_to_text = "0123456789abcdefghijklmnopqrstuvwxyz";
+      else if (base > 36)
+	{
+	  num_to_text = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	  if (base > 62)
+	    return NULL;
+	}
     }
   else
     {
@@ -71,7 +77,7 @@ mpz_get_str (char *res_str, int base, mpz_srcptr x)
     }
 
   /* mpn_get_str clobbers its input on non power-of-2 bases */
-  TMP_MARK (marker);
+  TMP_MARK;
   xp = x->_mp_d;
   if (! POW2_P (base))
     {
@@ -97,7 +103,7 @@ mpz_get_str (char *res_str, int base, mpz_srcptr x)
     res_str[i] = num_to_text[str[i]];
   res_str[str_size] = 0;
 
-  TMP_FREE (marker);
+  TMP_FREE;
 
   /* if allocated then resize down to the actual space required */
   if (alloc_size != 0)

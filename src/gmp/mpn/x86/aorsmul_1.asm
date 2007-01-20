@@ -1,35 +1,42 @@
 dnl  x86 __gmpn_addmul_1 (for 386 and 486) -- Multiply a limb vector with a
 dnl  limb and add the result to a second limb vector.
 
-dnl  Copyright 1992, 1994, 1997, 1999, 2000, 2001, 2002 Free Software
+dnl  Copyright 1992, 1994, 1997, 1999, 2000, 2001, 2002, 2005 Free Software
 dnl  Foundation, Inc.
-dnl 
+dnl
 dnl  This file is part of the GNU MP Library.
-dnl 
+dnl
 dnl  The GNU MP Library is free software; you can redistribute it and/or
 dnl  modify it under the terms of the GNU Lesser General Public License as
 dnl  published by the Free Software Foundation; either version 2.1 of the
 dnl  License, or (at your option) any later version.
-dnl 
+dnl
 dnl  The GNU MP Library is distributed in the hope that it will be useful,
 dnl  but WITHOUT ANY WARRANTY; without even the implied warranty of
 dnl  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 dnl  Lesser General Public License for more details.
-dnl 
+dnl
 dnl  You should have received a copy of the GNU Lesser General Public
 dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
-dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
-dnl  Suite 330, Boston, MA 02111-1307, USA.
+dnl  not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+dnl  Fifth Floor, Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
 
-C     cycles/limb
-C P5:   14.75
-C P6:    7.5
-C K6:   12.5
-C K7:    5.25
-C P4:   24
+C                           cycles/limb
+C P5:                           14.75
+C P6 model 0-8,10-12)            7.5
+C P6 model 9  (Banias)
+C P6 model 13 (Dothan)           6.75
+C P4 model 0  (Willamette)      24.0
+C P4 model 1  (?)               24.0
+C P4 model 2  (Northwood)       24.0
+C P4 model 3  (Prescott)
+C P4 model 4  (Nocona)
+C K6:                           12.5
+C K7:                            5.25
+C K8:
 
 
 ifdef(`OPERATION_addmul_1',`

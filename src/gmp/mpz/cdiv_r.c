@@ -1,7 +1,7 @@
 /* mpz_cdiv_r -- Division rounding the quotient towards +infinity.  The
    remainder gets the opposite sign as the denominator.
 
-Copyright 1994, 1995, 1996, 2001 Free Software Foundation, Inc.
+Copyright 1994, 1995, 1996, 2001, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -17,8 +17,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -28,9 +28,9 @@ mpz_cdiv_r (mpz_ptr rem, mpz_srcptr dividend, mpz_srcptr divisor)
 {
   mp_size_t divisor_size = divisor->_mp_size;
   mpz_t temp_divisor;		/* N.B.: lives until function returns! */
-  TMP_DECL (marker);
+  TMP_DECL;
 
-  TMP_MARK (marker);
+  TMP_MARK;
 
   /* We need the original value of the divisor after the remainder has been
      preliminary calculated.  We have to copy it to temporary space if it's
@@ -48,5 +48,5 @@ mpz_cdiv_r (mpz_ptr rem, mpz_srcptr dividend, mpz_srcptr divisor)
   if ((divisor_size ^ dividend->_mp_size) >= 0 && rem->_mp_size != 0)
     mpz_sub (rem, rem, divisor);
 
-  TMP_FREE (marker);
+  TMP_FREE;
 }

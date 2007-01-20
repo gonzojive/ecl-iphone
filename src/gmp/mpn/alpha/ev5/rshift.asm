@@ -1,4 +1,4 @@
-dnl  Alpha EV5 __gmpn_rshift -- Shift a number right.
+dnl  Alpha EV5 mpn_rshift -- Shift a number right.
 
 dnl  Copyright 1994, 1995, 2000 Free Software Foundation, Inc.
 
@@ -15,19 +15,23 @@ dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 dnl  License for more details.
 
 dnl  You should have received a copy of the GNU Lesser General Public License
-dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-dnl  MA 02111-1307, USA.
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+dnl  to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl  Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
-dnl  INPUT PARAMETERS
-dnl  res_ptr	r16
-dnl  s1_ptr	r17
-dnl  size	r18
-dnl  cnt	r19
+C      cycles/limb
+C EV4:     ?
+C EV5:     3.25
+C EV6:     1.75
 
-dnl  This code runs at 3.25 cycles/limb on the EV5.
+C  INPUT PARAMETERS
+C  rp	r16
+C  up	r17
+C  n	r18
+C  cnt	r19
+
 
 ASM_START()
 PROLOGUE(mpn_rshift)

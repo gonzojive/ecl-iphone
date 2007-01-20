@@ -1,23 +1,23 @@
 dnl  AMD K7 mpn_copyi -- copy limb vector, incrementing.
 
-dnl  Copyright 1999, 2000, 2002 Free Software Foundation, Inc.
-dnl 
+dnl  Copyright 1999, 2000, 2002, 2003 Free Software Foundation, Inc.
+dnl
 dnl  This file is part of the GNU MP Library.
-dnl 
+dnl
 dnl  The GNU MP Library is free software; you can redistribute it and/or
 dnl  modify it under the terms of the GNU Lesser General Public License as
 dnl  published by the Free Software Foundation; either version 2.1 of the
 dnl  License, or (at your option) any later version.
-dnl 
+dnl
 dnl  The GNU MP Library is distributed in the hope that it will be useful,
 dnl  but WITHOUT ANY WARRANTY; without even the implied warranty of
 dnl  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 dnl  Lesser General Public License for more details.
-dnl 
+dnl
 dnl  You should have received a copy of the GNU Lesser General Public
 dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
-dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
-dnl  Suite 330, Boston, MA 02111-1307, USA.
+dnl  not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+dnl  Fifth Floor, Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
@@ -34,9 +34,11 @@ C
 C This code at 0.75 or 1.0 c/l is always faster than a plain rep movsl at
 C 1.33 c/l.
 C
-C The K7 can do two loads, or two stores, or a load and a store, in one
-C cycle, so if those are 64-bit operations then 0.5 c/l should be possible,
-C however nothing under 0.7 c/l is known.
+C The K7 can do a 64-bit load and 64-bit store in one cycle (optimization
+C guile 22007 appendix B), so 0.5 c/l should be possible, however nothing
+C under 0.7 c/l is known.  Apparently only two 32-bit stores can be done in
+C one cycle, so perhaps some scheduling is needed to ensure it's a
+C load+store in each cycle, not store+store.
 C
 C If both source and destination are unaligned then one limb is processed at
 C the start to make them aligned and so get 0.75 c/l, whereas if they'd been

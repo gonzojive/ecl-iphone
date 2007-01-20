@@ -1,6 +1,6 @@
 /* Test mpf_cmp_si.
 
-Copyright 2000, 2001 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2004 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,12 +53,14 @@ check_data (void)
     { 16,  "80000001", "-0x80000000",  1 },
     { 16, "-80000000", "-0x80000000",  0 },
     { 16, "-80000001", "-0x80000000", -1 },
+    { 16, "-FF0080000001", "-0x80000000", -1 },
 
     { 16,                 "0", "-0x8000000000000000",  1 },
     { 16,  "8000000000000000", "-0x8000000000000000",  1 },
     { 16,  "8000000000000001", "-0x8000000000000000",  1 },
     { 16, "-8000000000000000", "-0x8000000000000000",  0 },
     { 16, "-8000000000000001", "-0x8000000000000000", -1 },
+    { 16, "-FF008000000000000001", "-0x8000000000000000", -1 },
   };
 
   mpf_t  a;
@@ -86,7 +88,7 @@ check_data (void)
               printf ("  b=%ld (%s)\n", b, data[i].b);
               printf ("  got=%d\n", got);
               printf ("  want=%d\n", data[i].want);
-              abort();                                    
+              abort();
             }
         }
     }

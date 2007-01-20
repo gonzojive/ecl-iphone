@@ -1,6 +1,6 @@
 ## Process this file with automake to generate Makefile.in
 
-# Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
+# Copyright 2000, 2001, 2002, 2003, 2004 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -16,11 +16,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-# the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-# MA 02111-1307, USA.
+# the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
 
 
-AUTOMAKE_OPTIONS = gnu no-dependencies $(top_builddir)/ansi2knr
 SUBDIRS = . devel mpn mpz mpq mpf rand misc cxx mpbsd
 
 include ../mpn/Makeasm.am
@@ -28,17 +27,14 @@ include ../mpn/Makeasm.am
 INCLUDES = -I$(top_srcdir)
 LDADD = libtests.la $(top_builddir)/libgmp.la
 
-EXTRA_DIST = x86call.asm
-EXTRA_LTLIBRARIES = libdummy.la
 check_LTLIBRARIES = libtests.la
 
+EXTRA_libtests_la_SOURCES = amd64call.asm amd64check.c x86call.asm x86check.c
 libtests_la_SOURCES = tests.h \
   memory.c misc.c refmpf.c refmpn.c refmpq.c refmpz.c spinner.c trace.c
 libtests_la_DEPENDENCIES = @CALLING_CONVENTIONS_OBJS@
 libtests_la_LIBADD = $(libtests_la_DEPENDENCIES) $(top_builddir)/libgmp.la
 
-# Create ansi2knr rules for sources conditionally used
-libdummy_la_SOURCES = x86check.c
-
-check_PROGRAMS = t-bswap t-constants t-count_zeros t-gmpmax t-modlinv
+check_PROGRAMS = t-bswap t-constants t-count_zeros t-gmpmax t-hightomask \
+  t-modlinv t-popc t-parity t-sub
 TESTS = $(check_PROGRAMS)

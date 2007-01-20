@@ -1,30 +1,41 @@
 dnl  AMD K6 mpn_addmul_1/mpn_submul_1 -- add or subtract mpn multiple.
 
-dnl  Copyright 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
-dnl 
+dnl  Copyright 1999, 2000, 2001, 2002, 2003, 2005 Free Software Foundation,
+dnl  Inc.
+dnl
 dnl  This file is part of the GNU MP Library.
-dnl 
+dnl
 dnl  The GNU MP Library is free software; you can redistribute it and/or
 dnl  modify it under the terms of the GNU Lesser General Public License as
 dnl  published by the Free Software Foundation; either version 2.1 of the
 dnl  License, or (at your option) any later version.
-dnl 
+dnl
 dnl  The GNU MP Library is distributed in the hope that it will be useful,
 dnl  but WITHOUT ANY WARRANTY; without even the implied warranty of
 dnl  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 dnl  Lesser General Public License for more details.
-dnl 
+dnl
 dnl  You should have received a copy of the GNU Lesser General Public
 dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
-dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
-dnl  Suite 330, Boston, MA 02111-1307, USA.
+dnl  not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+dnl  Fifth Floor, Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
 
-C K6: 7.65 to 8.5 cycles/limb (at 16 limbs/loop and depending on the data),
-C     PIC adds about 6 cycles at the start.
-
+C                           cycles/limb
+C P5:
+C P6 model 0-8,10-12)            5.94
+C P6 model 9  (Banias)
+C P6 model 13 (Dothan)           5.57
+C P4 model 0  (Willamette)
+C P4 model 1  (?)
+C P4 model 2  (Northwood)
+C P4 model 3  (Prescott)
+C P4 model 4  (Nocona)
+C K6:                           7.65-8.5 (data dependent)
+C K7:
+C K8:
 
 
 dnl  K6:           large multpliers  small multpliers
@@ -46,33 +57,30 @@ ifdef(`OPERATION_addmul_1', `
 	define(M4_inst,        addl)
 	define(M4_function_1,  mpn_addmul_1)
 	define(M4_function_1c, mpn_addmul_1c)
-	define(M4_description, add it to)
-	define(M4_desc_retval, carry)
 ',`ifdef(`OPERATION_submul_1', `
 	define(M4_inst,        subl)
 	define(M4_function_1,  mpn_submul_1)
 	define(M4_function_1c, mpn_submul_1c)
-	define(M4_description, subtract it from)
-	define(M4_desc_retval, borrow)
 ',`m4_error(`Need OPERATION_addmul_1 or OPERATION_submul_1
 ')')')
 
 MULFUNC_PROLOGUE(mpn_addmul_1 mpn_addmul_1c mpn_submul_1 mpn_submul_1c)
 
 
-C mp_limb_t M4_function_1 (mp_ptr dst, mp_srcptr src, mp_size_t size,
-C                          mp_limb_t mult);
-C mp_limb_t M4_function_1c (mp_ptr dst, mp_srcptr src, mp_size_t size,
-C                           mp_limb_t mult, mp_limb_t carry);
-C
-C Calculate src,size multiplied by mult and M4_description dst,size.
-C Return the M4_desc_retval limb from the top of the result.
+C mp_limb_t mpn_addmul_1 (mp_ptr dst, mp_srcptr src, mp_size_t size,
+C                         mp_limb_t mult);
+C mp_limb_t mpn_addmul_1c (mp_ptr dst, mp_srcptr src, mp_size_t size,
+C                          mp_limb_t mult, mp_limb_t carry);
+C mp_limb_t mpn_submul_1 (mp_ptr dst, mp_srcptr src, mp_size_t size,
+C                         mp_limb_t mult);
+C mp_limb_t mpn_submul_1c (mp_ptr dst, mp_srcptr src, mp_size_t size,
+C                          mp_limb_t mult, mp_limb_t carry);
 C
 C The jadcl0()s in the unrolled loop makes the speed data dependent.  Small
 C multipliers (most significant few bits clear) result in few carry bits and
 C speeds up to 7.65 cycles/limb are attained.  Large multipliers (most
 C significant few bits set) make the carry bits 50/50 and lead to something
-C more like 8.4 c/l.  (With adcl's both of these would be 9.3 c/l.)
+C more like 8.4 c/l.  With adcl's both of these would be 9.3 c/l.
 C
 C It's important that the gains for jadcl0 on small multipliers don't come
 C at the cost of slowing down other data.  Tests on uniformly distributed
@@ -87,6 +95,9 @@ C In the simple loop, note that running ecx from negative to zero and using
 C it as an index in the two movs wouldn't help.  It would save one
 C instruction (2*addl+loop becoming incl+jnz), but there's nothing unpaired
 C that would be collapsed by this.
+C
+C Attempts at a simpler main loop, with less unrolling, haven't yielded much
+C success, generally running over 9 c/l.
 C
 C
 C jadcl0
@@ -112,7 +123,7 @@ C
 C In a back-to-back style test this measures 7 with the jnc not taken, or 8
 C with it taken (both when correctly predicted).  This is opposite to the
 C measurements showing small multipliers running faster than large ones.
-C Watch this space for more info ...
+C Don't really know why.
 C
 C It's not clear how much branch misprediction might be costing.  The K6
 C doco says it will be 1 to 4 cycles, but presumably it's near the low end
@@ -184,7 +195,7 @@ deflit(`FRAME',12)
 deflit(`FRAME',16)
 	jae	L(unroll)
 
-	
+
 	C simple loop
 
 	movl	PARAM_MULTIPLIER, %ebp
@@ -311,7 +322,7 @@ L(pic_calc):
 	leal	(%edx,%ecx,1), %edx
 	addl	$L(entry)-L(here), %edx
 	addl	(%esp), %edx
-	ret
+	ret_internal
 ')
 
 
@@ -352,8 +363,8 @@ Zdisp(	M4_inst,%ecx, disp0,(%edi))
 ')
 
 	decl	VAR_COUNTER
-	leal	UNROLL_BYTES(%ebx), %ebx
 
+	leal	UNROLL_BYTES(%ebx), %ebx
 	jns	L(top)
 
 

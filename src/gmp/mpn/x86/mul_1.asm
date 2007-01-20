@@ -1,35 +1,42 @@
 dnl  x86 mpn_mul_1 (for 386, 486, and Pentium Pro) -- Multiply a limb vector
 dnl  with a limb and store the result in a second limb vector.
 
-dnl  Copyright 1992, 1994, 1997, 1998, 1999, 2000, 2001, 2002 Free Software
-dnl  Foundation, Inc.
-dnl 
+dnl  Copyright 1992, 1994, 1997, 1998, 1999, 2000, 2001, 2002, 2005 Free
+dnl  Software Foundation, Inc.
+dnl
 dnl  This file is part of the GNU MP Library.
-dnl 
+dnl
 dnl  The GNU MP Library is free software; you can redistribute it and/or
 dnl  modify it under the terms of the GNU Lesser General Public License as
 dnl  published by the Free Software Foundation; either version 2.1 of the
 dnl  License, or (at your option) any later version.
-dnl 
+dnl
 dnl  The GNU MP Library is distributed in the hope that it will be useful,
 dnl  but WITHOUT ANY WARRANTY; without even the implied warranty of
 dnl  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 dnl  Lesser General Public License for more details.
-dnl 
+dnl
 dnl  You should have received a copy of the GNU Lesser General Public
 dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
-dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
-dnl  Suite 330, Boston, MA 02111-1307, USA.
+dnl  not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+dnl  Fifth Floor, Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
 
-C     cycles/limb
-C P5:    12.5
-C P6:     5.5
-C K6:    10.5
-C K7:     4.5
-C P4:    19
+C                           cycles/limb
+C P5:                           12.5
+C P6 model 0-8,10-12)            5.5
+C P6 model 9  (Banias)
+C P6 model 13 (Dothan)           5.25
+C P4 model 0  (Willamette)      19.0
+C P4 model 1  (?)               19.0
+C P4 model 2  (Northwood)       19.0
+C P4 model 3  (Prescott)
+C P4 model 4  (Nocona)
+C K6:                           10.5
+C K7:                            4.5
+C K8:
 
 
 C mp_limb_t mpn_mul_1 (mp_ptr dst, mp_srcptr src, mp_size_t size,

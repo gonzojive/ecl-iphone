@@ -1,6 +1,6 @@
 /* Reference mpz functions.
 
-Copyright 1997, 1999, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1997, 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 /* always do assertion checking */
 #define WANT_ASSERT  1
@@ -34,10 +34,21 @@ MA 02111-1307, USA. */
 #define TRACE(x) 
 
 
+/* FIXME: Shouldn't use plain mpz functions in a reference routine. */
+void
+refmpz_combit (mpz_ptr r, unsigned long bit)
+{
+  if (mpz_tstbit (r, bit))
+    mpz_clrbit (r, bit);
+  else
+    mpz_setbit (r, bit);
+}
+
+
 unsigned long
 refmpz_hamdist (mpz_srcptr x, mpz_srcptr y)
 {
-  mp_size_t      tsize;
+  mp_size_t      xsize, ysize, tsize;
   mp_ptr         xp, yp;
   unsigned long  ret;
 
@@ -45,15 +56,17 @@ refmpz_hamdist (mpz_srcptr x, mpz_srcptr y)
       || (SIZ(y) < 0 && SIZ(x) >= 0))
     return ULONG_MAX;
 
-  tsize = MAX (ABSIZ(x), ABSIZ(y));
+  xsize = ABSIZ(x);
+  ysize = ABSIZ(y);
+  tsize = MAX (xsize, ysize);
 
   xp = refmpn_malloc_limbs (tsize);
   refmpn_zero (xp, tsize);
-  refmpn_copy (xp, PTR(x), ABSIZ(x));
-  
+  refmpn_copy (xp, PTR(x), xsize);
+
   yp = refmpn_malloc_limbs (tsize);
   refmpn_zero (yp, tsize);
-  refmpn_copy (yp, PTR(y), ABSIZ(y));
+  refmpn_copy (yp, PTR(y), ysize);
 
   if (SIZ(x) < 0)
     refmpn_neg_n (xp, xp, tsize);

@@ -4,7 +4,7 @@
    ALMOST CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR DISAPPEAR
    COMPLETELY IN FUTURE GNU MP RELEASES.
 
-Copyright 2001, 2002, 2004 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2004, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -20,8 +20,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -57,7 +57,7 @@ MA 02111-1307, USA. */
    twos-complement negative y doesn't work, because it effectively adds an
    extra x * 2^BITS_PER_MP_LIMB.  */
 
-REGPARM_ATTR (1) void
+REGPARM_ATTR(1) void
 mpz_aorsmul_1 (mpz_ptr w, mpz_srcptr x, mp_limb_t y, mp_size_t sub)
 {
   mp_size_t  xsize, wsize, wsize_signed, new_wsize, min_size, dsize;
@@ -194,15 +194,14 @@ mpz_aorsmul_1 (mpz_ptr w, mpz_srcptr x, mp_limb_t y, mp_size_t sub)
 void
 mpz_addmul_ui (mpz_ptr w, mpz_srcptr x, unsigned long y)
 {
-  mpz_aorsmul_1 (w, x, (mp_limb_t) y & GMP_NUMB_MASK, (mp_size_t) 0);
-#if GMP_NAIL_BITS != 0
-  if (y > GMP_NUMB_MAX && SIZ(x) != 0)
+#if BITS_PER_ULONG > GMP_NUMB_BITS
+  if (UNLIKELY (y > GMP_NUMB_MAX && SIZ(x) != 0))
     {
       mpz_t t;
       mp_ptr tp;
       mp_size_t xn;
-      TMP_DECL (mark);
-      TMP_MARK (mark);
+      TMP_DECL;
+      TMP_MARK;
       xn = SIZ (x);
       MPZ_TMP_INIT (t, ABS (xn) + 1);
       tp = PTR (t);
@@ -210,23 +209,27 @@ mpz_addmul_ui (mpz_ptr w, mpz_srcptr x, unsigned long y)
       MPN_COPY (tp + 1, PTR(x), ABS (xn));
       SIZ(t) = xn >= 0 ? xn + 1 : xn - 1;
       mpz_aorsmul_1 (w, t, (mp_limb_t) y >> GMP_NUMB_BITS, (mp_size_t) 0);
-      TMP_FREE (mark);
+      PTR(t) = tp + 1;
+      SIZ(t) = xn;
+      mpz_aorsmul_1 (w, t, (mp_limb_t) y & GMP_NUMB_MASK, (mp_size_t) 0);
+      TMP_FREE;
+      return;
     }
 #endif
+  mpz_aorsmul_1 (w, x, (mp_limb_t) y, (mp_size_t) 0);
 }
 
 void
 mpz_submul_ui (mpz_ptr w, mpz_srcptr x, unsigned long y)
 {
-  mpz_aorsmul_1 (w, x, (mp_limb_t) y & GMP_NUMB_MASK, (mp_size_t) -1);
-#if GMP_NAIL_BITS != 0
+#if BITS_PER_ULONG > GMP_NUMB_BITS
   if (y > GMP_NUMB_MAX && SIZ(x) != 0)
     {
       mpz_t t;
       mp_ptr tp;
       mp_size_t xn;
-      TMP_DECL (mark);
-      TMP_MARK (mark);
+      TMP_DECL;
+      TMP_MARK;
       xn = SIZ (x);
       MPZ_TMP_INIT (t, ABS (xn) + 1);
       tp = PTR (t);
@@ -234,7 +237,12 @@ mpz_submul_ui (mpz_ptr w, mpz_srcptr x, unsigned long y)
       MPN_COPY (tp + 1, PTR(x), ABS (xn));
       SIZ(t) = xn >= 0 ? xn + 1 : xn - 1;
       mpz_aorsmul_1 (w, t, (mp_limb_t) y >> GMP_NUMB_BITS, (mp_size_t) -1);
-      TMP_FREE (mark);
+      PTR(t) = tp + 1;
+      SIZ(t) = xn;
+      mpz_aorsmul_1 (w, t, (mp_limb_t) y & GMP_NUMB_MASK, (mp_size_t) -1);
+      TMP_FREE;
+      return;
     }
 #endif
+  mpz_aorsmul_1 (w, x, (mp_limb_t) y & GMP_NUMB_MASK, (mp_size_t) -1);
 }

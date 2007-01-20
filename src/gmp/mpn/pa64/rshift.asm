@@ -5,9 +5,9 @@ dnl  Copyright 1997, 2000, 2002, 2003 Free Software Foundation, Inc.
 dnl  This file is part of the GNU MP Library.
 
 dnl  The GNU MP Library is free software; you can redistribute it and/or modify
-dnl  it under the terms of the GNU Lesser General Public License as published by
-dnl  the Free Software Foundation; either version 2.1 of the License, or (at your
-dnl  option) any later version.
+dnl  it under the terms of the GNU Lesser General Public License as published
+dnl  by the Free Software Foundation; either version 2.1 of the License, or (at
+dnl  your option) any later version.
 
 dnl  The GNU MP Library is distributed in the hope that it will be useful, but
 dnl  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
@@ -15,9 +15,9 @@ dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 dnl  License for more details.
 
 dnl  You should have received a copy of the GNU Lesser General Public License
-dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-dnl  MA 02111-1307, USA.
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+dnl  to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl  Boston, MA 02110-1301, USA.
 
 
 dnl  This runs at 1.5 cycles/limb on PA8000 and 1.0 cycles/limb on PA8500.
@@ -62,36 +62,37 @@ PROLOGUE(mpn_rshift)
 	b		L(7)
 	copy		%r21, %r20
 
-L(loop)
-L(0)	ldd		8(up), %r20
+LDEF(loop)
+LDEF(0)	ldd		8(up), %r20
 	shrpd		%r20, %r21, %sar, %r21
 	std		%r21, 0(rp)
-L(7)	ldd		16(up), %r21
+LDEF(7)	ldd		16(up), %r21
 	shrpd		%r21, %r20, %sar, %r20
 	std		%r20, 8(rp)
-L(6)	ldd		24(up), %r20
+LDEF(6)	ldd		24(up), %r20
 	shrpd		%r20, %r21, %sar, %r21
 	std		%r21, 16(rp)
-L(5)	ldd		32(up), %r21
+LDEF(5)	ldd		32(up), %r21
 	shrpd		%r21, %r20, %sar, %r20
 	std		%r20, 24(rp)
-L(4)	ldd		40(up), %r20
+LDEF(4)	ldd		40(up), %r20
 	shrpd		%r20, %r21, %sar, %r21
 	std		%r21, 32(rp)
-L(3)	ldd		48(up), %r21
+LDEF(3)	ldd		48(up), %r21
 	shrpd		%r21, %r20, %sar, %r20
 	std		%r20, 40(rp)
-L(2)	ldd		56(up), %r20
+LDEF(2)	ldd		56(up), %r20
 	shrpd		%r20, %r21, %sar, %r21
 	std		%r21, 48(rp)
-L(1)	ldd		64(up), %r21
+LDEF(1)	ldd		64(up), %r21
 	ldo		64(up), up
 	shrpd		%r21, %r20, %sar, %r20
 	std		%r20, 56(rp)
 	addib,>		-8, n, L(loop)
 	ldo		64(rp), rp
 
-L(end)	shrpd		%r0, %r21, %sar, %r21
+LDEF(end)
+	shrpd		%r0, %r21, %sar, %r21
 	std		%r21, 0(rp)
 	bve		(%r2)
 ifdef(`HAVE_ABI_2_0w',

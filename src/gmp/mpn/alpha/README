@@ -1,4 +1,5 @@
-Copyright 1996, 1997, 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1996, 1997, 1999, 2000, 2001, 2002, 2003, 2004, 2005 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -14,7 +15,7 @@ for more details.
 
 You should have received a copy of the GNU Lesser General Public License along
 with the GNU MP Library; see the file COPYING.LIB.  If not, write to the Free
-Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
+Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
 USA.
 
 
@@ -31,6 +32,29 @@ the gp.  The `.mask M' pseudo op says which registers are saved on the stack,
 and at what offset in the frame.
 
 Cray T3 code is very very different...
+
+"$6" / "$f6" etc is the usual syntax for registers, but on Unicos instead "r6"
+/ "f6" is required.  We use the "r6" / "f6" forms, and have m4 defines expand
+them to "$6" or "$f6" where necessary.
+
+"0x" introduces a hex constant in gas and DEC as, but on Unicos "^X" is
+required.  The X() macro accomodates this difference.
+
+"cvttqc" is required by DEC as, "cvttq/c" is required by Unicos, and gas will
+accept either.  We use cvttqc and have an m4 define expand to cvttq/c where
+necessary.
+
+"not" as an alias for "ornot r31, ..." is available in gas and DEC as, but not
+the Unicos assembler.  The full "ornot" must be used.
+
+"unop" is not available in Unicos.  We make an m4 define to the usual "ldq_u
+r31,0(r30)", and in fact use that define on all systems since it comes out the
+same.
+
+"!literal!123" etc explicit relocations as per Tru64 4.0 are apparently not
+available in older alpha assemblers (including gas prior to 2.12), according to
+the GCC manual, so the assembler macro forms must be used (eg. ldgp).
+
 
 
 RELEVANT OPTIMIZATION ISSUES
@@ -132,3 +156,45 @@ Perhaps the most important issue is the latency between the L0/U0 and L1/U1
 clusters; a result obtained on either cluster has an extra cycle of latency for
 consumers in the opposite cluster.  Because of the dynamic nature of the
 implementation, it is hard to predict where an instruction will execute.
+
+
+
+REFERENCES
+
+"Alpha Architecture Handbook", version 4, Compaq, October 1998, order number
+EC-QD2KC-TE.
+
+"Alpha 21164 Microprocessor Hardware Reference Manual", Compaq, December 1998,
+order number EC-QP99C-TE.
+
+"Alpha 21264/EV67 Microprocessor Hardware Reference Manual", revision 1.4,
+Compaq, September 2000, order number DS-0028B-TE.
+
+"Compiler Writer's Guide for the Alpha 21264", Compaq, June 1999, order number
+EC-RJ66A-TE.
+
+All of the above are available online from
+
+  http://ftp.digital.com/pub/Digital/info/semiconductor/literature/dsc-library.html
+  ftp://ftp.compaq.com/pub/products/alphaCPUdocs
+
+"Tru64 Unix Assembly Language Programmer's Guide", Compaq, March 1996, part
+number AA-PS31D-TE.
+
+"Digital UNIX Calling Standard for Alpha Systems", Digital Equipment Corp,
+March 1996, part number AA-PY8AC-TE.
+
+The above are available online,
+
+  http://h30097.www3.hp.com/docs/pub_page/V40F_DOCS.HTM
+
+(Dunno what h30097 means in this URL, but if it moves try searching for "tru64
+online documentation" from the main www.hp.com page.)
+
+
+
+----------------
+Local variables:
+mode: text
+fill-column: 79
+End:

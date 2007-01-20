@@ -15,9 +15,9 @@ or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
-along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+Boston, MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -202,7 +202,7 @@ mpn_gcd (mp_ptr gp,
   int sign = 1;
 #endif
   int use_double_flag;
-  TMP_DECL (mark);
+  TMP_DECL;
 
   ASSERT (size >= vsize);
   ASSERT (vsize >= 1);
@@ -216,7 +216,7 @@ mpn_gcd (mp_ptr gp,
   ASSERT (MPN_SAME_OR_SEPARATE_P (gp, up, size));
   ASSERT (MPN_SAME_OR_SEPARATE2_P (gp, size, vp, vsize));
 
-  TMP_MARK (mark);
+  TMP_MARK;
 
   tp = (mp_ptr) TMP_ALLOC ((size + 1) * BYTES_PER_MP_LIMB);
   wp = (mp_ptr) TMP_ALLOC ((size + 1) * BYTES_PER_MP_LIMB);
@@ -662,7 +662,7 @@ mpn_gcd (mp_ptr gp,
 	}
 
 #if WANT_GCDEXT_ONE_STEP
-      TMP_FREE (mark);
+      TMP_FREE;
       return 0;
 #endif
     }
@@ -685,7 +685,7 @@ mpn_gcd (mp_ptr gp,
 	MPN_COPY (orig_s0p, s0p, ssize);
       *s0size = sign >= 0 ? ssize : -ssize;
 #endif
-      TMP_FREE (mark);
+      TMP_FREE;
       return size;
     }
   else
@@ -771,7 +771,7 @@ mpn_gcd (mp_ptr gp,
 	MPN_COPY (orig_s0p, s0p, ssize);
       *s0size = sign >= 0 ? ssize : -ssize;
 #endif
-      TMP_FREE (mark);
+      TMP_FREE;
       return 1;
     }
 }

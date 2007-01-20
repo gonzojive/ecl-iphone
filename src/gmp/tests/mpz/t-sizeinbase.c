@@ -16,14 +16,19 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include "gmp.h"
 #include "gmp-impl.h"
 #include "tests.h"
+
+
+#if 0
+  /* Disabled due to the bogosity of trying to fake an _mp_d pointer to
+     below an object.  Has been seen to fail on a hppa system and on ia64.  */
 
 
 /* Create a fake mpz consisting of just a single 1 bit, with totbits being
@@ -73,15 +78,12 @@ check_sample (void)
       abort ();
     }
 }
-
+#endif
 
 int
 main (void)
 {
   tests_start ();
-
-  /* Disabled due to the bogosity of trying to fake an _mp_d pointer to
-     below an object.  Has been seen to fail on a hppa system.  */
 
   /* check_sample (); */
 

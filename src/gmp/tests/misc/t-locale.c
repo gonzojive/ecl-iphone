@@ -1,6 +1,6 @@
 /* Test locale support, or attempt to do so.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,14 +16,24 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
+
+#define _GNU_SOURCE    /* for DECIMAL_POINT in glibc langinfo.h */
 
 #include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#if HAVE_NL_TYPES_H
+#include <nl_types.h>  /* for nl_item (on netbsd 1.4.1 at least) */
+#endif
+
+#if HAVE_LANGINFO_H
+#include <langinfo.h>  /* for nl_langinfo */
+#endif
 
 #if HAVE_LOCALE_H
 #include <locale.h>    /* for lconv */
@@ -34,11 +44,10 @@ MA 02111-1307, USA. */
 #include "tests.h"
 
 
-#if HAVE_LOCALECONV
-
 char *decimal_point;
 
 /* Replace the libc localeconv with one we can manipulate. */
+#if HAVE_LOCALECONV
 struct lconv *
 localeconv (void)
 {
@@ -46,13 +55,30 @@ localeconv (void)
   l.decimal_point = decimal_point;
   return &l;
 }
+#endif
 
+/* Replace the libc nl_langinfo with one we can manipulate. */
+#if HAVE_NL_LANGINFO
+char *
+nl_langinfo (nl_item n)
+{
+#if defined (DECIMAL_POINT)
+  if (n == DECIMAL_POINT)
+    return decimal_point;
+#endif
+#if defined (RADIXCHAR)
+  if (n == RADIXCHAR)
+    return decimal_point;
+#endif
+  return "";
+}
+#endif
 
 void
 check_input (void)
 {
   static char *point[] = {
-    ".", ",", "xy", "xyz", "xyz***"
+    ".", ",", "WU", "STR", "ZTV***"
   };
 
   static const struct {
@@ -73,7 +99,7 @@ check_input (void)
     { "1%s5e1", 15.0 },
   };
 
-  int     i, j, neg;
+  int     i, j, neg, ret;
   char    str[128];
   mpf_t   f;
   double  d;
@@ -114,11 +140,13 @@ check_input (void)
                 }
 
               mpf_set_d (f, 123.0);
-              if (gmp_sscanf (str, "%Ff", f) != 1)
+              ret = gmp_sscanf (str, "%Ff", f);
+              if (ret != 1)
                 {
                   printf ("gmp_sscanf wrong return value\n");
                   printf ("  point  %s\n", decimal_point);
                   printf ("  str    %s\n", str);
+                  printf ("  ret    %d\n", ret);
                   abort ();
                 }
               if (mpf_cmp_d (f, d) != 0)
@@ -154,7 +182,7 @@ main (void)
     mpf_clear (f);
     if (strcmp (buf, "1,5") != 0)
       {
-        printf ("Test skipped, replacing localeconv doesn't work\n");
+        printf ("Test skipped, replacing localeconv/nl_langinfo doesn't work\n");
         goto done;
       }
   }
@@ -165,15 +193,3 @@ main (void)
   tests_memory_end ();
   exit (0);
 }
-
-
-#else
-
-int
-main (void)
-{
-  printf ("Test skipped, no locale support\n");
-  exit (0);
-}
-
-#endif

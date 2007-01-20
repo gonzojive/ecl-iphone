@@ -2,8 +2,8 @@
    Set QUOT to DIVIDEND / SHORT_DIVISOR
    and REM to DIVIDEND mod SHORT_DIVISOR.
 
-Copyright 1991, 1993, 1994, 1996, 1998, 2001, 2002 Free Software Foundation,
-Inc.
+Copyright 1991, 1993, 1994, 1996, 1998, 2001, 2002, 2004 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -19,8 +19,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -48,7 +48,7 @@ mpz_tdiv_qr_ui (mpz_ptr quot, mpz_ptr rem, mpz_srcptr dividend, unsigned long in
   qp = PTR(quot);
   np = PTR(dividend);
 
-#if GMP_NAIL_BITS != 0
+#if BITS_PER_ULONG > GMP_NUMB_BITS  /* avoid warnings about shift amount */
   if (divisor > GMP_NUMB_MAX)
     {
       mp_limb_t dp[2];

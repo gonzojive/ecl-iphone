@@ -1,7 +1,7 @@
 /* mpz_and -- Logical and.
 
-Copyright 1991, 1993, 1994, 1996, 1997, 2000, 2001 Free Software Foundation,
-Inc.
+Copyright 1991, 1993, 1994, 1996, 1997, 2000, 2001, 2003, 2005 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -17,8 +17,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -31,9 +31,9 @@ mpz_and (mpz_ptr res, mpz_srcptr op1, mpz_srcptr op2)
   mp_ptr res_ptr;
   mp_size_t res_size;
   mp_size_t i;
-  TMP_DECL (marker);
+  TMP_DECL;
 
-  TMP_MARK (marker);
+  TMP_MARK;
   op1_size = op1->_mp_size;
   op2_size = op2->_mp_size;
 
@@ -54,7 +54,7 @@ mpz_and (mpz_ptr res, mpz_srcptr op1, mpz_srcptr op2)
 
 	  /* Handle allocation, now then we know exactly how much space is
 	     needed for the result.  */
-	  if (res->_mp_alloc < res_size)
+	  if (UNLIKELY (res->_mp_alloc < res_size))
 	    {
 	      _mpz_realloc (res, res_size);
 	      op1_ptr = op1->_mp_d;
@@ -62,11 +62,9 @@ mpz_and (mpz_ptr res, mpz_srcptr op1, mpz_srcptr op2)
 	      res_ptr = res->_mp_d;
 	    }
 
-	  /* Second loop computes the real result.  */
-	  for (i = res_size - 1; i >= 0; i--)
-	    res_ptr[i] = op1_ptr[i] & op2_ptr[i];
-
 	  res->_mp_size = res_size;
+          if (LIKELY (res_size != 0))
+            mpn_and_n (res_ptr, op1_ptr, op2_ptr, res_size);
 	  return;
 	}
       else /* op2_size < 0 */
@@ -139,7 +137,7 @@ mpz_and (mpz_ptr res, mpz_srcptr op1, mpz_srcptr op2)
 	    }
 
 	  res->_mp_size = -res_size;
-	  TMP_FREE (marker);
+	  TMP_FREE;
 	  return;
 	}
       else
@@ -267,5 +265,5 @@ mpz_and (mpz_ptr res, mpz_srcptr op1, mpz_srcptr op2)
       }
 #endif
   }
-  TMP_FREE (marker);
+  TMP_FREE;
 }

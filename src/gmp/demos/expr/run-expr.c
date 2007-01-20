@@ -1,6 +1,6 @@
 /* Demo program to run expression evaluation.
 
-Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002, 2004 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,17 +16,16 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 
-/* Usage: ./run-expr [-z] [-q] [-f] [-r] [-p prec] [-b base] expression...
+/* Usage: ./run-expr [-z] [-q] [-f] [-p prec] [-b base] expression...
 
    Evaluate each argument as a simple expression.  By default this is in mpz
-   integers, but -q selects mpq, -f selects mpf or -r selects mpfr (if
-   available).  For mpf the float precision can be set with -p.  In all
-   cases the input base can be set with -b, or the default is "0" meaning
-   decimal with "0x" allowed.
+   integers, but -q selects mpq or -f selects mpf.  For mpf the float
+   precision can be set with -p.  In all cases the input base can be set
+   with -b, or the default is "0" meaning decimal with "0x" allowed.
 
    This is a pretty trivial program, it's just an easy way to experiment
    with the evaluation functions.  */
@@ -34,153 +33,201 @@ MA 02111-1307, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #include "gmp.h"
-
-/* only to get HAVE_MPFR, not necessary for normal use */
-#include "expr-impl.h"
-
 #include "expr.h"
 
-#if ! HAVE_DECL_OPTARG
-extern char *optarg;
-extern int optind, opterr;
-#endif
 
-
-#define TRY(exprfun, outfun, str)                       \
-  {                                                     \
-    ret = exprfun (res, base, str, foo, bar, NULL);     \
-    printf ("\"%s\" base %d: ", str, base);             \
-    if (ret == MPEXPR_RESULT_OK)                        \
-      {                                                 \
-        printf ("result ");                             \
-        outfun;                                         \
-        printf ("\n");                                  \
-      }                                                 \
-    else                                                \
-      printf ("invalid (return code %d)\n", ret);       \
-  }
-
-  
-int
-main (int argc, char *argv[])
+void
+run_expr (int type, int base, unsigned long prec, char *str)
 {
-  int        type = 'z';
-  int        base = 0;
-  mp_size_t  prec = 64;
-  int        obase, opt, i, ret;
-
-  while ((opt = getopt (argc, argv, "b:fp:qrz")) != EOF)
-    {
-      switch (opt) {
-      case 'f':
-      case 'q':
-      case 'r':
-      case 'z':
-        type = opt;
-        break;
-      case 'b':
-        base = atoi (optarg);
-        break;
-      case 'p':
-        prec = atoi (optarg);
-        break;
-      case '?':
-      default:
-        abort ();
-      }
-    }
-
-  obase = (base == 0 ? 10 : base);
-
-  if (optind >= argc)
-    {
-      printf ("Usage: %s [-z] [-q] [-f] [-r] [-p prec] [-b base] expression...\n", argv[0]);
-      exit (1);
-    }
+  int  outbase = (base == 0 ? 10 : base);
+  int  ret;
 
   switch (type) {
   case 'z':
   default:
     {
-      mpz_t  res, foo, bar;
+      mpz_t  res, var_a, var_b;
 
       mpz_init (res);
-      mpz_init_set_ui (foo, 55L);
-      mpz_init_set_ui (bar, 99L);
+      mpz_init_set_ui (var_a, 55L);
+      mpz_init_set_ui (var_b, 99L);
 
-      for (i = optind; i < argc; i++)
-        TRY (mpz_expr, mpz_out_str (stdout, obase, res), argv[i]);
+      ret = mpz_expr (res, base, str, var_a, var_b, NULL);
+      printf ("\"%s\" base %d: ", str, base);
+      if (ret == MPEXPR_RESULT_OK)
+        {
+          printf ("result ");
+          mpz_out_str (stdout, outbase, res);
+          printf ("\n");
+        }
+      else
+        printf ("invalid (return code %d)\n", ret);
 
       mpz_clear (res);
-      mpz_clear (foo);
-      mpz_clear (bar);
+      mpz_clear (var_a);
+      mpz_clear (var_b);
     }
     break;
 
   case 'q':
     {
-      mpq_t  res, foo, bar;
+      mpq_t  res, var_a, var_b;
 
       mpq_init (res);
-      mpq_init (foo);
-      mpq_init (bar);
+      mpq_init (var_a);
+      mpq_init (var_b);
 
-      mpq_set_ui (foo, 55L, 1);
-      mpq_set_ui (bar, 99L, 1);
+      mpq_set_ui (var_a, 55L, 1);
+      mpq_set_ui (var_b, 99L, 1);
 
-      for (i = optind; i < argc; i++)
-        TRY (mpq_expr, mpq_out_str (stdout, obase, res), argv[i]);
+      ret = mpq_expr (res, base, str, var_a, var_b, NULL);
+      printf ("\"%s\" base %d: ", str, base);
+      if (ret == MPEXPR_RESULT_OK)
+        {
+          printf ("result ");
+          mpq_out_str (stdout, outbase, res);
+          printf ("\n");
+        }
+      else
+        printf ("invalid (return code %d)\n", ret);
 
       mpq_clear (res);
-      mpq_clear (foo);
-      mpq_clear (bar);
+      mpq_clear (var_a);
+      mpq_clear (var_b);
     }
     break;
 
   case 'f':
     {
-      mpf_t  res, foo, bar;
+      mpf_t  res, var_a, var_b;
 
       mpf_init2 (res, prec);
-      mpf_init_set_ui (foo, 55L);
-      mpf_init_set_ui (bar, 99L);
+      mpf_init_set_ui (var_a, 55L);
+      mpf_init_set_ui (var_b, 99L);
 
-      for (i = optind; i < argc; i++)
-        TRY (mpf_expr, mpf_out_str (stdout, obase, 0, res), argv[i]);
+      ret = mpf_expr (res, base, str, var_a, var_b, NULL);
+      printf ("\"%s\" base %d: ", str, base);
+      if (ret == MPEXPR_RESULT_OK)
+        {
+          printf ("result ");
+          mpf_out_str (stdout, outbase, (size_t) 0, res);
+          printf ("\n");
+        }
+      else
+        printf ("invalid (return code %d)\n", ret);
 
       mpf_clear (res);
-      mpf_clear (foo);
-      mpf_clear (bar);
+      mpf_clear (var_a);
+      mpf_clear (var_b);
     }
-    break;
-
-  case 'r':
-#if HAVE_MPFR
-    {
-      mpfr_t  res, foo, bar;
-
-      mpfr_init2 (res, prec);
-      mpfr_init_set_ui (foo, 55L, GMP_RNDZ);
-      mpfr_init_set_ui (bar, 99L, GMP_RNDZ);
-
-      for (i = optind; i < argc; i++)
-        TRY (mpfr_expr,
-             mpfr_out_str (stdout, obase, 0, res, GMP_RNDZ),
-             argv[i]);
-
-      mpfr_clear (res);
-      mpfr_clear (foo);
-      mpfr_clear (bar);
-    }
-#else
-    printf ("mpfr not compiled in\n");
-    exit (1);
-#endif
     break;
   }
+}
+
+int
+main (int argc, char *argv[])
+{
+  int            type = 'z';
+  int            base = 0;
+  unsigned long  prec = 64;
+  int            seen_expr = 0;
+  int            opt;
+  char           *arg;
+
+  for (;;)
+    {
+      argv++;
+      arg = argv[0];
+      if (arg == NULL)
+        break;
+
+      if (arg[0] == '-')
+        {
+          for (;;)
+            {
+              arg++;
+              opt = arg[0];
+
+              switch (opt) {
+              case '\0':
+                goto end_opt;
+
+              case 'f':
+              case 'q':
+              case 'z':
+                type = opt;
+                break;
+
+              case 'b':
+                arg++;
+                if (arg[0] == '\0')
+                  {
+                    argv++;
+                    arg = argv[0];
+                    if (arg == NULL)
+                      {
+                      need_arg:
+                        fprintf (stderr, "Need argument for -%c\n", opt);
+                        exit (1);
+                      }
+                  }
+                base = atoi (arg);
+                goto end_opt;
+
+              case 'p':
+                arg++;
+                if (arg[0] == '\0')
+                  {
+                    argv++;
+                    arg = argv[0];
+                    if (arg == NULL)
+                      goto need_arg;
+                  }
+                prec = atoi (arg);
+                goto end_opt;
+
+              case '-':
+                arg++;
+                if (arg[0] != '\0')
+                  {
+                    /* no "--foo" options */
+                    fprintf (stderr, "Unrecognised option --%s\n", arg);
+                    exit (1);
+                  }
+                /* stop option interpretation at "--" */
+                for (;;)
+                  {
+                    argv++;
+                    arg = argv[0];
+                    if (arg == NULL)
+                      goto done;
+                    run_expr (type, base, prec, arg);
+                    seen_expr = 1;
+                  }
+
+              default:
+                fprintf (stderr, "Unrecognised option -%c\n", opt);
+                exit (1);
+              }
+            }
+        end_opt:
+          ;
+        }
+      else
+        {
+          run_expr (type, base, prec, arg);
+          seen_expr = 1;
+        }
+    }
+
+ done:
+  if (! seen_expr)
+    {
+      printf ("Usage: %s [-z] [-q] [-f] [-p prec] [-b base] expression...\n", argv[0]);
+      exit (1);
+    }
 
   return 0;
 }

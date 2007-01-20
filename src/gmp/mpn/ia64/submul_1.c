@@ -16,9 +16,9 @@ or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
-along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA.
+along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+Boston, MA 02110-1301, USA.
 
 This code runs at about 9 cycles/limb on the Itanium.  That's far from the peak
 execution speed of the Itanium pipeline.  With well-tuned assembly code we
@@ -33,12 +33,12 @@ mpn_submul_1 (mp_ptr rp, mp_srcptr s1p, mp_size_t n, mp_limb_t s2d)
 {
   mp_ptr tp;
   mp_limb_t cy;
-  TMP_DECL (marker);
+  TMP_DECL;
 
-  TMP_MARK (marker);
+  TMP_MARK;
   tp = TMP_ALLOC_LIMBS (n);
   cy = mpn_mul_1 (tp, s1p, n, s2d);
   cy += mpn_sub_n (rp, rp, tp, n);
-  TMP_FREE (marker);
+  TMP_FREE;
   return cy;
 }

@@ -3,7 +3,7 @@
    THIS IS A TEST PROGRAM USED ONLY FOR DEVELOPMENT.  IT'S ALMOST CERTAIN TO
    BE SUBJECT TO INCOMPATIBLE CHANGES IN FUTURE VERSIONS OF GMP.
 
-Copyright 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -19,8 +19,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 
 /* Usage: try [options] <function>...
@@ -55,13 +55,18 @@ MA 02111-1307, USA. */
    fields.
 
 
-   Bugs:
+   Portability:
+
+   This program is not designed for use on Cray vector systems under Unicos,
+   it will fail to compile due to missing _SC_PAGE_SIZE.  Those systems
+   don't really have pages or mprotect.  We could arrange to run the tests
+   without the redzones, but we haven't bothered currently.
+
+
+   Enhancements:
 
    umul_ppmm support is not very good, lots of source data is generated
    whereas only two limbs are needed.
-
-
-   Future:
 
    Make a little scheme for interpreting the "SIZE" selections uniformly.
 
@@ -78,8 +83,6 @@ MA 02111-1307, USA. */
    When alignment means a dst isn't hard against the redzone, check the
    space in between remains unchanged.
 
-   See if the 80x86 debug registers can do redzones on byte boundaries.
-
    When a source overlaps a destination, don't run both s[i].high 0 and 1,
    as s[i].high has no effect.  Maybe encode s[i].high into overlap->s[i].
 
@@ -89,9 +92,16 @@ MA 02111-1307, USA. */
    Try to make the looping code a bit less horrible.  Right now it's pretty
    hard to see what iterations are actually done.
 
+   Perhaps specific setups and loops for each style of function under test
+   would be clearer than a parameterized general loop.  There's lots of
+   stuff common to all functions, but the exceptions get messy.
+
    When there's no overlap, run with both src>dst and src<dst.  A subtle
    calling-conventions violation occured in a P6 copy which depended on the
    relative location of src and dst.
+
+   multiplier_N is more or less a third source region for the addmul_N
+   routines, and could be done with the redzoned region scheme.
 
 */
 
@@ -123,16 +133,28 @@ MA 02111-1307, USA. */
 #include "tests.h"
 
 
-#if WANT_ASSERT
-#define ASSERT_CARRY(expr)   ASSERT_ALWAYS ((expr) != 0)
-#else
-#define ASSERT_CARRY(expr)   (expr)
-#endif
-
-
 #if !HAVE_DECL_OPTARG
 extern char *optarg;
 extern int optind, opterr;
+#endif
+
+#if ! HAVE_DECL_SYS_NERR
+extern int sys_nerr;
+#endif
+
+#if ! HAVE_DECL_SYS_ERRLIST
+extern char *sys_errlist[];
+#endif
+
+#if ! HAVE_STRERROR
+char *
+strerror (int n)
+{
+  if (n < 0 || n >= sys_nerr)
+    return "errno out of range";
+  else
+    return sys_errlist[n];
+}
 #endif
 
 /* Rumour has it some systems lack a define of PROT_NONE. */
@@ -254,6 +276,7 @@ unsigned long   shift;
 mp_limb_t       carry;
 mp_limb_t       divisor;
 mp_limb_t       multiplier;
+mp_limb_t       multiplier_N[8];
 
 struct each_t {
   const char  *name;
@@ -297,9 +320,13 @@ struct try_t {
 #define SIZE_RETVAL      12
 #define SIZE_CEIL_HALF   13
 #define SIZE_GET_STR     14
+#define SIZE_PLUS_MSIZE_SUB_1 15  /* size+msize-1 */
   char  size;
   char  size2;
   char  dst_size[2];
+
+  /* multiplier_N size in limbs */
+  mp_size_t  msize;
 
   char  dst_bytes[2];
 
@@ -352,8 +379,8 @@ struct try_t  *tr;
 void
 validate_mod_34lsub1 (void)
 {
-#define CNST_34LSUB1   ((CNST_LIMB(1) << (3 * (BITS_PER_MP_LIMB / 4))) - 1)
-  
+#define CNST_34LSUB1   ((CNST_LIMB(1) << (3 * (GMP_NUMB_BITS / 4))) - 1)
+
   mp_srcptr  ptr = s[0].p;
   int        error = 0;
   mp_limb_t  got, got_mod, want, want_mod;
@@ -362,17 +389,17 @@ validate_mod_34lsub1 (void)
 
   got = fun.retval;
   got_mod = got % CNST_34LSUB1;
-  
+
   want = refmpn_mod_34lsub1 (ptr, size);
   want_mod = want % CNST_34LSUB1;
 
   if (got_mod != want_mod)
     {
-      printf ("got   0x%lX reduced from 0x%lX\n", got_mod, got);
-      printf ("want  0x%lX reduced from 0x%lX\n", want_mod, want);
+      gmp_printf ("got   0x%MX reduced from 0x%MX\n", got_mod, got);
+      gmp_printf ("want  0x%MX reduced from 0x%MX\n", want_mod, want);
       error = 1;
     }
-  
+
   if (error)
     validate_fail ();
 }
@@ -393,19 +420,19 @@ validate_divexact_1 (void)
     rem = refmpn_divrem_1 (tp, 0, src, size, divisor);
     if (rem != 0)
       {
-        printf ("Remainder a%%d == 0x%lX, mpn_divexact_1 undefined\n", rem);
-        error = 1;
+	gmp_printf ("Remainder a%%d == 0x%MX, mpn_divexact_1 undefined\n", rem);
+	error = 1;
       }
     if (! refmpn_equal_anynail (tp, dst, size))
       {
-        printf ("Quotient a/d wrong\n");
-        mpn_trace ("fun ", dst, size);
-        mpn_trace ("want", tp, size);
-        error = 1;
+	printf ("Quotient a/d wrong\n");
+	mpn_trace ("fun ", dst, size);
+	mpn_trace ("want", tp, size);
+	error = 1;
       }
     free (tp);
   }
-  
+
   if (error)
     validate_fail ();
 }
@@ -421,21 +448,24 @@ validate_modexact_1c_odd (void)
   ASSERT (size >= 1);
   ASSERT (divisor & 1);
 
+  if ((r & GMP_NAIL_MASK) != 0)
+    printf ("r has non-zero nail\n");
+
   if (carry < divisor)
     {
       if (! (r < divisor))
-        {
-          printf ("Don't have r < divisor\n");
-          error = 1;
-        }
+	{
+	  printf ("Don't have r < divisor\n");
+	  error = 1;
+	}
     }
   else /* carry >= divisor */
     {
       if (! (r <= divisor))
-        {
-          printf ("Don't have r <= divisor\n");
-          error = 1;
-        }
+	{
+	  printf ("Don't have r <= divisor\n");
+	  error = 1;
+	}
     }
 
   {
@@ -445,15 +475,15 @@ validate_modexact_1c_odd (void)
 
     for (k = size-1; k <= size; k++)
       {
-        /* set {tp,size+1} to r*b^k + a - c */
-        refmpn_copyi (tp, ptr, size);
-        tp[size] = 0;
-        ASSERT_NOCARRY (refmpn_add_1 (tp+k, tp+k, size+1-k, r));
-        if (refmpn_sub_1 (tp, tp, size+1, c))
-          ASSERT_CARRY (mpn_add_1 (tp, tp, size+1, divisor));
-       
-        if (refmpn_mod_1 (tp, size+1, divisor) == 0)
-          goto good_remainder;
+	/* set {tp,size+1} to r*b^k + a - c */
+	refmpn_copyi (tp, ptr, size);
+	tp[size] = 0;
+	ASSERT_NOCARRY (refmpn_add_1 (tp+k, tp+k, size+1-k, r));
+	if (refmpn_sub_1 (tp, tp, size+1, c))
+	  ASSERT_CARRY (mpn_add_1 (tp, tp, size+1, divisor));
+
+	if (refmpn_mod_1 (tp, size+1, divisor) == 0)
+	  goto good_remainder;
       }
     printf ("Remainder matches neither r*b^(size-1) nor r*b^size\n");
     error = 1;
@@ -461,7 +491,7 @@ validate_modexact_1c_odd (void)
   good_remainder:
     free (tp);
   }
-  
+
   if (error)
     validate_fail ();
 }
@@ -489,7 +519,7 @@ validate_sqrtrem (void)
 
   if (rem_size < 0 || rem_size > size)
     {
-      printf ("Bad remainder size retval %ld\n", rem_size);
+      printf ("Bad remainder size retval %ld\n", (long) rem_size);
       validate_fail ();
     }
 
@@ -539,71 +569,83 @@ validate_sqrtrem (void)
 #define TYPE_SUBMUL_1         12
 #define TYPE_SUBMUL_1C        13
 
-#define TYPE_ADDSUB_N         14
-#define TYPE_ADDSUB_NC        15
+#define TYPE_ADDMUL_2         14
+#define TYPE_ADDMUL_3         15
+#define TYPE_ADDMUL_4         16
+#define TYPE_ADDMUL_5         17
+#define TYPE_ADDMUL_6         18
+#define TYPE_ADDMUL_7         19
+#define TYPE_ADDMUL_8         20
 
-#define TYPE_RSHIFT           16
-#define TYPE_LSHIFT           17
+#define TYPE_ADDSUB_N         21
+#define TYPE_ADDSUB_NC        22
 
-#define TYPE_COPY             20
-#define TYPE_COPYI            21
-#define TYPE_COPYD            22
-#define TYPE_COM_N            23
+#define TYPE_RSHIFT           23
+#define TYPE_LSHIFT           24
 
-#define TYPE_MOD_1            25
-#define TYPE_MOD_1C           26
-#define TYPE_DIVMOD_1         27
-#define TYPE_DIVMOD_1C        28
-#define TYPE_DIVREM_1         29
-#define TYPE_DIVREM_1C        30
-#define TYPE_PREINV_DIVREM_1  31
-#define TYPE_PREINV_MOD_1     32
-#define TYPE_MOD_34LSUB1      33
-#define TYPE_UDIV_QRNND       34
+#define TYPE_COPY             25
+#define TYPE_COPYI            26
+#define TYPE_COPYD            27
+#define TYPE_COM_N            28
 
-#define TYPE_DIVEXACT_1       35
-#define TYPE_DIVEXACT_BY3     36
-#define TYPE_DIVEXACT_BY3C    37
+#define TYPE_ADDLSH1_N        30
+#define TYPE_SUBLSH1_N        31
+#define TYPE_RSH1ADD_N        32
+#define TYPE_RSH1SUB_N        33
 
-#define TYPE_MODEXACT_1_ODD   38
-#define TYPE_MODEXACT_1C_ODD  39
+#define TYPE_MOD_1            35
+#define TYPE_MOD_1C           36
+#define TYPE_DIVMOD_1         37
+#define TYPE_DIVMOD_1C        38
+#define TYPE_DIVREM_1         39
+#define TYPE_DIVREM_1C        40
+#define TYPE_PREINV_DIVREM_1  41
+#define TYPE_PREINV_MOD_1     42
+#define TYPE_MOD_34LSUB1      43
+#define TYPE_UDIV_QRNND       44
+#define TYPE_UDIV_QRNND_R     45
 
-#define TYPE_GCD              40
-#define TYPE_GCD_1            41
-#define TYPE_GCD_FINDA        42
-#define TYPE_MPZ_JACOBI       43
-#define TYPE_MPZ_KRONECKER    44
-#define TYPE_MPZ_KRONECKER_UI 45
-#define TYPE_MPZ_KRONECKER_SI 46
-#define TYPE_MPZ_UI_KRONECKER 47
-#define TYPE_MPZ_SI_KRONECKER 48
+#define TYPE_DIVEXACT_1       50
+#define TYPE_DIVEXACT_BY3     51
+#define TYPE_DIVEXACT_BY3C    52
+#define TYPE_MODEXACT_1_ODD   53
+#define TYPE_MODEXACT_1C_ODD  54
 
-#define TYPE_AND_N            50
-#define TYPE_NAND_N           51
-#define TYPE_ANDN_N           52
-#define TYPE_IOR_N            53
-#define TYPE_IORN_N           54
-#define TYPE_NIOR_N           55
-#define TYPE_XOR_N            56
-#define TYPE_XNOR_N           57
+#define TYPE_GCD              60
+#define TYPE_GCD_1            61
+#define TYPE_GCD_FINDA        62
+#define TYPE_MPZ_JACOBI       63
+#define TYPE_MPZ_KRONECKER    64
+#define TYPE_MPZ_KRONECKER_UI 65
+#define TYPE_MPZ_KRONECKER_SI 66
+#define TYPE_MPZ_UI_KRONECKER 67
+#define TYPE_MPZ_SI_KRONECKER 68
 
-#define TYPE_POPCOUNT         58
-#define TYPE_HAMDIST          59
+#define TYPE_AND_N            70
+#define TYPE_NAND_N           71
+#define TYPE_ANDN_N           72
+#define TYPE_IOR_N            73
+#define TYPE_IORN_N           74
+#define TYPE_NIOR_N           75
+#define TYPE_XOR_N            76
+#define TYPE_XNOR_N           77
 
-#define TYPE_MUL_BASECASE     60
-#define TYPE_MUL_N            61
-#define TYPE_SQR              62
-#define TYPE_UMUL_PPMM        63
-#define TYPE_UMUL_PPMM_R      64
+#define TYPE_MUL_BASECASE     80
+#define TYPE_MUL_N            81
+#define TYPE_SQR              82
+#define TYPE_UMUL_PPMM        83
+#define TYPE_UMUL_PPMM_R      84
 
-#define TYPE_SB_DIVREM_MN     70
-#define TYPE_TDIV_QR          71
+#define TYPE_SB_DIVREM_MN     90
+#define TYPE_TDIV_QR          91
 
-#define TYPE_SQRTREM          80
-#define TYPE_ZERO             81
-#define TYPE_GET_STR          82
+#define TYPE_SQRTREM          100
+#define TYPE_ZERO             101
+#define TYPE_GET_STR          102
+#define TYPE_POPCOUNT         103
+#define TYPE_HAMDIST          104
 
-#define TYPE_EXTRA            90
+#define TYPE_EXTRA            110
 
 struct try_t  param[150];
 
@@ -680,10 +722,10 @@ param_init (void)
   p = &param[TYPE_MUL_2];
   p->retval = 1;
   p->dst[0] = 1;
-  p->dst_size[0] = SIZE_PLUS_1;
+  p->dst_size[0] = SIZE_PLUS_MSIZE_SUB_1;
   p->src[0] = 1;
   p->src[1] = 1;
-  p->size2 = SIZE_2;
+  p->msize = 2;
   p->overlap = OVERLAP_NOT_SRC2;
   REFERENCE (refmpn_mul_2);
 
@@ -708,6 +750,48 @@ param_init (void)
   p = &param[TYPE_SUBMUL_1C];
   COPY (TYPE_ADDMUL_1C);
   REFERENCE (refmpn_submul_1c);
+
+
+  p = &param[TYPE_ADDMUL_2];
+  p->retval = 1;
+  p->dst[0] = 1;
+  p->dst_size[0] = SIZE_PLUS_MSIZE_SUB_1;
+  p->src[0] = 1;
+  p->src[1] = 1;
+  p->msize = 2;
+  p->dst0_from_src1 = 1;
+  p->overlap = OVERLAP_NOT_SRC2;
+  REFERENCE (refmpn_addmul_2);
+
+  p = &param[TYPE_ADDMUL_3];
+  COPY (TYPE_ADDMUL_2);
+  p->msize = 3;
+  REFERENCE (refmpn_addmul_3);
+
+  p = &param[TYPE_ADDMUL_4];
+  COPY (TYPE_ADDMUL_2);
+  p->msize = 4;
+  REFERENCE (refmpn_addmul_4);
+
+  p = &param[TYPE_ADDMUL_5];
+  COPY (TYPE_ADDMUL_2);
+  p->msize = 5;
+  REFERENCE (refmpn_addmul_5);
+
+  p = &param[TYPE_ADDMUL_6];
+  COPY (TYPE_ADDMUL_2);
+  p->msize = 6;
+  REFERENCE (refmpn_addmul_6);
+
+  p = &param[TYPE_ADDMUL_7];
+  COPY (TYPE_ADDMUL_2);
+  p->msize = 7;
+  REFERENCE (refmpn_addmul_7);
+
+  p = &param[TYPE_ADDMUL_8];
+  COPY (TYPE_ADDMUL_2);
+  p->msize = 8;
+  REFERENCE (refmpn_addmul_8);
 
 
   p = &param[TYPE_AND_N];
@@ -786,6 +870,23 @@ param_init (void)
   REFERENCE (refmpn_com_n);
 
 
+  p = &param[TYPE_ADDLSH1_N];
+  COPY (TYPE_ADD_N);
+  REFERENCE (refmpn_addlsh1_n);
+
+  p = &param[TYPE_SUBLSH1_N];
+  COPY (TYPE_ADD_N);
+  REFERENCE (refmpn_sublsh1_n);
+
+  p = &param[TYPE_RSH1ADD_N];
+  COPY (TYPE_ADD_N);
+  REFERENCE (refmpn_rsh1add_n);
+
+  p = &param[TYPE_RSH1SUB_N];
+  COPY (TYPE_ADD_N);
+  REFERENCE (refmpn_rsh1sub_n);
+
+
   p = &param[TYPE_MOD_1];
   p->retval = 1;
   p->src[0] = 1;
@@ -840,16 +941,20 @@ param_init (void)
   p->src[0] = 1;
   p->dst[0] = 1;
   p->dst_size[0] = SIZE_1;
-  p->divisor = DIVISOR_LIMB;
+  p->divisor = UDIV_NEEDS_NORMALIZATION ? DIVISOR_NORM : DIVISOR_LIMB;
   p->data = DATA_UDIV_QRNND;
   p->overlap = OVERLAP_NONE;
   REFERENCE (refmpn_udiv_qrnnd);
+
+  p = &param[TYPE_UDIV_QRNND_R];
+  COPY (TYPE_UDIV_QRNND);
+  REFERENCE (refmpn_udiv_qrnnd_r);
 
 
   p = &param[TYPE_DIVEXACT_1];
   p->dst[0] = 1;
   p->src[0] = 1;
-  p->divisor = 1;
+  p->divisor = DIVISOR_LIMB;
   p->data = DATA_MULTIPLE_DIVISOR;
   VALIDATE (validate_divexact_1);
   REFERENCE (refmpn_divmod_1);
@@ -909,6 +1014,7 @@ param_init (void)
   p->src[0] = 1;
   p->size = SIZE_ALLOW_ZERO;
   p->src[1] = 1;
+  p->data = DATA_SRC1_ODD;
   p->size2 = 1;
   p->carry = CARRY_4;
   p->carry_sign = 1;
@@ -916,6 +1022,7 @@ param_init (void)
 
   p = &param[TYPE_MPZ_KRONECKER];
   COPY (TYPE_MPZ_JACOBI);
+  p->data = 0;			/* clear inherited DATA_SRC1_ODD */
   REFERENCE (refmpz_kronecker);
 
 
@@ -1027,6 +1134,7 @@ param_init (void)
   p->dst_size[1] = SIZE_RETVAL;
   p->overlap = OVERLAP_NONE;
   VALIDATE (validate_sqrtrem);
+  REFERENCE (refmpn_sqrtrem);
 
   p = &param[TYPE_ZERO];
   p->dst[0] = 1;
@@ -1034,6 +1142,7 @@ param_init (void)
   REFERENCE (refmpn_zero);
 
   p = &param[TYPE_GET_STR];
+  p->retval = 1;
   p->src[0] = 1;
   p->size = SIZE_ALLOW_ZERO;
   p->dst[0] = 1;
@@ -1134,8 +1243,8 @@ void
 mpn_kara_mul_n_fun (mp_ptr dst, mp_srcptr src1, mp_srcptr src2, mp_size_t size)
 {
   mp_ptr  tspace;
-  TMP_DECL (marker);
-  TMP_MARK (marker);
+  TMP_DECL;
+  TMP_MARK;
   tspace = TMP_ALLOC_LIMBS (MPN_KARA_MUL_N_TSIZE (size));
   mpn_kara_mul_n (dst, src1, src2, size, tspace);
 }
@@ -1143,18 +1252,18 @@ void
 mpn_kara_sqr_n_fun (mp_ptr dst, mp_srcptr src, mp_size_t size)
 {
   mp_ptr tspace;
-  TMP_DECL (marker);
-  TMP_MARK (marker);
+  TMP_DECL;
+  TMP_MARK;
   tspace = TMP_ALLOC_LIMBS (MPN_KARA_SQR_N_TSIZE (size));
   mpn_kara_sqr_n (dst, src, size, tspace);
-  TMP_FREE (marker);
+  TMP_FREE;
 }
 void
 mpn_toom3_mul_n_fun (mp_ptr dst, mp_srcptr src1, mp_srcptr src2, mp_size_t size)
 {
   mp_ptr  tspace;
-  TMP_DECL (marker);
-  TMP_MARK (marker);
+  TMP_DECL;
+  TMP_MARK;
   tspace = TMP_ALLOC_LIMBS (MPN_TOOM3_MUL_N_TSIZE (size));
   mpn_toom3_mul_n (dst, src1, src2, size, tspace);
 }
@@ -1162,21 +1271,14 @@ void
 mpn_toom3_sqr_n_fun (mp_ptr dst, mp_srcptr src, mp_size_t size)
 {
   mp_ptr tspace;
-  TMP_DECL (marker);
-  TMP_MARK (marker);
+  TMP_DECL;
+  TMP_MARK;
   tspace = TMP_ALLOC_LIMBS (MPN_TOOM3_SQR_N_TSIZE (size));
   mpn_toom3_sqr_n (dst, src, size, tspace);
-  TMP_FREE (marker);
+  TMP_FREE;
 }
 mp_limb_t
 umul_ppmm_fun (mp_limb_t *lowptr, mp_limb_t m1, mp_limb_t m2)
-{
-  mp_limb_t  high;
-  umul_ppmm (high, *lowptr, m1, m2);
-  return high;
-}
-mp_limb_t
-mpn_umul_ppmm_fun (mp_limb_t *lowptr, mp_limb_t m1, mp_limb_t m2)
 {
   mp_limb_t  high;
   umul_ppmm (high, *lowptr, m1, m2);
@@ -1217,6 +1319,13 @@ const struct choice_t choice_array[] = {
   { TRY(mpn_sub_nc),    TYPE_SUB_NC },
 #endif
 
+#if HAVE_NATIVE_mpn_addsub_n
+  { TRY(mpn_addsub_n),  TYPE_ADDSUB_N  },
+#endif
+#if HAVE_NATIVE_mpn_addsub_nc
+  { TRY(mpn_addsub_nc), TYPE_ADDSUB_NC },
+#endif
+
   { TRY(mpn_addmul_1),  TYPE_ADDMUL_1  },
   { TRY(mpn_submul_1),  TYPE_SUBMUL_1  },
 #if HAVE_NATIVE_mpn_addmul_1c
@@ -1224,6 +1333,28 @@ const struct choice_t choice_array[] = {
 #endif
 #if HAVE_NATIVE_mpn_submul_1c
   { TRY(mpn_submul_1c), TYPE_SUBMUL_1C },
+#endif
+
+#if HAVE_NATIVE_mpn_addmul_2
+  { TRY(mpn_addmul_2), TYPE_ADDMUL_2, 2 },
+#endif
+#if HAVE_NATIVE_mpn_addmul_3
+  { TRY(mpn_addmul_3), TYPE_ADDMUL_3, 3 },
+#endif
+#if HAVE_NATIVE_mpn_addmul_4
+  { TRY(mpn_addmul_4), TYPE_ADDMUL_4, 4 },
+#endif
+#if HAVE_NATIVE_mpn_addmul_5
+  { TRY(mpn_addmul_5), TYPE_ADDMUL_5, 5 },
+#endif
+#if HAVE_NATIVE_mpn_addmul_6
+  { TRY(mpn_addmul_6), TYPE_ADDMUL_6, 6 },
+#endif
+#if HAVE_NATIVE_mpn_addmul_7
+  { TRY(mpn_addmul_7), TYPE_ADDMUL_7, 7 },
+#endif
+#if HAVE_NATIVE_mpn_addmul_8
+  { TRY(mpn_addmul_8), TYPE_ADDMUL_8, 8 },
 #endif
 
   { TRY_FUNFUN(mpn_com_n),  TYPE_COM_N },
@@ -1235,6 +1366,26 @@ const struct choice_t choice_array[] = {
   { TRY_FUNFUN(__GMPN_COPY),      TYPE_COPY },
 #ifdef __GMPN_COPY_INCR
   { TRY_FUNFUN(__GMPN_COPY_INCR), TYPE_COPYI },
+#endif
+
+#if HAVE_NATIVE_mpn_copyi
+  { TRY(mpn_copyi), TYPE_COPYI },
+#endif
+#if HAVE_NATIVE_mpn_copyd
+  { TRY(mpn_copyd), TYPE_COPYD },
+#endif
+
+#if HAVE_NATIVE_mpn_addlsh1_n
+  { TRY(mpn_addlsh1_n), TYPE_ADDLSH1_N },
+#endif
+#if HAVE_NATIVE_mpn_sublsh1_n
+  { TRY(mpn_sublsh1_n), TYPE_SUBLSH1_N },
+#endif
+#if HAVE_NATIVE_mpn_rsh1add_n
+  { TRY(mpn_rsh1add_n), TYPE_RSH1ADD_N },
+#endif
+#if HAVE_NATIVE_mpn_rsh1sub_n
+  { TRY(mpn_rsh1sub_n), TYPE_RSH1SUB_N },
 #endif
 
   { TRY_FUNFUN(mpn_and_n),  TYPE_AND_N  },
@@ -1251,15 +1402,26 @@ const struct choice_t choice_array[] = {
   { TRY(mpn_preinv_divrem_1), TYPE_PREINV_DIVREM_1 },
 #endif
   { TRY(mpn_mod_1),        TYPE_MOD_1 },
+#if USE_PREINV_MOD_1
   { TRY(mpn_preinv_mod_1), TYPE_PREINV_MOD_1 },
+#endif
 #if HAVE_NATIVE_mpn_divrem_1c
   { TRY(mpn_divrem_1c),    TYPE_DIVREM_1C },
 #endif
 #if HAVE_NATIVE_mpn_mod_1c
   { TRY(mpn_mod_1c),       TYPE_MOD_1C },
 #endif
+#if GMP_NUMB_BITS % 4 == 0
   { TRY(mpn_mod_34lsub1),  TYPE_MOD_34LSUB1 },
+#endif
+
   { TRY_FUNFUN(udiv_qrnnd), TYPE_UDIV_QRNND, 2 },
+#if HAVE_NATIVE_mpn_udiv_qrnnd
+  { TRY(mpn_udiv_qrnnd),    TYPE_UDIV_QRNND, 2 },
+#endif
+#if HAVE_NATIVE_mpn_udiv_qrnnd_r
+  { TRY(mpn_udiv_qrnnd_r),  TYPE_UDIV_QRNND_R, 2 },
+#endif
 
   { TRY(mpn_divexact_1),          TYPE_DIVEXACT_1 },
   { TRY_FUNFUN(mpn_divexact_by3), TYPE_DIVEXACT_BY3 },
@@ -1277,7 +1439,7 @@ const struct choice_t choice_array[] = {
   { TRY(mpn_mul_1c),     TYPE_MUL_1C },
 #endif
 #if HAVE_NATIVE_mpn_mul_2
-  { TRY(mpn_mul_2),      TYPE_MUL_2 },
+  { TRY(mpn_mul_2),      TYPE_MUL_2, 2 },
 #endif
 
   { TRY(mpn_rshift),     TYPE_RSHIFT },
@@ -1285,13 +1447,21 @@ const struct choice_t choice_array[] = {
 
 
   { TRY(mpn_mul_basecase), TYPE_MUL_BASECASE },
+#if SQR_KARATSUBA_THRESHOLD > 0
   { TRY(mpn_sqr_basecase), TYPE_SQR },
+#endif
 
   { TRY(mpn_mul),    TYPE_MUL_BASECASE },
   { TRY(mpn_mul_n),  TYPE_MUL_N },
   { TRY(mpn_sqr_n),  TYPE_SQR },
 
   { TRY_FUNFUN(umul_ppmm), TYPE_UMUL_PPMM, 2 },
+#if HAVE_NATIVE_mpn_umul_ppmm
+  { TRY(mpn_umul_ppmm),    TYPE_UMUL_PPMM, 2 },
+#endif
+#if HAVE_NATIVE_mpn_umul_ppmm_r
+  { TRY(mpn_umul_ppmm_r),  TYPE_UMUL_PPMM_R, 2 },
+#endif
 
   { TRY_FUNFUN(mpn_kara_mul_n),  TYPE_MUL_N, MPN_KARA_MUL_N_MINSIZE },
   { TRY_FUNFUN(mpn_kara_sqr_n),  TYPE_SQR,   MPN_KARA_SQR_N_MINSIZE },
@@ -1335,7 +1505,8 @@ mprotect_maybe (void *addr, size_t len, int prot)
 #if HAVE_MPROTECT
   if (mprotect (addr, len, prot) != 0)
     {
-      fprintf (stderr, "Cannot mprotect %p 0x%X 0x%X\n", addr, len, prot);
+      fprintf (stderr, "Cannot mprotect %p 0x%X 0x%X: %s\n",
+	       addr, len, prot, strerror (errno));
       exit (1);
     }
 #else
@@ -1343,9 +1514,9 @@ mprotect_maybe (void *addr, size_t len, int prot)
     static int  warned = 0;
     if (!warned)
       {
-        fprintf (stderr,
-                 "mprotect not available, bounds testing not performed\n");
-        warned = 1;
+	fprintf (stderr,
+		 "mprotect not available, bounds testing not performed\n");
+	warned = 1;
       }
   }
 #endif
@@ -1394,11 +1565,12 @@ malloc_region (struct region_t *r, mp_size_t n)
   p = mmap (NULL, nbytes, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
   if (p == (void *) -1)
     {
-      fprintf (stderr, "Cannot mmap %#x anon bytes\n", nbytes);
+      fprintf (stderr, "Cannot mmap %#x anon bytes: %s\n",
+	       nbytes, strerror (errno));
       exit (1);
     }
 #else
-  p = malloc (nbytes);
+  p = (mp_ptr) malloc (nbytes);
   ASSERT_ALWAYS (p != NULL);
 #endif
 
@@ -1445,10 +1617,10 @@ int        carry_index;
 #define CARRY_ITERATION                                                 \
   for (carry_index = 0;                                                 \
        (carry_index < numberof (carry_array)                            \
-        ? (carry = carry_array[carry_index])                            \
-        : (MPN_RANDOM_ALT (carry_index, &carry, 1), (mp_limb_t) 0)),    \
-         (tr->carry == CARRY_DIVISOR ? carry %= divisor : 0),           \
-         carry_index < CARRY_COUNT;                                     \
+	? (carry = carry_array[carry_index])                            \
+	: (MPN_RANDOM_ALT (carry_index, &carry, 1), (mp_limb_t) 0)),    \
+	 (tr->carry == CARRY_DIVISOR ? carry %= divisor : 0),           \
+	 carry_index < CARRY_COUNT;                                     \
        carry_index++)
 
 
@@ -1466,6 +1638,8 @@ mp_limb_t  divisor_array[] = {
   1, 2, 3,
   CNST_LIMB(1) << 8,
   CNST_LIMB(1) << 16,
+  CNST_LIMB(1) << (GMP_NUMB_BITS/2 - 1),
+  GMP_NUMB_MAX >> (GMP_NUMB_BITS/2),
   GMP_NUMB_HIGHBIT,
   GMP_NUMB_HIGHBIT + 1,
   GMP_NUMB_MAX - 2,
@@ -1480,8 +1654,8 @@ int        divisor_index;
 #define ARRAY_ITERATION(var, index, limit, array, randoms, cond)        \
   for (index = 0;                                                       \
        (index < numberof (array)                                        \
-        ? (var = array[index])                                          \
-        : (MPN_RANDOM_ALT (index, &var, 1), (mp_limb_t) 0)),            \
+	? (var = array[index])                                          \
+	: (MPN_RANDOM_ALT (index, &var, 1), (mp_limb_t) 0)),            \
        index < limit;                                                   \
        index++)
 
@@ -1492,7 +1666,7 @@ int        divisor_index;
 
 #define MULTIPLIER_ITERATION                                            \
   ARRAY_ITERATION(multiplier, multiplier_index, MULTIPLIER_COUNT,       \
-                  multiplier_array, MULTIPLIER_RANDOMS, TRY_MULTIPLIER)
+		  multiplier_array, MULTIPLIER_RANDOMS, TRY_MULTIPLIER)
 
 #define DIVISOR_COUNT                           \
   (tr->divisor                                  \
@@ -1501,7 +1675,7 @@ int        divisor_index;
 
 #define DIVISOR_ITERATION                                               \
   ARRAY_ITERATION(divisor, divisor_index, DIVISOR_COUNT, divisor_array, \
-                  DIVISOR_RANDOMS, TRY_DIVISOR)
+		  DIVISOR_RANDOMS, TRY_DIVISOR)
 
 
 /* overlap_array[].s[i] is where s[i] should be, 0 or 1 means overlapping
@@ -1564,7 +1738,7 @@ t_random (mp_ptr ptr, mp_size_t n)
       static mp_limb_t  counter = 0;
       mp_size_t  i;
       for (i = 0; i < n; i++)
-        ptr[i] = ++counter;
+	ptr[i] = ++counter;
     }
     break;
   case DATA_ZEROS:
@@ -1590,7 +1764,7 @@ t_random (mp_ptr ptr, mp_size_t n)
   for (t_rand = 0; t_rand < T_RAND_COUNT; t_rand++)
 
 
-void 
+void
 print_each (const struct each_t *e)
 {
   int  i;
@@ -1600,15 +1774,15 @@ print_each (const struct each_t *e)
     mpn_trace ("   retval", &e->retval, 1);
 
   for (i = 0; i < NUM_DESTS; i++)
-    { 
+    {
       if (tr->dst[i])
-        {
-          if (tr->dst_bytes[i])
-            byte_tracen ("   d[%d]", i, e->d[i].p, d[i].size);
-          else
-            mpn_tracen ("   d[%d]", i, e->d[i].p, d[i].size);
-          printf ("        located %p\n", e->d[i].p);
-        }
+	{
+	  if (tr->dst_bytes[i])
+	    byte_tracen ("   d[%d]", i, e->d[i].p, d[i].size);
+	  else
+	    mpn_tracen ("   d[%d]", i, e->d[i].p, d[i].size);
+	  printf ("        located %p\n", e->d[i].p);
+	}
     }
 
   for (i = 0; i < NUM_SOURCES; i++)
@@ -1623,13 +1797,13 @@ print_all (void)
   int  i;
 
   printf ("\n");
-  printf ("size  %ld\n", size);
+  printf ("size  %ld\n", (long) size);
   if (tr->size2)
-    printf ("size2 %ld\n", size2);
+    printf ("size2 %ld\n", (long) size2);
 
   for (i = 0; i < NUM_DESTS; i++)
     if (d[i].size != size)
-      printf ("d[%d].size %ld\n", i, d[i].size);
+      printf ("d[%d].size %ld\n", i, (long) d[i].size);
 
   if (tr->multiplier)
     mpn_trace ("   multiplier", &multiplier, 1);
@@ -1639,35 +1813,38 @@ print_all (void)
     printf ("   shift %lu\n", shift);
   if (tr->carry)
     mpn_trace ("   carry", &carry, 1);
+  if (tr->msize)
+    mpn_trace ("   multiplier_N", multiplier_N, tr->msize);
 
   for (i = 0; i < NUM_DESTS; i++)
     if (tr->dst[i])
       printf ("   d[%d] %s, align %ld, size %ld\n",
-              i, d[i].high ? "high" : "low", d[i].align, d[i].size);
+	      i, d[i].high ? "high" : "low",
+	      (long) d[i].align, (long) d[i].size);
 
   for (i = 0; i < NUM_SOURCES; i++)
     {
       if (tr->src[i])
-        {
-          printf ("   s[%d] %s, align %ld, ",
-                  i, s[i].high ? "high" : "low", s[i].align);
-          switch (overlap->s[i]) {
-          case -1:
-            printf ("no overlap\n");
-            break;
-          default:
-            printf ("==d[%d]%s\n",
-                    overlap->s[i],
-                    tr->overlap == OVERLAP_LOW_TO_HIGH ? "+a"
-                    : tr->overlap == OVERLAP_HIGH_TO_LOW ? "-a"
-                    : "");
-            break;
-          }
-          printf ("   s[%d]=", i);
-          if (tr->carry_sign && (carry & (1 << i)))
-            printf ("-");
-          mpn_trace (NULL, s[i].p, SRC_SIZE(i));
-        }
+	{
+	  printf ("   s[%d] %s, align %ld, ",
+		  i, s[i].high ? "high" : "low", (long) s[i].align);
+	  switch (overlap->s[i]) {
+	  case -1:
+	    printf ("no overlap\n");
+	    break;
+	  default:
+	    printf ("==d[%d]%s\n",
+		    overlap->s[i],
+		    tr->overlap == OVERLAP_LOW_TO_HIGH ? "+a"
+		    : tr->overlap == OVERLAP_HIGH_TO_LOW ? "-a"
+		    : "");
+	    break;
+	  }
+	  printf ("   s[%d]=", i);
+	  if (tr->carry_sign && (carry & (1 << i)))
+	    printf ("-");
+	  mpn_trace (NULL, s[i].p, SRC_SIZE(i));
+	}
     }
 
   if (tr->dst0_from_src1)
@@ -1680,54 +1857,55 @@ print_all (void)
 
 void
 compare (void)
-{ 
+{
   int  error = 0;
   int  i;
 
   if (tr->retval && ref.retval != fun.retval)
     {
-      printf ("Different return values (%lu, %lu)\n",
-              ref.retval, fun.retval);
+      gmp_printf ("Different return values (%Mu, %Mu)\n",
+		  ref.retval, fun.retval);
       error = 1;
     }
 
   for (i = 0; i < NUM_DESTS; i++)
     {
-      switch (tr->dst_size[0]) {
+      switch (tr->dst_size[i]) {
       case SIZE_RETVAL:
-        d[i].size = ref.retval;
-        break;
+      case SIZE_GET_STR:
+	d[i].size = ref.retval;
+	break;
       }
     }
 
   for (i = 0; i < NUM_DESTS; i++)
     {
       if (! tr->dst[i])
-        continue;
+	continue;
 
       if (tr->dst_bytes[i])
-        {
-          if (memcmp (ref.d[i].p, fun.d[i].p, d[i].size) != 0)
-            {
-              printf ("Different d[%d] data results, low diff at %ld, high diff at %ld\n",
-                      i,
-                      byte_diff_lowest (ref.d[i].p, fun.d[i].p, d[i].size),
-                      byte_diff_highest (ref.d[i].p, fun.d[i].p, d[i].size));
-              error = 1;
-            }
-        }
+	{
+	  if (memcmp (ref.d[i].p, fun.d[i].p, d[i].size) != 0)
+	    {
+	      printf ("Different d[%d] data results, low diff at %ld, high diff at %ld\n",
+		      i,
+		      (long) byte_diff_lowest (ref.d[i].p, fun.d[i].p, d[i].size),
+		      (long) byte_diff_highest (ref.d[i].p, fun.d[i].p, d[i].size));
+	      error = 1;
+	    }
+	}
       else
-        {
-          if (d[i].size != 0
-              && ! refmpn_equal_anynail (ref.d[i].p, fun.d[i].p, d[i].size))
-            {
-              printf ("Different d[%d] data results, low diff at %ld, high diff at %ld\n",
-                      i,
-                      mpn_diff_lowest (ref.d[i].p, fun.d[i].p, d[i].size),
-                      mpn_diff_highest (ref.d[i].p, fun.d[i].p, d[i].size));
-              error = 1;
-            }
-        }
+	{
+	  if (d[i].size != 0
+	      && ! refmpn_equal_anynail (ref.d[i].p, fun.d[i].p, d[i].size))
+	    {
+	      printf ("Different d[%d] data results, low diff at %ld, high diff at %ld\n",
+		      i,
+		      (long) mpn_diff_lowest (ref.d[i].p, fun.d[i].p, d[i].size),
+		      (long) mpn_diff_highest (ref.d[i].p, fun.d[i].p, d[i].size));
+	      error = 1;
+	    }
+	}
     }
 
   if (error)
@@ -1755,6 +1933,10 @@ call (struct each_t *e, tryfun_t function)
 
   case TYPE_ADD_N:
   case TYPE_SUB_N:
+  case TYPE_ADDLSH1_N:
+  case TYPE_SUBLSH1_N:
+  case TYPE_RSH1ADD_N:
+  case TYPE_RSH1SUB_N:
     e->retval = CALLING_CONVENTIONS (function)
       (e->d[0].p, e->s[0].p, e->s[1].p, size);
     break;
@@ -1778,8 +1960,23 @@ call (struct each_t *e, tryfun_t function)
     break;
 
   case TYPE_MUL_2:
+    if (size == 1)
+      abort ();
     e->retval = CALLING_CONVENTIONS (function)
       (e->d[0].p, e->s[0].p, size, e->s[1].p);
+    break;
+
+  case TYPE_ADDMUL_2:
+  case TYPE_ADDMUL_3:
+  case TYPE_ADDMUL_4:
+  case TYPE_ADDMUL_5:
+  case TYPE_ADDMUL_6:
+  case TYPE_ADDMUL_7:
+  case TYPE_ADDMUL_8:
+    if (size == 1)
+      abort ();
+    e->retval = CALLING_CONVENTIONS (function)
+      (e->d[0].p, e->s[0].p, size, multiplier_N);
     break;
 
   case TYPE_AND_N:
@@ -1815,7 +2012,7 @@ call (struct each_t *e, tryfun_t function)
     break;
   case TYPE_DIVEXACT_BY3C:
     e->retval = CALLING_CONVENTIONS (function) (e->d[0].p, e->s[0].p, size,
-                                                carry);
+						carry);
     break;
 
 
@@ -1843,7 +2040,7 @@ call (struct each_t *e, tryfun_t function)
       shift = refmpn_count_leading_zeros (divisor);
       dinv = refmpn_invert_limb (divisor << shift);
       e->retval = CALLING_CONVENTIONS (function)
-        (e->d[0].p, size2, e->s[0].p, size, divisor, dinv, shift);
+	(e->d[0].p, size2, e->s[0].p, size, divisor, dinv, shift);
     }
     break;
   case TYPE_MOD_1:
@@ -1863,9 +2060,14 @@ call (struct each_t *e, tryfun_t function)
   case TYPE_MOD_34LSUB1:
     e->retval = CALLING_CONVENTIONS (function) (e->s[0].p, size);
     break;
+
   case TYPE_UDIV_QRNND:
     e->retval = CALLING_CONVENTIONS (function)
       (e->d[0].p, e->s[0].p[1], e->s[0].p[0], divisor);
+    break;
+  case TYPE_UDIV_QRNND_R:
+    e->retval = CALLING_CONVENTIONS (function)
+      (e->s[0].p[1], e->s[0].p[0], divisor, e->d[0].p);
     break;
 
   case TYPE_SB_DIVREM_MN:
@@ -1877,7 +2079,7 @@ call (struct each_t *e, tryfun_t function)
     break;
   case TYPE_TDIV_QR:
     CALLING_CONVENTIONS (function) (e->d[0].p, e->d[1].p, 0,
-                                    e->s[0].p, size, e->s[1].p, size2);
+				    e->s[0].p, size, e->s[1].p, size2);
     break;
 
   case TYPE_GCD_1:
@@ -1902,8 +2104,8 @@ call (struct each_t *e, tryfun_t function)
       mprotect_region (&s[0].region, PROT_READ|PROT_WRITE);
       mprotect_region (&s[1].region, PROT_READ|PROT_WRITE);
       e->retval = CALLING_CONVENTIONS (function) (e->d[0].p,
-                                                  e->s[0].p, size,
-                                                  e->s[1].p, size2);
+						  e->s[0].p, size,
+						  e->s[1].p, size2);
       refmpn_copyi (e->s[0].p, s0, size);
       refmpn_copyi (e->s[1].p, s1, size2);
       free (s0);
@@ -1989,11 +2191,11 @@ call (struct each_t *e, tryfun_t function)
 
   case TYPE_POPCOUNT:
     e->retval = (* (unsigned long (*)(ANYARGS))
-                 CALLING_CONVENTIONS (function)) (e->s[0].p, size);
+		 CALLING_CONVENTIONS (function)) (e->s[0].p, size);
     break;
   case TYPE_HAMDIST:
     e->retval = (* (unsigned long (*)(ANYARGS))
-                 CALLING_CONVENTIONS (function)) (e->s[0].p, e->s[1].p, size);
+		 CALLING_CONVENTIONS (function)) (e->s[0].p, e->s[1].p, size);
     break;
 
   case TYPE_SQRTREM:
@@ -2013,26 +2215,26 @@ call (struct each_t *e, tryfun_t function)
       ASSERT_ALWAYS (sizeinbase <= d[0].size);
       fill = d[0].size - sizeinbase;
       if (d[0].high)
-        {
-          memset (e->d[0].p, 0xBA, fill);
-          dst = (char *) e->d[0].p + fill;
-        }
+	{
+	  memset (e->d[0].p, 0xBA, fill);
+	  dst = (char *) e->d[0].p + fill;
+	}
       else
-        {
-          dst = (char *) e->d[0].p;
-          memset (dst + sizeinbase, 0xBA, fill);
-        }
+	{
+	  dst = (char *) e->d[0].p;
+	  memset (dst + sizeinbase, 0xBA, fill);
+	}
       if (POW2_P (base))
-        {
-          e->retval = CALLING_CONVENTIONS (function) (dst, base,
-                                                      e->s[0].p, size);
-        }
+	{
+	  e->retval = CALLING_CONVENTIONS (function) (dst, base,
+						      e->s[0].p, size);
+	}
       else
-        {
-          refmpn_copy (e->d[1].p, e->s[0].p, size);
-          e->retval = CALLING_CONVENTIONS (function) (dst, base,
-                                                      e->d[1].p, size);
-        }
+	{
+	  refmpn_copy (e->d[1].p, e->s[0].p, size);
+	  e->retval = CALLING_CONVENTIONS (function) (dst, base,
+						      e->d[1].p, size);
+	}
       refmpn_zero (e->d[1].p, size);  /* cloberred or unused */
     }
     break;
@@ -2059,56 +2261,59 @@ pointer_setup (struct each_t *e)
       switch (tr->dst_size[i]) {
       case 0:
       case SIZE_RETVAL: /* will be adjusted later */
-        d[i].size = size;
-        break;
+	d[i].size = size;
+	break;
 
       case SIZE_1:
-        d[i].size = 1;
-        break;
+	d[i].size = 1;
+	break;
       case SIZE_2:
-        d[i].size = 2;
-        break;
+	d[i].size = 2;
+	break;
       case SIZE_3:
-        d[i].size = 3;
-        break;
-        
+	d[i].size = 3;
+	break;
+
       case SIZE_PLUS_1:
-        d[i].size = size+1;
-        break;
+	d[i].size = size+1;
+	break;
+      case SIZE_PLUS_MSIZE_SUB_1:
+	d[i].size = size + tr->msize - 1;
+	break;
 
       case SIZE_SUM:
-        if (tr->size2)
-          d[i].size = size + size2;
-        else
-          d[i].size = 2*size;
-        break;
+	if (tr->size2)
+	  d[i].size = size + size2;
+	else
+	  d[i].size = 2*size;
+	break;
 
       case SIZE_SIZE2:
-        d[i].size = size2;
-        break;
+	d[i].size = size2;
+	break;
 
       case SIZE_DIFF:
-        d[i].size = size - size2;
-        break;
+	d[i].size = size - size2;
+	break;
 
       case SIZE_DIFF_PLUS_1:
-        d[i].size = size - size2 + 1;
-        break;
+	d[i].size = size - size2 + 1;
+	break;
 
       case SIZE_CEIL_HALF:
-        d[i].size = (size+1)/2;
-        break;
+	d[i].size = (size+1)/2;
+	break;
 
       case SIZE_GET_STR:
-        {
-          mp_limb_t ff = GMP_NUMB_MAX;
-          MPN_SIZEINBASE (d[i].size, &ff - (size-1), size, base);
-        }
-        break;
+	{
+	  mp_limb_t ff = GMP_NUMB_MAX;
+	  MPN_SIZEINBASE (d[i].size, &ff - (size-1), size, base);
+	}
+	break;
 
       default:
-        printf ("Unrecognised dst_size type %d\n", tr->dst_size[i]);
-        abort ();
+	printf ("Unrecognised dst_size type %d\n", tr->dst_size[i]);
+	abort ();
       }
     }
 
@@ -2119,38 +2324,38 @@ pointer_setup (struct each_t *e)
 
       /* possible room for overlapping sources */
       for (j = 0; j < numberof (overlap->s); j++)
-        if (overlap->s[j] == i)
-          offset = MAX (offset, s[j].align);
+	if (overlap->s[j] == i)
+	  offset = MAX (offset, s[j].align);
 
       if (d[i].high)
-        {
-          if (tr->dst_bytes[i])
-            {
-              e->d[i].p = (mp_ptr)
-                ((char *) (e->d[i].region.ptr + e->d[i].region.size)
-                 - d[i].size - d[i].align);
-            }
-          else
-            {
-              e->d[i].p = e->d[i].region.ptr + e->d[i].region.size
-                - d[i].size - d[i].align;
-              if (tr->overlap == OVERLAP_LOW_TO_HIGH)
-                e->d[i].p -= offset;
-            }
-        }
+	{
+	  if (tr->dst_bytes[i])
+	    {
+	      e->d[i].p = (mp_ptr)
+		((char *) (e->d[i].region.ptr + e->d[i].region.size)
+		 - d[i].size - d[i].align);
+	    }
+	  else
+	    {
+	      e->d[i].p = e->d[i].region.ptr + e->d[i].region.size
+		- d[i].size - d[i].align;
+	      if (tr->overlap == OVERLAP_LOW_TO_HIGH)
+		e->d[i].p -= offset;
+	    }
+	}
       else
-        {
-          if (tr->dst_bytes[i])
-            {
-              e->d[i].p = (mp_ptr) ((char *) e->d[i].region.ptr + d[i].align);
-            }
-          else
-            {
-              e->d[i].p = e->d[i].region.ptr + d[i].align;
-              if (tr->overlap == OVERLAP_HIGH_TO_LOW)
-                e->d[i].p += offset;
-            }
-        }
+	{
+	  if (tr->dst_bytes[i])
+	    {
+	      e->d[i].p = (mp_ptr) ((char *) e->d[i].region.ptr + d[i].align);
+	    }
+	  else
+	    {
+	      e->d[i].p = e->d[i].region.ptr + d[i].align;
+	      if (tr->overlap == OVERLAP_HIGH_TO_LOW)
+		e->d[i].p += offset;
+	    }
+	}
     }
 
   /* establish e->s[].p sources */
@@ -2159,24 +2364,24 @@ pointer_setup (struct each_t *e)
       int  o = overlap->s[i];
       switch (o) {
       case -1:
-        /* no overlap */
-        e->s[i].p = s[i].p;
-        break;
+	/* no overlap */
+	e->s[i].p = s[i].p;
+	break;
       case 0:
       case 1:
-        /* overlap with d[o] */
-        if (tr->overlap == OVERLAP_HIGH_TO_LOW)
-          e->s[i].p = e->d[o].p - s[i].align;
-        else if (tr->overlap == OVERLAP_LOW_TO_HIGH)
-          e->s[i].p = e->d[o].p + s[i].align;
-        else if (tr->size2 == SIZE_FRACTION)
-          e->s[i].p = e->d[o].p + size2;
-        else
-          e->s[i].p = e->d[o].p;
-        break;
+	/* overlap with d[o] */
+	if (tr->overlap == OVERLAP_HIGH_TO_LOW)
+	  e->s[i].p = e->d[o].p - s[i].align;
+	else if (tr->overlap == OVERLAP_LOW_TO_HIGH)
+	  e->s[i].p = e->d[o].p + s[i].align;
+	else if (tr->size2 == SIZE_FRACTION)
+	  e->s[i].p = e->d[o].p + size2;
+	else
+	  e->s[i].p = e->d[o].p;
+	break;
       default:
-        abort();
-        break;
+	abort();
+	break;
       }
     }
 }
@@ -2216,100 +2421,111 @@ try_one (void)
   for (i = 0; i < NUM_SOURCES; i++)
     {
       if (s[i].high)
-        s[i].p = s[i].region.ptr + s[i].region.size - SRC_SIZE(i) - s[i].align;
+	s[i].p = s[i].region.ptr + s[i].region.size - SRC_SIZE(i) - s[i].align;
       else
-        s[i].p = s[i].region.ptr + s[i].align;
+	s[i].p = s[i].region.ptr + s[i].align;
     }
 
   pointer_setup (&ref);
   pointer_setup (&fun);
 
-  for (i = 0; i < NUM_DESTS; i++)
-    {
-      if (! tr->dst[i])
-        continue;
-
-      if (tr->dst0_from_src1 && i==0)
-        {
-          t_random (s[1].region.ptr, d[0].size);
-          MPN_COPY (fun.d[0].p, s[1].region.ptr, d[0].size);
-          MPN_COPY (ref.d[0].p, s[1].region.ptr, d[0].size);
-        }
-      else if (tr->dst_bytes[i])
-        {
-          memset (ref.d[i].p, 0xBA, d[i].size);
-          memset (fun.d[i].p, 0xBA, d[i].size);
-        }
-      else
-        {
-          refmpn_fill (ref.d[i].p, d[i].size, DEADVAL);
-          refmpn_fill (fun.d[i].p, d[i].size, DEADVAL);
-        }
-    }
-
   ref.retval = 0x04152637;
   fun.retval = 0x8C9DAEBF;
+
+  t_random (multiplier_N, tr->msize);
 
   for (i = 0; i < NUM_SOURCES; i++)
     {
       if (! tr->src[i])
-        continue;
+	continue;
 
       mprotect_region (&s[i].region, PROT_READ|PROT_WRITE);
       t_random (s[i].p, SRC_SIZE(i));
 
       switch (tr->data) {
       case DATA_NON_ZERO:
-        if (refmpn_zero_p (s[i].p, SRC_SIZE(i)))
-          s[i].p[0] = 1;
-        break;
+	if (refmpn_zero_p (s[i].p, SRC_SIZE(i)))
+	  s[i].p[0] = 1;
+	break;
 
       case DATA_MULTIPLE_DIVISOR:
-        /* same number of low zero bits as divisor */
-        s[i].p[0] &= ~ LOW_ZEROS_MASK (divisor);
-        refmpn_sub_1 (s[i].p, s[i].p, size,
-                      refmpn_mod_1 (s[i].p, size, divisor));
-        break;
+	/* same number of low zero bits as divisor */
+	s[i].p[0] &= ~ LOW_ZEROS_MASK (divisor);
+	refmpn_sub_1 (s[i].p, s[i].p, size,
+		      refmpn_mod_1 (s[i].p, size, divisor));
+	break;
 
       case DATA_GCD:
-        /* s[1] no more bits than s[0] */
-        if (i == 1 && size2 == size)
-          s[1].p[size-1] &= refmpn_msbone_mask (s[0].p[size-1]);
+	/* s[1] no more bits than s[0] */
+	if (i == 1 && size2 == size)
+	  s[1].p[size-1] &= refmpn_msbone_mask (s[0].p[size-1]);
 
-        /* high limb non-zero */
-        s[i].p[SRC_SIZE(i)-1] += (s[i].p[SRC_SIZE(i)-1] == 0);
+	/* high limb non-zero */
+	s[i].p[SRC_SIZE(i)-1] += (s[i].p[SRC_SIZE(i)-1] == 0);
 
-        /* odd */
-        s[i].p[0] |= 1;
-        break;
+	/* odd */
+	s[i].p[0] |= 1;
+	break;
 
       case DATA_SRC1_ODD:
-        if (i == 1)
-          s[i].p[0] |= 1;
-        break;
+	if (i == 1)
+	  s[i].p[0] |= 1;
+	break;
 
       case DATA_SRC1_HIGHBIT:
-        if (i == 1)
-          {
-            if (tr->size2)
-              s[i].p[size2-1] |= GMP_NUMB_HIGHBIT;
-            else
-              s[i].p[size-1] |= GMP_NUMB_HIGHBIT;
-          }
-        break;
+	if (i == 1)
+	  {
+	    if (tr->size2)
+	      s[i].p[size2-1] |= GMP_NUMB_HIGHBIT;
+	    else
+	      s[i].p[size-1] |= GMP_NUMB_HIGHBIT;
+	  }
+	break;
 
       case DATA_UDIV_QRNND:
-        s[i].p[1] %= divisor;
-        break;
+	s[i].p[1] %= divisor;
+	break;
       }
 
       mprotect_region (&s[i].region, PROT_READ);
+    }
+
+  for (i = 0; i < NUM_DESTS; i++)
+    {
+      if (! tr->dst[i])
+	continue;
+
+      if (tr->dst0_from_src1 && i==0)
+	{
+	  mp_size_t  copy = MIN (d[0].size, SRC_SIZE(1));
+	  mp_size_t  fill = MAX (0, d[0].size - copy);
+	  MPN_COPY (fun.d[0].p, s[1].region.ptr, copy);
+	  MPN_COPY (ref.d[0].p, s[1].region.ptr, copy);
+	  refmpn_fill (fun.d[0].p + copy, fill, DEADVAL);
+	  refmpn_fill (ref.d[0].p + copy, fill, DEADVAL);
+	}
+      else if (tr->dst_bytes[i])
+	{
+	  memset (ref.d[i].p, 0xBA, d[i].size);
+	  memset (fun.d[i].p, 0xBA, d[i].size);
+	}
+      else
+	{
+	  refmpn_fill (ref.d[i].p, d[i].size, DEADVAL);
+	  refmpn_fill (fun.d[i].p, d[i].size, DEADVAL);
+	}
+    }
+
+  for (i = 0; i < NUM_SOURCES; i++)
+    {
+      if (! tr->src[i])
+	continue;
 
       if (ref.s[i].p != s[i].p)
-        {
-          refmpn_copyi (ref.s[i].p, s[i].p, SRC_SIZE(i));
-          refmpn_copyi (fun.s[i].p, s[i].p, SRC_SIZE(i));
-        }
+	{
+	  refmpn_copyi (ref.s[i].p, s[i].p, SRC_SIZE(i));
+	  refmpn_copyi (fun.s[i].p, s[i].p, SRC_SIZE(i));
+	}
     }
 
   if (option_print)
@@ -2322,10 +2538,10 @@ try_one (void)
       trap_location = TRAP_NOWHERE;
 
       if (! CALLING_CONVENTIONS_CHECK ())
-        {
-          print_all();
-          abort();
-        }
+	{
+	  print_all();
+	  abort();
+	}
 
       (*tr->validate) ();
     }
@@ -2338,10 +2554,10 @@ try_one (void)
       trap_location = TRAP_NOWHERE;
 
       if (! CALLING_CONVENTIONS_CHECK ())
-        {
-          print_all();
-          abort();
-        }
+	{
+	  print_all();
+	  abort();
+	}
 
       compare ();
     }
@@ -2350,17 +2566,17 @@ try_one (void)
 
 #define SIZE_ITERATION                                          \
   for (size = MAX3 (option_firstsize,                           \
-                    choice->minsize,                            \
-                    (tr->size == SIZE_ALLOW_ZERO) ? 0 : 1);     \
+		    choice->minsize,                            \
+		    (tr->size == SIZE_ALLOW_ZERO) ? 0 : 1);     \
        size <= option_lastsize;                                 \
        size++)
 
 #define SIZE2_FIRST                                     \
   (tr->size2 == SIZE_2 ? 2                              \
-   : tr->size2 == SIZE_FRACTION ? 0                     \
+   : tr->size2 == SIZE_FRACTION ? option_firstsize2     \
    : tr->size2 ?                                        \
    MAX (choice->minsize, (option_firstsize2 != 0        \
-                          ? option_firstsize2 : 1))     \
+			  ? option_firstsize2 : 1))     \
    : 0)
 
 #define SIZE2_LAST                                      \
@@ -2523,21 +2739,21 @@ Error, error, cannot get page size
 
     for (i = 0; i < NUM_SOURCES; i++)
       {
-        malloc_region (&s[i].region, 2*option_lastsize+ALIGNMENTS-1);
-        printf ("s[%d] %p to %p (0x%lX bytes)\n",
-                i, s[i].region.ptr,
-                s[i].region.ptr + s[i].region.size,
-                s[i].region.size * BYTES_PER_MP_LIMB);
+	malloc_region (&s[i].region, 2*option_lastsize+ALIGNMENTS-1);
+	printf ("s[%d] %p to %p (0x%lX bytes)\n",
+		i, s[i].region.ptr,
+		s[i].region.ptr + s[i].region.size,
+		(long) s[i].region.size * BYTES_PER_MP_LIMB);
       }
 
 #define INIT_EACH(e,es)                                                 \
     for (i = 0; i < NUM_DESTS; i++)                                     \
       {                                                                 \
-        malloc_region (&e.d[i].region, 2*option_lastsize+ALIGNMENTS-1); \
-        printf ("%s d[%d] %p to %p (0x%lX bytes)\n",                    \
-                es, i, e.d[i].region.ptr,                               \
-                e.d[i].region.ptr + e.d[i].region.size,                 \
-                e.d[i].region.size * BYTES_PER_MP_LIMB);                \
+	malloc_region (&e.d[i].region, 2*option_lastsize+ALIGNMENTS-1); \
+	printf ("%s d[%d] %p to %p (0x%lX bytes)\n",                    \
+		es, i, e.d[i].region.ptr,                               \
+		e.d[i].region.ptr + e.d[i].region.size,                 \
+		(long) e.d[i].region.size * BYTES_PER_MP_LIMB);         \
       }
 
     INIT_EACH(ref, "ref");
@@ -2557,7 +2773,7 @@ strmatch_wild (const char *pattern, const char *str)
       plen = strlen (pattern);
       slen = strlen (str);
       return (plen == 0
-              || (slen >= plen && memcmp (pattern, str+slen-plen, plen) == 0));
+	      || (slen >= plen && memcmp (pattern, str+slen-plen, plen) == 0));
     }
 
   /* wildcard at end */
@@ -2578,12 +2794,12 @@ try_name (const char *name)
   for (i = 0; i < numberof (choice_array); i++)
     {
       if (strmatch_wild (name, choice_array[i].name))
-        {
-          choice = &choice_array[i];
-          tr = &param[choice->type];
-          try_many ();
-          found = 1;
-        }
+	{
+	  choice = &choice_array[i];
+	  tr = &param[choice->type];
+	  try_many ();
+	  found = 1;
+	}
     }
 
   if (!found)
@@ -2600,32 +2816,31 @@ usage (const char *prog)
   int  col = 0;
   int  i;
 
-  printf ("Usage: %s [options] function...\n\
-    -1        use limb data 1,2,3,etc\n\
-    -9        use limb data all 0xFF..FFs\n\
-    -a zeros  use limb data all zeros\n\
-    -a ffs    use limb data all 0xFF..FFs (same as -9)\n\
-    -a 2fd    use data 0x2FFF...FFFD\n\
-    -p        print each case tried (try this if seg faulting)\n\
-    -R        seed random numbers from time()\n\
-    -r reps   set repetitions (default %d)\n\
-    -s size   starting size to test\n\
-    -S size2  starting size2 to test\n\
-    -s s1-s2  range of sizes to test\n\
-    -W        don't show the spinner (use this in gdb)\n\
-    -z        disable mprotect() redzones\n\
-Default data is refmpn_random() and refmpn_random2().\n\
-\n\
-Functions that can be tested:\n\
-", prog, DEFAULT_REPETITIONS);
+  printf ("Usage: %s [options] function...\n", prog);
+  printf ("    -1        use limb data 1,2,3,etc\n");
+  printf ("    -9        use limb data all 0xFF..FFs\n");
+  printf ("    -a zeros  use limb data all zeros\n");
+  printf ("    -a ffs    use limb data all 0xFF..FFs (same as -9)\n");
+  printf ("    -a 2fd    use data 0x2FFF...FFFD\n");
+  printf ("    -p        print each case tried (try this if seg faulting)\n");
+  printf ("    -R        seed random numbers from time()\n");
+  printf ("    -r reps   set repetitions (default %d)\n", DEFAULT_REPETITIONS);
+  printf ("    -s size   starting size to test\n");
+  printf ("    -S size2  starting size2 to test\n");
+  printf ("    -s s1-s2  range of sizes to test\n");
+  printf ("    -W        don't show the spinner (use this in gdb)\n");
+  printf ("    -z        disable mprotect() redzones\n");
+  printf ("Default data is refmpn_random() and refmpn_random2().\n");
+  printf ("\n");
+  printf ("Functions that can be tested:\n");
 
   for (i = 0; i < numberof (choice_array); i++)
     {
       if (col + 1 + strlen (choice_array[i].name) > 79)
-        {
-          printf ("\n");
-          col = 0;
-        }
+	{
+	  printf ("\n");
+	  col = 0;
+	}
       printf (" %s", choice_array[i].name);
       col += 1 + strlen (choice_array[i].name);
     }
@@ -2650,72 +2865,80 @@ main (int argc, char *argv[])
   param_init ();
 
   {
-    unsigned  seed = 123;
+    unsigned long  seed = 123;
     int   opt;
 
-    while ((opt = getopt(argc, argv, "19a:b:pRr:S:s:Wz")) != EOF)
+    while ((opt = getopt(argc, argv, "19a:b:E:pRr:S:s:Wz")) != EOF)
       {
-        switch (opt) {
-        case '1':
-          /* use limb data values 1, 2, 3, ... etc */
-          option_data = DATA_SEQ;
-          break;
-        case '9':
-          /* use limb data values 0xFFF...FFF always */
-          option_data = DATA_FFS;
-          break;
-        case 'a':
-          if (strcmp (optarg, "zeros") == 0)     option_data = DATA_ZEROS;
-          else if (strcmp (optarg, "seq") == 0)  option_data = DATA_SEQ;
-          else if (strcmp (optarg, "ffs") == 0)  option_data = DATA_FFS;
-          else if (strcmp (optarg, "2fd") == 0)  option_data = DATA_2FD;
-          else
-            {
-              fprintf (stderr, "unrecognised data option: %s\n", optarg);
-              exit (1);
-            }
-          break;
-        case 'b':
-          mp_trace_base = atoi (optarg);
-          break;
-        case 'p':
-          option_print = 1;
-          break;
-        case 'R':
-          /* randomize */
+	switch (opt) {
+	case '1':
+	  /* use limb data values 1, 2, 3, ... etc */
+	  option_data = DATA_SEQ;
+	  break;
+	case '9':
+	  /* use limb data values 0xFFF...FFF always */
+	  option_data = DATA_FFS;
+	  break;
+	case 'a':
+	  if (strcmp (optarg, "zeros") == 0)     option_data = DATA_ZEROS;
+	  else if (strcmp (optarg, "seq") == 0)  option_data = DATA_SEQ;
+	  else if (strcmp (optarg, "ffs") == 0)  option_data = DATA_FFS;
+	  else if (strcmp (optarg, "2fd") == 0)  option_data = DATA_2FD;
+	  else
+	    {
+	      fprintf (stderr, "unrecognised data option: %s\n", optarg);
+	      exit (1);
+	    }
+	  break;
+	case 'b':
+	  mp_trace_base = atoi (optarg);
+	  break;
+	case 'E':
+	  /* re-seed */
+	  sscanf (optarg, "%lu", &seed);
+	  printf ("Re-seeding with %lu\n", seed);
+	  break;
+	case 'p':
+	  option_print = 1;
+	  break;
+	case 'R':
+	  /* randomize */
 	  seed = time (NULL);
-          break;
-        case 'r':
+	  printf ("Seeding with %lu, re-run using \"-E %lu\"\n", seed, seed);
+	  break;
+	case 'r':
 	  option_repetitions = atoi (optarg);
-          break;
-        case 's':
-          {
-            char  *p;
-            option_firstsize = atoi (optarg);
-            if ((p = strchr (optarg, '-')) != NULL)
-              option_lastsize = atoi (p+1);
-          }
-          break;
-        case 'S':
-          /* -S <size> sets the starting size for the second of a two size
-             routine (like mpn_mul_basecase) */
+	  break;
+	case 's':
+	  {
+	    char  *p;
+	    option_firstsize = atoi (optarg);
+	    if ((p = strchr (optarg, '-')) != NULL)
+	      option_lastsize = atoi (p+1);
+	  }
+	  break;
+	case 'S':
+	  /* -S <size> sets the starting size for the second of a two size
+	     routine (like mpn_mul_basecase) */
 	  option_firstsize2 = atoi (optarg);
-          break;
-        case 'W':
-          /* use this when running in the debugger */
-          option_spinner = 0;
-          break;
-        case 'z':
-          /* disable redzones */
-          option_redzones = 0;
-          break;
-        case '?':
-          usage (argv[0]);
-          break;
-        }
+	  break;
+	case 'W':
+	  /* use this when running in the debugger */
+	  option_spinner = 0;
+	  break;
+	case 'z':
+	  /* disable redzones */
+	  option_redzones = 0;
+	  break;
+	case '?':
+	  usage (argv[0]);
+	  break;
+	}
       }
 
-    gmp_randseed_ui (RANDS, seed);
+    gmp_randinit_default (__gmp_rands);
+    __gmp_rands_initialized = 1;
+    gmp_randseed_ui (__gmp_rands, seed);
   }
 
   try_init();
@@ -2727,4 +2950,4 @@ main (int argc, char *argv[])
     try_name (argv[i]);
 
   return 0;
-} 
+}

@@ -1,6 +1,10 @@
 /* mpn_preinv_divrem_1 -- mpn by limb division with pre-inverted divisor.
 
-Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
+   THE FUNCTIONS IN THIS FILE ARE FOR INTERNAL USE ONLY.  THEY'RE ALMOST
+   CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR DISAPPEAR COMPLETELY IN
+   FUTURE GNU MP RELEASES.
+
+Copyright 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +20,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -123,7 +127,7 @@ mpn_preinv_divrem_1 (mp_ptr qp, mp_size_t xsize,
  done_integer:
   for (i = 0; i < xsize; i++)
     {
-      udiv_qrnnd_preinv (*qp, r, r, 0, d, dinv);
+      udiv_qrnnd_preinv (*qp, r, r, CNST_LIMB(0), d, dinv);
       qp--;
     }
 

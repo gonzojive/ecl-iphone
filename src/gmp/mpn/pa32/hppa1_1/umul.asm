@@ -13,9 +13,9 @@ dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 dnl  License for more details.
 
 dnl  You should have received a copy of the GNU Lesser General Public License
-dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-dnl  MA 02111-1307, USA.
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+dnl  to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl  Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
@@ -23,16 +23,16 @@ ASM_START()
 PROLOGUE(mpn_umul_ppmm)
 C	.callinfo frame=64,no_calls
 
-	ldo 64(%r30),%r30
-	stw %r25,-16(0,%r30)
-	fldws -16(0,%r30),%fr22R
-	stw %r24,-16(0,%r30)
-	fldws -16(0,%r30),%fr22L
-	xmpyu %fr22R,%fr22L,%fr22
-	fstds %fr22,-16(0,%r30)
-	ldw -16(0,%r30),%r28
-	ldw -12(0,%r30),%r29
-	stw %r29,0(0,%r26)
-	bv 0(%r2)
-	ldo -64(%r30),%r30
+	ldo	64(%r30),%r30
+	stw	%r25,-16(0,%r30)
+	fldws	-16(0,%r30),%fr22R
+	stw	%r24,-16(0,%r30)
+	fldws	-16(0,%r30),%fr22L
+	xmpyu	%fr22R,%fr22L,%fr22
+	fstds	%fr22,-16(0,%r30)
+	ldw	-16(0,%r30),%r28
+	ldw	-12(0,%r30),%r29
+	stw	%r29,0(0,%r26)
+	bv	0(%r2)
+	ldo	-64(%r30),%r30
 EPILOGUE()

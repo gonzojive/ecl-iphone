@@ -3,7 +3,7 @@
 # GMP config.sub wrapper.
 
 
-# Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
+# Copyright 2000, 2001, 2002, 2003, 2006 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -19,8 +19,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-# the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-# MA 02111-1307, USA.
+# the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
 
 
 # Usage: config.sub CPU-VENDOR-OS
@@ -74,33 +74,39 @@ given_rest=`echo "$given_full" | sed 's/^[^-]*//'`
 
 # Aliases for GMP extras
 case "$given_cpu" in
-p5 | p54)   given_cpu=pentium ;;
-p55)        given_cpu=pentiummmx ;;
-p6)         given_cpu=pentiumpro ;;
-pentiumii)  given_cpu=pentium2 ;;
-pentiumiii) given_cpu=pentium3 ;;
+  # configfsf.sub turns p5 into i586, instead use our exact cpu type
+  p5 | p54)   given_cpu=pentium ;;
+  p55)        given_cpu=pentiummmx ;;
+
+  # configfsf.sub turns p6, pentiumii and pentiumiii into i686, instead use
+  # our exact cpu types
+  p6)         given_cpu=pentiumpro ;;
+  pentiumii)  given_cpu=pentium2 ;;
+  pentiumiii) given_cpu=pentium3 ;;
 esac
 given_full="$given_cpu$given_rest"
 
 
 # GMP extras and what to use for the config.sub test
 case "$given_cpu" in
+itanium | itanium2)
+  test_cpu=ia64 ;;
 pentium | pentiummmx | pentiumpro | pentium[234] | k[56] | k6[23] | athlon | viac3*)
   test_cpu=i386 ;;
-power[12] | power2sc)
+power[2-9] | power2sc)
   test_cpu=power ;;
 powerpc401 | powerpc403 | powerpc405 | \
 powerpc505 | \
 powerpc601 | powerpc602  | \
 powerpc603 | powerpc603e | \
 powerpc604 | powerpc604e | \
-powerpc620 | powerpc630  | \
+powerpc620 | powerpc630  | powerpc970  | \
 powerpc740 | powerpc7400 | powerpc7450 | powerpc750  | \
 powerpc801 | powerpc821 | powerpc823  | powerpc860 | \
 powerpc64)
   test_cpu=powerpc ;;
 sparcv8 | supersparc | microsparc | \
-ultrasparc | ultrasparc2 | ultrasparc2i | ultrasparc3)
+ultrasparc | ultrasparc2 | ultrasparc2i | ultrasparc3 | ultrasparct1)
   test_cpu=sparc ;;
 sh2)
   test_cpu=sh ;;

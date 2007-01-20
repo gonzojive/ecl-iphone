@@ -1,6 +1,6 @@
 /* __gmp_extract_double -- convert from double to array of mp_limb_t.
 
-Copyright 1996, 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1996, 1999, 2000, 2001, 2002, 2006 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -85,7 +85,7 @@ __gmp_extract_double (mp_ptr rp, double d)
 	    manl = manl << 1;
 	    exp--;
 	  }
-	while ((mp_limb_signed_t) manl >= 0);
+	while ((manl & GMP_LIMB_HIGHBIT) == 0);
       }
 #endif
 #if BITS_PER_PART == 32
@@ -102,7 +102,7 @@ __gmp_extract_double (mp_ptr rp, double d)
 	    manl = manl << 1;
 	    exp--;
 	  }
-	while ((mp_limb_signed_t) manh >= 0);
+	while ((manh & GMP_LIMB_HIGHBIT) == 0);
       }
 #endif
 #if BITS_PER_PART != 32 && BITS_PER_PART != 64
@@ -116,8 +116,7 @@ __gmp_extract_double (mp_ptr rp, double d)
     exp = 0;
     if (d >= 1.0)
       {
-	if (d * 0.5 == d)
-	  abort ();
+	ASSERT_ALWAYS (d * 0.5 != d);
 
 	while (d >= 32768.0)
 	  {
@@ -246,25 +245,33 @@ __gmp_extract_double (mp_ptr rp, double d)
 #endif
 
 #if LIMBS_PER_DOUBLE > 3
-  /* Insert code for splitting manh,,manl into LIMBS_PER_DOUBLE
-     mp_limb_t's at rp.  */
-  if (sc != 0)
+  if (sc == 0)
     {
-      /* This is not perfect, and would fail for GMP_LIMB_BITS == 16.
-	 The ASSERT_ALWAYS should catch the problematic cases.  */
-      ASSERT_ALWAYS ((manl << sc) == 0);
-      manl = (manh << sc) | (manl >> (GMP_LIMB_BITS - sc));
-      manh = manh >> (GMP_LIMB_BITS - sc);
+      int i;
+
+      for (i = LIMBS_PER_DOUBLE - 1; i >= 0; i--)
+	{
+	  rp[i] = manh >> (BITS_PER_ULONG - GMP_NUMB_BITS);
+	  manh = ((manh << GMP_NUMB_BITS)
+		  | (manl >> (BITS_PER_ULONG - GMP_NUMB_BITS)));
+	  manl = manl << GMP_NUMB_BITS;
+	}
+      exp--;
     }
-  {
-    int i;
-    for (i = LIMBS_PER_DOUBLE - 1; i >= 0; i--)
-      {
-	rp[i] = manh >> (BITS_PER_LONGINT - GMP_LIMB_BITS);
-	manh = ((manh << GMP_LIMB_BITS)
-		| (manl >> (BITS_PER_LONGINT - GMP_LIMB_BITS)));
-	manl = manl << GMP_LIMB_BITS;
-      }
+  else
+    {
+      int i;
+
+      rp[LIMBS_PER_DOUBLE - 1] = (manh >> (GMP_LIMB_BITS - sc));
+      manh = (manh << sc) | (manl >> (GMP_LIMB_BITS - sc));
+      manl = (manl << sc);
+      for (i = LIMBS_PER_DOUBLE - 2; i >= 0; i--)
+	{
+	  rp[i] = manh >> (BITS_PER_ULONG - GMP_NUMB_BITS);
+	  manh = ((manh << GMP_NUMB_BITS)
+		  | (manl >> (BITS_PER_ULONG - GMP_NUMB_BITS)));
+	  manl = manl << GMP_NUMB_BITS;
+	}
   }
 #endif
 

@@ -1,6 +1,6 @@
 dnl  PowerPC 750 mpn_com_n -- mpn bitwise one's complement
 
-dnl  Copyright 2002 Free Software Foundation, Inc.
+dnl  Copyright 2002, 2003 Free Software Foundation, Inc.
 dnl
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -16,17 +16,18 @@ dnl  Lesser General Public License for more details.
 dnl
 dnl  You should have received a copy of the GNU Lesser General Public
 dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
-dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
-dnl  Suite 330, Boston, MA 02111-1307, USA.
+dnl  not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+dnl  Fifth Floor, Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
 
-C     cycles/limb
-C 604e:  3.0
-C 750:   2.0
-C 7400:  2.0
-
+C                cycles/limb
+C 603e:            ?
+C 604e:            3.0
+C 75x (G3):        2.0
+C 7400,7410 (G4):  2.0
+C 744x,745x (G4+): 3.0
 
 C void mpn_com_n (mp_ptr dst, mp_srcptr src, mp_size_t size);
 C

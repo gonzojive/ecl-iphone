@@ -1,7 +1,7 @@
 /* mpz_divexact -- finds quotient when known that quot * den == num && den != 0.
 
-Copyright 1991, 1993, 1994, 1995, 1996, 1997, 1998, 2000, 2001, 2002 Free
-Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1995, 1996, 1997, 1998, 2000, 2001, 2002, 2005, 2006
+Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -17,8 +17,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA.  */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA.  */
 
 /*  Ken Weber (kweber@mat.ufrgs.br, kweber@mcs.kent.edu)
 
@@ -42,7 +42,17 @@ mpz_divexact (mpz_ptr quot, mpz_srcptr num, mpz_srcptr den)
   mp_size_t qsize, tsize;
   mp_srcptr np, dp;
   mp_size_t nsize, dsize;
-  TMP_DECL (marker);
+  TMP_DECL;
+
+#if WANT_ASSERT
+  {
+    mpz_t  rem;
+    mpz_init (rem);
+    mpz_tdiv_r (rem, num, den);
+    ASSERT (SIZ(rem) == 0);
+    mpz_clear (rem);
+  }
+#endif
 
   nsize = ABS (num->_mp_size);
   dsize = ABS (den->_mp_size);
@@ -77,7 +87,14 @@ mpz_divexact (mpz_ptr quot, mpz_srcptr num, mpz_srcptr den)
       DIVIDE_BY_ZERO;
     }
 
-  TMP_MARK (marker);
+  /* Avoid quadratic behaviour, but do it conservatively.  */
+  if (qsize > 1500)
+    {
+      mpz_tdiv_q (quot, num, den);
+      return;
+    }
+
+  TMP_MARK;
 
   /*  QUOT <-- NUM/2^r, T <-- DEN/2^r where = r number of twos in DEN.  */
   while (dp[0] == 0)
@@ -114,5 +131,5 @@ mpz_divexact (mpz_ptr quot, mpz_srcptr num, mpz_srcptr den)
 
   quot->_mp_size = (num->_mp_size ^ den->_mp_size) >= 0 ? qsize : -qsize;
 
-  TMP_FREE (marker);
+  TMP_FREE;
 }

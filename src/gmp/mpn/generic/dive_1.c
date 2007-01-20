@@ -4,7 +4,7 @@
    CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR DISAPPEAR COMPLETELY IN
    FUTURE GNU MP RELEASES.
 
-Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002, 2003, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -20,8 +20,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -69,7 +69,7 @@ void
 mpn_divexact_1 (mp_ptr dst, mp_srcptr src, mp_size_t size, mp_limb_t divisor)
 {
   mp_size_t  i;
-  mp_limb_t  c, l, ls, s, s_next, inverse, dummy;
+  mp_limb_t  c, h, l, ls, s, s_next, inverse, dummy;
   unsigned   shift;
 
   ASSERT (size >= 1);
@@ -78,9 +78,11 @@ mpn_divexact_1 (mp_ptr dst, mp_srcptr src, mp_size_t size, mp_limb_t divisor)
   ASSERT_MPN (src, size);
   ASSERT_LIMB (divisor);
 
+  s = src[0];
+
   if (size == 1)
     {
-      dst[0] = src[0] / divisor;
+      dst[0] = s / divisor;
       return;
     }
 
@@ -97,32 +99,28 @@ mpn_divexact_1 (mp_ptr dst, mp_srcptr src, mp_size_t size, mp_limb_t divisor)
 
   if (shift != 0)
     {
-      s = src[0];
       c = 0;
       i = 0;
       size--;
-      goto even_entry;
 
       do
 	{
-	  umul_ppmm (l, dummy, l, divisor);
-	  c += l;
-
-	even_entry:
 	  s_next = src[i+1];
 	  ls = ((s >> shift) | (s_next << (GMP_NUMB_BITS-shift))) & GMP_NUMB_MASK;
 	  s = s_next;
 
-          SUBC_LIMB (c, l, ls, c);
+	  SUBC_LIMB (c, l, ls, c);
 
 	  l = (l * inverse) & GMP_NUMB_MASK;
 	  dst[i] = l;
+
+	  umul_ppmm (h, dummy, l, divisor);
+	  c += h;
+
 	  i++;
 	}
       while (i < size);
 
-      umul_ppmm (l, dummy, l, divisor);
-      c += l;
       ls = s >> shift;
       l = ls - c;
       l = (l * inverse) & GMP_NUMB_MASK;
@@ -130,21 +128,20 @@ mpn_divexact_1 (mp_ptr dst, mp_srcptr src, mp_size_t size, mp_limb_t divisor)
     }
   else
     {
-      l = src[0];
-      l = (l * inverse) & GMP_NUMB_MASK;
+      l = (s * inverse) & GMP_NUMB_MASK;
       dst[0] = l;
       i = 1;
       c = 0;
 
       do
 	{
-	  umul_ppmm (l, dummy, l, divisor);
-	  c += l;
+	  umul_ppmm (h, dummy, l, divisor);
+	  c += h;
 
 	  s = src[i];
-          SUBC_LIMB (c, l, s, c);
+	  SUBC_LIMB (c, l, s, c);
 
-          l = (l * inverse) & GMP_NUMB_MASK;
+	  l = (l * inverse) & GMP_NUMB_MASK;
 	  dst[i] = l;
 	  i++;
 	}

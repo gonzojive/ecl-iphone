@@ -1,6 +1,6 @@
 /* mpn_divrem_1 -- mpn by limb division.
 
-Copyright 1991, 1993, 1994, 1996, 1998, 1999, 2000, 2002 Free Software
+Copyright 1991, 1993, 1994, 1996, 1998, 1999, 2000, 2002, 2003 Free Software
 Foundation, Inc.
 
 This file is part of the GNU MP Library.
@@ -17,8 +17,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -127,7 +127,7 @@ mpn_divrem_1 (mp_ptr qp, mp_size_t qxn,
 	    }
 	  for (i = qxn - 1; i >= 0; i--)
 	    {
-	      udiv_qrnnd (*qp, r, r, 0, d);
+	      udiv_qrnnd (*qp, r, r, CNST_LIMB(0), d);
 	      r >>= GMP_NAIL_BITS;
 	      qp--;
 	    }
@@ -148,7 +148,7 @@ mpn_divrem_1 (mp_ptr qp, mp_size_t qxn,
 	    }
 	  for (i = qxn - 1; i >= 0; i--)
 	    {
-	      udiv_qrnnd_preinv (*qp, r, r, 0, d, dinv);
+	      udiv_qrnnd_preinv (*qp, r, r, CNST_LIMB(0), d, dinv);
 	      r >>= GMP_NAIL_BITS;
 	      qp--;
 	    }
@@ -161,7 +161,7 @@ mpn_divrem_1 (mp_ptr qp, mp_size_t qxn,
       int norm;
 
       /* Skip a division if high < divisor (high quotient 0).  Testing here
-	 before before normalizing will still skip as often as possible.  */
+	 before normalizing will still skip as often as possible.  */
       if (un != 0)
 	{
 	  n1 = up[un - 1] << GMP_NAIL_BITS;
@@ -207,7 +207,7 @@ mpn_divrem_1 (mp_ptr qp, mp_size_t qxn,
 	    }
 	  for (i = qxn - 1; i >= 0; i--)
 	    {
-	      udiv_qrnnd (*qp, r, r, 0, d);
+	      udiv_qrnnd (*qp, r, r, CNST_LIMB(0), d);
 	      r >>= GMP_NAIL_BITS;
 	      qp--;
 	    }
@@ -237,7 +237,7 @@ mpn_divrem_1 (mp_ptr qp, mp_size_t qxn,
 	    }
 	  for (i = qxn - 1; i >= 0; i--)
 	    {
-	      udiv_qrnnd_preinv (*qp, r, r, 0, d, dinv);
+	      udiv_qrnnd_preinv (*qp, r, r, CNST_LIMB(0), d, dinv);
 	      r >>= GMP_NAIL_BITS;
 	      qp--;
 	    }

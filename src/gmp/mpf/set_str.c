@@ -2,8 +2,8 @@
    in base BASE to a float in dest.  If BASE is zero, the leading characters
    of STRING is used to figure out the base.
 
-Copyright 1993, 1994, 1995, 1996, 1997, 2000, 2001, 2002 Free Software
-Foundation, Inc.
+Copyright 1993, 1994, 1995, 1996, 1997, 2000, 2001, 2002, 2003, 2005 Free
+Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -19,14 +19,27 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
+
+/*
+  This still needs work, as suggested by some FIXME comments.
+  1. Don't depend on superfluous mantissa digits.
+  2. Allocate temp space more cleverly.
+  3. Use mpn_tdiv_qr instead of mpn_lshift+mpn_divrem.
+*/
+
+#define _GNU_SOURCE    /* for DECIMAL_POINT in langinfo.h */
 
 #include "config.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+#if HAVE_LANGINFO_H
+#include <langinfo.h>  /* for nl_langinfo */
+#endif
 
 #if HAVE_LOCALE_H
 #include <locale.h>    /* for localeconv */
@@ -36,189 +49,232 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 #include "longlong.h"
 
-static int
-digit_value_in_base (int c, int base)
+extern const unsigned char __gmp_digit_value_tab[];
+#define digit_value_tab __gmp_digit_value_tab
+
+/* Compute base^exp and return the most significant prec limbs in rp[].
+   Put the count of omitted low limbs in *ign.
+   Return the actual size (which might be less than prec).  */
+static mp_size_t
+mpn_pow_1_highpart (mp_ptr rp, mp_size_t *ignp,
+		    mp_limb_t base, mp_exp_t exp,
+		    mp_size_t prec, mp_ptr tp)
 {
-  int digit;
+  mp_size_t ign;		/* counts number of ignored low limbs in r */
+  mp_size_t off;		/* keeps track of offset where value starts */
+  mp_ptr passed_rp = rp;
+  mp_size_t rn;
+  int cnt;
+  int i;
 
-  if (isdigit (c))
-    digit = c - '0';
-  else if (islower (c))
-    digit = c - 'a' + 10;
-  else if (isupper (c))
-    digit = c - 'A' + 10;
-  else
-    return -1;
+  rp[0] = base;
+  rn = 1;
+  off = 0;
+  ign = 0;
+  count_leading_zeros (cnt, exp);
+  for (i = GMP_LIMB_BITS - cnt - 2; i >= 0; i--)
+    {
+      mpn_sqr_n (tp, rp + off, rn);
+      rn = 2 * rn;
+      rn -= tp[rn - 1] == 0;
+      ign <<= 1;
 
-  if (digit < base)
-    return digit;
-  return -1;
+      off = 0;
+      if (rn > prec)
+	{
+	  ign += rn - prec;
+	  off = rn - prec;
+	  rn = prec;
+	}
+      MP_PTR_SWAP (rp, tp);
+
+      if (((exp >> i) & 1) != 0)
+	{
+	  mp_limb_t cy;
+	  cy = mpn_mul_1 (rp, rp + off, rn, base);
+	  rp[rn] = cy;
+	  rn += cy != 0;
+	  off = 0;
+	}
+    }
+
+  if (rn > prec)
+    {
+      ign += rn - prec;
+      rp += rn - prec;
+      rn = prec;
+    }
+
+  MPN_COPY_INCR (passed_rp, rp + off, rn);
+  *ignp = ign;
+  return rn;
 }
-
-#if HAVE_LOCALECONV
-/* Avoid memcmp for the usual case that point is one character.  Don't
-   bother with str+1,point+1,pointlen-1 since those offsets would add to the
-   code size.  */
-#define POINTCMP_FAST(c, str)                                           \
-  ((c) == point0                                                        \
-   && (pointlen == 1 || memcmp (str, point, pointlen) == 0))
-#define POINTCMP_SMALL(c, str)   (memcmp (str, point, pointlen) == 0)
-#define POINTLEN                 (pointlen)
-#else
-#define POINTCMP_FAST(c, str)    ((c) == '.')
-#define POINTCMP_SMALL(c, str)   ((c) == '.')
-#define POINTLEN                 1
-#endif
 
 int
 mpf_set_str (mpf_ptr x, const char *str, int base)
 {
   size_t str_size;
   char *s, *begs;
-  size_t i;
-  mp_size_t xsize;
+  size_t i, j;
   int c;
   int negative;
   char *dotpos = 0;
-  int expflag;
-  int decimal_exponent_flag;
-#if HAVE_LOCALECONV
-  const char  *point = localeconv()->decimal_point;
+  const char *expptr;
+  int exp_base;
+  const char  *point = GMP_DECIMAL_POINT;
   size_t      pointlen = strlen (point);
-  int         point0 = point[0];
-#endif
-  TMP_DECL (marker);
+  const unsigned char *digit_value;
+  TMP_DECL;
 
-  TMP_MARK (marker);
-
-  c = *str;
+  c = (unsigned char) *str;
 
   /* Skip whitespace.  */
   while (isspace (c))
-    c = *++str;
+    c = (unsigned char) *++str;
 
   negative = 0;
   if (c == '-')
     {
       negative = 1;
-      c = *++str;
+      c = (unsigned char) *++str;
     }
 
-  decimal_exponent_flag = base < 0;
-  base = ABS (base);
-
-  /* require at least one digit, possibly after an initial decimal point */
-  if (digit_value_in_base (c, base == 0 ? 10 : base) < 0)
+  exp_base = base;
+  if (base < 0)
     {
-      if (! POINTCMP_SMALL (c, str))
-        return -1;
-      if (digit_value_in_base (str[POINTLEN], base == 0 ? 10 : base) < 0)
-        return -1;
+      exp_base = 10;
+      base = -base;
     }
 
-  /* If BASE is 0, try to find out the base by looking at the initial
-     characters.  */
+  digit_value = digit_value_tab;
+  if (base > 36)
+    {
+      /* For bases > 36, use the collating sequence
+	 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.  */
+      digit_value += 224;
+      if (base > 62)
+	return -1;		/* too large base */
+    }
+
+  /* Require at least one digit, possibly after an initial decimal point.  */
+  if (digit_value[c] >= (base == 0 ? 10 : base))
+    {
+      /* not a digit, must be a decimal point */
+      for (i = 0; i < pointlen; i++)
+        if (str[i] != point[i])
+          return -1;
+      if (digit_value[(unsigned char) str[pointlen]] >= (base == 0 ? 10 : base))
+	return -1;
+    }
+
+  /* Default base to decimal.  */
   if (base == 0)
-    {
-      base = 10;
-#if 0
-      if (c == '0')
-	{
-	  base = 8;
-	  if (str[1] == 'x' || str[1] == 'X')
-	    {
-	      base = 16;
-	      str += 2;
-	      c = *str;
-	    }
-	}
-#endif
-    }
+    base = 10;
 
-  expflag = 0;
+  /* Locate exponent part of the input.  Look from the right of the string,
+     since the exponent is usually a lot shorter than the mantissa.  */
+  expptr = NULL;
   str_size = strlen (str);
-  for (i = 0; i < str_size; i++)
+  for (i = str_size - 1; i > 0; i--)
     {
-      c = str[i];
+      c = (unsigned char) str[i];
       if (c == '@' || (base <= 10 && (c == 'e' || c == 'E')))
 	{
-	  expflag = 1;
+	  expptr = str + i + 1;
 	  str_size = i;
 	  break;
 	}
-
     }
 
+  TMP_MARK;
   s = begs = (char *) TMP_ALLOC (str_size + 1);
 
+  /* Loop through mantissa, converting it from ASCII to raw byte values.  */
   for (i = 0; i < str_size; i++)
     {
-      c = *str;
+      c = (unsigned char) *str;
       if (!isspace (c))
 	{
 	  int dig;
 
-	  if (POINTCMP_FAST (c, str))
-            {
+          for (j = 0; j < pointlen; j++)
+            if (str[j] != point[j])
+              goto not_point;
+          if (1)
+	    {
 	      if (dotpos != 0)
 		{
-		  TMP_FREE (marker);
+		  /* already saw a decimal point, another is invalid */
+		  TMP_FREE;
 		  return -1;
 		}
 	      dotpos = s;
-              str += POINTLEN - 1;
-              i += POINTLEN - 1;
+	      str += pointlen - 1;
+	      i += pointlen - 1;
 	    }
 	  else
 	    {
-	      dig = digit_value_in_base (c, base);
-	      if (dig < 0)
+            not_point:
+	      dig = digit_value[c];
+	      if (dig >= base)
 		{
-		  TMP_FREE (marker);
+		  TMP_FREE;
 		  return -1;
 		}
 	      *s++ = dig;
 	    }
 	}
-      c = *++str;
+      c = (unsigned char) *++str;
     }
 
   str_size = s - begs;
 
-  xsize = str_size / __mp_bases[base].chars_per_limb + 2;
   {
     long exp_in_base;
-    mp_size_t ralloc, rsize, msize;
-    int cnt, i;
+    mp_size_t ra, ma, rn, mn;
+    int cnt;
     mp_ptr mp, tp, rp;
     mp_exp_t exp_in_limbs;
-    mp_size_t prec = x->_mp_prec + 1;
+    mp_size_t prec = PREC(x) + 1;
     int divflag;
     mp_size_t madj, radj;
 
-    mp = (mp_ptr) TMP_ALLOC (xsize * BYTES_PER_MP_LIMB);
-    msize = mpn_set_str (mp, (unsigned char *) begs, str_size, base);
+#if 0
+    size_t n_chars_needed;
 
-    if (msize == 0)
+    /* This breaks things like 0.000...0001.  To safely ignore superfluous
+       digits, we need to skip over leadng zeros.  */
+    /* Just consider the relevant leading digits of the mantissa.  */
+    n_chars_needed = 2 + (size_t)
+      (((size_t) prec * GMP_NUMB_BITS) * mp_bases[base].chars_per_bit_exactly);
+    if (str_size > n_chars_needed)
+      str_size = n_chars_needed;
+#endif
+
+    ma = 2 * (prec + 1);
+    mp = TMP_ALLOC_LIMBS (ma);
+    mn = mpn_set_str (mp, (unsigned char *) begs, str_size, base);
+
+    if (mn == 0)
       {
-	x->_mp_size = 0;
-	x->_mp_exp = 0;
-	TMP_FREE (marker);
+	SIZ(x) = 0;
+	EXP(x) = 0;
+	TMP_FREE;
 	return 0;
       }
 
     madj = 0;
     /* Ignore excess limbs in MP,MSIZE.  */
-    if (msize > prec)
+    if (mn > prec)
       {
-	madj = msize - prec;
-	mp += msize - prec;
-	msize = prec;
+	madj = mn - prec;
+	mp += mn - prec;
+	mn = prec;
       }
 
-    if (expflag != 0)
-      exp_in_base = strtol (str + 1, (char **) 0,
-			    decimal_exponent_flag ? 10 : base);
+    if (expptr != 0)
+      /* FIXME: Should do some error checking here.  */
+      exp_in_base = strtol (expptr, (char **) 0, exp_base);
     else
       exp_in_base = 0;
     if (dotpos != 0)
@@ -228,84 +284,52 @@ mpf_set_str (mpf_ptr x, const char *str, int base)
 
     if (exp_in_base == 0)
       {
-	MPN_COPY (x->_mp_d, mp, msize);
-	x->_mp_size = negative ? -msize : msize;
-	x->_mp_exp = msize + madj;
-	TMP_FREE (marker);
+	MPN_COPY (PTR(x), mp, mn);
+	SIZ(x) = negative ? -mn : mn;
+	EXP(x) = mn + madj;
+	TMP_FREE;
 	return 0;
       }
 
-    radj = 0;			/* counts number of ignored low limbs in r */
-
-    ralloc = 2 * (prec + 1);
-    rp = (mp_ptr) TMP_ALLOC (ralloc * BYTES_PER_MP_LIMB);
-    tp = (mp_ptr) TMP_ALLOC (ralloc * BYTES_PER_MP_LIMB);
-
-    rp[0] = base;
-    rsize = 1;
-    count_leading_zeros (cnt, exp_in_base);
-    for (i = GMP_LIMB_BITS - cnt - 2; i >= 0; i--)
-      {
-	mpn_sqr_n (tp, rp, rsize);
-	rsize = 2 * rsize;
-	rsize -= tp[rsize - 1] == 0;
-	radj <<= 1;
-
-	if (rsize > prec)
-	  {
-	    radj += rsize - prec;
-	    MPN_COPY_INCR (rp, tp + rsize - prec, prec);
-	    rsize = prec;
-	  }
-	else
-	  MP_PTR_SWAP (rp, tp);
-
-	if (((exp_in_base >> i) & 1) != 0)
-	  {
-	    mp_limb_t cy;
-	    cy = mpn_mul_1 (rp, rp, rsize, (mp_limb_t) base);
-	    rp[rsize] = cy;
-	    rsize += cy != 0;
-	  }
-      }
-
-    if (rsize > prec)
-      {
-	radj += rsize - prec;
-	rp += rsize - prec;
-	rsize = prec;
-      }
+    ra = 2 * (prec + 1);
+    rp = TMP_ALLOC_LIMBS (ra);
+    tp = TMP_ALLOC_LIMBS (ra);
+    rn = mpn_pow_1_highpart (rp, &radj, (mp_limb_t) base, exp_in_base, prec, tp);
 
     if (divflag)
       {
+#if 0
+	/* FIXME: Should use mpn_tdiv here.  */
+	mpn_tdiv_qr (qp, mp, 0L, mp, mn, rp, rn);
+#else
 	mp_ptr qp;
 	mp_limb_t qlimb;
-	if (msize < rsize)
+	if (mn < rn)
 	  {
 	    /* Pad out MP,MSIZE for current divrem semantics.  */
-	    mp_ptr tmp = (mp_ptr) TMP_ALLOC ((rsize + 1) * BYTES_PER_MP_LIMB);
-	    MPN_ZERO (tmp, rsize - msize);
-	    MPN_COPY (tmp + rsize - msize, mp, msize);
+	    mp_ptr tmp = TMP_ALLOC_LIMBS (rn + 1);
+	    MPN_ZERO (tmp, rn - mn);
+	    MPN_COPY (tmp + rn - mn, mp, mn);
 	    mp = tmp;
-	    madj -= rsize - msize;
-	    msize = rsize;
+	    madj -= rn - mn;
+	    mn = rn;
 	  }
-	if ((rp[rsize - 1] & GMP_NUMB_HIGHBIT) == 0)
+	if ((rp[rn - 1] & GMP_NUMB_HIGHBIT) == 0)
 	  {
 	    mp_limb_t cy;
-            count_leading_zeros (cnt, rp[rsize - 1]);
+	    count_leading_zeros (cnt, rp[rn - 1]);
 	    cnt -= GMP_NAIL_BITS;
-	    mpn_lshift (rp, rp, rsize, cnt);
-	    cy = mpn_lshift (mp, mp, msize, cnt);
+	    mpn_lshift (rp, rp, rn, cnt);
+	    cy = mpn_lshift (mp, mp, mn, cnt);
 	    if (cy)
-	      mp[msize++] = cy;
+	      mp[mn++] = cy;
 	  }
 
-	qp = (mp_ptr) TMP_ALLOC ((prec + 1) * BYTES_PER_MP_LIMB);
-	qlimb = mpn_divrem (qp, prec - (msize - rsize), mp, msize, rp, rsize);
+	qp = TMP_ALLOC_LIMBS (prec + 1);
+	qlimb = mpn_divrem (qp, prec - (mn - rn), mp, mn, rp, rn);
 	tp = qp;
-	exp_in_limbs = qlimb + (msize - rsize) + (madj - radj);
-	rsize = prec;
+	exp_in_limbs = qlimb + (mn - rn) + (madj - radj);
+	rn = prec;
 	if (qlimb != 0)
 	  {
 	    tp[prec] = qlimb;
@@ -313,30 +337,31 @@ mpf_set_str (mpf_ptr x, const char *str, int base)
 	       variable.  */
 	    tp++;
 	  }
+#endif
       }
     else
       {
-	tp = (mp_ptr) TMP_ALLOC ((rsize + msize) * BYTES_PER_MP_LIMB);
-	if (rsize > msize)
-	  mpn_mul (tp, rp, rsize, mp, msize);
+	tp = TMP_ALLOC_LIMBS (rn + mn);
+	if (rn > mn)
+	  mpn_mul (tp, rp, rn, mp, mn);
 	else
-	  mpn_mul (tp, mp, msize, rp, rsize);
-	rsize += msize;
-	rsize -= tp[rsize - 1] == 0;
-	exp_in_limbs = rsize + madj + radj;
+	  mpn_mul (tp, mp, mn, rp, rn);
+	rn += mn;
+	rn -= tp[rn - 1] == 0;
+	exp_in_limbs = rn + madj + radj;
 
-	if (rsize > prec)
+	if (rn > prec)
 	  {
-	    tp += rsize - prec;
-	    rsize = prec;
+	    tp += rn - prec;
+	    rn = prec;
 	    exp_in_limbs += 0;
 	  }
       }
 
-    MPN_COPY (x->_mp_d, tp, rsize);
-    x->_mp_size = negative ? -rsize : rsize;
-    x->_mp_exp = exp_in_limbs;
-    TMP_FREE (marker);
+    MPN_COPY (PTR(x), tp, rn);
+    SIZ(x) = negative ? -rn : rn;
+    EXP(x) = exp_in_limbs;
+    TMP_FREE;
     return 0;
   }
 }

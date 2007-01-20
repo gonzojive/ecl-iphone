@@ -1,7 +1,8 @@
 dnl  HP-PA  mpn_rshift -- Shift a number right.
 dnl  Optimized for the PA7100, where is runs at 3.25 cycles/limb.
 
-dnl  Copyright 1992, 1994, 2000, 2001, 2002 Free Software Foundation, Inc.
+dnl  Copyright 1992, 1994, 2000, 2001, 2002, 2003 Free Software Foundation,
+dnl  Inc.
 
 dnl  This file is part of the GNU MP Library.
 
@@ -16,9 +17,9 @@ dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 dnl  License for more details.
 
 dnl  You should have received a copy of the GNU Lesser General Public License
-dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-dnl  MA 02111-1307, USA.
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+dnl  to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl  Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
@@ -38,7 +39,7 @@ PROLOGUE(mpn_rshift)
 	addib,<=	-5,%r24,L(rest)
 	vshd		%r29,%r22,%r20
 
-	.label	L(loop)
+LDEF(loop)
 	ldws,ma		4(0,%r25),%r22
 	stws,ma		%r20,4(0,%r26)
 	vshd		%r22,%r29,%r20
@@ -53,11 +54,11 @@ PROLOGUE(mpn_rshift)
 	addib,>		-4,%r24,L(loop)
 	vshd		%r29,%r22,%r20
 
-	.label	L(rest)
+LDEF(rest)
 	addib,=		4,%r24,L(end1)
 	nop
 
-	.label	L(eloop)
+LDEF(eloop)
 	ldws,ma		4(0,%r25),%r22
 	stws,ma		%r20,4(0,%r26)
 	addib,<=	-1,%r24,L(end2)
@@ -67,16 +68,16 @@ PROLOGUE(mpn_rshift)
 	addib,>		-1,%r24,L(eloop)
 	vshd		%r29,%r22,%r20
 
-	.label	L(end1)
+LDEF(end1)
 	stws,ma		%r20,4(0,%r26)
 	vshd		%r0,%r29,%r20
 	bv		0(%r2)
 	stw		%r20,0(0,%r26)
 
-	.label	L(end2)
+LDEF(end2)
 	stws,ma		%r20,4(0,%r26)
 
-	.label	L(0004)
+LDEF(0004)
 	vshd		%r0,%r22,%r20
 	bv		0(%r2)
 	stw		%r20,0(0,%r26)

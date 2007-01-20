@@ -16,12 +16,12 @@ dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 dnl  License for more details.
 
 dnl  You should have received a copy of the GNU Lesser General Public License
-dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-dnl  MA 02111-1307, USA.
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+dnl  to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl  Boston, MA 02110-1301, USA.
 
 
-dnl  This runs at 2 cycles/limb on PA8000 and 1.75 cycles/limb on PA8500.  It
+dnl  This runs at 2 cycles/limb on PA8000 and 1.6875 cycles/limb on PA8500.  It
 dnl  should be possible to reach the cache bandwith 1.5 cycles/limb at least
 dnl  with PA8500.  The problem now is stalling of the first SUB,DB after LDO,
 dnl  where the processor gets confused about where carry comes from.
@@ -47,35 +47,36 @@ PROLOGUE(mpn_sub_n)
 	blr		%r28, %r0		C branch into loop
 	sub		rp, %r22, rp		C offset rp and set carry
 
-L(loop)	ldd		0(up), %r20
+LDEF(loop)
+	ldd		0(up), %r20
 	ldd		0(vp), %r31
 	sub,db		%r20, %r31, %r20
 	std		%r20, 0(rp)
-L(7)	ldd		8(up), %r21
+LDEF(7)	ldd		8(up), %r21
 	ldd		8(vp), %r19
 	sub,db		%r21, %r19, %r21
 	std		%r21, 8(rp)
-L(6)	ldd		16(up), %r20
+LDEF(6)	ldd		16(up), %r20
 	ldd		16(vp), %r31
 	sub,db		%r20, %r31, %r20
 	std		%r20, 16(rp)
-L(5)	ldd		24(up), %r21
+LDEF(5)	ldd		24(up), %r21
 	ldd		24(vp), %r19
 	sub,db		%r21, %r19, %r21
 	std		%r21, 24(rp)
-L(4)	ldd		32(up), %r20
+LDEF(4)	ldd		32(up), %r20
 	ldd		32(vp), %r31
 	sub,db		%r20, %r31, %r20
 	std		%r20, 32(rp)
-L(3)	ldd		40(up), %r21
+LDEF(3)	ldd		40(up), %r21
 	ldd		40(vp), %r19
 	sub,db		%r21, %r19, %r21
 	std		%r21, 40(rp)
-L(2)	ldd		48(up), %r20
+LDEF(2)	ldd		48(up), %r20
 	ldd		48(vp), %r31
 	sub,db		%r20, %r31, %r20
 	std		%r20, 48(rp)
-L(1)	ldd		56(up), %r21
+LDEF(1)	ldd		56(up), %r21
 	ldd		56(vp),%r19
 	sub,db		%r21, %r19, %r21
 	ldo		64(up), up

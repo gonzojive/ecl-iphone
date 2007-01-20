@@ -1,7 +1,6 @@
-dnl  Currently unused.
+dnl  mpn_umul_ppmm -- 1x1->2 limb multiplication
 
-
-dnl  Copyright 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2002 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 
@@ -16,24 +15,21 @@ dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 dnl  License for more details.
 
 dnl  You should have received a copy of the GNU Lesser General Public License
-dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-dnl  MA 02111-1307, USA.
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+dnl  to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl  Boston, MA 02110-1301, USA.
 
-	.set noreorder
-	.set volatile
-	.set noat
+include(`../config.m4')
 
-.text
-	.align 3
-	.globl __umul_ppmm
-	.ent __umul_ppmm
-__umul_ppmm:
-__umul_ppmm..ng:
-	.frame $30,0,$26,0
-	.prologue 0
-	mulq $17,$18,$1
-	umulh $17,$18,$0
-	stq $1,0($16)
-	ret $31,($26),1
-	.end __umul_ppmm
+
+C mp_limb_t mpn_umul_ppmm (mp_limb_t *lowptr, mp_limb_t m1, mp_limb_t m2);
+C
+
+ASM_START()
+PROLOGUE(mpn_umul_ppmm)
+	mulq	r17, r18, r1
+	umulh	r17, r18, r0
+	stq	r1, 0(r16)
+	ret	r31, (r26), 1
+EPILOGUE()
+ASM_END()

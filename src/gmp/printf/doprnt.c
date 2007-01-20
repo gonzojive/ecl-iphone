@@ -4,7 +4,7 @@
    CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR DISAPPEAR COMPLETELY IN
    FUTURE GNU MP RELEASES.
 
-Copyright 2001, 2002 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2003 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -20,8 +20,10 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
+
+#define _GNU_SOURCE    /* for DECIMAL_POINT in glibc langinfo.h */
 
 #include "config.h"
 
@@ -43,6 +45,14 @@ MA 02111-1307, USA. */
 # if HAVE_STDINT_H
 #  include <stdint.h>
 # endif
+#endif
+
+#if HAVE_LANGINFO_H
+#include <langinfo.h>  /* for nl_langinfo */
+#endif
+
+#if HAVE_LOCALE_H
+#include <locale.h>    /* for localeconv */
 #endif
 
 #if HAVE_SYS_TYPES_H
@@ -83,6 +93,13 @@ MA 02111-1307, USA. */
 
    "Z" was a type marker for size_t in old glibc, but there seems no need to
    provide access to that now "z" is standard.
+
+   In GMP 4.1.1 we documented "ll" and "L" as being equivalent, but in C99
+   in fact "ll" is just for long long and "L" just for long double.
+   Apparentely GLIBC allows "L" for long long though.  This doesn't affect
+   us as such, since both are passed through to the C library.  To be
+   consistent with what we said before, the two are treated equivalently
+   here, and it's left to the C library to do what it thinks with them.
 
    Possibilities:
 
@@ -160,6 +177,11 @@ __gmp_doprnt (const struct doprnt_funs_t *funs, void *data,
      use __gmp_allocate_func rather than TMP_ALLOC, to avoid overflowing the
      stack if a long output string is given.  */
   alloc_fmt_size = strlen (orig_fmt) + 1;
+#if _LONG_LONG_LIMB
+  /* for a long long limb we change %Mx to %llx, so could need an extra 1
+     char for every 3 existing */
+  alloc_fmt_size += alloc_fmt_size / 3;
+#endif
   alloc_fmt = __GMP_ALLOCATE_FUNC_TYPE (alloc_fmt_size, char);
   fmt = alloc_fmt;
   strcpy (fmt, orig_fmt);
@@ -281,7 +303,7 @@ __gmp_doprnt (const struct doprnt_funs_t *funs, void *data,
                 gmp_str = mpz_get_str (NULL, param.base, z);
                 goto gmp_integer;
               }
-              break;
+              /* break; */
             case 'q':
               /* quad_t is probably the same as long long, but let's treat
                  it separately just to be sure.  Also let's assume u_quad_t
@@ -346,6 +368,7 @@ __gmp_doprnt (const struct doprnt_funs_t *funs, void *data,
             case 'F':
               FLUSH ();
               DOPRNT_ACCUMULATE (__gmp_doprnt_mpf (funs, data, &param,
+                                                   GMP_DECIMAL_POINT,
                                                    va_arg (ap, mpf_srcptr)));
               va_copy (last_ap, ap);
               last_fmt = fmt;
@@ -405,6 +428,20 @@ __gmp_doprnt (const struct doprnt_funs_t *funs, void *data,
             /* glibc strerror(errno), no argument */
             goto next;
             
+          case 'M': /* mp_limb_t */
+            /* mung format string to l or ll and let plain printf handle it */
+#if _LONG_LONG_LIMB
+            memmove (fmt+1, fmt, strlen (fmt)+1);
+            fmt[-1] = 'l';
+            fmt[0] = 'l';
+            fmt++;
+            type = 'L';
+#else
+            fmt[-1] = 'l';
+            type = 'l';
+#endif
+            break;
+
           case 'n':
             {
               void  *p;

@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,13 +33,14 @@ main (void)
   mp_limb_t  src, want, got;
   int        i;
 
+  tests_start ();
   mp_trace_base = -16;
 
   for (i = 0; i < 1000; i++)
     {
       mpn_random (&src, (mp_size_t) 1);
 
-      want = refmpn_bswap_limb (src);
+      want = ref_bswap_limb (src);
 
       BSWAP_LIMB (got, src);
       if (got != want)
@@ -66,5 +67,7 @@ main (void)
           goto error;
         }
     }
+
+  tests_end ();
   exit (0);
 }

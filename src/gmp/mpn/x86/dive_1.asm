@@ -1,23 +1,23 @@
 dnl  x86 mpn_divexact_1 -- mpn by limb exact division.
 
 dnl  Copyright 2001, 2002 Free Software Foundation, Inc.
-dnl 
+dnl
 dnl  This file is part of the GNU MP Library.
-dnl 
+dnl
 dnl  The GNU MP Library is free software; you can redistribute it and/or
 dnl  modify it under the terms of the GNU Lesser General Public License as
 dnl  published by the Free Software Foundation; either version 2.1 of the
 dnl  License, or (at your option) any later version.
-dnl 
+dnl
 dnl  The GNU MP Library is distributed in the hope that it will be useful,
 dnl  but WITHOUT ANY WARRANTY; without even the implied warranty of
 dnl  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 dnl  Lesser General Public License for more details.
-dnl 
+dnl
 dnl  You should have received a copy of the GNU Lesser General Public
 dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
-dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
-dnl  Suite 330, Boston, MA 02111-1307, USA.
+dnl  not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+dnl  Fifth Floor, Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
@@ -26,7 +26,7 @@ C     cycles/limb
 C P54    30.0
 C P55    29.0
 C P6     13.0 odd divisor, 12.0 even (strangely)
-C K6     14.0  
+C K6     14.0
 C K7     12.0
 C P4     42.0
 
@@ -184,7 +184,7 @@ L(one):
 ifdef(`PIC',`
 L(movl_eip_edx):
 	movl	(%esp), %edx
-	ret
+	ret_internal
 ')
 
 EPILOGUE()

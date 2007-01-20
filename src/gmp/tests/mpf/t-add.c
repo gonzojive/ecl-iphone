@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,7 +35,7 @@ main (int argc, char **argv)
 {
   mp_size_t size;
   mp_exp_t exp;
-  int reps = 100000;
+  int reps = 20000;
   int i;
   mpf_t u, v, w, wref;
   mp_size_t bprec = 100;

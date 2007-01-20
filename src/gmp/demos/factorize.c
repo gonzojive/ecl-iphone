@@ -1,6 +1,6 @@
 /* Factoring with Pollard's rho method.
 
-Copyright 1995, 1997, 1998, 1999, 2000, 2001, 2002, 2003 Free Software
+Copyright 1995, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2005 Free Software
 Foundation, Inc.
 
 This program is free software; you can redistribute it and/or modify it under
@@ -13,7 +13,7 @@ PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with
 this program; see the file COPYING.  If not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -107,6 +107,12 @@ factor_using_division_2kp (mpz_t t, unsigned int limit, unsigned long p)
   mpz_t r;
   mpz_t f;
   unsigned int k;
+
+  if (flag_verbose)
+    {
+      printf ("[trial division (%u)] ", limit);
+      fflush (stdout);
+    }
 
   mpz_init (r);
   mpz_init_set_ui (f, 2 * p);
@@ -219,6 +225,8 @@ S4:
 	}
       while (mpz_cmp_ui (g, 1) == 0);
 
+      mpz_div (n, n, g);	/* divide by g, before g is overwritten */
+
       if (!mpz_probab_prime_p (g, 3))
 	{
 	  do
@@ -235,7 +243,6 @@ S4:
 	      fflush (stdout);
 	    }
 	  factor_using_pollard_rho (g, a_int, p);
-	  break;
 	}
       else
 	{
@@ -243,7 +250,6 @@ S4:
 	  fflush (stdout);
 	  fputc (' ', stdout);
 	}
-      mpz_div (n, n, g);
       mpz_mod (x, x, n);
       mpz_mod (x1, x1, n);
       mpz_mod (y, y, n);

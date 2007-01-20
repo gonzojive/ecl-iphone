@@ -14,8 +14,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-02111-1307, USA.
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+02110-1301, USA.
 
 
 
@@ -40,6 +40,11 @@ RELEVANT OPTIMIZATION ISSUES
 3. On the R4000 and R4400, multiplies take a data-dependent number of
    cycles, contrary to the SGI documentation.  There seem to be 3 or 4
    possible latencies.
+
+4. The R1x000 processors can issue one floating-point operation, two integer
+   operations, and one memory operation per cycle.  The FPU has very short
+   latencies, while the integer multiply unit is non-pipelined.  We should
+   therefore write fp based mpn_Xmul_1.
 
 STATUS
 

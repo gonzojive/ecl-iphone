@@ -1,8 +1,8 @@
 /* mpz_tdiv_r_ui(rem, dividend, divisor_limb)
    -- Set REM to DIVDEND mod DIVISOR_LIMB.
 
-Copyright 1991, 1993, 1994, 1996, 1998, 2001, 2002 Free Software Foundation,
-Inc.
+Copyright 1991, 1993, 1994, 1996, 1998, 2001, 2002, 2004, 2005 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -18,8 +18,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -43,13 +43,13 @@ mpz_tdiv_r_ui (mpz_ptr rem, mpz_srcptr dividend, unsigned long int divisor)
 
   nn = ABS(ns);
   np = PTR(dividend);
-#if GMP_NAIL_BITS != 0
+#if BITS_PER_ULONG > GMP_NUMB_BITS  /* avoid warnings about shift amount */
   if (divisor > GMP_NUMB_MAX)
     {
       mp_limb_t dp[2];
       mp_ptr rp, qp;
       mp_size_t rn;
-      TMP_DECL (mark);
+      TMP_DECL;
 
       if (nn == 1)		/* tdiv_qr requirements; tested above for 0 */
 	{
@@ -62,12 +62,12 @@ mpz_tdiv_r_ui (mpz_ptr rem, mpz_srcptr dividend, unsigned long int divisor)
       MPZ_REALLOC (rem, 2);
       rp = PTR(rem);
 
-      TMP_MARK (mark);
+      TMP_MARK;
       dp[0] = divisor & GMP_NUMB_MASK;
       dp[1] = divisor >> GMP_NUMB_BITS;
       qp = TMP_ALLOC_LIMBS (nn - 2 + 1);
       mpn_tdiv_qr (qp, rp, (mp_size_t) 0, np, nn, dp, (mp_size_t) 2);
-      TMP_FREE (mark);
+      TMP_FREE;
       rl = rp[0] + (rp[1] << GMP_NUMB_BITS);
       rn = 2 - (rp[1] == 0);  rn -= (rp[rn - 1] == 0);
       SIZ(rem) = ns >= 0 ? rn : -rn;

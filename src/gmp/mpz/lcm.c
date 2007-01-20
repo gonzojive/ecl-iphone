@@ -1,6 +1,6 @@
 /* mpz_lcm -- mpz/mpz least common multiple.
 
-Copyright 1996, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1996, 2000, 2001, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -29,7 +29,7 @@ mpz_lcm (mpz_ptr r, mpz_srcptr u, mpz_srcptr v)
 {
   mpz_t g;
   mp_size_t usize, vsize, size;
-  TMP_DECL (marker);
+  TMP_DECL;
 
   usize = SIZ (u);
   vsize = SIZ (v);
@@ -70,7 +70,7 @@ mpz_lcm (mpz_ptr r, mpz_srcptr u, mpz_srcptr v)
       goto one;
     }
 
-  TMP_MARK (marker);
+  TMP_MARK;
   size = MAX (usize, vsize);
   MPZ_TMP_INIT (g, size);
 
@@ -80,5 +80,5 @@ mpz_lcm (mpz_ptr r, mpz_srcptr u, mpz_srcptr v)
 
   SIZ (r) = ABS (SIZ (r));	/* result always positive */
 
-  TMP_FREE (marker);
+  TMP_FREE;
 }

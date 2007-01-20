@@ -1,6 +1,7 @@
 ## Process this file with automake to generate Makefile.in
 
-# Copyright 1996, 1998, 1999, 2000, 2001 Free Software Foundation, Inc.
+# Copyright 1996, 1998, 1999, 2000, 2001, 2002 Free Software Foundation,
+# Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -16,11 +17,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-# the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-# MA 02111-1307, USA.
+# the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
 
-
-AUTOMAKE_OPTIONS = gnu no-dependencies $(top_builddir)/ansi2knr
 
 INCLUDES = -D__GMP_WITHIN_GMP -I$(top_srcdir)
 

@@ -1,4 +1,4 @@
-/* mpz_bin_uiui - compute n over k.
+/* mpz_bin_ui - compute n over k.
 
 Copyright 1998, 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -32,12 +32,11 @@ MA 02111-1307, USA. */
    1 section 1.2.6 part G. */
 
 
-/* Enhancement: use mpn_divexact_1 when it exists */
-#define DIVIDE()                                                \
-  do {                                                          \
-    ASSERT (SIZ(r) > 0);                                        \
-    MPN_DIVREM_OR_DIVEXACT_1 (PTR(r), PTR(r), SIZ(r), kacc);    \
-    SIZ(r) -= (PTR(r)[SIZ(r)-1] == 0);                          \
+#define DIVIDE()                                                              \
+  do {                                                                        \
+    ASSERT (SIZ(r) > 0);                                                      \
+    MPN_DIVREM_OR_DIVEXACT_1 (PTR(r), PTR(r), (mp_size_t) SIZ(r), kacc);      \
+    SIZ(r) -= (PTR(r)[SIZ(r)-1] == 0);                                        \
   } while (0)
 
 void
@@ -89,7 +88,7 @@ mpz_bin_ui (mpz_ptr r, mpz_srcptr n, unsigned long int k)
     }
 
   kacc = 1;
-  mpz_init_set_ui (nacc, 1);
+  mpz_init_set_ui (nacc, 1L);
 
   for (i = 1; i <= k; i++)
     {
@@ -108,7 +107,7 @@ mpz_bin_ui (mpz_ptr r, mpz_srcptr n, unsigned long int k)
       mpz_div_2exp (nacc, nacc, c);
 #endif
 
-      mpz_add_ui (ni, ni, 1);
+      mpz_add_ui (ni, ni, 1L);
       mpz_mul (nacc, nacc, ni);
       umul_ppmm (k1, k0, kacc, i << GMP_NAIL_BITS);
       k0 >>= GMP_NAIL_BITS;
@@ -116,7 +115,7 @@ mpz_bin_ui (mpz_ptr r, mpz_srcptr n, unsigned long int k)
 	{
 	  /* Accumulator overflow.  Perform bignum step.  */
 	  mpz_mul (r, r, nacc);
-	  mpz_set_ui (nacc, 1);
+	  mpz_set_ui (nacc, 1L);
           DIVIDE ();
 	  kacc = i;
 	}

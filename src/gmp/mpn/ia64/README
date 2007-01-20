@@ -1,4 +1,4 @@
-Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002, 2003, 2004, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -14,244 +14,133 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-02111-1307, USA.
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+02110-1301, USA.
 
 
 
+                      IA-64 MPN SUBROUTINES
 
 
+This directory contains mpn functions for the IA-64 architecture.
+
+
+CODE ORGANIZATION
+
+	mpn/ia64          itanium-2, and generic ia64
+
+The code here has been optimized primarily for Itanium 2.  Very few Itanium 1
+chips were ever sold, and Itanium 2 is more powerful, so the latter is what
+we concentrate on.
+
+
+
+CHIP NOTES
 
 The IA-64 ISA keeps instructions three and three in 128 bit bundles.
-Programmers/compilers need to put explicit breaks `;;' when there are
-WAW or RAW dependencies.  Such breaks can typically just be at the end
-of a bundle, with some exceptions.
+Programmers/compilers need to put explicit breaks `;;' when there are WAW or
+RAW dependencies, with some notable exceptions.  Such "breaks" are typically
+at the end of a bundle, but can be put between operations within some bundle
+types too.
 
-The Itanium and Itanium 2 implementations can under ideal conditions
-execute two bundles per cycle.  The Itanium 2 allows 4 of these
-instructions to do integer operations, while the Itanium 2 allows all
-6 to be integer operations.
+The Itanium 1 and Itanium 2 implementations can under ideal conditions
+execute two bundles per cycle.  The Itanium 2 allows 4 of these instructions
+to do integer operations, while the Itanium 2 allows all 6 to be integer
+operations.
 
-Taken cloop branches seem to insert a bubble into the pipeline most of
-the time.
+Taken cloop branches seem to insert a bubble into the pipeline most of the
+time on Itanium 1.
 
-Loads to the fp registers bypass the L1 cache and thus get extremely
-long latencies, 9 cycles on the Itanium and 7 cycles on the Itanium 2.
+Loads to the fp registers bypass the L1 cache and thus get extremely long
+latencies, 9 cycles on the Itanium 1 and 6 cycles on the Itanium 2.
 
-The software pipeline stuff using br.ctop instruction causes delays,
-since many issue slots are taken up by instructions with zero
-predicates, and since about many extra instructions are needed to set
-things up.  These features are designed for code density, not maximum
-speed.
+The software pipeline stuff using br.ctop instruction causes delays, since
+many issue slots are taken up by instructions with zero predicates, and
+since many extra instructions are needed to set things up.  These features
+are clearly designed for code density, not speed.
 
-Misc pipeline limitations (Itanium):
+Misc pipeline limitations (Itanium 1):
 * The getf.sig instruction can only execute in M0.
 * At most four integer instructions/cycle.
 * Nops take up resources like any plain instructions.
 
-================================================================
-mpn_add_n, mpn_sub_n:
-
-The current code runs at 3 cycles/limb.  Unrolling could clearly bring
-down the time to 2 cycles/limb.
-
-================================================================
-mpn_addmul_1:
-
-The current code runs at 3.7 cycles/limb, but that somewhat odd timing
-is reached only for huge operands.  It uses the mod-scheduled software
-pipelining feature.  The reason for the poor speed for small operands
-is that mod-scheduled loops have a very long start-up overhead.
-
-For optimal speed, we need to load two 64-bit limbs with the ldfp8
-instruction, and stay away from mod-scheduled loops.  Since rp and up
-might be mutually aligned in two ways, we will need two loop variants,
-with the same basic structure:
-
-  { .mfi	getf.sig
-		xma.l
-	   (p6)	cmp.leu		p6, p7 =
-} { .mfi	stf8
-		xma.hu
-	   (p7)	cmp.ltu		p6, p7 =
-		;;
-} { .mib	getf.sig
-	   (p6)	add 1
-		nop.b
-} { .mib	ldfp8		 = [up], 16
-	   (p7)	add
-		nop.b
-		;;
-  { .mfi	getf.sig
-		xma.l
-	   (p6)	cmp.leu		p6, p7 =
-} { .mfi	stf8
-		xma.hu
-	   (p7)	cmp.ltu		p6, p7 =
-		;;
-} { .mib	getf.sig
-	   (p6)	add 1
-		nop.b
-} { .mib	ldfp8		 = [rp], 16
-	   (p7)	add
-		br.cloop
-		;;
-}
-
-2 limbs/20 instructions
-	   20 insn/max 6 insn/cycle:		3.3 cycles/2limb
-	   8 memops/max 2 memops/cycle:		4.0 cycles/2limb
-	   8 intops/max 2 intops/cycle:		4.0 cycles/2limb
-	   4 fpops/max 2 fpops/cycle:		2.0 cycles/2limb
-
-================================================================
-mpn_submul_1:
-
-The current code just calls mpn_mul_1 and mpn_sub_n and thus needs
-about 7 cycles/limb.
-
-We could implement this much like mpn_addmul_1, if we first complement
-v.  When v is complemented, the low product limb becomes complement of
-true product.  This should allow us to use the accumulation of xma.
-Here is how it works:
+Misc pipeline limitations (Itanium 2):
+* The getf.sig instruction can only execute in M0.
+* Nops take up resources like any plain instructions.
 
 
-  #define umul_ppmma(ph, pl, m0, m1, a) \
-    do {								\
-      UDItype __m0 = (m0), __m1 = (m1), __a = (a);			\
-      __asm__ ("xma.hu %0 = %1, %2, %3"					\
-	       : "=f" (ph)						\
-	       : "f" (m0), "f" (m1), "f" (__a));			\
-      (pl) = __m0 * __m1 + __a;						\
-    } while (0)
+ASSEMBLY SYNTAX
 
-  mp_limb_t
-  mpn_submul_1 (mp_ptr rp, mp_srcptr up, mp_size_t n, mp_limb_t vl)
-  {
-    mp_limb_t cl, cy;
-    mp_size_t i;
-    mp_limb_t phi, plo;
-    mp_limb_t x;
-    mp_limb_t ul, vln;
+.align pads with nops in a text segment, but gas 2.14 and earlier
+incorrectly byte-swaps its nop bundle in big endian mode (eg. hpux), making
+it come out as break instructions.  We use the ALIGN() macro in
+mpn/ia64/ia64-defs.m4 when it might be executed across.  That macro
+suppresses any .align if the problem is detected by configure.  Lack of
+alignment might hurt performance but will at least be correct.
 
-    vln = -vl;
+foo:: to create a global symbol is not accepted by gas.  Use separate
+".global foo" and "foo:" instead.
 
-    cl = 0;
-    for (i = n; i != 0; i--)
-      {
-	ul = *up++;		/* will need this in both fregs and gregs */
-	x = *rp;
-	umul_ppmma (phi, plo, ul, vln, x);
+.global is the standard global directive.  gas accepts .globl, but hpux "as"
+doesn't.
 
-	cy = plo < cl;
-	plo -= cl;
+.proc / .endp generates the appropriate .type and .size information for ELF,
+so the latter directives don't need to be given explicitly.
 
-	cl = ul - phi;
-	cl += cy;
+.pred.rel "mutex"... is standard for annotating predicate register
+relationships.  gas also accepts .pred.rel.mutex, but hpux "as" doesn't.
 
-	*rp++ = plo;
-      }
+.pred directives can't be put on a line with a label, like
+".Lfoo: .pred ...", the HP assembler on HP-UX 11.23 rejects that.
+gas is happy with it, and past versions of HP had seemed ok.
 
-    return cl;
-  }
+// is the standard comment sequence, but we prefer "C" since it inhibits m4
+macro expansion.  See comments in ia64-defs.m4.
 
-================================================================
-mpn_mul_1:
 
-The current code runs at 3.7 cycles/limb.  The code is very similar to
-the mpn_addmul_1 code.  See comments above.
+REGISTER USAGE
 
-Faster code wouldn't be too hard to write.  This is one possible
-pattern:
+Special:
+   r0: constant 0
+   r1: global pointer (gp)
+   r8: return value
+   r12: stack pointer (sp)
+   r13: thread pointer (tp)
+Caller-saves: r8-r11 r14-r31 f6-f15 f32-f127
+Caller-saves but rotating: r32-
 
-  { .mfi	getf.sig
-		xma.l
-	   (p6) cmp.leu		p6, p7 =
-} { .mfi	stf8
-		xma.hu
-	   (p7) cmp.ltu		p6, p7 =
-		;;
-} { .mib	getf.sig
-	   (p6) add 1
-		nop.b
-} { .mib	ldf8		 = [up], 8
-	   (p7) add
-		br.cloop
-		;;
-}
 
-1 limb/12 instructions
-	   12 insn/max 6 insn/cycle:		2.0 cycles/limb
-	   4 memops/max 2 memops/cycle:		2.0 cycles/limb
-	   4 intops/max 2 intops/cycle:		2.0 cycles/limb
-	   2 fpops/max 2 fpops/cycle:		1.0 cycles/limb
+REFERENCES
 
-================================================================
-mpn_mul_8
+Intel Itanium Architecture Software Developer's Manual, volumes 1 to 3,
+Intel document 245317-004, 245318-004, 245319-004 October 2002.  Volume 1
+includes an Itanium optimization guide.
 
-The add+cmp+add we use on the other codes is optimal for shortening
-recurrencies (2 cycles) but the sequence takes up 4 execution slots.  When
-recurrency depth is not critical, a more standard 3-cycle add+cmp+add is
-better.
+Intel Itanium Processor-specific Application Binary Interface (ABI), Intel
+document 245370-003, May 2001.  Describes C type sizes, dynamic linking,
+etc.
 
-/* First load the 8 values from v */
-	ldfp8		v0, v1 = [r35], 16;;
-	ldfp8		v2, v3 = [r35], 16;;
-	ldfp8		v4, v5 = [r35], 16;;
-	ldfp8		v6, v7 = [r35], 16;;
+Intel Itanium Architecture Assembly Language Reference Guide, Intel document
+248801-004, 2000-2002.  Describes assembly instruction syntax and other
+directives.
 
-/* In the inner loop, get a new U limb and store a result limb. */
-	mov		lc = un
-Loop:	ldf8		u0 = [r33], 8
-	xma.l		lp0 = v0, u0, hp0
-	xma.hu		hp0 = v0, u0, hp0
-	xma.l		lp1 = v1, u0, hp1
-	xma.hu		hp1 = v1, u0, hp1
-	xma.l		lp2 = v2, u0, hp2
-	xma.hu		hp2 = v2, u0, hp2
-	xma.l		lp3 = v3, u0, hp3
-	xma.hu		hp3 = v3, u0, hp3
-	xma.l		lp4 = v4, u0, hp4
-	xma.hu		hp4 = v4, u0, hp4
-	xma.l		lp5 = v5, u0, hp5
-	xma.hu		hp5 = v5, u0, hp5
-	xma.l		lp6 = v6, u0, hp6
-	xma.hu		hp6 = v6, u0, hp6
-	xma.l		lp7 = v7, u0, hp7
-	xma.hu		hp7 = v7, u0, hp7
-	getf.sig	l0 = lp0
-	getf.sig	l1 = lp1
-	getf.sig	l2 = lp2
-	getf.sig	l3 = lp3
-	getf.sig	l4 = lp4
-	getf.sig	l5 = lp5
-	getf.sig	l6 = lp6
-	getf.sig	l7 = lp7
-	add+cmp+add	l0, l0, h0
-	add+cmp+add	l1, l1, h1
-	add+cmp+add	l2, l2, h2
-	add+cmp+add	l3, l3, h3
-	add+cmp+add	l4, l4, h4
-	add+cmp+add	l5, l5, h5
-	add+cmp+add	l6, l6, h6
-	add+cmp+add	l7, l7, h7
-	st8		[r32] = xx, 8
-	br.cloop Loop
+Itanium Software Conventions and Runtime Architecture Guide, Intel document
+245358-003, May 2001.  Describes calling conventions, including stack
+unwinding requirements.
 
-	50 insn at max 6 insn/cycle:		8.33 cycles/limb8
-	10 memops at max 2 memops/cycle:	5 cycles/limb8
-	16 fpops at max 2 fpops/cycle:		8 cycles/limb8
-	24 intops at max 4 intops/cycle:	6 cycles/limb8
-	10+24 memops+intops at max 4/cycle	8.5 cycles/limb8
-						1.0625 cycles/limb
+Intel Itanium Processor Reference Manual for Software Optimization, Intel
+document 245473-003, November 2001.
 
-================================================================
-mpn_lshift, mpn_rshift
+Intel Itanium-2 Processor Reference Manual for Software Development and
+Optimization, Intel document 251110-003, May 2004.
 
-The current code runs at 2 cycles/limb, but has a too deep software
-pipeline.  The code suffers badly from the 4 cycle latency of the
-variable shift instructions.
+All the above documents can be found online at
 
-Using 63 separate loops, we could use the double-word SHRP
-instruction.  That instruction has a plain single-cycle latency.  We
-need 63 loops since this instruction only accept immediate count.
+    http://developer.intel.com/design/itanium/manuals.htm
+
+
+----------------
+Local variables:
+mode: text
+fill-column: 76
+End:

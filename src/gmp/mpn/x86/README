@@ -1,4 +1,4 @@
-Copyright 1999, 2000, 2001 Free Software Foundation, Inc.
+Copyright 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -14,8 +14,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-02111-1307, USA.
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+02110-1301, USA.
 
 
 
@@ -160,9 +160,10 @@ TEMPORARY LABELS
 
 Temporary numbered labels like "1:" used as "1f" or "1b" are available in
 "gas" and Solaris "as", but not in SCO "as".  Normal L() labels should be
-used instead, possibly with a counter to make them unique, see jadcl0() for
-instance.  A separate counter for each macro makes it possible to nest them,
-for instance movl_text_address() can be used within an ASSERT().
+used instead, possibly with a counter to make them unique, see jadcl0() in
+x86-defs.m4 for instance.  A separate counter for each macro makes it
+possible to nest them, for instance movl_text_address() can be used within
+an ASSERT().
 
 "1:" etc must be avoided in gcc __asm__ blocks too.  "%=" for generating a
 unique number looks like a good alternative, but is that actually a
@@ -228,43 +229,101 @@ flag being clear.  This happens only in a few places.
 
 POSITION INDEPENDENT CODE
 
-Defining the symbol PIC in m4 processing selects SVR4 / ELF style position
-independent code.  This is necessary for shared libraries because they can
-be mapped into different processes at different virtual addresses.  Actually
-relocations are allowed, but presumably pages with relocations aren't
-shared, defeating the purpose of a shared library.
+  Coding Style
 
-The use of the PLT adds a fixed cost to every function call, and the GOT
-adds a cost to any function accessing global variables.  These are small but
-might be noticeable when working with small operands.
+    Defining the symbol PIC in m4 processing selects SVR4 / ELF style
+    position independent code.  This is necessary for shared libraries
+    because they can be mapped into different processes at different virtual
+    addresses.  Actually, relocations are allowed but text pages with
+    relocations aren't shared, defeating the purpose of a shared library.
 
-Calls from one library function to another don't need to go through the PLT,
-since of course the call instruction uses a displacement, not an absolute
-address, and the relative locations of object files are known when libgmp.so
-is created.  "ld -Bsymbolic" (or "gcc -Wl,-Bsymbolic") will resolve calls
-this way, so that there's no jump through the PLT, but of course leaving
-setups of the GOT address in %ebx that may be unnecessary.
+    The GOT is used to access global data, and the PLT is used for
+    functions.  The use of the PLT adds a fixed cost to every function call,
+    and the GOT adds a cost to any function accessing global variables.
+    These are small but might be noticeable when working with small
+    operands.
 
-The %ebx setup could be avoided in assembly if a separate option controlled
-PIC for calls as opposed to computed jumps etc.  But there's only ever
-likely to be a handful of calls out of assembler, and getting the same
-optimization for C intra-library calls would be more important.  There seems
-no easy way to tell gcc that certain functions can be called non-PIC, and
-unfortunately many GMP functions use the global memory allocation variables,
-so they need the GOT anyway.  Object files with no global data references
-and only intra-library calls could go into the library as non-PIC under
--Bsymbolic.  Integrating this into libtool and automake is left as an
-exercise for the reader.
+  Scope
+
+    It's intended, as a matter of policy, that references within libgmp are
+    resolved within libgmp.  Certainly there's no need for an application to
+    replace any internals, and we take the view that there's no value in an
+    application subverting anything documented either.
+
+    Resolving references within libgmp in theory means calls can be made with a
+    plain PC-relative call instruction, which is faster and smaller than going
+    through the PLT, and data references can be similarly PC-relative, saving a
+    GOT entry and fetch from there.  Unfortunately the normal linker behaviour
+    doesn't allow us to do this.
+
+    By default an R_386_PC32 PC-relative reference, either for a call or for
+    data, is left in libgmp.so by the linker so that it can be resolved at
+    runtime to a location in the application or another shared library.  This
+    means a text segment relocation which we don't want.
+
+  -Bsymbolic
+
+    Under the "-Bsymbolic" option, the linker resolves references to symbols
+    within libgmp.so.  This gives us the desired effect for R_386_PC32,
+    ie. it's resolved at link time.  It also resolves R_386_PLT32 calls
+    directly to their target without creating a PLT entry (though if this is
+    done to normal compiler-generated code it still leaves a setup of %ebx
+    to _GLOBAL_OFFSET_TABLE_ which may then be unnecessary).
+
+    Unfortunately -Bsymbolic does bad things to global variables defined in
+    a shared library but accessed by non-PIC code from the mainline (or a
+    static library).
+
+    The problem is that the mainline needs a fixed data address to avoid
+    text segment relocations, so space is allocated in its data segment and
+    the value from the variable is copied from the shared library's data
+    segment when the library is loaded.  Under -Bsymbolic, however,
+    references in the shared library are then resolved still to the shared
+    library data area.  Not surprisingly it bombs badly to have mainline
+    code and library code accessing different locations for what should be
+    one variable.
+
+    Note that this -Bsymbolic effect for the shared library is not just for
+    R_386_PC32 offsets which might have been cooked up in assembler, but is
+    done also for the contents of GOT entries.  -Bsymbolic simply applies a
+    general rule that symbols are resolved first from the local module.
+
+  Visibility Attributes
+
+    GCC __attribute__ ((visibility ("protected"))), which is available in
+    recent versions, eg. 3.3, is probably what we'd like to use.  It makes
+    gcc generate plain PC-relative calls to indicated functions, and directs
+    the linker to resolve references to the given function within the link
+    module.
+
+    Unfortunately, as of debian binutils 2.13.90.0.16 at least, the
+    resulting libgmp.so comes out with text segment relocations, references
+    are not resolved at link time.  If the gcc description is to be believed
+    this is this not how it should work.  If a symbol cannot be overridden
+    by another module then surely references within that module can be
+    resolved immediately (ie. at link time).
+
+  Present
+
+    In any case, all this means that we have no optimizations we can
+    usefully make to function or variable usages, neither for assembler nor
+    C code.  Perhaps in the future the visibility attribute will work as
+    we'd like.
 
 
 
-GLOBAL OFFSET TABLE CODING
 
-It's believed the magic _GLOBAL_OFFSET_TABLE_ used by code establishing the
-address of the GOT should be written without a GSYM_PREFIX, ie. that it's
-the same "_GLOBAL_OFFSET_TABLE_" on an underscore or non-underscore system.
-Certainly this is true for instance of NetBSD 1.4 which is an underscore
-system but requires "_GLOBAL_OFFSET_TABLE_".
+GLOBAL OFFSET TABLE
+
+The magic _GLOBAL_OFFSET_TABLE_ used by code establishing the address of the
+GOT sometimes requires an extra underscore prefix.  SVR4 systems and NetBSD
+don't need a prefix, OpenBSD does need one.  Note that NetBSD and OpenBSD
+are both a.out underscore systems, so the prefix for _GLOBAL_OFFSET_TABLE_
+is not simply the same as the prefix for ordinary globals.
+
+In any case in the asm code we write _GLOBAL_OFFSET_TABLE_ and let a macro
+in x86-defs.m4 add an extra underscore if required (according to a configure
+test).
 
 Old gas 1.92.3 which comes with FreeBSD 2.2.8 gets a segmentation fault when
 asked to assemble the following,
@@ -294,6 +353,7 @@ A similar problem occurs in an leal (again with or without a +[.-L1]),
 
 This time the R_386_GOTPC gets a displacement of 0 rather than the 2
 appropriate for the opcode and mod/rm, making this form unusable.
+
 
 
 
@@ -425,12 +485,15 @@ addl.
 
 REFERENCES
 
-"Intel Architecture Software Developer's Manual", volumes 1 to 3, 2001,
-order numbers 245470, 245471 and 245472.  Available on-line,
+"Intel Architecture Software Developer's Manual", volumes 1, 2a, 2b, 3a, 3b,
+2006, order numbers 253665 through 253669.  Available on-line,
 
-	http://developer.intel.com/design/pentium4/manuals/245470.htm
-	http://developer.intel.com/design/pentium4/manuals/245471.htm
-	http://developer.intel.com/design/pentium4/manuals/245472.htm
+	ftp://download.intel.com/design/Pentium4/manuals/25366518.pdf
+	ftp://download.intel.com/design/Pentium4/manuals/25366618.pdf
+	ftp://download.intel.com/design/Pentium4/manuals/25366718.pdf
+	ftp://download.intel.com/design/Pentium4/manuals/25366818.pdf
+	ftp://download.intel.com/design/Pentium4/manuals/25366918.pdf
+
 
 "System V Application Binary Interface", Unix System Laboratories Inc, 1992,
 published by Prentice Hall, ISBN 0-13-880410-9.  And the "Intel386 Processor

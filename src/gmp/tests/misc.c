@@ -1,6 +1,6 @@
 /* Miscellaneous test program support routines.
 
-Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002, 2003, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,15 +16,20 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "config.h"
 
 #include <ctype.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>     /* for getenv */
 #include <string.h>
+
+#if HAVE_FLOAT_H
+#include <float.h>      /* for DBL_MANT_DIG */
+#endif
 
 #if TIME_WITH_SYS_TIME
 # include <sys/time.h>  /* for struct timeval */
@@ -46,6 +51,10 @@ MA 02111-1307, USA. */
 void
 tests_start (void)
 {
+  /* don't buffer, so output is not lost if a test causes a segv etc */
+  setbuf (stdout, NULL);
+  setbuf (stderr, NULL);
+
   tests_memory_start ();
   tests_rand_start ();
 }
@@ -70,12 +79,21 @@ tests_rand_start (void)
       printf ("ie. ensure that function is called before the first use of RANDS.\n");
       abort ();
     }
-  rands = RANDS;
+
+  gmp_randinit_default (__gmp_rands);
+  __gmp_rands_initialized = 1;
+  rands = __gmp_rands;
 
   perform_seed = getenv ("GMP_CHECK_RANDOMIZE");
   if (perform_seed != NULL)
     {
+#ifdef HAVE_STRTOUL
+      seed = strtoul (perform_seed, 0, 0);
+#else
+      /* This will not work right for seeds >= 2^31 on 64-bit machines.
+	 Perhaps use atol unconditionally?  Is that ubiquitous?  */
       seed = atoi (perform_seed);
+#endif
       if (! (seed == 0 || seed == 1))
         {
           printf ("Re-seeding with GMP_CHECK_RANDOMIZE=%lu\n", seed);
@@ -87,6 +105,7 @@ tests_rand_start (void)
           struct timeval  tv;
           gettimeofday (&tv, NULL);
           seed = tv.tv_sec ^ (tv.tv_usec << 12);
+	  seed &= 0xffffffff;
 #else
           time_t  tv;
           time (&tv);
@@ -303,15 +322,6 @@ mpz_pow2abs_p (mpz_srcptr z)
   return POW2_P (ptr[i]);  /* high limb power of 2 */
 }
 
-void
-mpz_flipbit (mpz_ptr r, unsigned long bit)
-{
-  if (mpz_tstbit (r, bit))
-    mpz_clrbit (r, bit);
-  else
-    mpz_setbit (r, bit);
-}
-
 
 /* Exponentially distributed between 0 and 2^nbits-1, meaning the number of
    bits in the result is uniformly distributed between 0 and nbits-1.
@@ -323,7 +333,7 @@ mpz_flipbit (mpz_ptr r, unsigned long bit)
 void
 mpz_erandomb (mpz_ptr rop, gmp_randstate_t rstate, unsigned long nbits)
 {
-  mpz_urandomb (rop, rstate, urandom () % nbits);
+  mpz_urandomb (rop, rstate, gmp_urandomm_ui (rstate, nbits));
 }
 
 void
@@ -337,7 +347,7 @@ mpz_erandomb_nonzero (mpz_ptr rop, gmp_randstate_t rstate, unsigned long nbits)
 void
 mpz_errandomb (mpz_ptr rop, gmp_randstate_t rstate, unsigned long nbits)
 {
-  mpz_rrandomb (rop, rstate, urandom () % nbits);
+  mpz_rrandomb (rop, rstate, gmp_urandomm_ui (rstate, nbits));
 }
 
 void
@@ -370,3 +380,189 @@ urandom (void)
   return n[0] + (n[1] << GMP_NUMB_BITS);
 #endif
 }
+
+
+/* Call (*func)() with various random number generators. */
+void
+call_rand_algs (void (*func) __GMP_PROTO ((const char *, gmp_randstate_ptr)))
+{
+  gmp_randstate_t  rstate;
+  mpz_t            a;
+
+  mpz_init (a);
+
+  gmp_randinit_default (rstate);
+  (*func) ("gmp_randinit_default", rstate);
+  gmp_randclear (rstate);
+
+  gmp_randinit_mt (rstate);
+  (*func) ("gmp_randinit_mt", rstate);
+  gmp_randclear (rstate);
+
+  gmp_randinit_lc_2exp_size (rstate, 8L);
+  (*func) ("gmp_randinit_lc_2exp_size 8", rstate);
+  gmp_randclear (rstate);
+
+  gmp_randinit_lc_2exp_size (rstate, 16L);
+  (*func) ("gmp_randinit_lc_2exp_size 16", rstate);
+  gmp_randclear (rstate);
+
+  gmp_randinit_lc_2exp_size (rstate, 128L);
+  (*func) ("gmp_randinit_lc_2exp_size 128", rstate);
+  gmp_randclear (rstate);
+
+  /* degenerate always zeros */
+  mpz_set_ui (a, 0L);
+  gmp_randinit_lc_2exp (rstate, a, 0L, 8L);
+  (*func) ("gmp_randinit_lc_2exp a=0 c=0 m=8", rstate);
+  gmp_randclear (rstate);
+
+  /* degenerate always FFs */
+  mpz_set_ui (a, 0L);
+  gmp_randinit_lc_2exp (rstate, a, 0xFFL, 8L);
+  (*func) ("gmp_randinit_lc_2exp a=0 c=0xFF m=8", rstate);
+  gmp_randclear (rstate);
+
+  mpz_clear (a);
+}
+
+
+/* Return +infinity if available, or 0 if not.
+   We don't want to use libm, so INFINITY or other system values are not
+   used here.  */
+double
+tests_infinity_d (void)
+{
+#if _GMP_IEEE_FLOATS
+  union ieee_double_extract x;
+  x.s.exp = 2047;
+  x.s.manl = 0;
+  x.s.manh = 0;
+  x.s.sig = 0;
+  return x.d;
+#else
+  return 0;
+#endif
+}
+
+
+/* Return non-zero if d is an infinity (either positive or negative).
+   Don't want libm, so don't use isinf() or other system tests.  */
+int
+tests_isinf (double d)
+{
+#if _GMP_IEEE_FLOATS
+  union ieee_double_extract x;
+  x.d = d;
+  return (x.s.exp == 2047 && x.s.manl == 0 && x.s.manh == 0);
+#else
+  return 0;
+#endif
+}
+
+
+/* Set the hardware floating point rounding mode.  Same mode values as mpfr,
+   namely 0=nearest, 1=tozero, 2=up, 3=down.  Return 1 if successful, 0 if
+   not.  */
+int
+tests_hardware_setround (int mode)
+{
+#if HAVE_HOST_CPU_FAMILY_x86
+  int  rc;
+  switch (mode) {
+  case 0: rc = 0; break;  /* nearest */
+  case 1: rc = 3; break;  /* tozero  */
+  case 2: rc = 2; break;  /* up      */
+  case 3: rc = 1; break;  /* down    */
+  default:
+    return 0;
+  }
+  x86_fldcw ((x86_fstcw () & ~0xC00) | (rc << 10));
+  return 1;
+#endif
+
+  return 0;
+}
+
+/* Return the hardware floating point rounding mode, or -1 if unknown. */
+int
+tests_hardware_getround (void)
+{
+#if HAVE_HOST_CPU_FAMILY_x86
+  switch ((x86_fstcw () & ~0xC00) >> 10) {
+  case 0: return 0; break;  /* nearest */
+  case 1: return 3; break;  /* down    */
+  case 2: return 2; break;  /* up      */
+  case 3: return 1; break;  /* tozero  */
+  }
+#endif
+
+  return -1;
+}
+
+
+/* tests_dbl_mant_bits() determines by experiment the number of bits in the
+   mantissa of a "double".  If it's not possible to find a value (perhaps
+   due to the compiler optimizing too aggressively), then return 0.
+
+   This code is used rather than DBL_MANT_DIG from <float.h> since ancient
+   systems like SunOS don't have that file, and since one GNU/Linux ARM
+   system was seen where the float emulation seemed to have only 32 working
+   bits, not the 53 float.h claimed.  */
+
+int
+tests_dbl_mant_bits (void)
+{
+  static int n = -1;
+  volatile double x, y, d;
+
+  if (n != -1)
+    return n;
+
+  n = 1;
+  x = 2.0;
+  for (;;)
+    {
+      /* see if 2^(n+1)+1 can be formed without rounding, if so then
+         continue, if not then "n" is the answer */
+      y = x + 1.0;
+      d = y - x;
+      if (d != 1.0)
+        {
+#if defined (DBL_MANT_DIG) && DBL_RADIX == 2
+          if (n != DBL_MANT_DIG)
+            printf ("Warning, tests_dbl_mant_bits got %d but DBL_MANT_DIG says %d\n", n, DBL_MANT_DIG);
+#endif
+          break;
+        }
+
+      x *= 2;
+      n++;
+
+      if (n > 1000)
+        {
+          printf ("Oops, tests_dbl_mant_bits can't determine mantissa size\n");
+          n = 0;
+          break;
+        }
+    }
+  return n;
+}
+
+
+/* See tests_setjmp_sigfpe in tests.h. */
+
+jmp_buf    tests_sigfpe_target;
+
+RETSIGTYPE
+tests_sigfpe_handler (int sig)
+{
+  longjmp (tests_sigfpe_target, 1);
+}
+
+void
+tests_sigfpe_done (void)
+{
+  signal (SIGFPE, SIG_DFL);
+}
+

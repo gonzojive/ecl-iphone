@@ -1,6 +1,6 @@
 /* Header for expression evaluation.
 
-Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002, 2004 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,9 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA.
-*/
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 
 #ifndef __EXPR_H__
@@ -128,14 +127,5 @@ int mpz_expr_a __GMP_PROTO ((__gmp_const struct mpexpr_operator_t *table,
                         __gmp_const char *e, size_t elen,
                         mpz_srcptr var[26]));
 int mpz_expr __GMP_PROTO ((mpz_ptr res, int base, __gmp_const char *e, ...));
-
-/* when mpfr.h has been included */
-#ifdef GMP_RNDZ
-int mpfr_expr_a __GMP_PROTO ((__gmp_const struct mpexpr_operator_t *table,
-                         mpfr_ptr res, int base, unsigned long prec,
-                         __gmp_const char *e, size_t elen,
-                         mpfr_srcptr var[26]));
-int mpfr_expr __GMP_PROTO ((mpfr_ptr res, int base, __gmp_const char *e, ...));
-#endif
 
 #endif

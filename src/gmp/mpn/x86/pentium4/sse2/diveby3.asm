@@ -1,23 +1,23 @@
 dnl  Intel Pentium-4 mpn_divexact_by3 -- mpn exact division by 3.
 
 dnl  Copyright 2001, 2002, 2003 Free Software Foundation, Inc.
-dnl 
+dnl
 dnl  This file is part of the GNU MP Library.
-dnl 
-dnl  The GNU MP Library is free software; you can redistribute it and/or
-dnl  modify it under the terms of the GNU Library General Public License as
-dnl  published by the Free Software Foundation; either version 2 of the
-dnl  License, or (at your option) any later version.
-dnl 
-dnl  The GNU MP Library is distributed in the hope that it will be useful,
-dnl  but WITHOUT ANY WARRANTY; without even the implied warranty of
-dnl  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-dnl  Library General Public License for more details.
-dnl 
-dnl  You should have received a copy of the GNU Library General Public
-dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
-dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
-dnl  Suite 330, Boston, MA 02111-1307, USA.
+dnl
+dnl  The GNU MP Library is free software; you can redistribute it and/or modify
+dnl  it under the terms of the GNU Lesser General Public License as published
+dnl  by the Free Software Foundation; either version 2 of the License, or (at
+dnl  your option) any later version.
+dnl
+dnl  The GNU MP Library is distributed in the hope that it will be useful, but
+dnl  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+dnl  License for more details.
+dnl
+dnl  You should have received a copy of the GNU Lesser General Public License
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
+dnl  the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl  Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
@@ -44,17 +44,10 @@ C Perhaps the s*inverse can be taken off the dependent chain as described in
 C mpn/generic/diveby3.c, with a modified 3*q calculation that can give
 C high(3*q)*inv too.
 
-
 defframe(PARAM_CARRY,16)
 defframe(PARAM_SIZE, 12)
 defframe(PARAM_SRC,   8)
 defframe(PARAM_DST,   4)
-
-	RODATA
-C multiplicative inverse of 3, modulo 2^32
-	ALIGN(4)
-L(inverse):
-	.long	0xAAAAAAAB
 
 	TEXT
 	ALIGN(16)
@@ -66,15 +59,16 @@ deflit(`FRAME',0)
 	pxor	%mm0, %mm0
 
 	movd	PARAM_CARRY, %mm1
-	pcmpeqd	%mm6, %mm6
-
-	movl	$0xAAAAAAAB, %edx
-	movd	%edx, %mm7
+	movl	$0xAAAAAAAB, %ecx
 
 	movl	PARAM_DST, %edx
+	pcmpeqd	%mm6, %mm6
+
+	movd	%ecx, %mm7
+	movl	PARAM_SIZE, %ecx
+
 	psrlq	$32, %mm6		C 0x00000000FFFFFFFF
 
-	movl	PARAM_SIZE, %ecx
 
 L(top):
 	C eax	src, incrementing
@@ -85,7 +79,7 @@ L(top):
 	C mm0	carry bit
 	C mm1	carry limb
 	C mm6	0x00000000FFFFFFFF
-	C mm7	inverse
+	C mm7	0xAAAAAAAB, inverse of 3
 
 	movd	(%eax), %mm2
 	addl	$4, %eax

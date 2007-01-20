@@ -17,14 +17,14 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA.
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA.
 */
 
 #include "gmp.h"
 #include "gmp-impl.h"
 
-#undef GCD_ACCEL_THRESHOLD
+#undef  GCD_ACCEL_THRESHOLD
 #define GCD_ACCEL_THRESHOLD  MP_SIZE_T_MAX
 #define __gmpn_gcd  mpn_gcd_binary
 

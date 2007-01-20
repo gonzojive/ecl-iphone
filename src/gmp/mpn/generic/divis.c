@@ -4,7 +4,7 @@
    CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR DISAPPEAR COMPLETELY IN
    FUTURE GNU MP RELEASES.
 
-Copyright 2001, 2002 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -20,8 +20,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -73,7 +73,7 @@ mpn_divisible_p (mp_srcptr ap, mp_size_t asize,
   mp_limb_t  alow, dlow, dmask;
   mp_ptr     qp, rp;
   mp_size_t  i;
-  TMP_DECL (marker);
+  TMP_DECL;
 
   ASSERT (asize >= 0);
   ASSERT (asize == 0 || ap[asize-1] != 0);
@@ -138,12 +138,12 @@ mpn_divisible_p (mp_srcptr ap, mp_size_t asize,
 	}
     }
 
-  TMP_MARK (marker);
+  TMP_MARK;
 
   rp = TMP_ALLOC_LIMBS (asize+1);
   qp = rp + dsize;
 
-  mpn_tdiv_qr (qp, rp, 0, ap, asize, dp, dsize);
+  mpn_tdiv_qr (qp, rp, (mp_size_t) 0, ap, asize, dp, dsize);
 
   /* test for {rp,dsize} zero or non-zero */
   i = 0;
@@ -151,12 +151,12 @@ mpn_divisible_p (mp_srcptr ap, mp_size_t asize,
     {
       if (rp[i] != 0)
 	{
-	  TMP_FREE (marker);
+	  TMP_FREE;
 	  return 0;
 	}
     }
   while (++i < dsize);
 
-  TMP_FREE (marker);
+  TMP_FREE;
   return 1;
 }

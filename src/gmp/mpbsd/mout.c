@@ -1,6 +1,7 @@
 /* mout(MINT) -- Do decimal output of MINT to standard output.
 
-Copyright 1991, 1994, 1996, 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1991, 1994, 1996, 2000, 2001, 2002, 2005 Free Software Foundation,
+Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +17,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <string.h>
@@ -35,7 +36,7 @@ mout (const MINT *x)
   unsigned char *str;
   size_t str_size;
   int i;
-  TMP_DECL (marker);
+  TMP_DECL;
 
   x_size = x->_mp_size;
   if (x_size == 0)
@@ -50,7 +51,7 @@ mout (const MINT *x)
       x_size = -x_size;
     }
 
-  TMP_MARK (marker);
+  TMP_MARK;
   x_ptr = x->_mp_d;
   MPN_SIZEINBASE (str_size, x_ptr, x_size, 10);
   str_size += 2;
@@ -89,5 +90,5 @@ mout (const MINT *x)
 	fputc (' ', stdout);
     }
   fputc ('\n', stdout);
-  TMP_FREE (marker);
+  TMP_FREE;
 }

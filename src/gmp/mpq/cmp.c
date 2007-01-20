@@ -1,7 +1,7 @@
-/* mpq_cmp(u,v) -- Compare U, V.  Return postive, zero, or negative
+/* mpq_cmp(u,v) -- Compare U, V.  Return positive, zero, or negative
    based on if U > V, U == V, or U < V.
 
-Copyright 1991, 1994, 1996, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1991, 1994, 1996, 2001, 2002, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -17,8 +17,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -35,7 +35,7 @@ mpq_cmp (const MP_RAT *op1, const MP_RAT *op2)
   mp_ptr tmp1_ptr, tmp2_ptr;
   mp_size_t num1_sign;
   int cc;
-  TMP_DECL (marker);
+  TMP_DECL;
 
   /* need canonical signs to get right result */
   ASSERT (den1_size > 0);
@@ -88,7 +88,7 @@ mpq_cmp (const MP_RAT *op1, const MP_RAT *op2)
 
   /* 3. Finally, cross multiply and compare.  */
 
-  TMP_MARK (marker);
+  TMP_MARK;
   TMP_ALLOC_LIMBS_2 (tmp1_ptr,tmp1_size, tmp2_ptr,tmp2_size);
 
   if (num1_size >= den2_size)
@@ -112,6 +112,6 @@ mpq_cmp (const MP_RAT *op1, const MP_RAT *op2)
 
   cc = tmp1_size - tmp2_size != 0
     ? tmp1_size - tmp2_size : mpn_cmp (tmp1_ptr, tmp2_ptr, tmp1_size);
-  TMP_FREE (marker);
+  TMP_FREE;
   return num1_sign < 0 ? -cc : cc;
 }

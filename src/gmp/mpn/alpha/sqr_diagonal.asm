@@ -1,6 +1,6 @@
 dnl  Alpha mpn_sqr_diagonal.
 
-dnl  Copyright 2001 Free Software Foundation, Inc.
+dnl  Copyright 2001, 2002 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 
@@ -15,19 +15,22 @@ dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 dnl  License for more details.
 
 dnl  You should have received a copy of the GNU Lesser General Public License
-dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-dnl  MA 02111-1307, USA.
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+dnl  to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl  Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
-dnl  INPUT PARAMETERS
-dnl  res_ptr	r16
-dnl  s1_ptr	r17
-dnl  size	r18
+C      cycles/limb
+C EV4:     42
+C EV5:     18
+C EV6:      4
 
-dnl  This code runs at 42 cycles/limb on EV4, 18 cycles/limb on EV5, and 4
-dnl  cycles/limb on EV6.
+C  INPUT PARAMETERS
+C  rp	r16
+C  up	r17
+C  n	r18
+
 
 ASM_START()
 PROLOGUE(mpn_sqr_diagonal)

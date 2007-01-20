@@ -1,6 +1,6 @@
 /* operator>> -- C++-style input of mpq_t.
 
-Copyright 2001, 2002 Free Software Foundation, Inc.
+Copyright 2003 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <cctype>
 #include <iostream>
@@ -31,75 +31,28 @@ using namespace std;
 istream &
 operator>> (istream &i, mpq_ptr q)
 {
-  int base;
-  char c = 0;
-  string s;
-  bool ok = false, zero, showbase;
+  if (! (i >> mpq_numref(q)))
+    return i;
 
+  char  c = 0;
   i.get(c); // start reading
 
-  if (i.flags() & ios::skipws) // skip initial whitespace
-    while (isspace(c) && i.get(c))
-      ;
-
-  if (c == '-' || c == '+') // sign
+  if (c == '/')
     {
-      if (c == '-')
-	s = "-";
+      // skip slash, read denominator
       i.get(c);
-
-      while (isspace(c) && i.get(c)) // skip whitespace
-	;
+      return __gmpz_operator_in_nowhite (i, mpq_denref(q), c);
     }
-
-  base = __gmp_istream_set_base(i, c, zero, showbase); // select the base
-  __gmp_istream_set_digits(s, i, c, ok, base);         // read the numerator
-
-  if (! ok && zero) // the only digit read was "0"
-    {
-      base = 10;
-      s += '0';
-      ok = true;
-    }
-
-  if (i.flags() & ios::skipws)
-    while (isspace(c) && i.get(c)) // skip whitespace
-      ;
-
-  if (c == '/') // there's a denominator
-    {
-      bool zero2 = false;
-      int base2 = base;
-
-      s += '/';
-      ok = false; // denominator is mandatory
-      i.get(c);
-
-      while (isspace(c) && i.get(c)) // skip whitespace
-	;
-
-      if (showbase) // check base of denominator
-	base2 = __gmp_istream_set_base(i, c, zero2, showbase);
-
-      if (base2 == base || base2 == 10) // read the denominator
-	__gmp_istream_set_digits(s, i, c, ok, base);
-
-      if (! ok && zero2) // the only digit read was "0"
-	{                // denominator is 0, but that's your business
-	  s += '0';
-	  ok = true;
-	}
-    }
-
-  if (i.good()) // last character read was non-numeric
-    i.putback(c);
-  else if (i.eof() && ok) // stopped just before eof
-    i.clear();
-
-  if (ok)
-    mpq_set_str(q, s.c_str(), base); // extract the number
   else
-    i.setstate(ios::failbit); // read failed
+    {
+      // no denominator, set 1
+      q->_mp_den._mp_size = 1;
+      q->_mp_den._mp_d[0] = 1;
+      if (i.good())
+        i.putback(c);
+      else if (i.eof())
+        i.clear();
+    }
 
   return i;
 }

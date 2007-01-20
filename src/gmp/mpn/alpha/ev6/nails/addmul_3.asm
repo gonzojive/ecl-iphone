@@ -1,23 +1,29 @@
 dnl  Alpha ev6 nails mpn_addmul_3.
 
-dnl  Copyright 2002 Free Software Foundation, Inc.
-dnl 
+dnl  Copyright 2002, 2006 Free Software Foundation, Inc.
+dnl
 dnl  This file is part of the GNU MP Library.
-dnl 
+dnl
 dnl  The GNU MP Library is free software; you can redistribute it and/or
 dnl  modify it under the terms of the GNU Lesser General Public License as
 dnl  published by the Free Software Foundation; either version 2.1 of the
 dnl  License, or (at your option) any later version.
-dnl 
+dnl
 dnl  The GNU MP Library is distributed in the hope that it will be useful,
 dnl  but WITHOUT ANY WARRANTY; without even the implied warranty of
 dnl  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 dnl  Lesser General Public License for more details.
-dnl 
+dnl
 dnl  You should have received a copy of the GNU Lesser General Public
 dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
-dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
-dnl  Suite 330, Boston, MA 02111-1307, USA.
+dnl  not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+dnl  Fifth Floor, Boston, MA 02110-1301, USA.
+
+
+dnl  Runs at 3.0 cycles/limb.  With unrolling, the ulimb load and the 3
+dnl  bookkeeping increments and the `bis' that copies from r22 to r6 could be
+dnl  removed and the instruction count reduced from 26 to to 21.  We could
+dnl  thereby probably reach 2 cycles/limb, the IMUL bandwidth.
 
 include(`../config.m4')
 
@@ -55,29 +61,6 @@ define(`NUMB_BITS',`GMP_NUMB_BITS')
 dnl  This declaration is munged by configure
 NAILS_SUPPORT(3-63)
 
-dnl  Runs at 3.0 cycles/limb.  With unrolling, the ulimb load and the 3
-dnl  bookkeeping increments and the `bis' that copies from r22 to r6 could be
-dnl  removed and the instruction count reduced from 26 to to 21.  We could
-dnl  thereby probably reach 2 cycles/limb, the IMUL bandwidth.
-
-dnl If this is going to be a Karatsuba basecase building block, we need some
-dnl of the combinations below.  That way, we won't ever hit the
-dnl slower mpn_addmul_1 for any huge multiplication.
-dnl  
-dnl	Alt 3		Alt 4		Alt 5		Alt 6
-dnl	addmul_2	addmul_2	addmul_3	addmul_3
-dnl	addmul_3	addmul_3	addmul_4	addmul_4
-dnl			addmul_4	addmul_5	addmul_5
-dnl							addmul_6
-
-dnl Register usage:
-dnl callee-saves:	r9 r10 r11 r12 r13 r14 r15
-dnl scratch: r0 r1 r2 r3 r4 r5 r6 r7 r8
-dnl	     r16 r17 r18 r19 r20 r21 r22 r23 r24 r25 r27 r28
-dnl return address: 26
-dnl global pointer: 29
-dnl stack pointer: 30
-
 ASM_START()
 PROLOGUE(mpn_addmul_3)
 	lda	numb_mask,-1(r31)
@@ -95,7 +78,6 @@ PROLOGUE(mpn_addmul_3)
 	sll	v2,NAIL_BITS,	v2
 	bis	r31,	r31,	r19
 
-C MAIN LOOP
 	ldq	ulimb,	0(up)
 	lda	up,	8(up)
 	mulq	v0,	ulimb,	m0a		C U1
@@ -105,10 +87,9 @@ C MAIN LOOP
 	lda	n,	-1(n)
 	mulq	v2,	ulimb,	m2a		C U1
 	umulh	v2,	ulimb,	m2b		C U1
-	beq	n,	Lend			C U0
+	beq	n,	L(end)			C U0
 	ALIGN(16)
-Loop:
-	bis	r31,	r31,	r31		C	nop
+L(top):	bis	r31,	r31,	r31		C	nop
 	ldq	rlimb,	0(rp)
 	ldq	ulimb,	0(up)
 	addq	r19,	acc0,	acc0		C	propagate nail
@@ -146,10 +127,9 @@ Loop:
 	bis	r31,	r31,	r31		C	nop
 	stq	r28,	-8(rp)
 
-	bne	n,	Loop			C U0
-C END LOOP
-Lend:
-	ldq	rlimb,	0(rp)
+	bne	n,	L(top)			C U0
+
+L(end):	ldq	rlimb,	0(rp)
 	addq	r19,	acc0,	acc0		C	propagate nail
 	lda	rp,	8(rp)
 	srl	m0a,NAIL_BITS,	r8		C U0
@@ -167,16 +147,16 @@ Lend:
 	stq	r28,	-8(rp)
 
 	addq	r19,	acc0,	acc0		C propagate nail
-	and     acc0,numb_mask,	r28
+	and	acc0,numb_mask,	r28
 	stq	r28,	0(rp)
 	srl	acc0,NUMB_BITS,	r19
 	addq	r19,	acc1,	acc1
 
-	and     acc1,numb_mask,	r28
+	and	acc1,numb_mask,	r28
 	stq	r28,	8(rp)
 	srl	acc1,NUMB_BITS,	r19
 	addq	r19,	acc2,	m0a
 
 	ret	r31,	(r26),	1
-EPILOGUE(mpn_addmul_3)
+EPILOGUE()
 ASM_END()

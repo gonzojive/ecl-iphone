@@ -1,7 +1,7 @@
 /* mpz_gcdext(g, s, t, a, b) -- Set G to gcd(a, b), and S and T such that
    g = as + bt.
 
-Copyright 1991, 1993, 1994, 1995, 1996, 1997, 2000, 2001 Free Software
+Copyright 1991, 1993, 1994, 1995, 1996, 1997, 2000, 2001, 2005 Free Software
 Foundation, Inc.
 
 This file is part of the GNU MP Library.
@@ -18,8 +18,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h> /* for NULL */
 #include "gmp.h"
@@ -36,9 +36,9 @@ mpz_gcdext (mpz_ptr g, mpz_ptr s, mpz_ptr t, mpz_srcptr a, mpz_srcptr b)
   mpz_srcptr u, v;
   mpz_ptr ss, tt;
   __mpz_struct stmp, gtmp;
-  TMP_DECL (marker);
+  TMP_DECL;
 
-  TMP_MARK (marker);
+  TMP_MARK;
 
   /* mpn_gcdext requires that U >= V.  Therefore, we often have to swap U and
      V.  This in turn leads to a lot of complications.  The computed cofactor
@@ -124,5 +124,5 @@ mpz_gcdext (mpz_ptr g, mpz_ptr s, mpz_ptr t, mpz_srcptr a, mpz_srcptr b)
   MPN_COPY (gp, tmp_gp, gsize);
   SIZ (g) = gsize;
 
-  TMP_FREE (marker);
+  TMP_FREE;
 }

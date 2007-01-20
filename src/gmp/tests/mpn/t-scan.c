@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,7 +28,7 @@ MA 02111-1307, USA. */
 #include "tests.h"
 
 
-#define SIZE  3
+#define SIZE  ((mp_size_t) 3)
 mp_limb_t  x[SIZE+1];
 
 void
@@ -71,6 +71,41 @@ check (void)
 
 void
 check_twobits (void)
+{
+#define TWOBITS(a, b) \
+  ((CNST_LIMB(1) << (a)) | (CNST_LIMB(1) << (b)))
+
+  refmpn_zero (x, SIZE);
+  x[0] = TWOBITS (1, 0);
+  check ();
+
+  refmpn_zero (x, SIZE);
+  x[0] = TWOBITS (GMP_NUMB_BITS-1, 1);
+  check ();
+
+  refmpn_zero (x, SIZE);
+  x[0] = CNST_LIMB(1);
+  x[1] = CNST_LIMB(1);
+  check ();
+
+  refmpn_zero (x, SIZE);
+  x[0] = CNST_LIMB(1) << (GMP_NUMB_BITS-1);
+  x[1] = CNST_LIMB(1);
+  check ();
+
+  refmpn_zero (x, SIZE);
+  x[1] = TWOBITS (1, 0);
+  check ();
+
+  refmpn_zero (x, SIZE);
+  x[1] = CNST_LIMB(1);
+  x[2] = CNST_LIMB(1);
+  check ();
+}
+
+/* This is unused, it takes too long, especially on 64-bit systems. */
+void
+check_twobits_exhaustive (void)
 {
   unsigned long  i, j;
 

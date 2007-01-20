@@ -45,6 +45,8 @@ ECL 1.0:
 
  - Using version 6.8 of the Boehm-Weiser garbage collector.
 
+ - Using version 4.2.1 of the GMP library.
+
 * Bugs fixed:
 
  - STREAMP signals an error for Gray streams.

@@ -3,7 +3,7 @@ divert(-1)
 dnl  m4 macros for alpha assembler (everywhere except unicos).
 
 
-dnl  Copyright 2000, 2002 Free Software Foundation, Inc.
+dnl  Copyright 2000, 2002, 2003, 2004 Free Software Foundation, Inc.
 dnl
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -19,8 +19,8 @@ dnl  Lesser General Public License for more details.
 dnl
 dnl  You should have received a copy of the GNU Lesser General Public
 dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
-dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
-dnl  Suite 330, Boston, MA 02111-1307, USA.
+dnl  not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+dnl  Fifth Floor, Boston, MA 02110-1301, USA.
 
 
 dnl  Usage: ASM_START()
@@ -51,7 +51,7 @@ m4_assert_numargs_range(1,2)
 `ifelse(`$2',,,`m4_error(`Unrecognised PROLOGUE parameter
 ')')')')dnl
 	.text
-ifelse(`$2',noalign,,`	ALIGN(8)')
+ifelse(`$2',noalign,,`	ALIGN(16)')
 	.globl	$1
 	.ent	$1
 $1:
@@ -62,6 +62,15 @@ ifelse(`$2',gp,`	ldgp	r29,0(r27)')
 define(`EPILOGUE_cpu',
 m4_assert_numargs(1)
 `	.end	$1')
+
+
+dnl  Usage: LDGP(dst,src)
+dnl
+dnl  Emit an "ldgp dst,src", but only if the system uses a GOT.
+
+define(LDGP,
+m4_assert_numargs(2)
+`ldgp	`$1', `$2'')
 
 
 dnl  Usage: EXTERN(variable_name)
@@ -98,11 +107,6 @@ dnl  Load a symbolic address into a register
 define(`LEA',
 m4_assert_numargs(2)
 `lda   $1,  $2')
-
-dnl  Need some stuff for extwl just for bigend systems.  Define to empty.
-define(`bigend',
-m4_assert_numargs(1)
-`')
 
 dnl  Usage: ASM_END()
 define(`ASM_END',

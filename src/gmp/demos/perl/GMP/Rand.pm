@@ -1,6 +1,6 @@
 # GMP random numbers module.
 
-# Copyright 2001 Free Software Foundation, Inc.
+# Copyright 2001, 2003 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library.
 #
@@ -16,8 +16,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-# the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-# MA 02111-1307, USA.
+# the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
 
 
 package GMP::Rand;
@@ -26,8 +26,10 @@ require GMP;
 require Exporter;
 @ISA = qw(GMP Exporter);
 @EXPORT = qw();
-%EXPORT_TAGS = ('all' => [qw(randstate mpf_urandomb mpz_rrandomb
-			     mpz_urandomb mpz_urandomm)]);
+%EXPORT_TAGS = ('all' => [qw(
+			     randstate mpf_urandomb mpz_rrandomb
+			     mpz_urandomb mpz_urandomm gmp_urandomb_ui
+			     gmp_urandomm_ui)]);
 Exporter::export_ok_tags('all');
 1;
 __END__

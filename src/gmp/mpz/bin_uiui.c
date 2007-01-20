@@ -1,6 +1,6 @@
 /* mpz_bin_uiui - compute n over k.
 
-Copyright 1998, 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1998, 1999, 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -90,7 +90,7 @@ mpz_bin_uiui (mpz_ptr r, unsigned long int n, unsigned long int k)
   cnt = 0;
   for (i = 2; i <= k; i++)
     {
-      mp_limb_t n1, n0, k1, k0;
+      mp_limb_t n1, n0, k0;
 
       j++;
 #if 0
@@ -111,10 +111,9 @@ mpz_bin_uiui (mpz_ptr r, unsigned long int n, unsigned long int k)
       kacc >>= cnt;
 #endif
       /* Accumulate next multiples.  */
-      umul_ppmm (n1, n0, nacc, j << GMP_NAIL_BITS);
-      umul_ppmm (k1, k0, kacc, i << GMP_NAIL_BITS);
+      umul_ppmm (n1, n0, nacc, (mp_limb_t) j << GMP_NAIL_BITS);
+      k0 = kacc * i;
       n0 >>= GMP_NAIL_BITS;
-      k0 >>= GMP_NAIL_BITS;
       if (n1 != 0)
         {
           /* Accumulator overflow.  Perform bignum step. */
@@ -124,7 +123,8 @@ mpz_bin_uiui (mpz_ptr r, unsigned long int n, unsigned long int k)
         }
       else
         {
-          ASSERT (k1 == 0); /* n>=k, so high k zero when high n zero */
+          /* k<=n, so should have no overflow from k0 = kacc*i */
+          ASSERT (kacc <= GMP_NUMB_MAX / i);
 
           /* Save new products in accumulators to keep accumulating.  */
           nacc = n0;

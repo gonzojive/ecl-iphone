@@ -20,8 +20,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-# the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-# MA 02111-1307, USA.
+# the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
 
 # ***************************** NOTE **************************************
 # This script try to figure out things about this release but has a hard
@@ -377,8 +377,8 @@ sub parse_top_configure {
   $/ = $old_eol;
   close CONFIGURE;
 
-  my ($package) = $text =~ /(?:\n|\r)PACKAGE\s*=\s*(\S+)/;
-  my ($version) = $text =~ /(?:\n|\r)VERSION\s*=\s*(\S+)/;
+  my ($package) = $text =~ /(?:\n|\r)PACKAGE_NAME\s*=\s*(\S+)/;
+  my ($version) = $text =~ /(?:\n|\r)PACKAGE_VERSION\s*=\s*(\S+)/;
 
   my $files = join(' ',$text =~ /(?:\n|\r)gmp_mpn_functions\s*=\s*\"([^\"]+)/);
   $files =~ s/\\/ /g;

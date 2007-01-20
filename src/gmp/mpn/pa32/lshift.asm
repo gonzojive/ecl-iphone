@@ -15,9 +15,9 @@ dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 dnl  License for more details.
 
 dnl  You should have received a copy of the GNU Lesser General Public License
-dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-dnl  MA 02111-1307, USA.
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+dnl  to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl  Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
@@ -40,7 +40,7 @@ PROLOGUE(mpn_lshift)
 	addib,=		-1,%r24,L(0002)
 	vshd		%r22,%r29,%r20
 
-	.label	L(loop)
+LDEF(loop)
 	ldws,mb		-4(0,%r25),%r22
 	stws,mb		%r20,-4(0,%r26)
 	addib,=		-1,%r24,L(0003)
@@ -50,16 +50,16 @@ PROLOGUE(mpn_lshift)
 	addib,<>	-1,%r24,L(loop)
 	vshd		%r22,%r29,%r20
 
-	.label	L(0002)
+LDEF(0002)
 	stws,mb		%r20,-4(0,%r26)
 	vshd		%r29,%r0,%r20
 	bv		0(%r2)
 	stw		%r20,-4(0,%r26)
 
-	.label	L(0003)
+LDEF(0003)
 	stws,mb		%r20,-4(0,%r26)
 
-	.label	L(0004)
+LDEF(0004)
 	vshd		%r22,%r0,%r20
 	bv		0(%r2)
 	stw		%r20,-4(0,%r26)

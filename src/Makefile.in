@@ -108,7 +108,7 @@ bin/ecl-config: bin/ecl-config.pre
 @LIBPREFIX@eclgmp.@LIBEXT@:
 	if (echo $(SUBDIRS) | grep gmp); then \
 	  cd gmp && $(MAKE) install && \
-	  cd .. && mv h/gmp.h ecl/ && rmdir h &&  \
+	  cd .. && mv include/gmp.h ecl/ && rmdir include &&  \
 	  mv ./@LIBPREFIX@gmp.@LIBEXT@ ./@LIBPREFIX@eclgmp.@LIBEXT@; \
 	fi
 sysfun.lsp:

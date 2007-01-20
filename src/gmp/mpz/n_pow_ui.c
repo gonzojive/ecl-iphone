@@ -1,6 +1,10 @@
 /* mpz_n_pow_ui -- mpn raised to ulong.
 
-Copyright 2001, 2002 Free Software Foundation, Inc.
+   THE FUNCTIONS IN THIS FILE ARE FOR INTERNAL USE ONLY.  THEY'RE ALMOST
+   CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR DISAPPEAR COMPLETELY IN
+   FUTURE GNU MP RELEASES.
+
+Copyright 2001, 2002, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +20,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -158,7 +162,7 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
 #else
   mp_limb_t      b_twolimbs[2];
 #endif
-  TMP_DECL (marker);
+  TMP_DECL;
 
   TRACE (printf ("mpz_n_pow_ui rp=0x%lX bp=0x%lX bsize=%ld e=%lu (0x%lX)\n",
                  PTR(r), bp, bsize, e, e);
@@ -207,7 +211,7 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
   TRACE (printf ("trailing zero btwos=%d rtwos_limbs=%ld rtwos_bits=%lu\n",
                  btwos, rtwos_limbs, rtwos_bits));
 
-  TMP_MARK (marker);
+  TMP_MARK;
 
   rl = 1;
 #if HAVE_NATIVE_mpn_mul_2
@@ -507,7 +511,7 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
 
   ASSERT (rp == PTR(r) + rtwos_limbs);
   TRACE (mpn_trace ("end loop r", rp, rsize));
-  TMP_FREE (marker);
+  TMP_FREE;
 
   /* Apply any partial limb factors of 2. */
   if (rtwos_bits != 0)

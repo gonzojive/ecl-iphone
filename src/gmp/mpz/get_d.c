@@ -1,6 +1,6 @@
 /* double mpz_get_d (mpz_t src) -- Return the double approximation to SRC.
 
-Copyright 1996, 1997, 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1996, 1997, 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,105 +16,20 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
-#include "longlong.h"
-
-
-/* FIXME: Would prefer to inline this on all compilers, not just those with
-   "inline".  */
-static inline int
-mpn_zero_p (mp_srcptr p, mp_size_t n)
-{
-  mp_size_t i;
-
-  for (i = 0; i < n; i++)
-    if (p[i] != 0)
-      return 0;
-
-  return 1;
-}
-
 
 double
-mpz_get_d (mpz_srcptr src)
+mpz_get_d (mpz_srcptr z)
 {
-  double res;
   mp_size_t size;
-  int negative;
-  mp_ptr qp;
-  mp_limb_t hz, lz;
-  int cnt;
 
-  size = SIZ(src);
-  if (size == 0)
+  size = SIZ (z);
+  if (UNLIKELY (size == 0))
     return 0.0;
 
-  negative = size < 0;
-  size = ABS (size);
-  qp = PTR(src);
-
-  if (size == 1)
-    {
-      res = qp[size - 1];
-    }
-  else if (size == 2)
-    {
-      res = MP_BASE_AS_DOUBLE * qp[size - 1] + qp[size - 2];
-    }
-  else
-    {
-      count_leading_zeros (cnt, qp[size - 1]);
-      cnt -= GMP_NAIL_BITS;
-
-#if BITS_PER_MP_LIMB == 32
-      if (cnt == 0)
-	{
-	  hz = qp[size - 1];
-	  lz = qp[size - 2];
-	}
-      else
-	{
-	  hz = ((qp[size - 1] << cnt) | (qp[size - 2] >> GMP_NUMB_BITS - cnt)) & GMP_NUMB_MASK;
-	  lz = ((qp[size - 2] << cnt) | (qp[size - 3] >> GMP_NUMB_BITS - cnt)) & GMP_NUMB_MASK;
-	}
-#if _GMP_IEEE_FLOATS
-      /* Take bits from less significant limbs, but only if they may affect
-	 the result.  */
-      if ((lz & 0x7ff) == 0x400)
-	{
-	  if (cnt != 0)
-	    lz += (((qp[size - 3] << cnt) & GMP_NUMB_MASK) != 0
-		   || ! mpn_zero_p (qp, size - 3));
-	  else
-	    lz += (! mpn_zero_p (qp, size - 2));
-	}
-#endif
-      res = MP_BASE_AS_DOUBLE * hz + lz;
-      res = __gmp_scale2 (res, (size - 2) * GMP_NUMB_BITS - cnt);
-#endif
-#if BITS_PER_MP_LIMB == 64
-      if (cnt == 0)
-	hz = qp[size - 1];
-      else
-	hz = ((qp[size - 1] << cnt) | (qp[size - 2] >> GMP_NUMB_BITS - cnt)) & GMP_NUMB_MASK;
-#if _GMP_IEEE_FLOATS
-      if ((hz & 0x7ff) == 0x400)
-	{
-	  if (cnt != 0)
-	    hz += (((qp[size - 2] << cnt) & GMP_NUMB_MASK) != 0
-		   || ! mpn_zero_p (qp, size - 2));
-	  else
-	    hz += (! mpn_zero_p (qp, size - 1));
-	}
-#endif
-      res = hz;
-      res = __gmp_scale2 (res, (size - 1) * GMP_NUMB_BITS - cnt);
-#endif
-    }
-
-  return negative ? -res : res;
+  return mpn_get_d (PTR (z), ABS (size), size, 0L);
 }

@@ -17,8 +17,8 @@
 ;;
 ;; You should have received a copy of the GNU Lesser General Public License
 ;; along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-;; the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-;; MA 02111-1307, USA.
+;; the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+;; MA 02110-1301, USA.
 
 
 ;;; Commentary:
@@ -74,9 +74,19 @@
   :type 'hook
   :group 'gmpasm)
 
-(defcustom gmpasm-comment-start-regexp "[#;!@*|C]"
+(defcustom gmpasm-comment-start-regexp "\\([#;!@*|C]\\|//\\)"
   "*Regexp matching possible comment styles.
-See `gmpasm-mode' docstring for how this is used."
+See `gmpasm-mode' docstring for how this is used.
+
+Commenting styles within GMP include
+  #   - alpha, i386, i960, vax, traditional unix
+  ;   - a29k, clipper, hppa, m88k, ppc
+  !   - sh, sparc, z8000
+  |   - m68k
+  @   - arm
+  *   - cray
+  C   - GMP m4, see mpn/asm-defs.m4
+  //  - ia64"
   :type 'regexp
   :group 'gmpasm)
 
@@ -288,6 +298,12 @@ that's added for filling etc, not the whole `gmpasm-comment-start-regexp'.
 	 (concat "[ \t\f]*\\(\\(" comment-regexp "\\|dnl\\)[ \t]*\\)*$"))
     (set (make-local-variable 'paragraph-start)
 	 (concat "\f\\|" paragraph-separate))
+
+    ;; Some sort of "def...(" m4 define, possibly with ` for quoting.
+    ;; Could do something with PROLOGUE here, but in GMP the filename is
+    ;; enough, it's not normally necessary to say the function name.
+    (set (make-local-variable 'add-log-current-defun-header-regexp)
+	 "^def[a-z0-9_]+(`?\\([a-zA-Z0-9_]+\\)")
 
     ;; Adaptive fill gets dnl and comment-start as comment style prefixes on
     ;; top of the standard regexp (which has # and ; already actually).

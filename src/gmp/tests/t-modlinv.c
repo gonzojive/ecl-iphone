@@ -1,6 +1,6 @@
 /* Test modlimb_invert.
 
-Copyright 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,8 +37,10 @@ one (mp_limb_t n)
   prod = (inv * n) & GMP_NUMB_MASK;
   if (prod != 1)
     {
-      printf ("modlimb_invert wrong on n=0x%lX, got 0x%lX, product 0x%lX\n",
-              n, inv, prod);
+      printf ("modlimb_invert wrong\n");
+      mp_limb_trace ("  n       ", n);
+      mp_limb_trace ("  got     ", inv);
+      mp_limb_trace ("  product ", prod);
       abort ();
     }
 }

@@ -1,6 +1,6 @@
 /* mpf_mul -- Multiply two floats.
 
-Copyright 1993, 1994, 1996, 2001 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1996, 2001, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -29,9 +29,9 @@ mpf_mul (mpf_ptr r, mpf_srcptr u, mpf_srcptr v)
   mp_size_t usize, vsize;
   mp_size_t sign_product;
   mp_size_t prec = r->_mp_prec;
-  TMP_DECL (marker);
+  TMP_DECL;
 
-  TMP_MARK (marker);
+  TMP_MARK;
   usize = u->_mp_size;
   vsize = v->_mp_size;
   sign_product = usize ^ vsize;
@@ -83,5 +83,5 @@ mpf_mul (mpf_ptr r, mpf_srcptr u, mpf_srcptr v)
       r->_mp_exp = u->_mp_exp + v->_mp_exp - adj;
       r->_mp_size = sign_product >= 0 ? rsize : -rsize;
     }
-  TMP_FREE (marker);
+  TMP_FREE;
 }

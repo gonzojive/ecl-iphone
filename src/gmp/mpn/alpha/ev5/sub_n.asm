@@ -1,7 +1,7 @@
-dnl  Alpha EV5 __gmpn_sub_n -- Subtract two limb vectors of the same length > 0
+dnl  Alpha EV5 mpn_sub_n -- Subtract two limb vectors of the same length > 0
 dnl  and store difference in a third limb vector.
 
-dnl  Copyright 1995, 1999, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1995, 1999, 2000, 2005 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 
@@ -16,11 +16,16 @@ dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 dnl  License for more details.
 
 dnl  You should have received a copy of the GNU Lesser General Public License
-dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-dnl  MA 02111-1307, USA.
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+dnl  to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl  Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
+
+C      cycles/limb
+C EV4:     ?
+C EV5:     4.75
+C EV6:     3
 
 dnl  INPUT PARAMETERS
 dnl  res_ptr	r16

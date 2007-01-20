@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 
 /* Notes:
@@ -2196,12 +2196,29 @@ PPCODE:
     sv = (exact ? &PL_sv_yes : &PL_sv_no); sv_2mortal(sv); PUSHs(sv);
 
 
+void
+rootrem (z, n)
+    mpz_coerce   z
+    ulong_coerce n
+PREINIT:
+    SV  *sv;
+    mpz root;
+    mpz rem;
+PPCODE:
+    root = new_mpz();
+    rem = new_mpz();
+    mpz_rootrem (root->m, rem->m, z, n);
+    EXTEND (SP, 2);
+    PUSHs (MPX_NEWMORTAL (root, mpz_class_hv));
+    PUSHs (MPX_NEWMORTAL (rem,  mpz_class_hv));
+
+
 # In the past scan0 and scan1 were described as returning ULONG_MAX which
 # could be obtained in perl with ~0.  That wasn't true on 64-bit systems
 # (eg. alpha) with perl 5.005, since in that version IV and UV were still
 # 32-bits.
 #
-# We changed in gmp 4.1.3 to just say ~0 for the not-found return.  It's
+# We changed in gmp 4.2 to just say ~0 for the not-found return.  It's
 # likely most people have used ~0 rather than POSIX::ULONG_MAX(), so this
 # change should match existing usage.  It only actually makes a difference
 # in old perl, since recent versions have gone to 64-bits for IV and UV, the
@@ -2239,12 +2256,14 @@ setbit (sv, bit)
     ulong_coerce bit
 ALIAS:
     GMP::Mpz::clrbit = 1
+    GMP::Mpz::combit = 2
 PREINIT:
     static_functable const struct {
       void (*op) (mpz_ptr, unsigned long);
     } table[] = {
       { mpz_setbit }, /* 0 */
       { mpz_clrbit }, /* 1 */
+      { mpz_combit }, /* 2 */
     };
     int  use;
     mpz  z;
@@ -3055,6 +3074,13 @@ CODE:
       }
     else
       {
+        if (SvROK (ST(0)) && sv_derived_from (ST(0), rand_class))
+          {
+            if (items != 1)
+              goto invalid;
+            gmp_randinit_set (RETVAL, SvRANDSTATE (ST(0)));
+          }
+        else
           {
             STRLEN      len;
             const char  *method = SvPV (ST(0), len);
@@ -3077,6 +3103,12 @@ CODE:
                     Safefree (RETVAL);
                     XSRETURN_UNDEF;
                   }
+              }
+            else if (strcmp (method, "mt") == 0)
+              {
+                if (items != 1)
+                  goto invalid;
+                gmp_randinit_mt (RETVAL);
               }
             else
               {
@@ -3147,5 +3179,25 @@ mpf_urandomb (r, bits)
 CODE:
     RETVAL = new_mpf (bits);
     mpf_urandomb (RETVAL, r, bits);
+OUTPUT:
+    RETVAL
+
+
+unsigned long
+gmp_urandomb_ui (r, bits)
+    randstate    r
+    ulong_coerce bits
+ALIAS:
+    GMP::Rand::gmp_urandomm_ui = 1
+PREINIT:
+    static_functable const struct {
+      unsigned long (*fun) (gmp_randstate_t r, unsigned long bits);
+    } table[] = {
+      { gmp_urandomb_ui }, /* 0 */
+      { gmp_urandomm_ui }, /* 1 */
+    };
+CODE:
+    assert_table (ix);
+    RETVAL = (*table[ix].fun) (r, bits);
 OUTPUT:
     RETVAL

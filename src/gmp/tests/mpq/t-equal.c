@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -107,9 +107,11 @@ check_various (void)
   SET4 (x, 4,1,666,3,4, 3,88,5,6,7);
   SET4 (y, 4,1,2,3,4, 3,99,5,6,7);
   check_all (x, y, 0);
+#if GMP_NUMB_BITS != 62
   SET4 (x, 4,667,2,3,4, 3,88,5,6,7);
   SET4 (y, 4,1,2,3,4, 3,99,5,6,7);
   check_all (x, y, 0);
+#endif
   SET4 (x, 4,1,2,3,4, 3,88,5,6,667);
   SET4 (y, 4,1,2,3,4, 3,99,5,6,7);
   check_all (x, y, 0);

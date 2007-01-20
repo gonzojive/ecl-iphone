@@ -1,7 +1,7 @@
 /* mpz_gcd_ui -- Calculate the greatest common divisior of two integers.
 
-Copyright 1994, 1996, 1999, 2000, 2001, 2002, 2003 Free Software Foundation,
-Inc.
+Copyright 1994, 1996, 1999, 2000, 2001, 2002, 2003, 2004 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -17,8 +17,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h> /* for NULL */
 #include "gmp.h"
@@ -30,7 +30,7 @@ mpz_gcd_ui (mpz_ptr w, mpz_srcptr u, unsigned long int v)
   mp_size_t un;
   mp_limb_t res;
 
-#if GMP_NAIL_BITS != 0
+#if BITS_PER_ULONG > GMP_NUMB_BITS  /* avoid warnings about shift amount */
   if (v > GMP_NUMB_MAX)
     {
       mpz_t vz;
@@ -40,7 +40,9 @@ mpz_gcd_ui (mpz_ptr w, mpz_srcptr u, unsigned long int v)
       PTR(vz) = vlimbs;
       SIZ(vz) = 2;
       mpz_gcd (w, u, vz);
-      return;
+      /* because v!=0 we will have w<=v hence fitting a ulong */
+      ASSERT (mpz_fits_ulong_p (w));
+      return mpz_get_ui (w);
     }
 #endif
 

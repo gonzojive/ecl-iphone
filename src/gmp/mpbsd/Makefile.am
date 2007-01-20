@@ -16,11 +16,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-# the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-# MA 02111-1307, USA.
+# the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
 
-
-AUTOMAKE_OPTIONS = gnu no-dependencies $(top_builddir)/ansi2knr
 
 # -I$(top_srcdir)/mpz is for #includes done by mpz .c files.  Perhaps most
 # compilers are smart enough to look in the same directory as the .c file
@@ -32,19 +30,9 @@ INCLUDES = -DBERKELEY_MP -D__GMP_WITHIN_GMP -D__gmpz_realloc=_mp_realloc \
 # The mpz sources here all know to look for -DBERKELEY_MP to compile to in
 # mpbsd form.
 #
-# FIXME: Would have just put ../mpz/add.c etc in libmpbsd_la_SOURCES, but as
-# of automake 1.5 that doesn't work in combination with ansi2knr.
-#
-libmpbsd_la_SOURCES = itom.c mfree.c min.c mout.c mtox.c rpow.c sdiv.c xtom.c
-nodist_libmpbsd_la_SOURCES = \
-  add.c cmp.c gcd.c mul.c powm.c realloc.c set.c sqrtrem.c sub.c tdiv_qr.c
-
-$(nodist_libmpbsd_la_SOURCES):
-	for i in $(nodist_libmpbsd_la_SOURCES); do \
-	  cp $(top_srcdir)/mpz/$$i .; \
-        done
-
-CLEANFILES = $(nodist_libmpbsd_la_SOURCES)
+libmpbsd_la_SOURCES = itom.c mfree.c min.c mout.c mtox.c rpow.c sdiv.c xtom.c \
+  ../mpz/add.c ../mpz/cmp.c ../mpz/gcd.c ../mpz/mul.c ../mpz/powm.c \
+  ../mpz/realloc.c ../mpz/set.c ../mpz/sqrtrem.c ../mpz/sub.c ../mpz/tdiv_qr.c
 
 if WANT_MPBSD
 noinst_LTLIBRARIES = libmpbsd.la

@@ -1,6 +1,6 @@
 dnl  Alpha mpn_lshift -- Shift a number left.
 
-dnl  Copyright 1994, 1995, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1994, 1995, 2000, 2002, 2003 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 
@@ -15,27 +15,23 @@ dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 dnl  License for more details.
 
 dnl  You should have received a copy of the GNU Lesser General Public License
-dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-dnl  MA 02111-1307, USA.
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+dnl  to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl  Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
-dnl  INPUT PARAMETERS
-dnl  res_ptr	r16
-dnl  s1_ptr	r17
-dnl  size	r18
-dnl  cnt	r19
+C      cycles/limb
+C EV4:     4.75
+C EV5:     4
+C EV6:     2
 
-dnl  This code runs at 4.8 cycles/limb on the 21064.  With infinite unrolling,
-dnl  it would take 4 cycles/limb.  It should be possible to get down to 3
-dnl  cycles/limb since both ldq and stq can be paired with the other used
-dnl  instructions.  But there are many restrictions in the 21064 pipeline that
-dnl  makes it hard, if not impossible, to get down to 3 cycles/limb:
+C  INPUT PARAMETERS
+C  rp	r16
+C  up	r17
+C  n	r18
+C  cnt	r19
 
-dnl  1. ldq has a 3 cycle delay, srl and sll have a 2 cycle delay.
-dnl  2. Only aligned instruction pairs can be paired.
-dnl  3. The store buffer or silo might not be able to deal with the bandwidth.
 
 ASM_START()
 PROLOGUE(mpn_lshift)
@@ -52,8 +48,7 @@ PROLOGUE(mpn_lshift)
 	subq	r18,r20,r18
 
 	ALIGN(8)
-$Loop0:
-	ldq	r3,-8(r17)
+$Loop0:	ldq	r3,-8(r17)
 	subq	r16,8,r16
 	subq	r17,8,r17
 	subq	r20,1,r20

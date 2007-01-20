@@ -22,8 +22,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -164,14 +164,14 @@ char *ds_func_names[] =
   } while (0)
 #define FAIL2(fname,op1,op2,op3) \
   do {									\
-  dump (#fname, op1, op2, op3);					\
+  dump (#fname, op1, op2, op3);						\
   failures++;								\
   } while (0)
 #else
 #define FAIL(class,indx,op1,op2,op3) \
   do {									\
   class/**/_funcs[indx] = 0;						\
-  dump (class/**/_func_names[indx], op1, op2, op3);		\
+  dump (class/**/_func_names[indx], op1, op2, op3);			\
   failures++;								\
   } while (0)
 #define FAIL2(fname,op1,op2,op3) \
@@ -186,7 +186,7 @@ int
 main (int argc, char **argv)
 {
   int i;
-  int pass, reps = 1000;
+  int pass, reps = 100;
   mpz_t in1, in2, in3;
   unsigned long int in2i;
   mp_size_t size;
@@ -221,7 +221,7 @@ main (int argc, char **argv)
   for (pass = 1; pass <= reps; pass++)
     {
       mpz_urandomb (bs, rands, 32);
-      size_range = mpz_get_ui (bs) % 10 + 2;
+      size_range = mpz_get_ui (bs) % 12 + 2;
 
       mpz_urandomb (bs, rands, size_range);
       size = mpz_get_ui (bs);
@@ -381,12 +381,27 @@ main (int argc, char **argv)
 
       if (mpz_sgn (in1) >= 0)
 	{
-	  mpz_root (ref1, in1, in2i % 0x100 + 1);
+	  mpz_root (ref1, in1, in2i % 0x1000 + 1);
 
 	  mpz_set (res1, in1);
-	  mpz_root (res1, res1, in2i % 0x100 + 1);
+	  mpz_root (res1, res1, in2i % 0x1000 + 1);
 	  if (mpz_cmp (ref1, res1) != 0)
 	    FAIL2 (mpz_root, in1, in2, NULL);
+	}
+
+      if (mpz_sgn (in1) >= 0)
+	{
+	  mpz_rootrem (ref1, ref2, in1, in2i % 0x1000 + 1);
+
+	  mpz_set (res1, in1);
+	  mpz_rootrem (res1, res2, res1, in2i % 0x1000 + 1);
+	  if (mpz_cmp (ref1, res1) != 0 || mpz_cmp (ref2, res2) != 0)
+	    FAIL2 (mpz_rootrem, in1, in2, NULL);
+
+	  mpz_set (res2, in1);
+	  mpz_rootrem (res1, res2, res2, in2i % 0x1000 + 1);
+	  if (mpz_cmp (ref1, res1) != 0 || mpz_cmp (ref2, res2) != 0)
+	    FAIL2 (mpz_rootrem, in1, in2, NULL);
 	}
 
       if (pass < reps / 2)	/* run fewer tests since gcdext lots of time */

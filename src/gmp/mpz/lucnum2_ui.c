@@ -1,6 +1,6 @@
 /* mpz_lucnum2_ui -- calculate Lucas numbers.
 
-Copyright 2001 Free Software Foundation, Inc.
+Copyright 2001, 2003, 2005 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,8 +16,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include "gmp.h"
@@ -30,7 +30,7 @@ mpz_lucnum2_ui (mpz_ptr ln, mpz_ptr lnsub1, unsigned long n)
   mp_ptr     lp, l1p, f1p;
   mp_size_t  size;
   mp_limb_t  c;
-  TMP_DECL (marker);
+  TMP_DECL;
 
   ASSERT (ln != lnsub1);
 
@@ -51,7 +51,7 @@ mpz_lucnum2_ui (mpz_ptr ln, mpz_ptr lnsub1, unsigned long n)
       return;
     }
 
-  TMP_MARK (marker);
+  TMP_MARK;
   size = MPN_FIB2_SIZE (n);
   f1p = TMP_ALLOC_LIMBS (size);
 
@@ -63,8 +63,12 @@ mpz_lucnum2_ui (mpz_ptr ln, mpz_ptr lnsub1, unsigned long n)
   size = mpn_fib2_ui (l1p, f1p, n);
 
   /* L[n] = F[n] + 2F[n-1] */
+#if HAVE_NATIVE_mpn_addlsh1_n
+  c = mpn_addlsh1_n (lp, l1p, f1p, size);
+#else
   c = mpn_lshift (lp, f1p, size, 1);
   c += mpn_add_n (lp, lp, l1p, size);
+#endif
   lp[size] = c;
   SIZ(ln) = size + (c != 0);
 
@@ -75,5 +79,5 @@ mpz_lucnum2_ui (mpz_ptr ln, mpz_ptr lnsub1, unsigned long n)
   l1p[size] = c;
   SIZ(lnsub1) = size + (c != 0);
 
-  TMP_FREE (marker);
+  TMP_FREE;
 }

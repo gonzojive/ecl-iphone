@@ -17,8 +17,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,7 +38,7 @@ main (int argc, char **argv)
   mp_size_t base_size, exp_size, mod_size;
   unsigned long int exp2;
   int i;
-  int reps = 400;
+  int reps = 200;
   gmp_randstate_ptr rands;
   mpz_t bs;
   unsigned long bsi, size_range;
@@ -72,7 +72,7 @@ main (int argc, char **argv)
 	  mpz_urandomb (bs, rands, 6L);
 	  exp_size = mpz_get_ui (bs);
 	  mpz_rrandomb (exp, rands, exp_size);
-	  exp2 = mpz_getlimbn (exp, 0);
+	  exp2 = mpz_getlimbn (exp, (mp_size_t) 0);
 	}
       while (mpz_cmp_ui (base, 0) == 0 && exp2 == 0);
 
@@ -126,7 +126,7 @@ main (int argc, char **argv)
 	  debug_mp (base, -16);
 	  debug_mp (exp, -16);
 	  debug_mp (mod, -16);
-	  fprintf (stderr, "mpz_powm result:\n");
+	  fprintf (stderr, "mpz_powm_ui result:\n");
 	  debug_mp (r1, -16);
 	  fprintf (stderr, "reference result:\n");
 	  debug_mp (r2, -16);

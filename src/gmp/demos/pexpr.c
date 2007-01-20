@@ -1,7 +1,7 @@
 /* Program for computing integer expressions using the GNU Multiple Precision
    Arithmetic Library.
 
-Copyright 1997, 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1997, 1999, 2000, 2001, 2002, 2005 Free Software Foundation, Inc.
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -13,8 +13,8 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with
-this program; if not, write to the Free Software Foundation, Inc., 59 Temple
-Place - Suite 330, Boston, MA 02111-1307, USA.  */
+this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
+Street, Fifth Floor, Boston, MA 02110-1301, USA. */
 
 
 /* This expressions evaluator works by building an expression tree (using a
@@ -34,7 +34,7 @@ Place - Suite 330, Boston, MA 02111-1307, USA.  */
    -t        print timing information
    -html     output html
    -wml      output wml
-   -nosplit  do not split long lines each 60th digit
+   -split    split long lines each 80th digit
 */
 
 /* Define LIMIT_RESOURCE_USAGE if you want to make sure the program doesn't
@@ -66,20 +66,11 @@ Place - Suite 330, Boston, MA 02111-1307, USA.  */
 
 
 #define TIME(t,func)							\
-  do { int __t0, __times, __t, __tmp;					\
-    __times = 1;							\
+  do { int __t0, __t, __tmp;						\
     __t0 = cputime ();							\
     {func;}								\
     __tmp = cputime () - __t0;						\
-    while (__tmp < 100)							\
-      {									\
-	__times <<= 1;							\
-	__t0 = cputime ();						\
-	for (__t = 0; __t < __times; __t++)				\
-	  {func;}							\
-	__tmp = cputime () - __t0;					\
-      }									\
-    (t) = (double) __tmp / __times;					\
+    (t) = __tmp;							\
   } while (0)
 
 /* GMP version 1.x compatibility.  */
@@ -199,7 +190,7 @@ setup_error_handler (void)
   sigemptyset (&(act.sa_mask));
 #define SIGNAL(sig)  sigaction (sig, &act, NULL)
 #else
-  struct { int sa_flags } act;
+  struct { int sa_flags; } act;
 #define SIGNAL(sig)  signal (sig, cleanup_and_exit)
 #endif
   act.sa_flags = 0;
@@ -422,9 +413,9 @@ main (int argc, char **argv)
 
       if (print_timing)
 	{
-	  double t;
+	  int t;
 	  TIME (t, mpz_eval_expr (r, e));
-	  printf ("computation took %.2f ms%s\n", t, newline);
+	  printf ("computation took %d ms%s\n", t, newline);
 	}
       else
 	mpz_eval_expr (r, e);
@@ -435,14 +426,22 @@ main (int argc, char **argv)
 	  char *tmp, *s;
 
 	  out_len = mpz_sizeinbase (r, base >= 0 ? base : -base) + 2;
+#ifdef LIMIT_RESOURCE_USAGE
+	  if (out_len > 100000)
+	    {
+	      printf ("result is about %ld digits, not printing it%s\n",
+		      (long) out_len - 3, newline);
+	      exit (-2);
+	    }
+#endif
 	  tmp = malloc (out_len);
 
 	  if (print_timing)
 	    {
-	      double t;
+	      int t;
 	      printf ("output conversion ");
 	      TIME (t, mpz_get_str (tmp, base, r));
-	      printf ("took %.2f ms%s\n", t, newline);
+	      printf ("took %d ms%s\n", t, newline);
 	    }
 	  else
 	    mpz_get_str (tmp, base, r);
@@ -450,11 +449,11 @@ main (int argc, char **argv)
 	  out_len = strlen (tmp);
 	  if (flag_splitup_output)
 	    {
-	      for (s = tmp; out_len > 60; s += 60)
+	      for (s = tmp; out_len > 80; s += 80)
 		{
-		  fwrite (s, 1, 60, stdout);
+		  fwrite (s, 1, 80, stdout);
 		  printf ("%s\n", newline);
-		  out_len -= 60;
+		  out_len -= 80;
 		}
 
 	      fwrite (s, 1, out_len, stdout);
@@ -470,7 +469,8 @@ main (int argc, char **argv)
       else
 	{
 	  printf ("result is approximately %ld digits%s\n",
-		  (long) mpz_sizeinbase (r, 10), newline);
+		  (long) mpz_sizeinbase (r, base >= 0 ? base : -base),
+		  newline);
 	}
 
       free_expr (e);
@@ -724,6 +724,9 @@ struct functions fns[] =
   {"nextprime", NEXTPRIME, 1},
   {"binom", BINOM, 2},
   {"binomial", BINOM, 2},
+  {"fac", FAC, 1},
+  {"fact", FAC, 1},
+  {"factorial", FAC, 1},
   {"", NOP, 0}
 };
 

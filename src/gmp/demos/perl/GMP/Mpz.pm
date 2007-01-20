@@ -16,8 +16,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-# the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-# MA 02111-1307, USA.
+# the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
 
 
 package GMP::Mpz;
@@ -28,15 +28,15 @@ require Exporter;
 @EXPORT = qw();
 @EXPORT_OK = qw();
 %EXPORT_TAGS = ('all' => [qw(
-			     bin cdiv cdiv_2exp clrbit congruent_p
+			     bin cdiv cdiv_2exp clrbit combit congruent_p
 			     congruent_2exp_p divexact divisible_p
 			     divisible_2exp_p even_p fac fdiv fdiv_2exp fib
 			     fib2 gcd gcdext hamdist invert jacobi kronecker
 			     lcm lucnum lucnum2 mod mpz mpz_export
-			     mpz_import nextprime odd_p
-			     perfect_power_p perfect_square_p popcount powm
-			     probab_prime_p realloc remove root roote scan0
-			     scan1 setbit sizeinbase sqrtrem tdiv tdiv_2exp
+			     mpz_import nextprime odd_p perfect_power_p
+			     perfect_square_p popcount powm probab_prime_p
+			     realloc remove root roote rootrem scan0 scan1
+			     setbit sizeinbase sqrtrem tdiv tdiv_2exp
 			     tstbit)],
 		'constants'   => [@EXPORT],
 		'noconstants' => [@EXPORT]);

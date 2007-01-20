@@ -1,7 +1,7 @@
 dnl  AMD K7 mpn_divrem_1, mpn_divrem_1c, mpn_preinv_divrem_1 -- mpn by limb
 dnl  division.
 
-dnl  Copyright 1999, 2000, 2001, 2002 Free Software Foundation, Inc.
+dnl  Copyright 1999, 2000, 2001, 2002, 2004 Free Software Foundation, Inc.
 dnl
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -17,8 +17,8 @@ dnl  Lesser General Public License for more details.
 dnl
 dnl  You should have received a copy of the GNU Lesser General Public
 dnl  License along with the GNU MP Library; see the file COPYING.LIB.  If
-dnl  not, write to the Free Software Foundation, Inc., 59 Temple Place -
-dnl  Suite 330, Boston, MA 02111-1307, USA.
+dnl  not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+dnl  Fifth Floor, Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
@@ -37,6 +37,8 @@ C                                mp_srcptr src, mp_size_t size,
 C                                mp_limb_t divisor, mp_limb_t inverse,
 C                                unsigned shift);
 C
+C Algorithm:
+C
 C The method and nomenclature follow part 8 of "Division by Invariant
 C Integers using Multiplication" by Granlund and Montgomery, reference in
 C gmp.texi.
@@ -45,6 +47,20 @@ C The "and"s shown in the paper are done here with "cmov"s.  "m" is written
 C for m', and "d" for d_norm, which won't cause any confusion since it's
 C only the normalized divisor that's of any use in the code.  "b" is written
 C for 2^N, the size of a limb, N being 32 here.
+C
+C The step "sdword dr = n - 2^N*d + (2^N-1-q1) * d" is instead done as
+C "n-(q1+1)*d"; this rearrangement gives the same two-limb answer.  If
+C q1==0xFFFFFFFF, then q1+1 would overflow.  We branch to a special case
+C "q1_ff" if this occurs.  Since the true quotient is either q1 or q1+1 then
+C if q1==0xFFFFFFFF that must be the right value.
+C
+C For the last and second last steps q1==0xFFFFFFFF is instead handled by an
+C sbbl to go back to 0xFFFFFFFF if an overflow occurs when adding 1.  This
+C then goes through as normal, and finding no addback required.  sbbl costs
+C an extra cycle over what the main loop code does, but it keeps code size
+C and complexity down.
+C
+C Notes:
 C
 C mpn_divrem_1 and mpn_preinv_divrem_1 avoid one division if the src high
 C limb is less than the divisor.  mpn_divrem_1c doesn't check for a zero
@@ -791,12 +807,12 @@ L(fraction_entry):
 
 	C
 
- 	sbbl	%edx, %edi	C high of n - (q1+1)*d, caring only about carry
- 	leal	(%ebp,%eax), %edx
+	sbbl	%edx, %edi	C high of n - (q1+1)*d, caring only about carry
+	leal	(%ebp,%eax), %edx
 
- 	cmovc(	%edx, %eax)	C n - q1*d if underflow from using q1+1
- 	sbbl	$0, %ebx	C q
- 	cmpl	%esi, %ecx
+	cmovc(	%edx, %eax)	C n - q1*d if underflow from using q1+1
+	sbbl	$0, %ebx	C q
+	cmpl	%esi, %ecx
 
 	jne	L(fraction_top)
 

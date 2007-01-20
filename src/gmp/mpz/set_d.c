@@ -1,6 +1,6 @@
 /* mpz_set_d(integer, val) -- Assign INTEGER with a double value VAL.
 
-Copyright 1995, 1996, 2000, 2001, 2002 Free Software Foundation, Inc.
+Copyright 1995, 1996, 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -16,11 +16,25 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
+
+#include "config.h"
+
+#if HAVE_FLOAT_H
+#include <float.h>  /* for DBL_MAX */
+#endif
 
 #include "gmp.h"
 #include "gmp-impl.h"
+
+
+/* We used to have a special case for d < MP_BASE_AS_DOUBLE, just casting
+   double -> limb.  Unfortunately gcc 3.3 on powerpc970-apple-darwin6.8.5
+   got this wrong.  (It assumed __fixunsdfdi returned its result in a single
+   64-bit register, where instead that function followed the calling
+   conventions and gave the result in two parts r3 and r4.)  Hence the use
+   of __gmp_extract_double in all cases.  */
 
 void
 mpz_set_d (mpz_ptr r, double d)
@@ -30,18 +44,12 @@ mpz_set_d (mpz_ptr r, double d)
   mp_ptr rp;
   mp_size_t rn;
 
+  DOUBLE_NAN_INF_ACTION (d,
+                         __gmp_invalid_operation (),
+                         __gmp_invalid_operation ());
+
   negative = d < 0;
   d = ABS (d);
-
-  /* Handle small arguments quickly.  */
-  if (d < MP_BASE_AS_DOUBLE)
-    {
-      mp_limb_t tmp;
-      tmp = d;
-      PTR(r)[0] = tmp;
-      SIZ(r) = negative ? -(tmp != 0) : (tmp != 0);
-      return;
-    }
 
   rn = __gmp_extract_double (tp, d);
 
@@ -50,41 +58,48 @@ mpz_set_d (mpz_ptr r, double d)
 
   rp = PTR (r);
 
-#if BITS_PER_MP_LIMB == 32
   switch (rn)
     {
     default:
-      MPN_ZERO (rp, rn - 3);
-      rp += rn - 3;
+      MPN_ZERO (rp, rn - LIMBS_PER_DOUBLE);
+      rp += rn - LIMBS_PER_DOUBLE;
       /* fall through */
-    case 3:
-      rp[2] = tp[2];
-      rp[1] = tp[1];
-      rp[0] = tp[0];
-      break;
-    case 2:
-      rp[1] = tp[2];
-      rp[0] = tp[1];
-      break;
-    case 1:
-      /* handled in "small aguments" case above */
-      abort ();
-    }
-#else
-  switch (rn)
-    {
-    default:
-      MPN_ZERO (rp, rn - 2);
-      rp += rn - 2;
-      /* fall through */
+#if LIMBS_PER_DOUBLE == 2
     case 2:
       rp[1] = tp[1], rp[0] = tp[0];
       break;
     case 1:
-      /* handled in "small aguments" case above */
-      abort ();
-    }
+      rp[0] = tp[1];
+      break;
 #endif
+#if LIMBS_PER_DOUBLE == 3
+    case 3:
+      rp[2] = tp[2], rp[1] = tp[1], rp[0] = tp[0];
+      break;
+    case 2:
+      rp[1] = tp[2], rp[0] = tp[1];
+      break;
+    case 1:
+      rp[0] = tp[2];
+      break;
+#endif
+#if LIMBS_PER_DOUBLE == 4
+    case 4:
+      rp[3] = tp[3], rp[2] = tp[2], rp[1] = tp[1], rp[0] = tp[0];
+      break;
+    case 3:
+      rp[2] = tp[3], rp[1] = tp[2], rp[0] = tp[1];
+      break;
+    case 2:
+      rp[1] = tp[3], rp[0] = tp[2];
+      break;
+    case 1:
+      rp[0] = tp[3];
+      break;
+#endif
+    case 0:
+      break;
+    }
 
   SIZ(r) = negative ? -rn : rn;
 }

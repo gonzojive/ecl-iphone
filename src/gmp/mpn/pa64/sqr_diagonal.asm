@@ -15,9 +15,9 @@ dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 dnl  License for more details.
 
 dnl  You should have received a copy of the GNU Lesser General Public License
-dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-dnl  MA 02111-1307, USA.
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+dnl  to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl  Boston, MA 02110-1301, USA.
 
 
 dnl  This code runs at 7.25 cycles/limb on PA8000 and 7.75 cycles/limb on
@@ -57,7 +57,8 @@ PROLOGUE(mpn_sqr_diagonal)
 	addib,=		-1,n,L(end2)
 	ldo		16(rp),rp
 
-L(loop)	fldds,ma	8(up),%fr8		C load next up limb
+LDEF(loop)
+	fldds,ma	8(up),%fr8		C load next up limb
 	xmpyu		%fr4l,%fr4r,%fr6
 	fstd		%fr6,-128(%r30)
 	xmpyu		%fr4r,%fr4r,%fr5	C multiply in fp regs
@@ -95,7 +96,8 @@ L(loop)	fldds,ma	8(up),%fr8		C load next up limb
 	addib,<>	-1,n,L(loop)
 	ldo		16(rp),rp
 
-L(end2)	xmpyu		%fr4l,%fr4r,%fr6
+LDEF(end2)
+	xmpyu		%fr4l,%fr4r,%fr6
 	fstd		%fr6,-128(%r30)
 	xmpyu		%fr4r,%fr4r,%fr5
 	fstd		%fr5,0(rp)
@@ -123,7 +125,8 @@ L(end2)	xmpyu		%fr4l,%fr4r,%fr6
 	bve		(%r2)
 	ldo		-128(%r30),%r30
 
-L(exit)	xmpyu		%fr8l,%fr8r,%fr10
+LDEF(exit)
+	xmpyu		%fr8l,%fr8r,%fr10
 	fstd		%fr10,-120(%r30)
 	xmpyu		%fr8r,%fr8r,%fr9
 	fstd		%fr9,0(rp)
@@ -155,7 +158,8 @@ L(exit)	xmpyu		%fr8l,%fr8r,%fr10
 	bve		(%r2)
 	ldo		-128(%r30),%r30
 
-L(end1)	xmpyu		%fr8l,%fr8r,%fr10
+LDEF(end1)
+	xmpyu		%fr8l,%fr8r,%fr10
 	fstd		%fr10,-128(%r30)
 	xmpyu		%fr8r,%fr8r,%fr9
 	fstd		%fr9,0(rp)

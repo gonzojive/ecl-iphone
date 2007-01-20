@@ -1,8 +1,8 @@
 /* mpz_mul_ui/si (product, multiplier, small_multiplicand) -- Set PRODUCT to
    MULTIPLICATOR times SMALL_MULTIPLICAND.
 
-Copyright 1991, 1993, 1994, 1996, 2000, 2001, 2002 Free Software Foundation,
-Inc.
+Copyright 1991, 1993, 1994, 1996, 2000, 2001, 2002, 2005 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -18,8 +18,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -76,8 +76,8 @@ FUNCTION (mpz_ptr prod, mpz_srcptr mult,
       /* Operand too large for the current nails size.  Use temporary for
 	 intermediate products, to allow prod and mult being identical.  */
       mp_ptr tp;
-      TMP_DECL (mark);
-      TMP_MARK (mark);
+      TMP_DECL;
+      TMP_MARK;
 
       tp = TMP_ALLOC_LIMBS (size + 2);
 
@@ -90,7 +90,7 @@ FUNCTION (mpz_ptr prod, mpz_srcptr mult,
       MPZ_REALLOC (prod, size);
       pp = PTR(prod);
       MPN_COPY (pp, tp, size);
-      TMP_FREE (mark);
+      TMP_FREE;
     }
 #endif
 

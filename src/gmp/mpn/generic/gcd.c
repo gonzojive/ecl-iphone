@@ -16,9 +16,9 @@ or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
-along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+Boston, MA 02110-1301, USA. */
 
 /* Integer greatest common divisor of two unsigned integers, using
    the accelerated algorithm (see reference below).
@@ -188,7 +188,7 @@ mpn_gcd (mp_ptr gp, mp_ptr up, mp_size_t usize, mp_ptr vp, mp_size_t vsize)
   mp_ptr orig_vp = vp;
   mp_size_t orig_vsize = vsize;
   int binary_gcd_ctr;		/* Number of times binary gcd will execute.  */
-  TMP_DECL (marker);
+  TMP_DECL;
 
   ASSERT (usize >= 1);
   ASSERT (vsize >= 1);
@@ -209,7 +209,7 @@ mpn_gcd (mp_ptr gp, mp_ptr up, mp_size_t usize, mp_ptr vp, mp_size_t vsize)
   ASSERT (MPN_SAME_OR_SEPARATE2_P (gp, vsize, up, usize));
   ASSERT (MPN_SAME_OR_SEPARATE2_P (gp, vsize, vp, vsize));
 
-  TMP_MARK (marker);
+  TMP_MARK;
 
   /* Use accelerated algorithm if vsize is over GCD_ACCEL_THRESHOLD.
      Two EXTRA limbs for U and V are required for kary reduction.  */
@@ -437,6 +437,6 @@ mpn_gcd (mp_ptr gp, mp_ptr up, mp_size_t usize, mp_ptr vp, mp_size_t vsize)
 done:
   if (vp != gp)
     MPN_COPY_INCR (gp, vp, vsize);
-  TMP_FREE (marker);
+  TMP_FREE;
   return vsize;
 }

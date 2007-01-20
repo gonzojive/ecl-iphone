@@ -24,8 +24,8 @@ License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-MA 02111-1307, USA. */
+the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA 02110-1301, USA. */
 
 #include "gmp.h"
 #include "gmp-impl.h"
@@ -58,7 +58,7 @@ MA 02111-1307, USA. */
       possible to put the quotient in the high part of NUM, right after the
       remainder in NUM.
    3. NSIZE >= DSIZE.
-   4. DSIZE >= 2.  */
+   4. DSIZE > 2.  */
 
 
 mp_limb_t
@@ -96,8 +96,6 @@ mpn_sb_divrem_mn (mp_ptr qp,
 	}
     }
 
-  /* use_preinv is possibly a constant, but it's left to the compiler to
-     optimize away the unused code in that case.  */
   use_preinv = ABOVE_THRESHOLD (qn, DIV_SB_PREINV_THRESHOLD);
   if (use_preinv)
     invert_limb (dxinv, dx);
@@ -144,7 +142,7 @@ mpn_sb_divrem_mn (mp_ptr qp,
 	     being clobbered.  gcc 2.95 i386 doesn't have the problem. */
 	  {
 	    mp_limb_t  workaround = np[dn - 1];
-	    if (use_preinv)
+	    if (CACHED_ABOVE_THRESHOLD (use_preinv, DIV_SB_PREINV_THRESHOLD))
 	      udiv_qrnnd_preinv (q, r1, nx, workaround, dx, dxinv);
 	    else
 	      {

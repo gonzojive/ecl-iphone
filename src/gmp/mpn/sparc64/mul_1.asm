@@ -1,7 +1,7 @@
 dnl  SPARC v9 64-bit mpn_mul_1 -- Multiply a limb vector with a limb and store
 dnl  the result in a second limb vector.
 
-dnl  Copyright 1998, 2000, 2001, 2002 Free Software Foundation, Inc.
+dnl  Copyright 1998, 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 
@@ -16,11 +16,15 @@ dnl  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 dnl  License for more details.
 
 dnl  You should have received a copy of the GNU Lesser General Public License
-dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
-dnl  the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-dnl  MA 02111-1307, USA.
+dnl  along with the GNU MP Library; see the file COPYING.LIB.  If not, write
+dnl  to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl  Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
+
+C		   cycles/limb
+C UltraSPARC 1&2:     14
+C UltraSPARC 3:	      18.5
 
 C Algorithm: We use eight floating-point multiplies per limb product, with the
 C invariant v operand split into four 16-bit pieces, and the s1 operand split
@@ -30,15 +34,16 @@ C them to the integer unit.
 
 C Possible optimizations:
 C   1. Align the stack area where we transfer the four 49-bit product-sums
-C      to a 32-byte boundary.  That would minimize the cache collition.
+C      to a 32-byte boundary.  That would minimize the cache collision.
 C      (UltraSPARC-1/2 use a direct-mapped cache.)  (Perhaps even better would
 C      be to align the area to map to the area immediately before s1?)
-C   2. Figure out a better way for summing the 49-bit quantities.
+C   2. Sum the 4 49-bit quantities using 32-bit operations, as in the
+C      develop mpn_addmul_2.  This would save many integer instructions.
 C   3. Unrolling.  Questionable if it is worth the code expansion, given that
 C      it could only save 1 cycle/limb.
 C   4. Specialize for particular v values.  If its upper 32 bits are zero, we
 C      could save many operations, in the FPU (fmuld), but more so in the IEU
-C      since we'll be summing 48-bit quantities, which is much simpler.
+C      since we'll be summing 48-bit quantities, which might be simpler.
 C   5. Ideally, we should schedule the f2/f3 and f4/f5 RAW further apart, and
 C      the i00,i16,i32,i48 RAW less apart.  The latter apart-scheduling should
 C      not be greater than needed for L2 cache latency, and also not so great
@@ -56,8 +61,7 @@ C    1 BRANCH
 C   49 insns totally (plus three mov insns that should be optimized out)
 
 C The loop executes 53 instructions in 14 cycles on UltraSPARC-1/2, i.e we
-C sustain 3.79 instructions/cycle.  It would not be terribly hard to save a
-C cycle/loop.
+C sustain 3.79 instructions/cycle.
 
 C INPUT PARAMETERS
 C rp	i0
@@ -150,7 +154,7 @@ C The software pipeline is very deep, requiring 4 feed-in stages.
 	std	a16, [%sp+2223+8]
 	std	a32, [%sp+2223+16]
 	std	a48, [%sp+2223+24]
-	addcc	%i2, 8, %i2
+	add	%i2, 8, %i2
 
 	fdtox	r64, a00
 	fdtox	r80, a16
@@ -160,7 +164,7 @@ C The software pipeline is very deep, requiring 4 feed-in stages.
 	ldx	[%sp+2223+24], i48
 	std	a00, [%sp+2223+0]
 	std	a16, [%sp+2223+8]
-	addcc	%i2, 8, %i2
+	add	%i2, 8, %i2
 
 	mov	i00, %g5		C i00+ now in g5
 	ldx	[%sp+2223+0], i00
@@ -181,8 +185,8 @@ C The software pipeline is very deep, requiring 4 feed-in stages.
 	add	%l6, %o2, %o2		C mi64- in %o2
 	sub	%o2, %o3, %o2		C mi64 in %o2   1st ASSIGNMENT
 	add	cy, %g5, %o4		C x = prev(i00) + cy
-	addcc	%i2, 8, %i2
-	b,a	.L_out_1
+	b	.L_out_1
+	add	%i2, 8, %i2
 
 .L_two_or_more:
 	ld	[%i5+%i2], %f3		C read low 32 bits of up[i]
@@ -229,7 +233,7 @@ C The software pipeline is very deep, requiring 4 feed-in stages.
 	std	a16, [%sp+2223+8]
 	std	a32, [%sp+2223+16]
 	std	a48, [%sp+2223+24]
-	addcc	%i2, 8, %i2
+	add	%i2, 8, %i2
 
 	fdtox	r64, a00
 	mov	i00, %g5		C i00+ now in g5
@@ -254,8 +258,8 @@ C The software pipeline is very deep, requiring 4 feed-in stages.
 	add	%l6, %o2, %o2		C mi64- in %o2
 	sub	%o2, %o3, %o2		C mi64 in %o2   1st ASSIGNMENT
 	add	cy, %g5, %o4		C x = prev(i00) + cy
-	addcc	%i2, 8, %i2
-	b,a	.L_out_2
+	b	.L_out_2
+	add	%i2, 8, %i2
 
 .L_three_or_more:
 	ld	[%i5+%i2], %f3		C read low 32 bits of up[i]
@@ -321,8 +325,8 @@ C The software pipeline is very deep, requiring 4 feed-in stages.
 	std	a48, [%sp+2223+24]
 	sub	%o2, %o3, %o2		C mi64 in %o2   1st ASSIGNMENT
 	add	cy, %g5, %o4		C x = prev(i00) + cy
-	addcc	%i2, 8, %i2
-	b,a	.L_out_3
+	b	.L_out_3
+	add	%i2, 8, %i2
 
 .L_four_or_more:
 	ld	[%i5+%i2], %f3		C read low 32 bits of up[i]

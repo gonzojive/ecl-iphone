@@ -1,6 +1,6 @@
 dnl PowerPC-64 umul_ppmm -- support for longlong.h
 
-dnl Copyright 2000, 2001 Free Software Foundation, Inc.
+dnl Copyright 2000, 2001, 2005 Free Software Foundation, Inc.
 dnl
 dnl This file is part of the GNU MP Library.
 dnl
@@ -16,8 +16,8 @@ dnl General Public License for more details.
 dnl
 dnl You should have received a copy of the GNU Lesser General Public License
 dnl along with the GNU MP Library; see the file COPYING.LIB.  If not, write
-dnl to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-dnl Boston, MA 02111-1307, USA.
+dnl to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+dnl Boston, MA 02110-1301, USA.
 
 include(`../config.m4')
 
@@ -33,9 +33,12 @@ PROLOGUE(mpn_umul_ppmm)
 	C r5	m2
 
 	mulld	r0, r4, r5
-	mulhdu	r9, r4, r5
+	mulhdu	r4, r4, r5
 	std	r0, 0(r3)
-	mr	r3, r9
+ifdef(`HAVE_ABI_mode32',
+`	srdi	r3, r4, 32
+',`	mr	r3, r4
+')
 	blr
 
 EPILOGUE(mpn_umul_ppmm)
