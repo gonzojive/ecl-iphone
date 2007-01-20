@@ -43,6 +43,8 @@ ECL 1.0:
    C functions and create C callbacks without the C compiler being around).
    (initial code by M. Goffioul)
 
+ - Using version 6.8 of the Boehm-Weiser garbage collector.
+
 * Bugs fixed:
 
  - STREAMP signals an error for Gray streams.
