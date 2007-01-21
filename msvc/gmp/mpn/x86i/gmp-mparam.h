@@ -19,11 +19,24 @@ along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 MA 02111-1307, USA. */
 
-#define BITS_PER_MP_LIMB 32
-#define BYTES_PER_MP_LIMB 4
+#ifndef GMP_MPARAM_H
+#define GMP_MPARAM_H
 
+#ifndef BITS_PER_MP_LIMB
+#define BITS_PER_MP_LIMB 32
+#elif   BITS_PER_MP_LIMB != 32
+#error  Bad configuration in gmp-mparam.h
+#endif
+
+#ifndef BYTES_PER_MP_LIMB
+#define BYTES_PER_MP_LIMB 4
+#elif   BYTES_PER_MP_LIMB != 4
+#error  Bad configuration in gmp-mparam.h
+#endif
 
 /* Generic x86 mpn_divexact_1 is faster than generic x86 mpn_divrem_1 on all
    of p5, p6, k6 and k7, so use it always.  It's probably slower on 386 and
    486, but that's too bad.  */
 #define DIVEXACT_1_THRESHOLD  0
+
+#endif

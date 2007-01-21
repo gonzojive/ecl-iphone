@@ -135,7 +135,7 @@ Lcombine:
     add     eax,edx         ; apply 2mod3 low 
 	FR_pop  edi
     mov     ebx,[SAVE_EBX]
-	FR_pop  es
+	FR_pop  esi
     ret
 
 	end

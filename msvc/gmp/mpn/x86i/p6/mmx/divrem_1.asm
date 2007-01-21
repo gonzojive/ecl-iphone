@@ -20,7 +20,7 @@
 ;
 ; Translation of AT&T syntax code by Brian Gladman 
 
-%include "..\\..\\x86i.inc" 
+%include "..\..\x86i.inc" 
 
 	global  ___gmpn_preinv_divrem_1 
     global  ___gmpn_divrem_1c 
@@ -263,7 +263,7 @@ Lstart_zero:
 
     shl     edi,cl          ;  n2 = carry << l 
     mov     eax,edi         ;  return value for zero_done 
-    cmp     [PARAM_XSIZE],long 0
+    cmp     [PARAM_XSIZE],dword 0
     je      Lzero_done
     jmp     Lfraction_some
 
@@ -452,7 +452,7 @@ Lq1_ff:
     mov     [VAR_DST],ecx
     psrlq   mm0,mm7
     lea     edi,[ebp+esi]		;  n-q*d remainder -> next n2 
-    mov     [ecx],long -1
+    mov     [ecx],dword -1
     movd    esi,mm0				;  next n10 
     cmp     edx,ecx
     jne     Linteger_top

@@ -20,7 +20,7 @@
 ;
 ; Translation of AT&T syntax code by Brian Gladman 
 
-%include "..\\..\\x86i.inc" 
+%include "..\..\x86i.inc" 
 
 %define       REG_AAAAAAAAAAAAAAAA    mm7 
 %define       REG_3333333333333333    mm6 

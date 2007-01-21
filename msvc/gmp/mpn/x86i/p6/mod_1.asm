@@ -69,7 +69,7 @@ ___gmpn_preinv_mod_1:
     mov     eax,[PARAM_INVERSE]
     mov     [SAVE_EDI],edi
     mov     edi,[-4+edx+ebx*4]	;  src high limb 
-    mov     [VAR_NORM],long 0
+    mov     [VAR_NORM],dword 0
     lea     ecx,[-8+edx+ebx*4]	;  &src[size-2] 
     mov     esi,edi
     sub     edi,ebp				;  high-divisor 
