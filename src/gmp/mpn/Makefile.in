@@ -268,9 +268,9 @@ nodist_EXTRA_libmpn_la_SOURCES = \
   dump.c fib2_ui.c gcd.c						    \
   gcd_finda.c gcd_1.c gcdext.c get_d.c get_str.c			    \
   hamdist.c invert_limb.c				    \
-  ior_n.c iorn_n.c jacbase.c lshift.c mod_1.c mod_34lsub1.c	    \
+  ior_n.c iorn_n.c jacbase.c lshift.c mod_1.c mod_34lsub1.c mode1o.c	    \
   mul.c mul_1.c mul_2.c mul_fft.c mul_n.c mul_basecase.c		    \
-  mullow_n.c mullow_basecase.c nand_n.c nior_n.c perfsqr.c	    \
+  mullow_n.c mullow_basecase.c nand_n.c nior_n.c perfsqr.c popcount.c	    \
   pre_divrem_1.c pre_mod_1.c pow_1.c random.c random2.c rshift.c   \
   rootrem.c sb_divrem_mn.c scan0.c scan1.c set_str.c			    \
   sqr_basecase.c sqr_diagonal.c						    \
@@ -563,7 +563,7 @@ mul_basecase_.$(OBJEXT) mul_basecase_.lo mul_fft_.$(OBJEXT) \
 mul_fft_.lo mul_n_.$(OBJEXT) mul_n_.lo mullow_basecase_.$(OBJEXT) \
 mullow_basecase_.lo mullow_n_.$(OBJEXT) mullow_n_.lo nand_n_.$(OBJEXT) \
 nand_n_.lo nior_n_.$(OBJEXT) nior_n_.lo perfsqr_.$(OBJEXT) perfsqr_.lo \
-pow_1_.$(OBJEXT) pow_1_.lo \
+popcount_.$(OBJEXT) popcount_.lo pow_1_.$(OBJEXT) pow_1_.lo \
 pre_divrem_1_.$(OBJEXT) pre_divrem_1_.lo pre_mod_1_.$(OBJEXT) \
 pre_mod_1_.lo random_.$(OBJEXT) random_.lo random2_.$(OBJEXT) \
 random2_.lo rootrem_.$(OBJEXT) rootrem_.lo rshift_.$(OBJEXT) \

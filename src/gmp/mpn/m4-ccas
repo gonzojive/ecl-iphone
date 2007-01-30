@@ -95,4 +95,4 @@ echo "$CC"
 $CC || exit
 
 # Comment this out to preserve .s intermediates
-rm -f $TMP
+echo rm -f $TMP
