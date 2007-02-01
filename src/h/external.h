@@ -454,7 +454,6 @@ extern cl_object cl_cerror _ARGS((cl_narg narg, cl_object cformat, cl_object efo
 
 extern void ecl_internal_error(const char *s) /*__attribute__((noreturn))*/;
 extern void ecl_cs_overflow(void) /*__attribute__((noreturn))*/;
-extern void error(const char *s) /*__attribute__((noreturn))*/;
 extern void FEprogram_error(const char *s, int narg, ...) /*__attribute__((noreturn))*/;
 extern void FEcontrol_error(const char *s, int narg, ...) /*__attribute__((noreturn))*/;
 extern void FEreader_error(const char *s, cl_object stream, int narg, ...) /*__attribute__((noreturn))*/;
