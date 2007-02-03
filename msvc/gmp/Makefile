@@ -369,7 +369,9 @@ GMP_SOURCES = \
     randsd.c \
     randsdui.c \
     tal-reent.c \
-    version.c
+    version.c \
+    mp_bases.c \
+    fib_table.c
 
 MPN_GC_OBJS = $(MPN_GC_SOURCES:.c=.obj)
 #MPN_P0_OBJS = $(MPN_P0_ASM_SOURCES:.asm=.obj) $(MPN_P0_C_SOURCES:.c=.obj)
