@@ -1,6 +1,6 @@
 srcdir = ..\..\src\gmp
 
-AUTO_SUBDIRS = mpn\generic mpf mpq mpz printf scanf
+AUTO_SUBDIRS = mpf mpq printf scanf
 
 MPN_GC_SOURCES = \
     mpn\generic\add.c \
