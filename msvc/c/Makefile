@@ -16,7 +16,7 @@ THREADS_FLAGS=
 #
 TRUE_CC = cl
 CC	= cl
-CFLAGS	= -c $(ECL_CFLAGS) -I./ -I../ -I$(srcdir) -I$(top_srcdir)/gc/include
+CFLAGS	= -c $(ECL_CFLAGS) -I./ -I../ -I$(srcdir) -I$(top_srcdir)/gc/include  -I$(top_srcdir)/gc/include/private
 DEFS    = $(THREADS_FLAGS)
 
 SHELL	= /bin/sh
@@ -71,7 +71,7 @@ all:	$(DPP) ecl\external.h ..\eclmin.lib ..\cinit.obj
 #.d.c:
 #	$(DPP) $< $@
 .c.obj:
-	$(CC) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -fo $@ $<
 
 .PHONY:	all
 
