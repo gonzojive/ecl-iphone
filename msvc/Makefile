@@ -155,7 +155,7 @@ LDFLAGS = $(MFLAGS) $(LDFLAGS)
 
 # Build rules
 # 
-all:	$(TARGETS) doc ecl-config.bat ecl-cc.bat
+all:	$(TARGETS) ecl-config.bat ecl-cc.bat
 .PHONY:	all
 
 %Makefile: $(srcdir)/%Makefile.in config.status
@@ -305,8 +305,6 @@ install: install-base
 	$(CP) ecl\gmp.h $(libdir)\ecl\gmp.h
 	cd c
 	$(MAKE) install "prefix=$(prefix)"
-	cd ..\doc
-	$(MAKE) install "prefix=$(prefix)"
 install-base:
 	IF NOT EXIST $(bindir) $(MKDIR) $(bindir)
 	IF NOT EXIST $(libdir)\ecl $(MKDIR) $(libdir)\ecl
@@ -327,9 +325,6 @@ flatinstall:
 	$(MAKE) bindir=$(prefix) libdir=$(prefix) install-base
 	cd c
 	$(MAKE) prefix=$(prefix) flatinstall
-	cd ..\doc
-	$(MAKE) prefix=$(prefix) flatinstall
-	cd ..
 
 windows-nsi:
 	IF EXIST $(TAR_DIR) $(RMDIR) $(TAR_DIR)
@@ -343,14 +338,8 @@ windows-nsi:
 uninstall:
 	for i in $(TARGETS) ecl-config; do rm -rf $(bindir)/$$i; done
 	rm -rf $(libdir)
-	cd doc; $(MAKE) uninstall
 
-doc: $(TARGETS)
-	cd doc
-	$(MAKE)
-	cd ..
-
-clean: clean_ecl clean_lisp clean_doc
+clean: clean_ecl clean_lisp
 	-$(RM) .gdbinit cinit.lib ecl_min.lib
 	-$(RM) gc\*.pdb
 	cd gc
@@ -378,10 +367,6 @@ clean_lisp:
 	-for %i in (lsp clos ext $(ECL_MODULES)) do $(RMDIR) %i
 	-$(RM) help.doc
 	-$(RM) MODULES
-clean_doc:
-	cd doc
-	-$(MAKE) "ECL_THREADS = $(ECL_THREADS)" clean
-	cd ..
 distclean: clean
 realclean: distclean
 test1:
@@ -407,4 +392,4 @@ test3:
 test:
 	$(MAKE) -C tests
 	$(MAKE) -C ansi-tests > ansi-tests/log
-	#-(diff tests ~/src/tests; diff --exclude log ansi-tests ~/src/ansi-tests) | less
+#	-(diff tests ~/src/tests; diff --exclude log ansi-tests ~/src/ansi-tests) | less
