@@ -89,7 +89,7 @@
 	     (ecl-library-directory)))))
 
 #+dlopen
-(defun bundle-cc (o-pathname &rest options)
+(defun bundle-cc (o-pathname init-name &rest options)
   #-(or mingw32)
   (safe-system
    (format nil
@@ -99,7 +99,8 @@
 	   (ecl-library-directory)
 	   options
 	   #-msvc *ld-bundle-flags*
-	   #+msvc (concatenate 'string *ld-bundle-flags* " /EXPORT:init_CODE")
+	   #+msvc (concatenate 'string *ld-bundle-flags* " /EXPORT:"
+			       init-name)
 	   (ecl-library-directory)))
   #+(or mingw32)
   (safe-system
@@ -431,7 +432,7 @@ static cl_object VV[VM];
 	       submodules epilogue-code)
        (close c-file)
        (compiler-cc c-name o-name)
-       (apply #'bundle-cc output-name o-name ld-flags)))
+       (apply #'bundle-cc output-name init-name o-name ld-flags)))
     (cmp-delete-file tmp-name)
     (cmp-delete-file c-name)
     (cmp-delete-file o-name)
@@ -480,6 +481,7 @@ static cl_object VV[VM];
 			   (*compile-verbose* verbose)
 			   (*suppress-compiler-notes* (or *suppress-compiler-notes* (not verbose)))
 			   (*suppress-compiler-warnings* (or *suppress-compiler-warnings* (not verbose)))
+			   init-name
 			   #+PDE sys:*source-pathname*)
   (declare (notinline compiler-cc))
 
@@ -557,10 +559,10 @@ Cannot compile ~a."
 
       (when (zerop *error-count*)
 	(when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
+	(setf init-name (guess-name-and-flags output-file :kind
+					      (if system-p :object :fasl)))
 	(compiler-pass2 c-pathname h-pathname data-pathname system-p
-			(if system-p
-			    (pathname-name output-file)
-			    "code")
+			init-name
 			shared-data-file))
 
       (if shared-data-file
@@ -578,6 +580,7 @@ Cannot compile ~a."
                  (compiler-cc c-pathname o-pathname)
 		 #+dlopen
 		 (unless system-p (bundle-cc (si::coerce-to-filename so-pathname)
+					     init-name
 					     (si::coerce-to-filename o-pathname)))
                  (cond #+dlopen
 		       ((and (not system-p) (probe-file so-pathname))
@@ -682,11 +685,12 @@ Cannot compile ~a."
       (setq *error-p* t)
       (return-from compile (values nil t t))))
 
-  (let ((*load-time-values* 'values) ;; Only the value is kept
+  (let*((*load-time-values* 'values) ;; Only the value is kept
 	(c-pathname (compile-file-pathname data-pathname :type :c))
 	(h-pathname (compile-file-pathname data-pathname :type :h))
 	(o-pathname (compile-file-pathname data-pathname :type :object))
-	(so-pathname (compile-file-pathname data-pathname)))
+	(so-pathname (compile-file-pathname data-pathname))
+	(init-name (guess-name-and-flags so-pathname :kind :fasl)))
 
     (with-lock (+load-compile-lock+)
       (init-env)
@@ -695,7 +699,8 @@ Cannot compile ~a."
       (when (zerop *error-count*)
 	(when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
 	(let (#+(or mingw32 msvc)(*self-destructing-fasl* t))
-	  (compiler-pass2 c-pathname h-pathname data-pathname nil "code" nil)))
+	  (compiler-pass2 c-pathname h-pathname data-pathname nil
+			  init-name nil)))
       (setf *compiler-constants* (data-dump data-pathname))
       (init-env)
       )
@@ -706,6 +711,7 @@ Cannot compile ~a."
 	    (format t "~&;;; Calling the C compiler... "))
           (compiler-cc c-pathname o-pathname)
 	  (bundle-cc (si::coerce-to-filename so-pathname)
+		     init-name
 		     (si::coerce-to-filename o-pathname))
           (cmp-delete-file c-pathname)
           (cmp-delete-file h-pathname)
@@ -789,10 +795,10 @@ Cannot compile ~a."
 	     (data-init)
 	     (t1expr disassembled-form)
 	     (if (zerop *error-count*)
-		 (catch *cmperr-tag* (ctop-write "code"
-						 (if h-file h-file "")
-						 (if data-file data-file "")
-						 :system-p nil))
+		 (catch *cmperr-tag*
+		   (ctop-write (guess-name-and-flags "foo" :kind :fasl)
+			       (if h-file h-file "")
+			       (if data-file data-file "")))
 		 (setq *error-p* t))
 	     (data-dump data-file)
 	     (init-env)
@@ -807,10 +813,9 @@ Cannot compile ~a."
   (with-open-file (*compiler-output1* c-pathname :direction :output)
     (with-open-file (*compiler-output2* h-pathname :direction :output)
       (wt-nl1 "#include " *cmpinclude*)
-      (catch *cmperr-tag* (ctop-write (string-upcase init-name)
+      (catch *cmperr-tag* (ctop-write init-name
 				      h-pathname
 				      data-pathname
-				      :system-p system-p
 				      :shared-data shared-data))
       (terpri *compiler-output1*)
       (terpri *compiler-output2*))))
@@ -857,18 +862,6 @@ Cannot compile ~a."
 (defun print-compiler-info ()
   (format t "~&;;; OPTIMIZE levels: Safety=~d, Space=~d, Speed=~d~%"
 	  *safety* *space* *speed*))
-
-#+dlopen
-(defun load-o-file (file verbose print)
-  (let ((tmp (compile-file-pathname file)))
-    (bundle-cc tmp file)
-    (when (probe-file tmp)
-      (load tmp :verbose nil :print nil)
-      (cmp-delete-file tmp)
-      nil)))
-
-#+dlopen
-(push (cons +object-file-extension+ #'load-o-file) si::*load-hooks*)
 
 (defmacro with-compilation-unit (options &rest body)
   `(progn ,@body))
