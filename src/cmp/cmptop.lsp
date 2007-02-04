@@ -89,7 +89,7 @@
 	   (t3local-fun (first lfs)))))))
 
 (defun ctop-write (name h-pathname data-pathname
-		        &key system-p shared-data
+		        &key shared-data
 			&aux def top-output-string
 			(*volatile* " volatile "))
 
@@ -122,8 +122,7 @@
     (wt-nl1 "#ifdef __cplusplus")
     (wt-nl1 "extern \"C\"")
     (wt-nl1 "#endif")
-    (wt-nl1 "void " (init-function-name name :kind (if system-p :object :fasl))
-	    "(cl_object flag)")
+    (wt-nl1 "void " name "(cl_object flag)")
     (wt-nl1 "{ VT" *reservation-cmacro* " CLSR" *reservation-cmacro*)
     (wt-nl "cl_object value0;")
     (wt-nl "cl_object *VVtemp;")
