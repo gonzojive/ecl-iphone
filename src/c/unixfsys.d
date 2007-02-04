@@ -738,12 +738,14 @@ si_getcwd(void)
 cl_object
 si_get_library_pathname(void)
 {
-	char buffer[MAXPATHLEN];
+	cl_object s = cl_alloc_adjustable_base_string(MAXPATHLEN);
+	char *buffer = (char*)s->base_string.self;
 	HMODULE hnd = GetModuleHandle( "ecl.dll" );
 	cl_index len, ep;
 	if ((len = GetModuleFileName(hnd, buffer, MAXPATHLEN-1)) == 0)
 		FEerror("GetModuleFileName failed (last error = ~S)", 1, MAKE_FIXNUM(GetLastError()));
-	return ecl_parse_namestring(buffer, 0, len, &ep, Cnil);
+	s->base_string.fillp = len;
+	return ecl_parse_namestring(s, 0, len, &ep, Cnil);
 }
 #endif
 
