@@ -30,7 +30,7 @@ GMP_TYPE      = gc
 ECL_THREADS   =
 
 # Set it to non-empty to enable Win32 debug support
-ECL_DEBUG   = 1
+#ECL_DEBUG   = 1
 
 # Add the extensions to include in the build process. Comment any
 # of the following lines to remove a feature from the build process
@@ -101,8 +101,8 @@ DEF           = ecl.def
 # Enable debug information
 #
 !if "$(ECL_DEBUG)" != ""
-CFLAGS = -Zi $(CFLAGS)
-LDFLAGS = -Zi $(LDFLAGS)
+CFLAGS = -Z7 $(CFLAGS)
+LDFLAGS = -Z7 $(LDFLAGS)
 SHARED_LDFLAGS = -LDd
 #MFLAGS = -MDd
 GCFLAGS =
