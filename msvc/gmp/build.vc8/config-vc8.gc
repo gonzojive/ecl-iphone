@@ -297,7 +297,7 @@ MA 02111-1307, USA. */
 #define HAVE_LONG_DOUBLE	1
 
 /* Define if the system has the type `long long'. */
-#define HAVE_LONG_LONG		1
+#define HAVE_LONG_LONG		0
 
 /* Define if you have the `lrand48' function. */
 #undef HAVE_LRAND48
