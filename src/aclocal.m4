@@ -276,6 +276,9 @@ case "${host_os}" in
 		if test "`uname -m`" = i386; then
 		  gmp_build=none-apple-${host_os}
 		fi
+		# ECL, due to some of the libraries, does not build on
+		# 64 bit mode on OSX. We prevent GMP using that mode.
+		export ABI=mode32
 		;;
 	*)
 		Thehost="$host_os"
