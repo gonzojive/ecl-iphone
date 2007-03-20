@@ -1871,6 +1871,8 @@ AC_SUBST(DEFN_LONG_LONG_LIMB)
 AC_PROG_CC
 AC_PROG_CC_STDC
 AC_PROG_CPP
+cp $srcdir/gmp-h.in .
+cp $srcdir/gmp-impl.h .
 GMP_H_ANSI
 
 

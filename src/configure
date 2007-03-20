@@ -12230,9 +12230,9 @@ echo "$as_me: Configuring included GMP library:" >&6;}
     fi
     if mkdir gmp; then
      ECL_GMP_HEADER='ecl/gmp.h'
-          (destdir=`${PWDCMD}`; cd gmp; CC="${CC} ${PICFLAG} -DPIC" \
+          (destdir=`${PWDCMD}`; cd gmp; CC="${CC} ${PICFLAG}" \
        $srcdir/gmp/configure --disable-shared --prefix=${destdir} \
-	--infodir=${destdir}/doc --includedir=${destdir}/ecl \
+	--infodir=${destdir}/doc --includedir=${destdir}/ecl --with-pic \
         --libdir=${destdir} --build=${gmp_build} --host=${host_alias} $with_gmp)
     fi
   fi

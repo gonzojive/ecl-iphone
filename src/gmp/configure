@@ -7613,7 +7613,8 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
-
+cp $srcdir/gmp-h.in .
+cp $srcdir/gmp-impl.h .
 
 case $ac_cv_prog_cc_stdc in
   no)
@@ -7630,7 +7631,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 #define __GMP_BITS_PER_MP_LIMB 123 /* dummy for GMP_NUMB_BITS etc */
 #define GMP_LIMB_BITS 123
 $DEFN_LONG_LONG_LIMB
-#include "$srcdir/gmp-h.in"
+#include "gmp-h.in"
 
 #if ! __GMP_HAVE_PROTOTYPES
 die die die
@@ -26624,7 +26625,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 #define __GMP_BITS_PER_MP_LIMB 123 /* dummy for GMP_NUMB_BITS etc */
 #define GMP_LIMB_BITS 123
 $DEFN_LONG_LONG_LIMB
-#include "$srcdir/gmp-h.in"
+#include "gmp-h.in"
 
 #ifndef __GMP_EXTERN_INLINE
 die die die
@@ -26976,9 +26977,9 @@ cat >>conftest.$ac_ext <<_ACEOF
 #define __GMP_BITS_PER_MP_LIMB 123 /* dummy for GMP_NUMB_BITS etc */
 #define GMP_LIMB_BITS 123
 $DEFN_LONG_LONG_LIMB
-#include "$srcdir/gmp-h.in"
+#include "gmp-h.in"
 
-#include "$srcdir/gmp-impl.h"
+#include "gmp-impl.h"
 
 int
 main ()
@@ -27117,7 +27118,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 #define __GMP_BITS_PER_MP_LIMB 123 /* dummy for GMP_NUMB_BITS etc */
 #define GMP_LIMB_BITS 123
 $DEFN_LONG_LONG_LIMB
-#include "$srcdir/gmp-h.in"
+#include "gmp-h.in"
 
 #if ! _GMP_H_HAVE_FILE
 die die die
@@ -31677,7 +31678,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 #define __GMP_BITS_PER_MP_LIMB 123 /* dummy for GMP_NUMB_BITS etc */
 #define GMP_LIMB_BITS 123
 $DEFN_LONG_LONG_LIMB
-#include "$srcdir/gmp-h.in"
+#include "gmp-h.in"
 
 
 int
@@ -31748,7 +31749,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 #define __GMP_BITS_PER_MP_LIMB 123 /* dummy for GMP_NUMB_BITS etc */
 #define GMP_LIMB_BITS 123
 $DEFN_LONG_LONG_LIMB
-#include "$srcdir/gmp-h.in"
+#include "gmp-h.in"
 
 
 int
@@ -31796,7 +31797,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 #define __GMP_BITS_PER_MP_LIMB 123 /* dummy for GMP_NUMB_BITS etc */
 #define GMP_LIMB_BITS 123
 $DEFN_LONG_LONG_LIMB
-#include "$srcdir/gmp-h.in"
+#include "gmp-h.in"
 
 
 int
@@ -31860,7 +31861,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 #define __GMP_BITS_PER_MP_LIMB 123 /* dummy for GMP_NUMB_BITS etc */
 #define GMP_LIMB_BITS 123
 $DEFN_LONG_LONG_LIMB
-#include "$srcdir/gmp-h.in"
+#include "gmp-h.in"
 
 
 int
@@ -31908,7 +31909,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 #define __GMP_BITS_PER_MP_LIMB 123 /* dummy for GMP_NUMB_BITS etc */
 #define GMP_LIMB_BITS 123
 $DEFN_LONG_LONG_LIMB
-#include "$srcdir/gmp-h.in"
+#include "gmp-h.in"
 
 
 int
@@ -31980,7 +31981,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 #define __GMP_BITS_PER_MP_LIMB 123 /* dummy for GMP_NUMB_BITS etc */
 #define GMP_LIMB_BITS 123
 $DEFN_LONG_LONG_LIMB
-#include "$srcdir/gmp-h.in"
+#include "gmp-h.in"
 
 
 int
@@ -32051,7 +32052,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 #define __GMP_BITS_PER_MP_LIMB 123 /* dummy for GMP_NUMB_BITS etc */
 #define GMP_LIMB_BITS 123
 $DEFN_LONG_LONG_LIMB
-#include "$srcdir/gmp-h.in"
+#include "gmp-h.in"
 
 
 long longval () { return (long) (sizeof (mp_limb_t)); }

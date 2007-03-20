@@ -114,14 +114,16 @@ dnl  configure.
 dnl
 dnl  Dummy values for __GMP_BITS_PER_MP_LIMB and GMP_LIMB_BITS are enough
 dnl  for all current configure-time uses of gmp.h.
-
+dnl
+dnl  Replaced $srcdir/gmp-h.in -> gmp-h.in + copying JJGR
+dnl
 define(GMP_INCLUDE_GMP_H,
 [[#define __GMP_WITHIN_CONFIGURE 1   /* ignore template stuff */
 #define GMP_NAIL_BITS $GMP_NAIL_BITS
 #define __GMP_BITS_PER_MP_LIMB 123 /* dummy for GMP_NUMB_BITS etc */
 #define GMP_LIMB_BITS 123
 $DEFN_LONG_LONG_LIMB
-#include "$srcdir/gmp-h.in"]
+#include "gmp-h.in"]
 ])
 
 
@@ -3331,7 +3333,8 @@ AC_CACHE_CHECK([for alloca (via gmp-impl.h)],
                gmp_cv_func_alloca,
 [AC_TRY_LINK(
 GMP_INCLUDE_GMP_H
-[#include "$srcdir/gmp-impl.h"
+dnl Removed "$srcdir/gmp-imp.h" JJGR
+[#include "gmp-impl.h"
 ],
   [char *p = (char *) alloca (1);],
   gmp_cv_func_alloca=yes,
