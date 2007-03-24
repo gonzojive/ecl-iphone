@@ -150,7 +150,7 @@ ecl_alloc_uncollectable(size_t size)
 void
 ecl_free_uncollectable(void *pointer)
 {
-	return GC_FREE(pointer);
+	GC_FREE(pointer);
 }
 
 static int alloc_initialized = FALSE;
