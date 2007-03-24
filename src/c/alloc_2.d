@@ -336,7 +336,7 @@ finalize_queued()
 		   unsigned integer will produce an smaller
 		   integer.*/
 		static cl_index bytes = 0;
-		cl_index new_bytes = GC_total_bytes();
+		cl_index new_bytes = GC_get_total_bytes();
 		if (bytes < new_bytes) {
 			cl_index wrapped;
 			wrapped = ~((cl_index)0) - bytes;
