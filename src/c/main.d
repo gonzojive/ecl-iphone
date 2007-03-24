@@ -17,8 +17,19 @@
 /******************************** IMPORTS *****************************/
 
 #include <ecl/ecl.h>
-#include <stdlib.h>
 #include <limits.h>
+#ifdef _MSC_VER
+#define MAXPATHLEN 512
+#endif
+#ifndef MAXPATHLEN
+# ifdef PATH_MAX
+#   define MAXPATHLEN PATH_MAX
+# else
+#   define NO_PATH_MAX
+#   include <unistd.h>
+# endif
+#endif
+#include <stdlib.h>
 #include <ecl/internal.h>
 extern int GC_dont_gc;
 
@@ -212,6 +223,12 @@ cl_boot(int argc, char **argv)
 	Ct->symbol.mflag = FALSE;
 	Ct->symbol.isform = FALSE;
 	cl_num_symbols_in_core=2;
+
+#ifdef NO_PATH_MAX
+	cl_core.path_max = sysconf(_PC_PATH_MAX);
+#else
+	cl_core.path_max = MAXPATHLEN;
+#endif
 
 	cl_core.packages = Cnil;
 	cl_core.packages_to_be_created = OBJNULL;

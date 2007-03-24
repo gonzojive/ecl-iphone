@@ -24,16 +24,6 @@
 #include <limits.h>
 #include <string.h>
 #include <ctype.h>
-#ifdef _MSC_VER
-#define MAXPATHLEN 512
-#endif
-#ifndef MAXPATHLEN
-# ifdef PATH_MAX
-#   define MAXPATHLEN PATH_MAX
-# else
-#   error "Either MAXPATHLEN or PATH_MAX should be defined"
-# endif
-#endif
 
 typedef int (*delim_fn)(int);
 
@@ -788,7 +778,8 @@ si_coerce_to_filename(cl_object pathname_orig)
 		FEerror("Pathname ~A does not have a physical namestring",
 			1, pathname_orig);
 	}
-	if (ecl_length(namestring) >= MAXPATHLEN - 16)
+	if (cl_core.path_max != -1 &&
+	    ecl_length(namestring) >= cl_core.path_max - 16)
 		FEerror("Too long filename: ~S.", 1, namestring);
 #ifdef ECL_UNICODE
 	if (type_of(namestring) == t_string) {

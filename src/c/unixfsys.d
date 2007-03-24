@@ -43,17 +43,9 @@
 #if defined(_MSC_VER) || defined(mingw32)
 # include <windows.h>
 # undef ERROR
-# define MAXPATHLEN 512
 #endif
 #ifndef HAVE_MKSTEMP
 # include <fcntl.h>
-#endif
-#ifndef MAXPATHLEN
-# ifdef PATH_MAX
-#   define MAXPATHLEN PATH_MAX
-# else
-#   error "Either MAXPATHLEN or PATH_MAX should be defined"
-# endif
 #endif
 
 #if defined(_MSC_VER) || defined(mingw32)
@@ -268,7 +260,10 @@ ERROR:					FElibc_error("Can't change the current directory to ~S",
 void *
 ecl_backup_fopen(const char *filename, const char *option)
 {
-	char backupfilename[MAXPATHLEN];
+	char *backupfilename = cl_alloc(strlen(filename) + 5);
+	if (backupfilename == NULL) {
+		FElibc_error("Cannot allocate memory for backup filename", 0);
+	}
 
 	strcat(strcpy(backupfilename, filename), ".BAK");
 #ifdef _MSC_VER
@@ -279,6 +274,7 @@ ecl_backup_fopen(const char *filename, const char *option)
 	if (rename(filename, backupfilename))
 		FElibc_error("Cannot rename the file ~S to ~S.", 2,
 			     make_constant_base_string(filename), make_simple_base_string(backupfilename));
+	cl_dealloc(backupfilename, 0);
 	return fopen(filename, option);
 }
 
@@ -738,11 +734,11 @@ si_getcwd(void)
 cl_object
 si_get_library_pathname(void)
 {
-	cl_object s = cl_alloc_adjustable_base_string(MAXPATHLEN);
+	cl_object s = cl_alloc_adjustable_base_string(cl_core.path_max);
 	char *buffer = (char*)s->base_string.self;
 	HMODULE hnd = GetModuleHandle( "ecl.dll" );
 	cl_index len, ep;
-	if ((len = GetModuleFileName(hnd, buffer, MAXPATHLEN-1)) == 0)
+	if ((len = GetModuleFileName(hnd, buffer, cl_core.path_max-1)) == 0)
 		FEerror("GetModuleFileName failed (last error = ~S)", 1, MAKE_FIXNUM(GetLastError()));
 	s->base_string.fillp = len;
 	return ecl_parse_namestring(s, 0, len, &ep, Cnil);

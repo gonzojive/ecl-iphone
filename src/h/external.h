@@ -176,6 +176,7 @@ struct cl_core_struct {
 	cl_object bytes_consed;
 	cl_object gc_counter;
 	bool gc_stats;
+	int path_max;
 };
 
 #if defined(mingw32) || defined(_MSC_VER) || defined(cygwin)
