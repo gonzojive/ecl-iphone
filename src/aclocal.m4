@@ -291,6 +291,17 @@ case "${host_os}" in
 		# 64 bit mode on OSX. We prevent GMP using that mode.
 		export ABI=mode32
 		;;
+	nsk*)
+		# HP Non-Stop platform
+		thehost='nonstop'
+		shared='yes'
+		PICFLAG='-call_shared'
+		THREAD_CFLAGS='-spthread'
+		SHARED_LDFLAGS="-shared ${LDFLAGS}"
+		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
+		LDRPATH='-Wld=\"-rld_l ~A\"'
+		clibs="-Wld=-lrld"
+		;;
 	*)
 		Thehost="$host_os"
 		shared="no"
