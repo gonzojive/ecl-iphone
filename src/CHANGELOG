@@ -5,6 +5,9 @@ ECL 1.0:
 
  - Support for GNU/kFreeBSD
 
+ - ECL has additionally been ported to GNU/Hurd (Pierre Thierry) and
+   HP NonStop S-Series (Craig McDaniel)
+
 * New features:
 
  - New commands, :RESTART, :R1, :R2, etc, allow invoking restarts (contributed

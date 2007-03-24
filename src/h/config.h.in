@@ -193,6 +193,7 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_FLOAT_H
 /* select()								*/
 #undef HAVE_SELECT
+#undef HAVE_SYS_SELECT_H
 #undef HAVE_SYS_IOCTL_H
 /* putenv() or setenv()							*/
 #undef HAVE_SETENV

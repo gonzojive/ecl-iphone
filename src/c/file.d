@@ -29,15 +29,17 @@
 #include <ecl/internal.h>
 
 #ifdef HAVE_SELECT
-#include <sys/select.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
+# ifdef HAVE_SYS_SELECT_H
+#  include <sys/select.h>
+# endif
+# include <sys/time.h>
+# include <sys/types.h>
+# include <unistd.h>
 #elif defined(mingw32) || defined(_MSC_VER)
-#include <winsock.h>
-#define HAVE_SELECT
+# include <winsock.h>
+# define HAVE_SELECT
 #elif defined(HAVE_SYS_IOCTL_H) && !defined(MSDOS) && !defined(cygwin)
-#include <sys/ioctl.h>
+# include <sys/ioctl.h>
 #endif
 
 #define MAKE_BIT_MASK(n) ((1<<(n))-1)

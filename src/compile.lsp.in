@@ -50,13 +50,20 @@
 #-:wants-dlopen 
 (setf c::*ld-flags*
       "@LDFLAGS@ @LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ @CORE_LIBS@ @LIBS@ @FASL_LIBS@")
-#+:wants-dlopen
+#+(and :wants-dlopen (not nonstop))
 (setf c::*ld-flags*
       "@LDFLAGS@ @LDRPATH@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @LIBS@"
       c::*ld-shared-flags*
       "@LDRPATH@ @SHARED_LDFLAGS@ @LDFLAGS@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @LIBS@ @FASL_LIBS@"
       c::*ld-bundle-flags*
       "@LDRPATH@ @BUNDLE_LDFLAGS@ @LDFLAGS@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @LIBS@ @FASL_LIBS@")
+#+(and :wants-dlopen nonstop)
+(setf c::*ld-flags*
+      "@LDFLAGS@ @LDRPATH@ -Wld=-l@SHAREDPREFIX@ecl.@SHAREDEXT@ @LIBS@"
+      c::*ld-shared-flags*
+      "@LDRPATH@ @SHARED_LDFLAGS@ @LDFLAGS@ -Wld=-l@SHAREDPREFIX@ecl.@SHAREDEXT@ @LIBS@ @FASL_LIBS@"
+      c::*ld-bundle-flags*
+      "@LDRPATH@ @BUNDLE_LDFLAGS@ @LDFLAGS@ -Wld=-l@SHAREDPREFIX@ecl.@SHAREDEXT@ @LIBS@ @FASL_LIBS@")
 
 ;;;
 ;;; * Avoid name clashes with user supplied code.
