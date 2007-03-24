@@ -54,9 +54,15 @@ mysignal(int code, void *handler)
 {
 	struct sigaction new_action, old_action;
 
+#ifdef SA_SIGINFO
 	new_action.sa_sigaction = handler;
 	sigemptyset(&new_action.sa_mask);
 	new_action.sa_flags = SA_SIGINFO;
+#else
+	new_action.sa_handler = handler;
+	sigemptyset(&new_action.sa_mask);
+	new_action.sa_flags = 0;
+#endif
 	sigaction(code, &new_action, &old_action);
 }
 #else
@@ -136,7 +142,11 @@ signal_catcher(int sig)
 	mysignal(sig, signal_catcher);
 #ifdef HAVE_SIGPROCMASK
 	CL_UNWIND_PROTECT_BEGIN {
+#ifdef SA_SIGINFO
 		handle_signal(sig, siginfo, data);
+#else
+		handle_signal(sig);
+#endif
 	} CL_UNWIND_PROTECT_EXIT {
 		sigset_t block_mask;
 		sigemptyset(&block_mask);
@@ -162,7 +172,7 @@ si_check_pending_interrupts(void)
 {
 	int what = cl_env.interrupt_pending;
 	cl_env.interrupt_pending = 0;
-#ifdef HAVE_SIGPROCMASK
+#if defined (HAVE_SIGPROCMASK) && defined(SA_SIGINFO)
 	handle_signal(what, 0, 0);
 #else
 	handle_signal(what);
