@@ -4252,6 +4252,17 @@ case "${host_os}" in
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH='-Wl,--rpath,~A'
 		clibs="-ldl"
+		# Maybe CFLAGS="-D_ISOC99_SOURCE ${CFLAGS}" ???
+		CFLAGS="-D_GNU_SOURCE ${CFLAGS}"
+		;;
+	gnu*)
+		thehost='gnu'
+		THREAD_CFLAGS='-D_THREAD_SAFE'
+		THREAD_LIBS='-lpthread'
+		SHARED_LDFLAGS="-shared ${LDFLAGS}"
+		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
+		LDRPATH='-Wl,--rpath,~A'
+		clibs="-ldl"
 		CFLAGS="-D_GNU_SOURCE ${CFLAGS}"
 		;;
 	kfreebsd*-gnu)
