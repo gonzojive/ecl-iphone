@@ -636,7 +636,7 @@ put_declaration(void)
       }
       fprintf(out, "};\n");
     } else {
-      fprintf(out, "\tconst cl_object *KEYS = NULL;\n");
+      fprintf(out, "\tcl_object *KEYS = NULL;\n");
     }
   }
   for (i = 0;  i < nkey;  i++) {
@@ -659,7 +659,7 @@ put_declaration(void)
       if (nkey) {
 	fprintf(out, "\tcl_object KEY_VARS[%d];\n", 2*nkey);
       } else {
-	fprintf(out, "\tconst cl_object *KEY_VARS = NULL;\n");
+	fprintf(out, "\tcl_object *KEY_VARS = NULL;\n");
       }
     }
     put_lineno();
