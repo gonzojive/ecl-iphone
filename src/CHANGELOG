@@ -139,6 +139,8 @@ ECL 1.0:
 	    (defun print-it-1 ()
 	      (print (get-it)))))
 
+ - COPY-READTABLE did not copy entries when supplied a second argument.
+
 * Unicode:
 
  - MAKE-STRING only allowed :ELEMENT-TYPE to be one of CHARACTER, BASE-CHAR, or

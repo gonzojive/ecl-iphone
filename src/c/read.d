@@ -1292,28 +1292,26 @@ ecl_copy_readtable(cl_object from, cl_object to)
 {
 	struct ecl_readtable_entry *rtab;
 	cl_index i;
+	size_t entry_bytes = sizeof(struct ecl_readtable_entry);
+	size_t total_bytes = entry_bytes * RTABSIZE;
 
 	/* Copy also the case for reading */
 	if (Null(to)) {
 		to = cl_alloc_object(t_readtable);
 		to->readtable.table = NULL;
 			/*  Saving for GC.  */
-		to->readtable.table
-		= rtab
- 		= (struct ecl_readtable_entry *)cl_alloc_align(RTABSIZE * sizeof(struct ecl_readtable_entry), sizeof(struct ecl_readtable_entry));
-		memcpy(rtab, from->readtable.table,
-			 RTABSIZE * sizeof(struct ecl_readtable_entry));
+		to->readtable.table = (struct ecl_readtable_entry *)cl_alloc_align(total_bytes, entry_bytes);
 /*
 		for (i = 0;  i < RTABSIZE;  i++)
 			rtab[i] = from->readtable.table[i];
 */
 				/*  structure assignment  */
-	} else {
-		rtab=to->readtable.table;
 	}
+	rtab=to->readtable.table;
+	memcpy(rtab, from->readtable.table, total_bytes);
 	to->readtable.read_case = from->readtable.read_case;
 
-	for (i = 0;  i < RTABSIZE;  i++)
+	for (i = 0;  i < RTABSIZE;  i++) {
 		if (from->readtable.table[i].dispatch_table != NULL) {
 			rtab[i].dispatch_table
  			= (cl_object *)cl_alloc_align(RTABSIZE * sizeof(cl_object), sizeof(cl_object));
@@ -1325,6 +1323,7 @@ ecl_copy_readtable(cl_object from, cl_object to)
 				= from->readtable.table[i].dispatch_table[j];
 */
 		}
+	}
 	return(to);
 }
 
