@@ -225,11 +225,13 @@ weird stuff - see gethostbyname(3) for grisly details."
 	       (t t t t t t) t
 	       "
 {
-        unsigned char vector[4] = { fixint(ecl_aref(#0,0)),
-                                    fixint(ecl_aref(#0,1)),
-                                    fixint(ecl_aref(#0,2)),
-                                    fixint(ecl_aref(#0,3)) };
-	struct hostent *hostent = gethostbyaddr(vector,4,AF_INET);
+	unsigned char vector[4];
+	struct hostent *hostent;
+	vector[0] = fixint(ecl_aref(#0,0));
+	vector[1] = fixint(ecl_aref(#0,1));
+	vector[2] = fixint(ecl_aref(#0,2));
+	vector[3] = fixint(ecl_aref(#0,3));
+	hostent = gethostbyaddr(vector,4,AF_INET);
 
 	if (hostent != NULL) {
  	        char **aliases;
@@ -1293,10 +1295,12 @@ GET-NAME-SERVICE-ERRNO")
   (setf *name-service-errno* (c-constant #-:wsock "h_errno" #+:wsock "WSAGetLastError()")))
 
 (defun get-name-service-error-message (num)
-  #-:wsock
-  (c-inline (num) (:int) :cstring "hstrerror(#0)" :one-liner t)
+  #+:nsr
+  (c-inline (num) (:int) :cstring "strerror(#0)" :one-liner t)
   #+:wsock
   (get-win32-error-string num)
+  #-(or :wsock :nsr)
+  (c-inline (num) (:int) :cstring "strerror(#0)" :one-liner t)
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
