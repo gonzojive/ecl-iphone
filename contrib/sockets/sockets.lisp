@@ -38,7 +38,7 @@
  "#include <sys/socket.h>"
  "#include <sys/un.h>"
  "#include <netdb.h>"
- "#include <strings.h>"
+ "#include <string.h>"
  "#include <netinet/in.h>"
  "#include <errno.h>"
  "#include <fcntl.h>"
