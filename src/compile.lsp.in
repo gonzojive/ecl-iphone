@@ -39,7 +39,7 @@
 ;;;   with an already installed copy of ECL.
 ;;;
 (setq c::*cc-flags*
-      #-msvc "@CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@"
+      #-msvc "@CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@/c\""
       #+msvc "@CFLAGS@ @ECL_CFLAGS@"
       c::*ecl-include-directory* "@true_builddir@"
       c::*ecl-library-directory* "@true_builddir@")
