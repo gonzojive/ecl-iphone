@@ -437,7 +437,7 @@ void GC_get_next_stack(char *start, char **lo, char **hi)
 
 #if !defined(CYGWIN32)
 
-#if !defined(MSWINCE) && defined(GC_DLL)
+#if  0 /*!defined(MSWINCE) && defined(GC_DLL)*/
 
 /* We register threads from DllMain */
 
