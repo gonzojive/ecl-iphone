@@ -33,7 +33,7 @@
 /* Userland threads?							*/
 /* #undef ECL_THREADS */
 #ifdef ECL_THREADS
-# define GC_THREADS
+# define GC_WIN32_THREADS
 #endif
 
 /* Network streams							*/

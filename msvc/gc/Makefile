@@ -1,6 +1,7 @@
 # Makefile for Windows NT.  Assumes Microsoft compiler, and a single thread.
 # DLLs are included in the root set under NT, but not under win32S.
 # Use "nmake nodebug=1 all" for optimized versions of library, gctest and editor.
+#
 
 MY_CPU=X86
 CPU=$(MY_CPU)
@@ -10,7 +11,7 @@ srcdir = ..\..\src\gc
 
 !if "$(ECL_THREADS)" != ""
 THREADS_OBJ= win32_threads.obj
-THREADS_FLAGS= -DGC_THREADS
+THREADS_FLAGS= -DGC_WIN32_THREADS
 !else
 THREADS_OBJ=
 THREADS_FLAGS=
@@ -18,9 +19,9 @@ THREADS_FLAGS=
 
 MFLAGS = /MD
 
-OBJS= alloc.obj reclaim.obj allchblk.obj misc.obj mach_dep.obj os_dep.obj mark_rts.obj headers.obj mark.obj obj_map.obj blacklst.obj finalize.obj new_hblk.obj dbg_mlc.obj malloc.obj stubborn.obj dyn_load.obj typd_mlc.obj ptr_chck.obj gc_cpp.obj mallocx.obj
+OBJS= alloc.obj reclaim.obj allchblk.obj misc.obj mach_dep.obj os_dep.obj mark_rts.obj headers.obj mark.obj obj_map.obj blacklst.obj finalize.obj new_hblk.obj dbg_mlc.obj malloc.obj stubborn.obj dyn_load.obj typd_mlc.obj ptr_chck.obj gc_cpp.obj mallocx.obj $(THREADS_OBJ)
 
-all: gctest.exe cord\de.exe test_cpp.exe
+all: gc.lib
 
 {$(srcdir)}.c{}.obj:
 	$(cc) $(MFLAGS) $(cdebug) $(cflags) $(cvars) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -D__STDC__ -DGC_DLL -DGC_BUILD -DLARGE_CONFIG $(THREADS_FLAGS) $< /Fo$*.obj
