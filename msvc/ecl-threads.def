@@ -45,7 +45,7 @@ EXPORTS
 	si_aset
 	si_make_pure_array
 
-	ecl_to_indexx
+	ecl_to_index
 	ecl_aref
 	ecl_aref1
 	ecl_aset
@@ -935,7 +935,7 @@ EXPORTS
 
 	ecl_alloc_simple_vector
 	ecl_elt
-	elt_set
+	ecl_elt_set
 	ecl_length
 
 
