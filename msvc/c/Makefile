@@ -111,7 +111,7 @@ clean:
 	-for %f in (..\ecl\config.h dpp dpp.obj $(DPP) ecl\external.h \
 	            ..\eclmin.lib ..\cinit.obj cinit.c symbols_list2.h) \
 	     do $(RM) %f
-	-for %f in ($(HFILES)) do $(RM) %f
+	-for %f in (..\ecl\*.h) do $(RM) %f
 
 # Build rules
 
