@@ -39,14 +39,10 @@
 ;;;   with an already installed copy of ECL.
 ;;;
 (setq c::*cc-flags*
-      #-msvc "@CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@\"/c -I\"@true_srcdir@\"/gmp -I\"@true_builddir@\""
-      #+msvc "@CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@\"/c -I\"@true_srcdir@\"/h -I\"@true_builddir@\""
-      c::*cc-format*
-      #-msvc "~A ~A ~:[~*~;~A~] -I\"@true_builddir@\"~* -w -c ~S -o ~S"
-      #+msvc "~A ~A ~:[~*~;~A~] -I\"@true_builddir@\"~* -w -c ~S -Fo~S"
-      c::*ld-format*
-      #-msvc "~A -o ~S -L\"@true_builddir@\"~* ~{~S ~} ~@?"
-      #+msvc "~A -Fe~S~* ~{~S ~} ~@?")
+      #-msvc "@CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@"
+      #+msvc "@CFLAGS@ @ECL_CFLAGS@"
+      c::*ecl-include-directory* "@true_builddir@"
+      c::*ecl-library-directory* "@true_builddir@")
 #-:wants-dlopen 
 (setf c::*ld-flags*
       "@LDFLAGS@ @LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ @CORE_LIBS@ @LIBS@ @FASL_LIBS@")
