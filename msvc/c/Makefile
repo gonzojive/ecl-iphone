@@ -71,7 +71,7 @@ all:	$(DPP) ecl\external.h ..\eclmin.lib ..\cinit.obj
 #.d.c:
 #	$(DPP) $< $@
 .c.obj:
-	$(CC) $(CFLAGS) -fo $@ $<
+	$(CC) $(CFLAGS) /Fo$@ $<
 
 .PHONY:	all
 
@@ -105,13 +105,13 @@ flatinstall: $(HFILES)
 	$(LINK) -lib -out:$@ $(OBJS)
 
 clean:
-	-for %f in (..\ecl\config.h dpp dpp.obj $(DPP) ecl\external.h \
-	            ..\eclmin.lib ..\cinit.obj cinit.c \
-		    symbols_list2.h) \
-	     do $(RM) %f
 	-for %f in ($(OBJS:.obj=.c) all_symbols.c) do $(RM) %f
 	-for %f in ($(OBJS) all_symbols.obj all_symbols2.obj) do $(RM) %f
 	-$(RM) *.pdb
+	-for %f in (..\ecl\config.h dpp dpp.obj $(DPP) ecl\external.h \
+	            ..\eclmin.lib ..\cinit.obj cinit.c symbols_list2.h) \
+	     do $(RM) %f
+	-for %f in ($(HFILES)) do $(RM) %f
 
 # Build rules
 
@@ -126,12 +126,12 @@ $(DPP): $(srcdir)/dpp.c $(srcdir)/symbols_list2.h ../ecl/config.h ecl\external.h
 # GCC might break this code
 #
 gbc.o: gbc.c $(HFILES)
-	$(CC) $(CFLAGS) -O0 gbc.c -o $@
+	$(CC) $(CFLAGS) -O0 gbc.c /Fo$@
 #
 # This reduces the overhead of jumping to other functions
 #
 apply.o: apply.c $(HFILES) $(HDIR)/cs.h
-	$(CC) $(CFLAGS) apply.c -o $@
+	$(CC) $(CFLAGS) apply.c /Fo$@
 #
 # These files are interrelated
 #
@@ -143,5 +143,5 @@ all_symbols2.obj: all_symbols.c
 # This is in another directory
 #
 ../cinit.obj: cinit.c
-	$(CC) $(CFLAGS) -I../ -I./ -o cinit.obj cinit.c
+	$(CC) $(CFLAGS) -I../ -I./ /Focinit.obj cinit.c
 	$(MV) cinit.obj ..\
