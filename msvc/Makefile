@@ -272,11 +272,11 @@ ecl-cc.bat: util\ecl-cc.bat Makefile
 
 eclmin.lib: eclgmp.lib eclgc.lib lsp/config.lsp
 	cd c
-	$(MAKE) "ECL_THREADS = $(ECL_THREADS)" "ECL_CFLAGS = $(CFLAGS) -DGC_BUILD"
+	$(MAKE) ECL_THREADS=$(ECL_THREADS) "ECL_CFLAGS=$(CFLAGS) -DGC_BUILD"
 	cd ..
 eclgc.lib:
 	cd gc
-	$(MAKE) $(GCFLAGS) "ECL_THREADS = $(ECL_THREADS)" "MFLAGS = $(MFLAGS)" gc.lib
+	$(MAKE) $(GCFLAGS) ECL_THREADS=$(ECL_THREADS) "MFLAGS=$(MFLAGS)" gc.lib
 	$(CP) gc.lib ..\eclgc.lib
 	cd ..
 	if not exist ecl\gc $(MKDIR) ecl\gc
@@ -343,14 +343,16 @@ clean: clean_ecl clean_lisp
 	-$(RM) .gdbinit cinit.lib ecl_min.lib
 	-$(RM) gc\*.pdb
 	cd gc
-	-$(MAKE) "ECL_THREADS = $(ECL_THREADS)" clean
+	-$(MAKE) ECL_THREADS=$(ECL_THREADS) clean
 	cd ..
 	-for %h in (gc.h gc_local_alloc.h gc_pthread_redirects.h \
 	            gc_config_macros.h leak_detector.h gc_typed.h \
 		    gc_mark.h private\gc_priv.h private\gcconfig.h) \
 	     do $(RM) ecl\gc\%h
+	-$(RMDIR) ecl\gc\private
+	-$(RMDIR) ecl\gc
 	cd gmp
-	$(MAKE) "ECL_THREADS = $(ECL_THREADS)" clean
+	-$(MAKE) ECL_THREADS=$(ECL_THREADS) clean
 	cd ..
 	-$(RM) ecl\gmp.h
 clean_ecl:
@@ -360,7 +362,7 @@ clean_ecl:
 		    $(TARGETS) *.exp *.ilk *.manifest *.pdb *.c *.obj ecl-config.bat ecl-static.lib) \
 	     do $(RM) %i
 	cd c
-	-$(MAKE) "ECL_THREADS = $(ECL_THREADS)" clean
+	-$(MAKE) ECL_THREADS=$(ECL_THREADS) clean
 	cd ..
 clean_lisp:
 	-for %i in (lsp clos $(ECL_MODULES)) do for %k in (%i.lib %i.fas %i.ilk %i.c %i.obj %i.pdb) do $(RM) %k
