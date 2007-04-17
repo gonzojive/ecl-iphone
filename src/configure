@@ -4184,10 +4184,11 @@ case "${host_os}" in
 		# The GMP library has not yet been ported to Intel-OSX
 		if test "`uname -m`" = i386; then
 		  gmp_build=none-apple-${host_os}
+		else
+		  export ABI=mode32
 		fi
 		# ECL, due to some of the libraries, does not build on
 		# 64 bit mode on OSX. We prevent GMP using that mode.
-		export ABI=mode32
 		;;
 	nsk*)
 		# HP Non-Stop platform
