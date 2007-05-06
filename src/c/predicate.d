@@ -338,7 +338,7 @@ BEGIN:
 		return (tx == ty) && ecl_eql(x->complex.real, y->complex.real) &&
 			ecl_eql(x->complex.imag, y->complex.imag);
 	case t_character:
-		return(CHAR_CODE(x) == CHAR_CODE(y));
+		return (tx == ty) && (CHAR_CODE(x) == CHAR_CODE(y));
 	case t_base_string:
 #ifdef ECL_UNICODE
 	case t_string:
