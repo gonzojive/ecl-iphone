@@ -429,6 +429,9 @@ ecl_homedir_pathname(cl_object user)
 #endif
 		FEerror("Unknown user ~S.", 1, p);
 	}
+	if (namestring->base_string.self[0] == '~') {
+		FEerror("Not a valid home pathname ~S", 1, namestring);
+	}
 	i = namestring->base_string.fillp;
 	if (!IS_DIR_SEPARATOR(namestring->base_string.self[i-1]))
 		namestring = si_base_string_concatenate(2, namestring,

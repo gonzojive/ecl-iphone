@@ -144,6 +144,13 @@ ECL 1.0:
 
  - COPY-READTABLE did not copy entries when supplied a second argument.
 
+ - When expanding tilde pathnames, as in "~/bin/foo", the device is also
+   taken into account. So if HOME=c:/jjgarcia, the previous path becomes
+   "c:/jjgarcia/bin/foo"
+
+ - If the homedir component contains a tilde itself, ECL entered an infinite
+   loop when expanding the pathname
+
 * Unicode:
 
  - MAKE-STRING only allowed :ELEMENT-TYPE to be one of CHARACTER, BASE-CHAR, or

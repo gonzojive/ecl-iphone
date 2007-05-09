@@ -183,22 +183,32 @@ ecl_make_pathname(cl_object host, cl_object device, cl_object directory,
 }
 
 static cl_object
-tilde_expand(cl_object directory)
+tilde_expand(cl_object pathname)
 {
-	cl_object head, prefix;
-
-	/* INV: pathname is relative */
-	if (ecl_endp(directory))
-		goto RET;
+	/*
+	 * If the pathname is a physical one, without hostname, without device
+	 * and the first element is either a tilde '~' or '~' followed by
+	 * a user name, we merge the user homedir pathname with this one.
+	 */
+	cl_object directory, head;
+	if (pathname->pathname.logical || pathname->pathname.host != Cnil
+	    || pathname->pathname.device != Cnil) {
+		return pathname;
+	}
+	directory = pathname->pathname.directory;
+	if (!CONSP(directory) || CAR(directory) != @':relative'
+	    || CDR(directory) == Cnil) {
+		return pathname;
+	}
 	head = CADR(directory);
-	if (!ecl_stringp(head))
-		goto RET;
-	if (ecl_length(head) == 0 || ecl_char(head,0) != '~')
-		goto RET;
-	prefix = ecl_homedir_pathname(head)->pathname.directory;
-	directory = ecl_append(prefix, CDDR(directory));
- RET:
-	return directory;
+	if (ecl_stringp(head) && ecl_length(head) > 0 && 
+	    ecl_char(head,0) == '~') {
+		/* Remove the tilde component */
+		CDR(directory) = CDDR(directory);
+		pathname = cl_merge_pathnames(2, pathname,
+					      ecl_homedir_pathname(head));
+	}
+	return pathname;
 }
 
 #define WORD_INCLUDE_DELIM 1
@@ -560,7 +570,6 @@ ecl_parse_namestring(cl_object s, cl_index start, cl_index end, cl_index *ep,
 	if (CONSP(path)) {
 		if (CAR(path) != @':relative' && CAR(path) != @':absolute')
 			path = CONS(@':relative', path);
-		path = tilde_expand(path);
 		path = destructively_check_directory(path, FALSE);
 	}
 	if (path == @':error')
@@ -584,7 +593,7 @@ ecl_parse_namestring(cl_object s, cl_index start, cl_index end, cl_index *ep,
 	if (*ep >= end) *ep = end;
 	path = ecl_make_pathname(host, device, path, name, type, version);
 	path->pathname.logical = logical;
-	return path;
+	return tilde_expand(path);
 }
 
 cl_object
