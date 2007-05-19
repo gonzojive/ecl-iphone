@@ -240,7 +240,7 @@ cl_symbol_name(cl_object x)
 
 @(defun copy_symbol (sym &optional cp &aux x)
 @
-	x = ecl_check_cl_type(@'copy-symbol', x, t_symbol);
+	sym = ecl_check_cl_type(@'copy-symbol', sym, t_symbol);
 	x = cl_make_symbol(sym->symbol.name);
 	if (Null(cp))
 		@(return x)
