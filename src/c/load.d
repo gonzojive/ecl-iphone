@@ -47,6 +47,35 @@
 # endif
 #endif
 
+#ifndef HAVE_LSTAT
+static void
+symlink(const char *orig, const char *dest)
+{
+}
+#endif
+
+static cl_object
+copy_object_file(cl_object original)
+{
+	int err;
+	cl_object s, copy = make_constant_base_string("TMP:ECL");
+	copy = si_coerce_to_filename(si_mkstemp(copy));
+#ifdef HAVE_LSTAT
+	err = unlink(copy->base_string.self) ||
+	      symlink(original->base_string.self, copy->base_string.self);
+#else
+	s = cl_concatenate(make_simple_base_string("copy ") +
+			   original +
+			   make_simple_base_string(" ") +
+			   copy);
+	s = si_system(s);
+	err = code != MAKE_FIXNUM(0);
+#endif
+	if (err) {
+		FEerror("Unable to copy file ~A to ~A", 2, original, copy);
+	}
+}
+
 #ifdef ENABLE_DLOPEN
 cl_object
 ecl_library_open(cl_object filename) {
@@ -54,15 +83,25 @@ ecl_library_open(cl_object filename) {
 	cl_object libraries = cl_core.libraries;
 	bool self_destruct = 0;
 	cl_index i;
-#ifdef HAVE_LSTAT
+	/*
+	 * We are using shared libraries as modules. That is not quite right
+	 * because many operating systems do not allow to load a shared
+	 * library twice, even if it has changed. Hence we have to make a
+	 * unique copy (or a link in Unix) when we load a file with the
+	 * same name of a module we already loaded.
+	 * In Windows we always duplicate the FASL file because otherwise
+	 * it cannot be overwritten. In Unix we need only do that when the
+	 * file has been previously loaded. */
+#if defined(mingw32) || defined(_MSC_VER)
+	filename = copy_object_file(filename);
+#else
 	for (i = 0; i < libraries->vector.fillp; i++) {
-		if (ecl_string_eq(libraries->vector.self.t[i]->cblock.name, filename)) {
-			cl_object copy = make_constant_base_string("TMP:ECL");
-			copy = si_coerce_to_filename(si_mkstemp(copy));
-			unlink(copy->base_string.self);
-			symlink(filename->base_string.self, copy->base_string.self);
-			filename = copy;
+		if (ecl_string_eq(libraries->vector.self.t[i]->cblock.name,
+				  filename))
+		{
+			filename = copy_object_file(filename);
 			self_destruct = 1;
+			break;
 		}
 	}
 #endif
