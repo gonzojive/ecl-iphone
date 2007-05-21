@@ -1409,7 +1409,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 
 	case t_random:
 		write_str("#$", stream);
-		si_write_ugly_object(ecl_make_unsigned_integer(x->random.value), stream);
+		write_array(1, x->random.value, stream);
 		break;
 
 #ifndef CLOS

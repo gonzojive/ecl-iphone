@@ -1279,7 +1279,7 @@ sharp_dollar_reader(cl_object in, cl_object c, cl_object d)
 		extra_argument('$', in, d);
 	c = ecl_read_object(in);
 	rs = cl_alloc_object(t_random);
-	rs->random.value = fixnnint(c);
+	rs->random.value = c;
 	@(return rs)
 }
 
