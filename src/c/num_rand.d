@@ -179,7 +179,7 @@ ecl_make_random_state(cl_object rs)
 		if (type_of(rs) != t_random) {
 			FEwrong_type_argument(@'random-state', rs);
 		}
-		z->random.value = rs->random.value;
+		z->random.value = cl_copy_seq(rs->random.value);
 	}
 	return(z);
 }
