@@ -387,7 +387,7 @@ struct ecl_stream {
 
 struct ecl_random {
 	HEADER;
-	cl_index value;	/*  random state value  */
+	cl_object value;	/*  random state value  */
 };
 
 enum ecl_chattrib {		/*  character attribute  */
