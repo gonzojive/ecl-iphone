@@ -200,6 +200,10 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_PUTENV
 /* times() and sys/times.h						*/
 #undef HAVE_TIMES
+/* gettimeofday() and sys/time.h					*/
+#undef HAVE_GETTIMEOFDAY
+/* getrusage() and sys/resource.h					*/
+#undef HAVE_GETRUSAGE
 /* user home directory, user name, etc...				*/
 #undef HAVE_PW_H
 /* symbolic links and checking their existence				*/

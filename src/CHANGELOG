@@ -53,6 +53,9 @@ ECL 1.0:
  - Random number generator based on the Mersenne-Twister algorithm (Based on
    code contributed by Roy Zywina).
 
+ - GET-INTERNAL-RUN/REAL-TIME now have a better resolution of microseconds
+   when the platform allows it.
+
 * Bugs fixed:
 
  - STREAMP signals an error for Gray streams.

@@ -23,43 +23,78 @@
 #ifdef HAVE_TIMES
 # include <sys/times.h>
 #endif
+#ifdef HAVE_GETRUSAGE
+# include <sys/time.h>
+# include <sys/resource.h>
+#endif
+#ifdef HAVE_GETTIMEOFDAY
+# include <sys/time.h>
+#endif
 #ifndef _MSC_VER
 # include <unistd.h>
 #endif
 #include <ecl/internal.h>
-
 #if defined(mingw32) || defined(_MSC_VER)
 #include <windows.h>
 #endif
 
-#ifndef HZ			/* usually from <sys/param.h> */
-#define HZ 60
-#endif
 #ifdef darwin
 #undef HAVE_NANOSLEEP
 #endif
 
-#if defined(mingw32) || defined(_MSC_VER)
-static DWORD beginning;
-#else
-static time_t beginning;
+#if !defined(HAVE_GETTIMEOFDAY) && !defined(HAVE_GETRUSAGE)
+struct timeval {
+	long tv_sec;
+	long tv_usec;
+};
 #endif
+
+static struct timeval beginning;
+
+static void
+get_real_time(struct timeval *tv)
+{
+#ifdef HAVE_GETTIMEOFDAY
+	struct timezone tz;
+	gettimeofday(tv, &tz);
+#else
+# if defined(mingw32) || defined(_MSC_VER)
+	DWORD x = GetTickCount();
+	tv->tv_sec = x / 1000;
+	tv->tv_usec = (x % 1000) * 1000;
+# else
+	time_t = time(0);
+	tv->tv_sec = time_t;
+	tv->tv_usec = 0;
+# endif
+#endif
+}
+
+static void
+get_run_time(struct timeval *tv)
+{
+#ifdef HAVE_GETRUSAGE
+	struct rusage r;
+	getrusage(RUSAGE_SELF, &r);
+	*tv = r.ru_utime;
+#else
+# ifdef HAVE_TIMES
+	struct tms buf;
+	times(&buf);
+	tv->tv_sec = buf.tms_utime / CLK_TCK;
+	tv->tv_usec = (buf.tms_utime % CLK_TCK) * 1000000;
+# else
+	get_real_time(tv);
+# endif
+#endif
+}
 
 cl_fixnum
 ecl_runtime(void)
-/*
-   tms_utime is the CPU time used while executing instructions in the
-   user space of the calling process, measured in 1/HZ seconds.
-*/
 {
-#ifdef HAVE_TIMES
-	struct tms buf;
-
-	times(&buf);
-	return(buf.tms_utime);
-#else
-	return 0;
-#endif
+	struct timeval tv;
+	get_run_time(&tv);
+	return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
 cl_object
@@ -96,38 +131,39 @@ cl_sleep(cl_object z)
 	@(return Cnil)
 }
 
+static cl_object
+timeval_to_time(long sec, long usec)
+{
+	/* This can be probably improved.  Right now, too many
+	   rounding errors, but if we use the lisp routines then it
+	   slows downs and measures become too imprecise. */
+	double x = sec * 1000.0 + usec / 1000.0;
+	return MAKE_FIXNUM((cl_fixnum)x);
+}
+
 cl_object
 cl_get_internal_run_time()
 {
-#ifdef HAVE_TIMES
-	struct tms buf;
-	times(&buf);
-	@(return MAKE_FIXNUM(buf.tms_utime))
-#else
-	return cl_get_internal_real_time();
-#endif
+	struct timeval tv;
+	get_run_time(&tv);
+	@(return timeval_to_time(tv.tv_sec, tv.tv_usec))
 }
 
 cl_object
 cl_get_internal_real_time()
 {
-#if defined(mingw32) || defined(_MSC_VER)
-	@(return MAKE_FIXNUM((cl_fixnum)((GetTickCount() - beginning)/1000.0*HZ)))
-#else
-	@(return MAKE_FIXNUM((time(0) - beginning)*HZ))
-#endif
+	struct timeval tv;
+	get_real_time(&tv);
+	@(return timeval_to_time(tv.tv_sec - beginning.tv_sec,
+				 tv.tv_usec - beginning.tv_usec))
 }
 
 void
 init_unixtime(void)
 {
-#if defined(mingw32) || defined(_MSC_VER)
-	beginning = GetTickCount();
-#else
-	beginning = time(0);
-#endif
+	get_real_time(&beginning);
 
-	ECL_SET(@'internal-time-units-per-second', MAKE_FIXNUM(HZ));
+	ECL_SET(@'internal-time-units-per-second', MAKE_FIXNUM(1000));
 
 	cl_core.Jan1st1970UT =
 	    ecl_times(MAKE_FIXNUM(24 * 60 * 60),
