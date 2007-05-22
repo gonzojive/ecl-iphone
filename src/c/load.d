@@ -64,16 +64,16 @@ copy_object_file(cl_object original)
 	err = unlink(copy->base_string.self) ||
 	      symlink(original->base_string.self, copy->base_string.self);
 #else
-	s = cl_concatenate(make_simple_base_string("copy ") +
-			   original +
-			   make_simple_base_string(" ") +
-			   copy);
-	s = si_system(s);
-	err = code != MAKE_FIXNUM(0);
+#if defined(mingw32) || defined(_MSC_VER)
+	err = !CopyFile(original->base_string.self, copy->base_string.self, 0);
+#else
+	err = 1;
+#endif
 #endif
 	if (err) {
 		FEerror("Unable to copy file ~A to ~A", 2, original, copy);
 	}
+	return copy;
 }
 
 #ifdef ENABLE_DLOPEN
