@@ -160,6 +160,9 @@ ECL 1.0:
  - Now it should be possible to load the same FASL files multiple times,
    even if previous instances have not completely garbage collected.
 
+ - SI:MKSTEMP now works on Windows for more than 26 temporary file names
+   (Dustin Long)
+
 * Unicode:
 
  - MAKE-STRING only allowed :ELEMENT-TYPE to be one of CHARACTER, BASE-CHAR, or

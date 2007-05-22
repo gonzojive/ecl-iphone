@@ -792,6 +792,43 @@ si_mkstemp(cl_object template)
 	cl_index l;
 	int fd;
 
+#if defined(mingw32) || defined(_MSC_VER)
+
+	cl_object phys, dir, file;
+	char strTempDir[MAX_PATH];
+	char strTempFileName[MAX_PATH];
+	char * s;
+	
+	phys = cl_translate_logical_pathname(1, template);
+	
+	dir = cl_make_pathname(8,
+	                       @':type', Cnil,
+	                       @':name', Cnil,
+	                       @':version', Cnil,
+	                       @':defaults', phys);
+
+	dir = cl_namestring(dir);
+	file = cl_file_namestring(phys);
+	
+	l = dir->base_string.fillp;
+	
+	memcpy(strTempDir, dir->base_string.self, l);
+	strTempDir[l] = 0;
+	for (s = strTempDir; *s; s++)
+		if (*s == '/')
+			*s = '\\';
+
+	if (!GetTempFileName(strTempDir, file->base_string.self, 0, strTempFileName))
+	{
+		@(return Cnil)
+	}
+	
+	l = strlen(strTempFileName);
+	output = cl_alloc_simple_base_string(l);
+	memcpy(output->base_string.self, strTempFileName, l);
+
+#else
+
 	template = si_coerce_to_filename(template);
 	l = template->base_string.fillp;
 	output = cl_alloc_simple_base_string(l + 6);
@@ -806,6 +843,9 @@ si_mkstemp(cl_object template)
 	if (fd < 0)
 		@(return Cnil)
 	close(fd);
+
+#endif
+
 	@(return cl_truename(output))
 }
 
