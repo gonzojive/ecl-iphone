@@ -41,7 +41,7 @@ ECL_ASDF    =
 # TCP support
 ECL_SOCKETS =
 # X Windows support
-ECL_CLX     =
+# ECL_CLX     = 1
 # Regression Tests support
 ECL_RT      =
 # Defsystem support

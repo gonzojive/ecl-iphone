@@ -272,6 +272,8 @@ ECL 1.0:
 
  - C:BUILDER searches the ASDF module list for libraries. (Thanks to F.R. Rideau)
 
+ - In Windows, CLX is no longer built by default: use "nmake ECL_CLX=1".
+
 * Contributed code:
 
  - New examples: cmdline/ls.lsp, ffi/uffi.lsp, ffi/cffi.lsp
