@@ -62,9 +62,18 @@
 	   *ld-format*
 	   *cc*
 	   (si::coerce-to-filename o-pathname)
-	   (ecl-library-directory)
+	   (fix-for-mingw (ecl-library-directory))
 	   options
-	   *ld-flags* (ecl-library-directory))))
+	   *ld-flags* (fix-for-mingw (ecl-library-directory)))))
+
+#-mingw32
+(defmacro fix-for-mingw (directory-namestring)
+  directory-namestring)
+
+#+minwg32
+(defun fix-for-mingw (directory-namestring)
+  (let ((x (string-right-trim '(#\\ #/) directory-namestring)))
+    (if (zerop (length x)) "/" x)))
 
 #+dlopen
 (defun shared-cc (o-pathname &rest options)
@@ -74,19 +83,19 @@
 	   *ld-format*
 	   *cc*
 	   (si::coerce-to-filename o-pathname)
-	   (ecl-library-directory)
+	   (fix-for-mingw (ecl-library-directory))
 	   options
-	   *ld-shared-flags* (ecl-library-directory)))
+	   *ld-shared-flags* (fix-for-mingw (ecl-library-directory))))
   #+(or mingw32)
   (let ((lib-file (compile-file-pathname o-pathname :type :lib)))
     (safe-system
      (format nil
 	     "dllwrap --export-all-symbols -o ~S -L~S ~{~S ~} ~@?"
 	     (si::coerce-to-filename o-pathname)
-	     (ecl-library-directory)
+	     (fix-for-mingw (ecl-library-directory))
 	     options
 	     *ld-shared-flags*
-	     (ecl-library-directory)))))
+	     (fix-for-mingw (ecl-library-directory))))))
 
 #+dlopen
 (defun bundle-cc (o-pathname init-name &rest options)
@@ -96,7 +105,7 @@
 	   *ld-format*
 	   *cc*
 	   (si::coerce-to-filename o-pathname)
-	   (ecl-library-directory)
+	   (fix-for-mingw (ecl-library-directory))
 	   options
 	   #-msvc *ld-bundle-flags*
 	   #+msvc (concatenate 'string *ld-bundle-flags* " /EXPORT:"
@@ -107,10 +116,10 @@
    (format nil
 	   "dllwrap -o ~A --export-all-symbols -L~S ~{~S ~} ~@?"
 	   (si::coerce-to-filename o-pathname)
-	   (ecl-library-directory)
+	   (fix-for-mingw (ecl-library-directory))
 	   options
 	   *ld-bundle-flags*
-	   (ecl-library-directory))))
+	   (fix-for-mingw (ecl-library-directory)))))
 
 (defconstant +lisp-program-header+ "
 #include <ecl/ecl.h>
@@ -846,7 +855,7 @@ Cannot compile ~a."
    (format nil
 	   *cc-format*
 	   *cc* *cc-flags* (>= *speed* 2) *cc-optimize*
-	   (ecl-include-directory)
+	   (fix-for-mingw (ecl-include-directory))
 	   (si::coerce-to-filename c-pathname)
 	   (si::coerce-to-filename o-pathname))
 ; Since the SUN4 assembler loops with big files, you might want to use this:
