@@ -61,7 +61,7 @@ ECL 1.0:
  - MINGW's compiler is broken: it does not accept directories with trailing
    slashes as an argument to "-I". We include a hack in cmpmain.lsp for that.
 
- - STREAMP signals an error for Gray streams.
+ - Streamp signals an error for Gray streams.
 
  - ENOUGH-NAMESTRING provided too large directory names (Contributed by Tim S)
 
@@ -193,6 +193,10 @@ ECL 1.0:
    of file names is not supported.
 
 * Other visible changes:
+
+ - The documentation shipped with ECL was outdated. To enforce moving on
+   to the new manual, the build and installation process now ignores anything
+   inside src/doc.
 
  - LOAD no longer defaults to loading a file as binary if the file type is
    different from FAS or FASL. Use either SI:LOAD-BINARY or configure the

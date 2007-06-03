@@ -45,7 +45,7 @@ LIBRARIES = @LIBRARIES@
 LSP_LIBRARIES = @LSP_LIBRARIES@
 TARGETS = @TARGETS@
 
-all:	$(TARGETS) bin/ecl-config doc
+all:	$(TARGETS) bin/ecl-config
 .PHONY:	all
 
 %Makefile: $(srcdir)/%Makefile.in config.status
@@ -121,7 +121,7 @@ BUILD-STAMP: config.status
 	echo "#" `uname -a` > $@
 	head -8 config.log | tail -6 >> $@
 install: install-base
-	cd doc; $(MAKE) prefix=$(prefix) DESTDIR=$(DESTDIR) install
+#	cd doc; $(MAKE) prefix=$(prefix) DESTDIR=$(DESTDIR) install
 install-base:
 	# Here we would use the option -s but the install program in sourceforge-solaris
 	# is broken.
@@ -150,12 +150,12 @@ install-base:
 	done
 flatinstall: BUILD-STAMP
 	$(MAKE) DESTDIR=$(DESTDIR) bindir=$(prefix) libdir=$(prefix) includedir=$(prefix) install-base
-	cd doc; $(MAKE) DESTDIR=$(DESTDIR) prefix=$(prefix) docdir=$(prefix)/doc flatinstall
+#	cd doc; $(MAKE) DESTDIR=$(DESTDIR) prefix=$(prefix) docdir=$(prefix)/doc flatinstall
 
 uninstall:
 	for i in $(TARGETS) ecl-config; do $(RM) $(DESTDIR)$(bindir)/$$i; done
 	$(RM) -r $(DESTDIR)$(libdir)
-	cd doc; $(MAKE) uninstall
+#	cd doc; $(MAKE) uninstall
 
 doc: $(TARGETS)
 	cd doc; $(MAKE)
