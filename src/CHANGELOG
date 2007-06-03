@@ -191,6 +191,11 @@ ECL 1.0:
 
 * Other visible changes:
 
+ - LOAD no longer defaults to loading a file as binary if the file type is
+   different from FAS or FASL. Use either SI:LOAD-BINARY or configure the
+   variable SI:*LOAD-HOOKS* accordingly to load FASL files with unusual
+   extensions.
+
  - EXT:PROCESS-COMMAND-ARGS now allows for a default rule.
 
  - Variable EXT:*HELP-MESSAGE* and EXT:+DEFAULT-COMMAND-ARG-RULES+ exported.

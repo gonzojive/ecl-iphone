@@ -466,7 +466,15 @@ NOT_A_FILENAME:
 	if (!Null(function)) {
 		ok = funcall(4, function, filename, verbose, print);
 	} else {
-#ifdef ENABLE_DLOPEN
+#if 0 /* defined(ENABLE_DLOPEN) && !defined(mingw32) && !defined(_MSC_VER)*/
+		/*
+		 * DISABLED BECAUSE OF SECURITY ISSUES!
+		 * In systems where we can do this, we try to load the file
+		 * as a binary. When it fails, we will revert to source
+		 * loading below. Is this safe? Well, it depends on whether
+		 * your op.sys. checks integrity of binary exectables or
+		 * just loads _anything_.
+		 */
 		if (not_a_filename) {
 			ok = Ct;
 		} else {
