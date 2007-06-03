@@ -72,7 +72,7 @@
 
 #+minwg32
 (defun fix-for-mingw (directory-namestring)
-  (let ((x (string-right-trim '(#\\ #/) directory-namestring)))
+  (let ((x (string-right-trim '(#\\ #\/) directory-namestring)))
     (if (zerop (length x)) "/" x)))
 
 #+dlopen
