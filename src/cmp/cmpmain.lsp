@@ -56,6 +56,15 @@
 (push #'(lambda () (mapc #'delete-file *files-to-be-deleted*))
       si::*exit-hooks*)
 
+#-mingw32
+(defmacro fix-for-mingw (directory-namestring)
+  directory-namestring)
+
+#+minwg32
+(defun fix-for-mingw (directory-namestring)
+  (let ((x (string-right-trim '(#\\ #\/) directory-namestring)))
+    (if (zerop (length x)) "/" x)))
+
 (defun linker-cc (o-pathname &rest options)
   (safe-system
    (format nil
@@ -65,15 +74,6 @@
 	   (fix-for-mingw (ecl-library-directory))
 	   options
 	   *ld-flags* (fix-for-mingw (ecl-library-directory)))))
-
-#-mingw32
-(defmacro fix-for-mingw (directory-namestring)
-  directory-namestring)
-
-#+minwg32
-(defun fix-for-mingw (directory-namestring)
-  (let ((x (string-right-trim '(#\\ #\/) directory-namestring)))
-    (if (zerop (length x)) "/" x)))
 
 #+dlopen
 (defun shared-cc (o-pathname &rest options)
