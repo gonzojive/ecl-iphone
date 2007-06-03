@@ -174,7 +174,7 @@ cl_boot(int argc, char **argv)
 			/* We have called cl_shutdown and want to use ECL again. */
 			ecl_booted = 1;
 		}
-		return;
+		return 1;
 	}
 
 #if !defined(GBC_BOEHM)
@@ -389,7 +389,7 @@ cl_boot(int argc, char **argv)
 	aux = cl_list(
 #ifdef ENABLE_DLOPEN
 		7,CONS(make_constant_base_string("fas"), @'si::load-binary'),
-		CONS(make_constant_base_string("fasl"), @'si::load-binary',)
+		CONS(make_constant_base_string("fasl"), @'si::load-binary',),
 #else
 		5,
 #endif
