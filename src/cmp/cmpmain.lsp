@@ -60,7 +60,7 @@
 (defmacro fix-for-mingw (directory-namestring)
   directory-namestring)
 
-#+minwg32
+#+mingw32
 (defun fix-for-mingw (directory-namestring)
   (let ((x (string-right-trim '(#\\ #\/) directory-namestring)))
     (if (zerop (length x)) "/" x)))
