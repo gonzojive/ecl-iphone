@@ -281,6 +281,11 @@ ECL 1.0:
 
  - In Windows, CLX is no longer built by default: use "nmake ECL_CLX=1".
 
+ - ECL now uses standard Unix paths for installation: assuming prefix=/usr, the
+   shared library libecl.so is typically installed in /usr/lib/, the C header
+   files under /usr/include/ecl and all remaining data and FASL files under
+   /usr/lib/ecl.
+
 * Contributed code:
 
  - New examples: cmdline/ls.lsp, ffi/uffi.lsp, ffi/cffi.lsp

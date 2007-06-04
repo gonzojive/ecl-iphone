@@ -440,8 +440,8 @@ coprocessor).")
 (defvar +object-file-extension+ "@OBJEXT@")
 (defvar +executable-file-format+ "~a@EXEEXT@")
 
-(defvar *ecl-include-directory* @eclincludedir@)
-(defvar *ecl-library-directory* @ecllibdir@)
+(defvar *ecl-include-directory* @includedir\@)
+(defvar *ecl-library-directory* @libdir\@)
 
 ;;;
 ;;; Compiler program and flags.

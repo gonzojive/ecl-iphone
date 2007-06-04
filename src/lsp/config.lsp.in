@@ -71,7 +71,7 @@ Returns, as a string, the version of the software under which ECL runs."
 #-ecl-min
 (progn
   #-(and mingw32 msvc)
-  (si::pathname-translations "SYS" '(("**;*.*" "@ecldir@/**/*.*")))
+  (si::pathname-translations "SYS" '(("**;*.*" "@ecldir\@/**/*.*")))
   #+(or mingw32 msvc)
   (si::pathname-translations "SYS"
 			     `(("**;*.*" ,(merge-pathnames "**/*.*" (si::get-library-pathname)))))

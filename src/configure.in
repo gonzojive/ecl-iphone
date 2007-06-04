@@ -185,8 +185,8 @@ AC_ARG_ENABLE(hpack,
 
 dnl -----------------------------------------------------------------------
 dnl Installation directories
-libdir="${libdir}/ecl"
-includedir="${libdir}"
+ecldir="${libdir}/ecl"
+AC_SUBST([ecldir])
 test -z "${docdir}" && docdir="${datadir}/doc/ecl"
 AC_SUBST([docdir])
 

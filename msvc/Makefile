@@ -182,7 +182,7 @@ ecl_min$(EXE): $(LIBRARIES) eclmin.lib
 
 lsp/config.lsp: $(srcdir)/lsp/config.lsp.in Makefile c\cut$(EXE)
 	if not exist lsp $(MKDIR) lsp
-	c\cut "@ecldir@" "$(libdir:\=/)" \
+	c\cut "@ecldir\@" "$(libdir:\=/)" \
 	    "@SHORT_SITE_NAME@" "$(SHORT_SITE_NAME)" \
 	    "@LONG_SITE_NAME@" "$(LONG_SITE_NAME)" \
 	    "@PACKAGE_VERSION@" "$(ECL_VERSION)" \
@@ -194,7 +194,8 @@ lsp/config.lsp: $(srcdir)/lsp/config.lsp.in Makefile c\cut$(EXE)
 	    "@thehost@" "$(THEHOST)" \
 	    < $(srcdir)\lsp\config.lsp.in > lsp\config.lsp
 compile.lsp: bare.lsp $(srcdir)/compile.lsp.in Makefile
-	c\cut "@ecldir@" "$(libdir:\=/)" \
+	c\cut "@ecldir\@" "$(libdir:\=/)" \
+	    "@libdir\@" "$(libdir:\=/)" \
 	    "@true_srcdir@" "$(srcdir:\=/)" \
 	    "@true_builddir@" "$(MAKEDIR:\=/)" \
 	    "@CFLAGS@" "$(CFLAGS) -DGC_BUILD" \
@@ -248,9 +249,9 @@ cmp/cmpdefs.lsp: $(srcdir)/cmp/cmpdefs.lsp Makefile
 	    "@LIBPREFIX@" "" \
 	    "@LIBEXT@" "lib" \
 	    "@EXEEXT@" ".exe" \
-	    "@ecldir@" "NIL" \
-	    "@ecllibdir@" "NIL" \
-	    "@eclincludedir@" "NIL" \
+	    "@ecldir\@" "NIL" \
+	    "@libdir\@" "NIL" \
+	    "@includedir\@" "NIL" \
 	    < $(srcdir)\cmp\cmpdefs.lsp > cmp\cmpdefs.lsp
 ecl-config.bat: util\ecl-config.bat Makefile
 	c\cut "~A" "$(libdir:\=/)"\

@@ -25,9 +25,10 @@ EXE	= @EXEEXT@
 # not need to change them.  This defaults to /usr/local.
 prefix=@prefix@
 exec_prefix=@exec_prefix@
-bindir=@bindir@
-libdir=@libdir@
-includedir=@includedir@
+bindir=@bindir@/
+libdir=@libdir@/
+includedir=@includedir@/
+ecldir=@ecldir@/
 
 # Programs used by "make install":
 #
@@ -81,17 +82,17 @@ ecl_min$(EXE): $(LIBRARIES) .gdbinit @LIBPREFIX@eclmin.@LIBEXT@
 	cp $(srcdir)/util/gdbinit $@
 
 lsp/config.lsp: lsp/config.pre
-	sed -e 's,@ecldir@,$(libdir),g' < lsp/config.pre > lsp/config.lsp
+	sed -e 's,@ecldir\\@,$(ecldir),g' < lsp/config.pre > lsp/config.lsp
 cmp/cmpdefs.lsp: cmp/cmpdefs.pre
-	sed -e 's,@ecldir@,"$(libdir)",g' \
-	    -e 's,@ecllibdir@,"$(libdir)",g' \
-	    -e 's,@eclincludedir@,"$(includedir)",g' < cmp/cmpdefs.pre > $@
+	sed -e 's,@ecldir\\@,"$(ecldir)",g' \
+	    -e 's,@libdir\\@,"$(libdir)",g' \
+	    -e 's,@includedir\\@,"$(includedir)",g' < cmp/cmpdefs.pre > $@
 compile.lsp: compile.pre
-	sed -e 's,@ecldir@,$(libdir),g' < compile.pre > compile.lsp
+	sed -e 's,@ecldir\\@,$(ecldir),g' \
+	    -e 's,@libdir\\@,$(libdir),g' < compile.pre > compile.lsp
 bin/ecl-config: bin/ecl-config.pre
-	sed -e 's,~A,$(libdir),;s,~\*,,' \
-	    -e 's,@ecllibdir\\@,$(libdir),' \
-	    -e 's,@eclincludedir\\@,$(includedir),' bin/ecl-config.pre > bin/ecl-config
+	sed -e 's,@libdir\\@,$(libdir),' \
+	    -e 's,@includedir\\@,$(includedir),' bin/ecl-config.pre > bin/ecl-config
 
 
 @LIBPREFIX@eclmin.@LIBEXT@: @LIBPREFIX@eclgmp.@LIBEXT@ @LIBPREFIX@eclgc.@LIBEXT@ lsp/config.lsp cmp/cmpdefs.lsp ecl/external.h
@@ -125,7 +126,8 @@ install: install-base
 install-base:
 	# Here we would use the option -s but the install program in sourceforge-solaris
 	# is broken.
-	$(mkinstalldirs) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)
+	$(mkinstalldirs) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) \
+	  $(DESTDIR)$(ecldir) $(DESTDIR)$(includedir)
 	for i in $(TARGETS); do \
 	  $(INSTALL_PROGRAM) $$i $(DESTDIR)$(bindir); \
 	done;
@@ -140,21 +142,25 @@ install-base:
 	mv $(DESTDIR)$(includedir)/ecl/config-install.h $(DESTDIR)$(includedir)/ecl/config.h
 	$(INSTALL_SCRIPT) bin/ecl-config $(DESTDIR)$(bindir)
 	for i in BUILD-STAMP help.doc ; do \
-	  $(INSTALL_DATA) $$i $(DESTDIR)$(libdir); \
+	  $(INSTALL_DATA) $$i $(DESTDIR)$(ecldir); \
 	done
-	for i in $(LSP_LIBRARIES) $(LIBRARIES) c/dpp* ecl_min*; do \
+	for i in $(LSP_LIBRARIES) $(LIBRARIES); do \
 	  test -s $$i && $(INSTALL_PROGRAM) $$i $(DESTDIR)$(libdir) || : ; \
 	done
-	for i in `cat MODULES`; do \
-	  $(INSTALL_PROGRAM) $$i $(DESTDIR)$(libdir); \
+	for i in c/dpp* ecl_min* `cat MODULES`; do \
+	  $(INSTALL_PROGRAM) $$i $(DESTDIR)$(ecldir); \
 	done
 flatinstall: BUILD-STAMP
-	$(MAKE) DESTDIR=$(DESTDIR) bindir=$(prefix) libdir=$(prefix) includedir=$(prefix) install-base
+	$(MAKE) DESTDIR=$(DESTDIR) bindir=$(prefix) libdir=$(prefix) \
+	  includedir=$(prefix) ecldir=$(prefix) install-base
 #	cd doc; $(MAKE) DESTDIR=$(DESTDIR) prefix=$(prefix) docdir=$(prefix)/doc flatinstall
 
 uninstall:
 	for i in $(TARGETS) ecl-config; do $(RM) $(DESTDIR)$(bindir)/$$i; done
-	$(RM) -r $(DESTDIR)$(libdir)
+	$(RM) -r $(DESTDIR)$(includedir)/ecl $(DESTDIR)$(ecldir)
+	for i in $(LSP_LIBRARIES) $(LIBRARIES); do \
+	  $(RM) $(DESTDIR)$(libdir)/$$i || : ; \
+	done
 #	cd doc; $(MAKE) uninstall
 
 doc: $(TARGETS)

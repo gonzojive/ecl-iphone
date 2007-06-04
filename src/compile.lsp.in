@@ -111,14 +111,14 @@
 		"@LIBPREFIX@lsp.@LIBEXT@"
 		"@LIBPREFIX@eclmin.@LIBEXT@"
 		#+darwin
-		"-Wl,-install_name,@ecldir@/@SHAREDPREFIX@ecl.@SHAREDEXT@"))
+		"-Wl,-install_name,@libdir\@/@SHAREDPREFIX@ecl.@SHAREDEXT@"))
 
 ;;;
 ;;; * Compile and link Common-Lisp to C compiler
 ;;;
 (proclaim '(optimize (safety 2) (space 3)))
 
-(si::pathname-translations "SYS" '(("**;*.*.*" "@ecldir@/**/*.*")))
+(si::pathname-translations "SYS" '(("**;*.*.*" "@ecldir\@/**/*.*")))
 
 #+WANTS-CMP
 (build-module "cmp" +cmp-module-files+ 
