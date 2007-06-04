@@ -240,7 +240,11 @@ extern bool ecl_interrupt_enable;
 #   define FE_UNDERFLOW EM_UNDERFLOW
 typedef int fenv_t;
 # else
-#   define MCW_EM _MCW_EM
+#   ifdef _MCW_EM
+#    define MCW_EM _MCW_EM
+#   else
+#    define MCW_EM 0x0008001F
+#   endif
 #   define fenv_t int
 # endif
 # define feenableexcept(bits) { int cw = _controlfp(0,0); cw &= ~(bits); _controlfp(cw,MCW_EM); }
