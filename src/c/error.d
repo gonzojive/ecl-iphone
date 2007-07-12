@@ -82,13 +82,17 @@ CEerror(const char *err, int narg, ...)
 void
 FEprogram_error(const char *s, int narg, ...)
 {
+	cl_object form, real_args;
 	cl_va_list args;
 	cl_va_start(args, narg, narg, 0);
+	real_args = @list(3, SYM_VAL(@'si::*current-form*'),
+			  make_constant_base_string(s),
+			  cl_grab_rest_args(args));
 	si_signal_simple_error(4, 
 			       @'program-error', /* condition name */
 			       Cnil, /* not correctable */
-			       make_constant_base_string(s), /* format control */
-			       cl_grab_rest_args(args)); /* format args */
+			       make_constant_base_string("In form~%~S~%~?"),
+			       real_args);
 }
 
 void

@@ -194,6 +194,15 @@ ECL 1.0:
 
 * Other visible changes:
 
+ - The interpreter now makes an attempt at showing the offending form
+   when a syntax error happens.
+	>  (progn (setq a 1) (setq b) (setq c 2))
+	In form
+	(SETQ B)
+	Syntax error: list with too few elements or improperly terminated.
+	Broken at SI:EVAL-WITH-ENV.No restarts available.
+	Broken at SI::BREAK-WHERE.
+
  - The documentation shipped with ECL was outdated. To enforce moving on
    to the new manual, the build and installation process now ignores anything
    inside src/doc.

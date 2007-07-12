@@ -289,7 +289,7 @@ FEillegal_variable_name(cl_object v)
 static void
 FEill_formed_input()
 {
-	FEprogram_error("Improper list handled to the compiler.", 0);
+	FEprogram_error("Syntax error: list with too few elements or improperly terminated.", 0);
 }
 
 static int
@@ -1849,6 +1849,7 @@ compile_form(cl_object stmt, int flags) {
 	bool push = flags & FLAG_PUSH;
 	int new_flags;
 
+	bds_bind(@'si::*current-form*', stmt);
  BEGIN:
 	if (code_walker != OBJNULL) {
 		stmt = funcall(3, SYM_VAL(@'si::*code-walker*'), stmt,
@@ -1957,6 +1958,7 @@ for special form ~S.", 1, function);
 	} else if (new_flags & FLAG_PUSH) {
 		FEerror("Internal error in bytecodes compiler", 0);
 	}
+	bds_unwind1();
 	return flags;
 }
 
@@ -2342,6 +2344,9 @@ ecl_make_lambda(cl_object name, cl_object lambda) {
 	cl_index handle;
 	struct cl_compiler_env *old_c_env, new_c_env;
 
+	bds_bind(@'si::*current-form*',
+		 @list*(3, @'ext::lambda-block', name, lambda));
+
 	old_c_env = ENV;
 	new_c_env = *ENV;
 	ENV = &new_c_env;
@@ -2436,6 +2441,8 @@ ecl_make_lambda(cl_object name, cl_object lambda) {
 		Cnil : lambda;
 
 	ENV = old_c_env;
+
+	bds_unwind1();
 
 	return output;
 }

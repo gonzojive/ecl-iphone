@@ -1657,6 +1657,8 @@ cl_symbols[] = {
 
 {SYS_ "GC-STATS", SI_ORDINARY, si_gc_stats, 1, OBJNULL},
 
+{SYS_ "*CURRENT-FORM*", SI_SPECIAL, NULL, -1, OBJNULL},
+
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};
 
