@@ -69,7 +69,7 @@
   (safe-system
    (format nil
 	   *ld-format*
-	   *cc*
+	   *ld*
 	   (si::coerce-to-filename o-pathname)
 	   (fix-for-mingw (ecl-library-directory))
 	   options
@@ -81,7 +81,7 @@
   (safe-system
    (format nil
 	   *ld-format*
-	   *cc*
+	   *ld*
 	   (si::coerce-to-filename o-pathname)
 	   (fix-for-mingw (ecl-library-directory))
 	   options
@@ -103,7 +103,7 @@
   (safe-system
    (format nil
 	   *ld-format*
-	   *cc*
+	   *ld*
 	   (si::coerce-to-filename o-pathname)
 	   (fix-for-mingw (ecl-library-directory))
 	   options

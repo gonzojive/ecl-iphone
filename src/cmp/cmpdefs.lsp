@@ -408,6 +408,9 @@ One can set the variable appropriately adding for instance flags which the
 C compiler may need to exploit special hardware features (e.g. a floating point
 coprocessor).")
 
+(defvar *ld* "@ECL_CC@"
+"This variable controls the linker which is used by ECL.")
+
 (defvar *cc-flags* "@CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@")
 
 (defvar *cc-optimize* #-msvc "-O"
