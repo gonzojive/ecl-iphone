@@ -194,6 +194,9 @@ ECL 1.0:
 
 * Other visible changes:
 
+ - New conditional feature, PREFIXED-API, signals that the internal C functions
+   now have a common prefix, "ecl_".
+
  - The interpreter now makes an attempt at showing the offending form
    when a syntax error happens.
 	>  (progn (setq a 1) (setq b) (setq c 2))

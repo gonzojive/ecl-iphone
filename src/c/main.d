@@ -424,11 +424,12 @@ cl_boot(int argc, char **argv)
 		cl_list(8, @'&optional', @'&rest', @'&key', @'&allow-other-keys',
 			@'&aux', @'&whole', @'&environment', @'&body'));
 
-	features = cl_list(4,
+	features = cl_list(5,
 			   ecl_make_keyword("ECL"),
 			   ecl_make_keyword("COMMON"),
 			   ecl_make_keyword(ECL_ARCHITECTURE),
-			   ecl_make_keyword("FFI"));
+			   ecl_make_keyword("FFI"),
+			   ecl_make_keyword("PREFIXED-API"));
 
 #define ADD_FEATURE(name) features = CONS(ecl_make_keyword(name),features)
 
