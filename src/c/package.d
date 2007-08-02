@@ -138,7 +138,6 @@ ecl_make_package(cl_object name, cl_object nicknames, cl_object use_list)
 	x = cl_alloc_object(t_package);
 	x->pack.internal = make_package_hashtable();
 	x->pack.external = make_package_hashtable();
-	x->pack.name = name;
 #ifdef ECL_THREADS
 #if defined(_MSC_VER) || defined(mingw32)
 	x->pack.lock = CreateMutex(NULL, FALSE, NULL);
@@ -153,6 +152,7 @@ ecl_make_package(cl_object name, cl_object nicknames, cl_object use_list)
 #endif /* _MSC_VER */
 #endif
  INTERN:
+	x->pack.name = name;
 	x->pack.nicknames = Cnil;
 	x->pack.shadowings = Cnil;
 	x->pack.uses = Cnil;
