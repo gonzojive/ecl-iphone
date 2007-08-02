@@ -149,7 +149,7 @@ ecl_read_object_with_delimiter(cl_object in, int delimiter, bool only_token)
 	cl_object escape_list; /* intervals of escaped characters */
 	cl_fixnum upcase; /* # uppercase characters - # downcase characters */
 	cl_fixnum count; /* number of unescaped characters */
-
+	bool suppress = read_suppress;
 BEGIN:
 	do {
 		c = ecl_read_char(in);
@@ -199,7 +199,7 @@ BEGIN:
 			} else {
 				p = ecl_find_package_nolock(token);
 			}
-			if (Null(p)) {
+			if (Null(p) && !suppress) {
 				/* When loading binary files, we sometimes must create
 				   symbols whose package has not yet been maked. We
 				   allow it, but later on in read_VV we make sure that
@@ -287,7 +287,7 @@ BEGIN:
 		a = cat(rtbl, c);
 	}
 
-	if (read_suppress) {
+	if (suppress) {
 		x = Cnil;
 		goto OUTPUT;
 	}
@@ -2119,7 +2119,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 		(*entry_point)(MAKE_FIXNUM(0));
 		x = cl_core.packages_to_be_created;
 		loop_for_on(x) {
-			if (!ecl_member(x, old_eptbc)) {
+			if ((old_eptbc == OBJNULL) || !ecl_member(x, old_eptbc)) {
 				CEerror("The following package was referenced in a~"
 				"compiled file, but has not been created: ~A",
 				2, block->cblock.name, CAR(x));
@@ -2136,6 +2136,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 	} CL_UNWIND_PROTECT_EXIT {
 		if (in != OBJNULL)
 			cl_close(1,in);
+		cl_core.packages_to_be_created = old_eptbc;
 	} CL_UNWIND_PROTECT_END;
 
 	return block;
