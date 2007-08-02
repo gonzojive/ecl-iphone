@@ -12,6 +12,10 @@
 
 (in-package "COMPILER")
 
+#-threads
+(defmacro with-lock ((lock) &body body)
+  `(progn ,@body))
+
 (defun safe-system (string)
   (cmpnote "Invoking external command:~%;;; ~A~%" string)
   (let ((result (si:system string)))

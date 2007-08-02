@@ -46,9 +46,6 @@
 #-:wants-dlopen (setq *features* (delete :dlopen *features*))
 #+:wants-dlopen (push :dlopen *features*)
 
-#-threads
-(defmacro c::with-lock ((lock) &body body)
-  `(progn ,@body))
 (load #+(or cross ecl-min) "cmp/load.lsp"
       #-(or cross ecl-min) "cmp.so")
 
