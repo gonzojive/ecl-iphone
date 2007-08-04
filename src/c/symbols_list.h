@@ -1659,6 +1659,8 @@ cl_symbols[] = {
 
 {SYS_ "*CURRENT-FORM*", SI_SPECIAL, NULL, -1, OBJNULL},
 
+{SYS_ "CODE-BLOCK", SI_ORDINARY, NULL, -1, OBJNULL},
+
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};
 

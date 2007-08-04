@@ -173,14 +173,16 @@ ecl_type_to_symbol(cl_type t)
 	case t_cfun:
 	case t_cclosure:
 		return @'compiled-function';
-	case t_foreign:
-		return @'si::foreign-data';
 #ifdef ECL_THREADS
 	case t_process:
 		return @'mp::process';
 	case t_lock:
 		return @'mp::lock';
 #endif
+	case t_codeblock:
+		return @'si::code-block';
+	case t_foreign:
+		return @'si::foreign-data';
 	default:
 		ecl_internal_error("not a lisp data object");
 	}

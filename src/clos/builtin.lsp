@@ -85,6 +85,7 @@
 	    (hash-table)
 	    (random-state)
 	    (readtable)
+            (si::code-block)
 	    (si::foreign-data)
 	    #+threads (mp::process)
 	    #+threads (mp::lock)))

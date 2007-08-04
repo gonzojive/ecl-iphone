@@ -166,6 +166,8 @@ ECL 1.0:
  - SI:MKSTEMP now works on Windows for more than 26 temporary file names
    (Dustin Long)
 
+ - There was no builtin type for loaded libraries.
+
 * Unicode:
 
  - MAKE-STRING only allowed :ELEMENT-TYPE to be one of CHARACTER, BASE-CHAR, or

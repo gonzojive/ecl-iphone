@@ -1040,6 +1040,7 @@ if not possible."
 	       #+threads (MP::PROCESS)
 	       #+threads (MP::LOCK)
 	       #+ffi (FOREIGN-DATA)
+               (CODE-BLOCK)
 	       ))
 
 (defun find-built-in-tag (name)
