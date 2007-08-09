@@ -417,6 +417,8 @@ si_load_foreign_module(cl_object filename)
 	cl_object output;
 	int i;
 
+	filename = cl_namestring(cl_truename(filename));
+
 #ifdef ECL_THREADS
 	mp_get_lock(1, ecl_symbol_value(@'mp::+load-compile-lock+'));
 	CL_UNWIND_PROTECT_BEGIN {
