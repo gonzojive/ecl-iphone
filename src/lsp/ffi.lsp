@@ -39,6 +39,13 @@
 #-ecl-min
 (clines "#include <string.h>")
 
+(defmacro def-constant (name value &key (export nil))
+  "Macro to define a constant and to export it"
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (defconstant ,name ,value)
+     ,(when export (list 'export `(quote ,name)))
+    ',name))
+
 ;;;----------------------------------------------------------------------
 ;;; FOREIGN TYPES
 ;;;
