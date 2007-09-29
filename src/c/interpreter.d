@@ -51,6 +51,11 @@ cl_stack_set_size(cl_index new_size)
 	cl_env.stack_top = cl_env.stack + top;
 	cl_env.stack_limit = cl_env.stack + (new_size - 2);
 
+	/* A stack always has at least one element. This is assumed by cl__va_start
+	 * and friends, which take a sp=0 to have no arguments.
+	 */
+	cl_stack_push(MAKE_FIXNUM(0));
+
 	end_critical_section();
 }
 
