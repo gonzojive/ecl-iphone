@@ -13,6 +13,9 @@
     See file '../Copyright' for full details.
 */
 
+#ifndef ECL_H
+#define ECL_H
+
 #include <sys/types.h>		/* size_t, pthread_t, pthread_mutex_t */
 #include <stddef.h>		/* NULL, ptrdiff_t */
 #include <stdarg.h> 		/* va_list */
@@ -62,3 +65,5 @@ typedef unsigned short uint16_t;
 #endif
 
 typedef void (*ecl_init_function_t)(cl_object block);
+
+#endif /* ECL_H */
