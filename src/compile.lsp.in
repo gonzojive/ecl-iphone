@@ -159,6 +159,12 @@
 	      :dir "build:ext;"
 	      :prefix "EXT")
 
+#+WANTS-SERVE-EVENT
+(build-module "serve-event"
+	      '("ext:serve-event;serve-event.lisp")
+	      :dir "build:ext;"
+	      :prefix "EXT")
+
 ;;;
 ;;; * Test suite
 ;;;

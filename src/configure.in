@@ -122,6 +122,11 @@ AC_ARG_WITH(tcp,
                   [include socket interface (default=YES)]),
   [], [with_tcp=yes])
 
+AC_ARG_WITH(serve_event,
+  AS_HELP_STRING( [--with-serve-event],
+                  [include serve-event module (default=YES)]),
+  [], [with_serve_event=yes])
+
 AC_ARG_WITH(clx,
   AS_HELP_STRING( [--with-clx],
                   [include CLX library (default=NO)]),
@@ -506,6 +511,10 @@ if test "${with_tcp}" = "yes"; then
   EXTRA_OBJS="${EXTRA_OBJS} tcp.${OBJEXT}"
   ECL_ADD_LISP_MODULE([sockets])
   LIBS="${LIBS} ${TCPLIBS}"
+fi
+
+if test "${with_serve_event}" = "yes"; then
+  ECL_ADD_LISP_MODULE([serve-event])
 fi
 
 if test "${with_asdf}" = "yes"; then
