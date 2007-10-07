@@ -3,11 +3,8 @@
 ;; Test Example
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-(defpackage "event-test"
-  (:use "CL" "sockets"))
-(in-package "event-test")
-
+(require 'serve-event)
+(in-package "SERVE-EVENT")
 
 (defun test-stdin ()
   (format t "DOING STDIN~%")
@@ -18,3 +15,5 @@
        (format t "Entering serve-all-events...~%")(force-output)
        (serve-all-events 5)
        (format t "Events served~%"))))
+
+(test-stdin)
