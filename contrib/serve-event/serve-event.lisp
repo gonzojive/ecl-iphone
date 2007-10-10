@@ -27,12 +27,17 @@
 ;;        (format t "Events served~%"))))
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; A more advanced example using sockets is available here:
+;;
+;;    http://haltcondition.net/?p=2232
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpackage "SERVE-EVENT"
   (:use "CL" "FFI" "UFFI")
-  (:export "WITH-FD-HANDER" "ADD-FD-HANDLER" "REMOVE-FD-HANDLER"
+  (:export "WITH-FD-HANDLER" "ADD-FD-HANDLER" "REMOVE-FD-HANDLER"
            "SERVE-EVENT" "SERVE-ALL-EVENTS"))
-
 (in-package "SERVE-EVENT")
 
 (clines "#include <sys/select.h>")
@@ -46,9 +51,7 @@
   ;; FIXME: Should be based on FD_SETSIZE
   (descriptor 0)
   ;; Function to call.
-  (function nil :type function)
-  ;; T if this descriptor is bogus.
-  bogus)
+  (function nil :type function))
 
 
 (defvar *descriptor-handlers* nil
@@ -112,7 +115,7 @@
   (c-inline () () :int "sizeof(fd_set)" :one-liner t :side-effects nil))
 
 
-(defun serve-event (&optional (seconds 0))
+(defun serve-event (&optional (seconds nil))
   "Receive pending events on all FD-STREAMS and dispatch to the appropriate
    handler functions. If timeout is specified, server will wait the specified
    time (in seconds) and then return, otherwise it will wait until something
@@ -139,32 +142,44 @@
           (setf maxfd fd))))
 
         (let ((retval
-               (c-inline (rfd      wfd    (1+ maxfd) seconds) 
-                         (:object :object :int       :int) :int
-                         "{ struct timeval tv;
-                            tv.tv_sec = #3;
-                            tv.tv_usec = 0;
-                            @(return) = select(#2, #0->foreign.data,
-                                                   #1->foreign.data,
-                                                   NULL, &tv); }"
-                  :one-liner nil
-                  :side-effects t)))
-      (cond ((zerop retval) nil)
+               (if (null seconds)
+                   ;; No timeout
+                   (c-inline (rfd      wfd    (1+ maxfd))
+                             (:object :object :int) :int
+                             "{ @(return) = select(#2, #0->foreign.data,
+                                                       #1->foreign.data,
+                                                       NULL, NULL); }"
+                             :one-liner nil
+                             :side-effects t)
+                   (c-inline (rfd      wfd    (1+ maxfd) seconds) 
+                             (:object :object :int       :int) :int
+                             "{ struct timeval tv;
+                                tv.tv_sec = #3;
+                                tv.tv_usec = 0;
+                                @(return) = select(#2, #0->foreign.data,
+                                                       #1->foreign.data,
+                                                       NULL, &tv); }"
+                             :one-liner nil
+                             :side-effects t))))
+
+      (cond ((zerop retval) 
+             nil)
             ((minusp retval) 
              (error "Error during select"))
-            (t 
+            ((plusp retval)  
              (dolist (handler *descriptor-handlers*)
                (let ((fd (handler-descriptor handler)))
                  (if (plusp (ecase (handler-direction handler)
                               (:input (fd-isset fd rfd))
                               (:output (fd-isset fd wfd))))
                      (funcall (handler-function handler) 
-                              (handler-descriptor handler))))))))))))
+                              (handler-descriptor handler)))))
+             t)))))))
 
 
 ;;; Wait for up to timeout seconds for an event to happen. Make sure all
 ;;; pending events are processed before returning.
-(defun serve-all-events (&optional (timeout 0))
+(defun serve-all-events (&optional (timeout nil))
   "SERVE-ALL-EVENTS calls SERVE-EVENT with the specified timeout. If
 SERVE-EVENT does something (returns T) it loops over SERVE-EVENT with a
 timeout of 0 until there are no more events to serve. SERVE-ALL-EVENTS returns
@@ -175,17 +190,3 @@ T if SERVE-EVENT did something and NIL if not."
     (setq res t)))
 
 (provide 'serve-event)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Test Example
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; (defun test-stdin ()
-;;   (format t "DOING STDIN~%")
-;;   (with-fd-handler (0 :input #'(lambda (fd) (declare (ignore fd))
-;;                                        (format t "Got data~%")
-;;                                        (read-char)))
-;;     (loop ;; FIXME: End condition
-;;        (format t "Entering serve-all-events...~%")(force-output)
-;;        (serve-all-events 5)
-;;        (format t "Events served~%"))))
