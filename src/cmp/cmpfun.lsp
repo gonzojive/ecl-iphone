@@ -201,30 +201,6 @@
 		 (6 (list 'CDDR (cons 'CDDDDR (cdr args))))
 		 (7 (list 'CDDDR (cons 'CDDDDR (cdr args))))))))
 
-;----------------------------------------------------------------------
-
-(defun co1ash (args)
-  (let ((shamt (second args)) type fun)
-    (when (cond ((and (constantp shamt)
-		      (sys::fixnump (setq shamt (eval shamt))))
-		 (setq fun (if (< shamt 0) 'SHIFT>> 'SHIFT<<)))
-		((and (consp shamt)
-		      (eq (car shamt) 'THE)
-		      (or (subtypep (setq type (second shamt))
-				    '(INTEGER 0 100))
-			  (and (boundp 'SYS::*ASH->>*) sys::*ash->>*
-			       (subtypep type '(INTEGER -100 0)))))
-		 (setq fun
-		       ;; it had to be a (the type..)
-		       (cond ((subtypep type '(INTEGER 0 100))
-			      'SHIFT<<)
-			     ((subtypep type '(INTEGER -100 0))
-			      'SHIFT>>)))))
-      (c1expr (cons fun args)))))
-
-(setf (symbol-function 'shift<<) #'ash)
-(setf (symbol-function 'shift>>) #'ash)
-
 ;;----------------------------------------------------------------------
 ;; We transform BOOLE into the individual operations, which have
 ;; inliners
@@ -358,7 +334,6 @@
 (put-sysprop 'nth 'C1CONDITIONAL 'co1nth)
 (put-sysprop 'nthcdr 'C1CONDITIONAL 'co1nthcdr)
 
-(put-sysprop 'ash 'C1CONDITIONAL 'co1ash)
 (put-sysprop 'coerce 'C1CONDITIONAL 'co1coerce)
 (put-sysprop 'cons 'C1CONDITIONAL 'co1cons)
 (put-sysprop 'ldb 'C1CONDITIONAL 'co1ldb)

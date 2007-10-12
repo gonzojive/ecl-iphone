@@ -70,28 +70,22 @@
 		(arg-locs (inline-args args))
 		(loc (inline-function fname arg-locs return-type)))
 	   (if loc
-	       (progn
-		 ;; If there are side effects, we may not move the C form
-		 ;; around and we have to save its value in a variable.
-		 ;; We use a variable of type out-type to save the value
-		 ;; if (return-type >= out-type)
-		 ;; then
-		 ;;   coerce the value to out-type
-		 ;; otherwise
-		 ;;   save the value without coercion and return the
-		 ;;   variable tagged with and-type,
-		 ;;   so that whoever uses it may coerce it to such type
-		 (when (and (consp loc)
-			    (eq (first loc) 'C-INLINE)
-			    (not (all-locations (rest forms)))
-			    (or (need-to-protect (rest forms))
-				(fifth loc))) ; side effects?
-		   (let* ((and-type (type-and return-type (loc-type loc)))
-			  (out-rep-type (loc-representation-type loc))
-			  (var (make-lcl-var :rep-type out-rep-type :type and-type)))
-		     (wt-nl "{" (rep-type-name out-rep-type) " " var "= " loc ";")
-		     (incf *inline-blocks*)
-		     (setq loc var)))
+	       ;; If there are side effects, we may not move the C form
+	       ;; around and we have to save its value in a variable.
+	       ;; We use a variable of type out-type to save the value
+	       ;; if (return-type >= out-type)
+	       ;; then
+	       ;;   coerce the value to out-type
+	       ;; otherwise
+	       ;;   save the value without coercion and return the
+	       ;;   variable tagged with and-type,
+	       ;;   so that whoever uses it may coerce it to such type
+	       (let* ((and-type (type-and return-type (loc-type loc)))
+		      (out-rep-type (loc-representation-type loc))
+		      (var (make-lcl-var :rep-type out-rep-type :type and-type)))
+		 (wt-nl "{" (rep-type-name out-rep-type) " " var "= " loc ";")
+		 (incf *inline-blocks*)
+		 (setq loc var)
 		 (push (list (loc-type loc) loc) locs))
 	       ;; FIXME! Why is (make-temp-var) before rebinding of *temp*???
 	       (let* ((temp (make-temp-var))

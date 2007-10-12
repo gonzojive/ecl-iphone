@@ -846,7 +846,7 @@
 (proclaim-function logbitp (t t) t :predicate t :no-side-effects t)
 (def-inline logbitp :always ((integer -29 29) fixnum) :bool "(#1 >> #0) & 1")
 
-(proclaim-function ash (t t) t)
+(proclaim-function ash (integer integer) t)
 (proclaim-function logcount (t) t)
 (proclaim-function integer-length (t) fixnum)
 (proclaim-function si:bit-array-op (*) t)

@@ -60,6 +60,8 @@ ECL 1.0:
 
 * Bugs fixed:
 
+ - Remove ancient, bogus optimizers for: ASH, LDB.
+
  - MINGW's compiler is broken: it does not accept directories with trailing
    slashes as an argument to "-I". We include a hack in cmpmain.lsp for that.
 
