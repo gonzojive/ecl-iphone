@@ -437,14 +437,15 @@ safe_buffer_pointer(cl_object x, cl_index size)
 	cl_type t = type_of(x);
 	int ok = 0;
 	if (t == t_base_string) {
-		ok = (size < x->base_string.dim);
+		ok = (size <= x->base_string.dim);
 	} else if (t == t_vector) {
 		cl_elttype aet = (cl_elttype)x->vector.elttype;
 		if (aet == aet_b8 || aet == aet_i8 || aet == aet_bc) {
-			ok = (size < x->vector.dim);
+			ok = (size <= x->vector.dim);
 		} else if (aet == aet_fix || aet == aet_index) {
-			size /= sizeof(cl_index);
-			ok = (size < x->vector.dim);
+			cl_index divisor = sizeof(cl_index);
+			size = (size + divisor - 1) / divisor;
+			ok = (size <= x->vector.dim);
 		}
 	}
 	if (!ok) {
