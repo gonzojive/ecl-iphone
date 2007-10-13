@@ -1311,9 +1311,9 @@ type_of(#0)==t_bitvector")
 
 (proclaim-function c::ldb1 (fixnum fixnum fixnum) fixnum :no-side-effects t)
 (def-inline c::ldb1 :always (fixnum fixnum fixnum) :fixnum
- "((((~(-1 << (#0))) << (#1)) & (#2)) >> (#1))")
+ "((((~((cl_fixnum)-1 << (#0))) << (#1)) & (cl_fixnum)(#2)) >> (#1))")
 (def-inline c::ldb1 :always (fixnum fixnum fixnum) t
- "MAKE_FIXNUM((((~(-1 << (#0))) << (#1)) & (#2)) >> (#1))")
+ "MAKE_FIXNUM((((~((cl_fixnum)-1 << (#0))) << (#1)) & (cl_fixnum)(#2)) >> (#1))")
 
 ;; Functions only available with CLOS
 
