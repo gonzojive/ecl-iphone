@@ -82,16 +82,25 @@ CEerror(const char *err, int narg, ...)
 void
 FEprogram_error(const char *s, int narg, ...)
 {
-	cl_object form, real_args;
+  cl_object form, real_args, text;
 	cl_va_list args;
 	cl_va_start(args, narg, narg, 0);
-	real_args = @list(3, SYM_VAL(@'si::*current-form*'),
-			  make_constant_base_string(s),
-			  cl_grab_rest_args(args));
+	text = make_constant_base_string(s);
+	real_args = cl_grab_rest_args(args);
+	if (cl_boundp(@'si::*current-form*') != Cnil) {
+	    /* When FEprogram_error is invoked from the compiler, we can
+	     * provide information about the offending form.
+	     */
+	    cl_object stmt = SYM_VAL(@'si::*current-form*');
+	    if (stmt != Cnil) {
+		real_args = @list(3, stmt, text, real_args);
+		text = make_constant_base_string("In form~%~S~%~?");
+	    }
+	}
 	si_signal_simple_error(4, 
 			       @'program-error', /* condition name */
 			       Cnil, /* not correctable */
-			       make_constant_base_string("In form~%~S~%~?"),
+			       text,
 			       real_args);
 }
 
