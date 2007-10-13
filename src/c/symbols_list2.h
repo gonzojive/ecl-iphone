@@ -1657,7 +1657,7 @@ cl_symbols[] = {
 
 {SYS_ "GC-STATS","si_gc_stats"},
 
-{SYS_ "*CURRENT-FORM*",NULL},
+{SYS_ "*CURRENT-FORM*","Cnil"},
 
 {SYS_ "CODE-BLOCK",NULL},
 
