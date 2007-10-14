@@ -146,8 +146,8 @@
                    ;; No timeout
                    (c-inline (rfd      wfd    (1+ maxfd))
                              (:object :object :int) :int
-                             "{ @(return) = select(#2, #0->foreign.data,
-                                                       #1->foreign.data,
+                             "{ @(return) = select(#2, (fd_set*)#0->foreign.data,
+                                                       (fd_set*)#1->foreign.data,
                                                        NULL, NULL); }"
                              :one-liner nil
                              :side-effects t)
@@ -156,8 +156,8 @@
                              "{ struct timeval tv;
                                 tv.tv_sec = #3;
                                 tv.tv_usec = 0;
-                                @(return) = select(#2, #0->foreign.data,
-                                                       #1->foreign.data,
+                                @(return) = select(#2, (fd_set*)#0->foreign.data,
+                                                       (fd_set*)#1->foreign.data,
                                                        NULL, &tv); }"
                              :one-liner nil
                              :side-effects t))))
