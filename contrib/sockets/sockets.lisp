@@ -109,7 +109,9 @@
 
 (define-c-constants
   +af-inet+ "AF_INET"
-  +af-local+ "AF_LOCAL")
+  +af-local+ "AF_LOCAL"
+  +eagain+ "EAGAIN"
+  +eintr+ "EINTR")
 
 #+:wsock
 (defconstant +af-named-pipe+ -2)
@@ -462,11 +464,12 @@ safe_buffer_pointer(cl_object x, cl_index size)
   (let ((buffer (or buffer (make-array length :element-type element-type)))
 	(length (or length (length buffer)))
 	(fd (socket-file-descriptor socket)))
-    (let ((len-recv
+
+    (multiple-value-bind (len-recv errno)
 	   (c-inline (fd buffer length
 		      oob peek waitall)
 		     (:int :object :int :bool :bool :bool)
-		     :long
+                  (values :long :int)
 		     "
 {
         int flags = ( #3 ? MSG_OOB : 0 )  |
@@ -480,13 +483,19 @@ safe_buffer_pointer(cl_object x, cl_index size)
                if (type == t_vector) { #1->vector.fillp = len; }
                else if (type == t_base_string) { #1->base_string.fillp = len; }
         }
-        @(return) = len;
+        @(return 0) = len;
+        @(return 1) = errno;
 }
 "
-		     :one-liner nil)))
-      (if (= len-recv -1)
-	  (socket-error "receive")
-	  (values buffer len-recv)))))
+                  :one-liner nil)
+      (cond ((and (= len-recv -1)
+                  (member errno (list +eagain+ +eintr+)))
+             nil)
+            ((= len-recv -1)
+             (socket-error "receive"))
+            (t 
+             (values buffer len-recv))))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
