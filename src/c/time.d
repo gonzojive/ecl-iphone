@@ -84,7 +84,30 @@ get_run_time(struct timeval *tv)
 	tv->tv_sec = buf.tms_utime / CLK_TCK;
 	tv->tv_usec = (buf.tms_utime % CLK_TCK) * 1000000;
 # else
+#  if defined(mingw32) || defined(_MSC_VER)
+	FILETIME creation_time;
+	FILETIME exit_time;
+	FILETIME kernel_time;
+	FILETIME user_time;
+	ULARGE_INTEGER ui_kernel_time;
+	ULARGE_INTEGER ui_user_time;
+	if (!GetProcessTimes(GetCurrentProcess(),
+	                     &creation_time,
+	                     &exit_time,
+	                     &kernel_time,
+	                     &user_time))
+	    FEwin32_error("GetProcessTimes() failed", 0);
+	ui_kernel_time.HighPart = kernel_time.dwHighDateTime;
+	ui_kernel_time.LowPart  = kernel_time.dwLowDateTime;
+	ui_user_time.HighPart = user_time.dwHighDateTime;
+	ui_user_time.LowPart  = user_time.dwLowDateTime;
+	ui_kernel_time.QuadPart += ui_user_time.QuadPart;
+	ui_kernel_time.QuadPart /= 10000;
+	tv->tv_sec = ui_kernel_time.QuadPart / 1000;
+	tv->tv_usec = (ui_kernel_time.QuadPart % 1000) * 1000;
+#  else
 	get_real_time(tv);
+#  endif
 # endif
 #endif
 }
