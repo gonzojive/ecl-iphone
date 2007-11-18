@@ -310,8 +310,8 @@ cl_boot(int argc, char **argv)
 					    @'nil', @'nil');
 #endif
 	cl_core.to_be_finalized = Cnil;
-	cl_core.bytes_consed = ecl_make_integer(MOST_POSITIVE_FIXNUM+1);
-	cl_core.gc_counter = ecl_make_integer(MOST_POSITIVE_FIXNUM+1);
+	cl_core.bytes_consed = Cnil;
+	cl_core.gc_counter = Cnil;
 	cl_core.gc_stats = FALSE;
 
 	cl_core.null_string = make_constant_base_string("");

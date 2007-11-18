@@ -256,6 +256,23 @@ standard_finalizer(cl_object o)
 }
 
 static void
+group_finalizer(cl_object l, cl_object no_data)
+{
+	CL_NEWENV_BEGIN {
+		do {
+			cl_object record = CAR(l);
+			cl_object o = CAR(record);
+			cl_object procedure = CDR(record);
+			l = CDR(l);
+			if (procedure != Ct) {
+				funcall(2, procedure, o);
+			}
+			standard_finalizer(o);
+		} while (l != Cnil);
+	} CL_NEWENV_END;
+}
+
+static void
 queueing_finalizer(cl_object o, cl_object finalizer)
 {
 	if (finalizer != Cnil && finalizer != NULL) {
@@ -265,11 +282,19 @@ queueing_finalizer(cl_object o, cl_object finalizer)
 				standard_finalizer(o);
 			} CL_NEWENV_END;
 		} else {
-			/* Notice the way in which we do this. The inner calls to GC_alloc
-			 * may cause other finalizers to be invoked. */
+			/* Note the way we do this: finalizers might
+			   get executed as a consequence of these calls. */
 			volatile cl_object aux = ACONS(o, finalizer, Cnil);
-			CDR(aux) = cl_core.to_be_finalized;
-			cl_core.to_be_finalized = aux;
+			cl_object l = cl_core.to_be_finalized;
+			if (l == Cnil) {
+				GC_finalization_proc ofn;
+				void *odata;
+				cl_core.to_be_finalized = aux;
+				GC_register_finalizer_no_order(aux, (GC_finalization_proc*)group_finalizer, NULL, &ofn, &odata);
+			} else {
+				CDR(aux) = CDR(l);
+				CDR(l) = aux;
+			}
 		}
 	}
 }
@@ -309,17 +334,24 @@ cl_object
 si_gc_stats(cl_object enable)
 {
 	cl_object old_status = cl_core.gc_stats? Ct : Cnil;
-	cl_object origin = MAKE_FIXNUM(MOST_POSITIVE_FIXNUM);
 	cl_core.gc_stats = (enable != Cnil);
-	@(return ecl_minus(cl_core.bytes_consed,origin)
-	  ecl_minus(cl_core.gc_counter,origin)
+	if (cl_core.bytes_consed == Cnil) {
+		cl_core.bytes_consed = cl_alloc_object(t_bignum);
+		mpz_init2(cl_core.bytes_consed->big.big_num, 128);
+		cl_core.gc_counter = cl_alloc_object(t_bignum);
+		mpz_init2(cl_core.gc_counter->big.big_num, 128);
+	}
+	@(return
+	  big_register_normalize(cl_core.bytes_consed)
+	  big_register_normalize(cl_core.gc_counter)
 	  old_status)
 }
 
 /*
  * This procedure is invoked after garbage collection. It invokes
  * finalizers for all objects that are to be reclaimed by the
- * colector.
+ * colector. Note that we cannot cons because this procedure is
+ * invoked with the garbage collection lock on.
  */
 static void
 finalize_queued()
@@ -331,7 +363,7 @@ finalize_queued()
 			   cl_core.bytes_consed->big.big_num,
 			   GC_words_allocd * sizeof(cl_index));
 #else
-		/* This is less accurate and may wrap around. We try
+		/* This is not accurate and may wrap around. We try
 		   to detect this assuming that an overflow in an
 		   unsigned integer will produce an smaller
 		   integer.*/
@@ -348,27 +380,14 @@ finalize_queued()
 		mpz_add_ui(cl_core.bytes_consed->big.big_num,
 			   cl_core.bytes_consed->big.big_num,
 			   new_bytes - bytes);
-		bytes = 0;
 #endif
 		mpz_add_ui(cl_core.gc_counter->big.big_num,
 			   cl_core.gc_counter->big.big_num,
 			   1);
 	}
-	if (l == Cnil)
-		return;
-	CL_NEWENV_BEGIN {
+	if (l != Cnil) {
 		cl_core.to_be_finalized = Cnil;
-		do {
-			cl_object record = CAR(l);
-			cl_object o = CAR(record);
-			cl_object procedure = CDR(record);
-			l = CDR(l);
-			if (procedure != Ct) {
-				funcall(2, procedure, o);
-			}
-			standard_finalizer(o);
-		} while (l != Cnil);
-	} CL_NEWENV_END;
+	}
 }
 
 
