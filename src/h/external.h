@@ -682,6 +682,9 @@ extern cl_object ecl_allocate_instance(cl_object clas, cl_index size);
 extern cl_object ecl_instance_ref(cl_object x, cl_fixnum i);
 extern cl_object ecl_instance_set(cl_object x, cl_fixnum i, cl_object v);
 extern cl_object si_copy_instance(cl_object x);
+
+extern cl_object ecl_slot_value(cl_object x, const char *slot);
+extern cl_object ecl_slot_value_set(cl_object x, const char *slot, cl_object y);
 #endif /* CLOS */
 
 

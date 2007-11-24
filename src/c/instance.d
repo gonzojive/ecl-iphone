@@ -291,3 +291,18 @@ cl_class_of(cl_object x)
 		t = cl_find_class(1, Ct);
 	@(return t)
 }
+
+cl_object
+ecl_slot_value(cl_object x, const char *slot)
+{
+	cl_object slot_name = c_string_to_object(slot);
+	return funcall(3, @'slot-value', x, slot_name);
+}
+
+cl_object
+ecl_slot_value_set(cl_object x, const char *slot, cl_object value)
+{
+	cl_object slot_name = c_string_to_object(slot);
+	cl_object slot_setter = c_string_to_object("(SETF SLOT-VALUE)");
+	return funcall(4, ecl_fdefinition(slot_setter), value, x, slot_name);
+}
