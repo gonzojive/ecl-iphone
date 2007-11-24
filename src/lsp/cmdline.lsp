@@ -26,7 +26,7 @@ Usage: ecl [-? | --help]
            [-dir dir] [-load file] [-shell file] [-eval expr] [-rc | -norc] [-hp | -nohp]
            [[-o ofile] [-c [cfile]] [-h [hfile]] [-data [datafile]] [-s] [-q]
             -compile file]
-
+           [[-o ofile] -link file+]
 "
  "Prints a help message about command line arguments of ECL")
 
@@ -67,6 +67,12 @@ Usage: ecl [-? | --help]
 	     h-file nil
 	     data-file nil
 	     system-p nil)))
+    ("-link" &rest
+     (progn
+       (require 'cmp)
+       (funcall (read-from-string "c::build-program")
+		(or output-file "lisp.exe") :lisp-files '&rest)
+       (setq output-file t quit t)))
     ("-o" 1 (setq output-file 1))
     ("-c" 1 (setq c-file 1))
     ("-h" 1 (setq h-file 1))
@@ -107,13 +113,17 @@ Usage: ecl [-? | --help]
 	  (:noloadrc (setf loadrc nil))
 	  (:loadrc (setf loadrc t))
 	  (:stop (setf option-list nil)))
-	(let ((pattern (copy-tree (third rule))))
-	  (unless (zerop (second rule))
+	(let ((pattern (copy-tree (third rule)))
+              (noptions (second rule)))
+	  (unless (equal noptions 0)
 	    (when (null option-list)
 	      (command-arg-error
 	       "Missing argument after command line option ~A.~%"
 	       option))
-	    (nsubst (pop option-list) 1 pattern))
+            (if (or (eq noptions 'rest) (eq noptions '&rest))
+		(progn (nsubst option-list noptions pattern)
+		       (setf option-list nil))
+		(nsubst (pop option-list) noptions pattern)))
 	  (push pattern commands))))))
 
 (defun process-command-args (&key
