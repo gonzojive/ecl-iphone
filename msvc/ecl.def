@@ -422,6 +422,8 @@ EXPORTS
 	ecl_instance_set
 	si_copy_instance
 
+	ecl_slot_value
+	ecl_slot_value_set
 
 	; list.c
 
