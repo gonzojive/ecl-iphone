@@ -172,6 +172,10 @@ ECL 1.0:
 
  - There was no builtin type for loaded libraries.
 
+ - EXT:RUN-PROGRAM has now a keyword argument :WAIT, which defaults to T and
+   which determines whether the function should wait for the process to finish
+   before returning.
+
 * Unicode:
 
  - MAKE-STRING only allowed :ELEMENT-TYPE to be one of CHARACTER, BASE-CHAR, or

@@ -89,7 +89,7 @@ si_close_pipe(cl_object stream)
 }
 
 @(defun ext::run-program (command argv &key (input @':stream') (output @':stream')
-	  		  (error @'t'))
+	  		  (error @'t') (wait @'t'))
 	int parent_write = 0, parent_read = 0;
 	int child_pid;
 	cl_object stream_write;
@@ -347,6 +347,12 @@ si_close_pipe(cl_object stream)
 		parent_write = 0;
 		parent_read = 0;
 		FEerror("Could not spawn subprocess to run ~S.", 1, command);
+	} else if (wait != Cnil) {
+#if defined(mingw32) || defined (_MSC_VER)
+#else
+	   	int status[0];
+		waitpid(child_pid, status, 0);
+#endif
 	}
 	if (parent_write > 0) {
 		stream_write = ecl_make_stream_from_fd(command, parent_write,
