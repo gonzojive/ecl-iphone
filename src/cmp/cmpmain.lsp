@@ -300,7 +300,7 @@ filesystem or in the database of ASDF modules."
                  (first (asdfcall :output-files build system))))
              (existing-system-output (system type)
                (let ((o (system-output system type)))
-                 (and o (probe-file o))))
+                 (and o (setf o (probe-file o)) (namestring o))))
              (find-archive (system)
                  (or (existing-system-output system :library)
                      (existing-system-output system :shared-library)))
