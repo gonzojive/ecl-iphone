@@ -172,11 +172,13 @@ si_check_pending_interrupts(void)
 {
 	int what = cl_env.interrupt_pending;
 	cl_env.interrupt_pending = 0;
+	if (what) {
 #if defined (HAVE_SIGPROCMASK) && defined(SA_SIGINFO)
-	handle_signal(what, 0, 0);
+		handle_signal(what, 0, 0);
 #else
-	handle_signal(what);
+		handle_signal(what);
 #endif
+	}
 	@(return)
 }
 
