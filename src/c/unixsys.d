@@ -246,15 +246,18 @@ si_close_pipe(cl_object stream)
 	SetStdHandle(STD_OUTPUT_HANDLE, saved_stdout);
 	SetStdHandle(STD_ERROR_HANDLE, saved_stderr);
 #endif /* 1 */
+	/* Child handles must be closed in the parent process */
+	/* otherwise the created pipes are never closed       */
+	if (child_stdin) CloseHandle(child_stdin);
+	if (child_stdout) CloseHandle(child_stdout);
+	if (child_stderr) CloseHandle(child_stderr);
 	if (ok) {
-		CloseHandle(pr_info.hProcess);
 		CloseHandle(pr_info.hThread);
 		child_pid = pr_info.dwProcessId;
-		/* Child handles must be closed in the parent process */
-		/* otherwise the created pipes are never closed       */
-		if (child_stdin) CloseHandle(child_stdin);
-		if (child_stdout) CloseHandle(child_stdout);
-		if (child_stderr) CloseHandle(child_stderr);
+		if (wait != Cnil) {
+			  WaitForSingleObject(pr_info.hProcess, INFINITE);
+		}
+		CloseHandle(pr_info.hProcess);
 	} else {
 		const char *message;
 		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
@@ -339,6 +342,10 @@ si_close_pipe(cl_object stream)
 	close(child_stdin);
 	close(child_stdout);
 	close(child_stderr);
+	if (child_pid > 0 && wait != Cnil) {
+	   	int status[0];
+		waitpid(child_pid, status, 0);
+	}
 }
 #endif /* mingw */
 	if (child_pid < 0) {
@@ -347,12 +354,6 @@ si_close_pipe(cl_object stream)
 		parent_write = 0;
 		parent_read = 0;
 		FEerror("Could not spawn subprocess to run ~S.", 1, command);
-	} else if (wait != Cnil) {
-#if defined(mingw32) || defined (_MSC_VER)
-#else
-	   	int status[0];
-		waitpid(child_pid, status, 0);
-#endif
 	}
 	if (parent_write > 0) {
 		stream_write = ecl_make_stream_from_fd(command, parent_write,
