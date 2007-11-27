@@ -159,8 +159,8 @@
 (put-sysprop 'the 'c1special 'c1the)
 (put-sysprop 'eval-when 'c1special 'c1eval-when)
 (put-sysprop 'declare 'c1special 'c1declare)
-(put-sysprop 'compiler-let 'c1special 'c1compiler-let)
-(put-sysprop 'compiler-let 'c2 'c2compiler-let)
+(put-sysprop 'ext:compiler-let 'c1special 'c1compiler-let)
+(put-sysprop 'ext:compiler-let 'c2 'c2compiler-let)
 
 (put-sysprop 'fdefinition 'wt-loc 'wt-fdefinition)
 (put-sysprop 'make-cclosure 'wt-loc 'wt-make-closure)
