@@ -13,18 +13,6 @@
 
 (in-package "COMPILER")
 
-(defun fast-link-proclaimed-type-p (fname &optional args)
-  (and *compile-to-linking-call*
-       (symbolp fname)
-       (and (< (the fixnum (length args)) 10)
-            (or (and (get-sysprop fname 'FIXED-ARGS)
-                     (listp args))
-                (and
-                 (get-sysprop fname 'PROCLAIMED-FUNCTION)
-                 (eq (get-sysprop fname 'PROCLAIMED-RETURN-TYPE) t)
-                 (every #'(lambda (v) (eq v t))
-                        (get-sysprop fname 'PROCLAIMED-ARG-TYPES)))))))
-
 ;;; Like macro-function except it searches the lexical environment,
 ;;; to determine if the macro is shadowed by a function or a macro.
 (defun cmp-macro-function (name)
