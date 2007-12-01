@@ -102,7 +102,7 @@ void GC_push_all_stacks() {
 	if(r != KERN_SUCCESS) ABORT("thread_get_state failed");
 	
 #if defined(I386)
-# ifdef __DARWIN_UNIX03
+# if __DARWIN_UNIX03
 	/* In Leopard, the registers get a prefix */
 	lo = state.__esp;
 
@@ -123,7 +123,7 @@ void GC_push_all_stacks() {
 	GC_push_one(state.edi); 
 	GC_push_one(state.esi); 
 	GC_push_one(state.ebp); 
-#endif
+# endif
 #elif defined(POWERPC)
 	lo = (void*)(state.r1 - PPC_RED_ZONE_SIZE);
         
