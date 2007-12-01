@@ -60,6 +60,11 @@ ECL 1.0:
 
 * Bugs fixed:
 
+ - COMPILE-FILE-PATHNAME accepts the same keyword arguments as COMPILE-FILE.
+
+ - COMPILER-LET is not standard and belongs in the EXT package. However, it had
+   not been imported into the compiler and thus it did not work at all.
+
  - Remove ancient, bogus optimizers for: ASH, LDB.
 
  - MINGW's compiler is broken: it does not accept directories with trailing
