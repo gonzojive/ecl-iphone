@@ -1082,6 +1082,14 @@ EXPORTS
 	mp_make_lock
 	mp_get_lock
 	mp_giveup_lock
+	mp_recursive_lock_p
+	mp_lock_name
+	mp_lock_holder
+	mp_make_condition_variable
+	mp_condition_variable_wait
+	mp_condition_variable_timedwait
+	mp_condition_variable_signal
+	mp_condition_variable_broadcast
 
 	bds_unwind_n
 	bds_unwind1

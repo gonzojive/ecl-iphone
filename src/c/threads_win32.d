@@ -303,22 +303,56 @@ mp_process_run_function(cl_narg narg, cl_object name, cl_object function, ...)
  * LOCKS or MUTEX
  */
 
-@(defun mp::make-lock (&key name)
+@(defun mp::make-lock (&key name ((:recursive recursive) Ct))
 	cl_object output;
 @
 	output = cl_alloc_object(t_lock);
 	output->lock.name = name;
 	output->lock.mutex = CreateMutex(NULL, FALSE, NULL);
+	output->lock.holder = Cnil;
+	output->lock.counter = 0;
+	output->lock.recursive = (recursive != Cnil);
         si_set_finalizer(output, Ct);
 	@(return output)
 @)
+
+cl_object
+mp_recursive_lock_p(cl_object lock)
+{
+	if (type_of(lock) != t_lock)
+		FEwrong_type_argument(@'mp::lock', lock);
+	@(return (lock->lock.recursive? Ct : Cnil))
+}
+
+cl_object
+mp_lock_name(cl_object lock)
+{
+	if (type_of(lock) != t_lock)
+		FEwrong_type_argument(@'mp::lock', lock);
+	@(return lock->lock.name)
+}
+
+cl_object
+mp_lock_holder(cl_object lock)
+{
+	if (type_of(lock) != t_lock)
+		FEwrong_type_argument(@'mp::lock', lock);
+	@(return lock->lock.holder)
+}
 
 cl_object
 mp_giveup_lock(cl_object lock)
 {
 	if (type_of(lock) != t_lock)
 		FEwrong_type_argument(@'mp::lock', lock);
-	if (ReleaseMutex(lock->lock.mutex) == 0)
+	if (lock->lock.holder != cl_env.own_process) {
+		FEerror("Attempt to give up a lock ~S that is not owned by ~S.", 2,
+			lock, cl_env.own_process);
+	}
+	if (--lock->lock.counter == 0) {
+		lock->lock.holder = Cnil;
+	}
+        if (ReleaseMutex(lock->lock.mutex) == 0)
 		FEwin32_error("Unable to release Win32 Mutex", 0);
 	@(return Ct)
 }
@@ -328,8 +362,14 @@ mp_giveup_lock(cl_object lock)
 @
 	if (type_of(lock) != t_lock)
 		FEwrong_type_argument(@'mp::lock', lock);
+	/* In Windows, all locks are recursive. We simulate the other case. */
+	if (!lock->lock.recursive && (lock->lock.holder == cl_env.own_process)) {
+		FEerror("A recursive attempt was made to hold lock ~S", 1, lock);
+	}
 	switch (WaitForSingleObject(lock->lock.mutex, (wait==Ct?INFINITE:0))) {
 		case WAIT_OBJECT_0:
+                        lock->lock.holder = cl_env.own_process;
+			lock->lock.counter++;
 			output = Ct;
 			break;
 		case WAIT_TIMEOUT:
@@ -344,6 +384,61 @@ mp_giveup_lock(cl_object lock)
 	}
 	@(return output)
 @)
+
+/*----------------------------------------------------------------------
+ * CONDITION VARIABLES
+ */
+
+cl_object
+mp_make_condition_variable(void)
+{
+	FEerror("Condition variables are not supported under Windows.", 0);
+	@(return Cnil)
+}
+
+cl_object
+mp_condition_variable_wait(cl_object cv, cl_object lock)
+{
+	if (type_of(cv) != t_condition_variable)
+		FEwrong_type_argument(@'mp::condition-variable', cv);
+	if (type_of(lock) != t_lock)
+		FEwrong_type_argument(@'mp::lock', lock);
+	FEerror("Condition variables are not supported under Windows.", 0);
+	@(return Ct)
+}
+
+cl_object
+mp_condition_variable_timedwait(cl_object cv, cl_object lock, cl_object seconds)
+{
+	if (type_of(cv) != t_condition_variable)
+		FEwrong_type_argument(@'mp::condition-variable', cv);
+	if (type_of(lock) != t_lock)
+		FEwrong_type_argument(@'mp::lock', lock);
+	FEerror("Condition variables are not supported under Windows.", 0);
+	@(return Cnil)
+}
+
+cl_object
+mp_condition_variable_signal(cl_object cv)
+{
+	if (type_of(cv) != t_condition_variable)
+		FEwrong_type_argument(@'mp::condition-variable', cv);
+	FEerror("Condition variables are not supported under Windows.", 0);
+	@(return Ct)
+}
+
+cl_object
+mp_condition_variable_broadcast(cl_object cv)
+{
+	if (type_of(cv) != t_condition_variable)
+		FEwrong_type_argument(@'mp::condition-variable', cv);
+	FEerror("Condition variables are not supported under Windows.", 0);
+	@(return Ct)
+}
+
+/*----------------------------------------------------------------------
+ * INITIALIZATION
+ */
 
 void
 init_threads()

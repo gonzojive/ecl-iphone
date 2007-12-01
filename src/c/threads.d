@@ -16,10 +16,16 @@
  */
 
 #include <pthread.h>
+#include <errno.h>
+#include <math.h>
+#include <time.h>
 #include <signal.h>
 #define GC_THREADS
 #include <ecl/ecl.h>
 #include <ecl/internal.h>
+#ifdef HAVE_GETTIMEOFDAY
+# include <sys/time.h>
+#endif
 
 #ifndef WITH___THREAD
 static pthread_key_t cl_env_key;
@@ -36,8 +42,8 @@ ecl_process_env(void)
 	struct cl_env_struct *rv = pthread_getspecific(cl_env_key);
         if (rv)
 		return rv;
-        FElibc_error("pthread_getspecific() failed.", 0);
-        return NULL;
+	FElibc_error("pthread_getspecific() failed.", 0);
+	return NULL;
 }
 #endif
 
@@ -89,7 +95,7 @@ thread_entry_point(cl_object process)
 		FElibc_error("pthread_setcspecific() failed.", 0);
 #endif
 	ecl_init_env(process->process.env);
-        init_big_registers();
+	init_big_registers();
 
 	/* 2) Execute the code. The CATCH_ALL point is the destination
 	*     provides us with an elegant way to exit the thread: we just
@@ -104,7 +110,7 @@ thread_entry_point(cl_object process)
 	process->process.active = 0;
 
 	/* 3) If everything went right, we should be exiting the thread
-         *    through this point. thread_cleanup is automatically invoked.
+	 *    through this point. thread_cleanup is automatically invoked.
 	 */
 	pthread_cleanup_pop(1);
 	return NULL;
@@ -153,7 +159,7 @@ ecl_import_current_thread(cl_object name, cl_object bindings)
 #endif
 	initialize_process_bindings(process, bindings);
 	ecl_init_env(&cl_env);
-        init_big_registers();
+	init_big_registers();
 }
 
 void
@@ -191,14 +197,14 @@ mp_interrupt_process(cl_object process, cl_object function)
 	process->process.interrupt = function;
 	if ( pthread_kill(process->process.thread, SIGUSR1) )
 		FElibc_error("pthread_kill() failed.", 0);
-        @(return Ct)
+	@(return Ct)
 }
 
 cl_object
 mp_process_kill(cl_object process)
 {
 	mp_interrupt_process(process, @'mp::exit-process');
-        @(return Ct)
+	@(return Ct)
 }
 
 cl_object
@@ -285,44 +291,187 @@ mp_process_run_function(cl_narg narg, cl_object name, cl_object function, ...)
  * LOCKS or MUTEX
  */
 
-@(defun mp::make-lock (&key name)
+@(defun mp::make-lock (&key name ((:recursive recursive) Ct))
 	pthread_mutexattr_t attr;
 	cl_object output;
 @
 	pthread_mutexattr_init(&attr);
-	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);
 	output = cl_alloc_object(t_lock);
 	output->lock.name = name;
+	output->lock.holder = Cnil;
+	output->lock.counter = 0;
+	if (recursive == Cnil) {
+		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK_NP);
+		output->lock.recursive = 0;
+	} else {
+		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);
+		output->lock.recursive = 1;
+	}
 	pthread_mutex_init(&output->lock.mutex, &attr);
 	pthread_mutexattr_destroy(&attr);
-        si_set_finalizer(output, Ct);
+	si_set_finalizer(output, Ct);
 	@(return output)
 @)
 
 cl_object
-mp_giveup_lock(cl_object lock)
+mp_recursive_lock_p(cl_object lock)
 {
 	if (type_of(lock) != t_lock)
 		FEwrong_type_argument(@'mp::lock', lock);
+	@(return (lock->lock.recursive? Ct : Cnil))
+}
+
+cl_object
+mp_lock_name(cl_object lock)
+{
+	if (type_of(lock) != t_lock)
+		FEwrong_type_argument(@'mp::lock', lock);
+	@(return lock->lock.name)
+}
+
+cl_object
+mp_lock_holder(cl_object lock)
+{
+	if (type_of(lock) != t_lock)
+		FEwrong_type_argument(@'mp::lock', lock);
+	@(return lock->lock.holder)
+}
+
+cl_object
+mp_giveup_lock(cl_object lock)
+{
+	int code;
+	if (type_of(lock) != t_lock)
+		FEwrong_type_argument(@'mp::lock', lock);
+	if (lock->lock.holder != cl_env.own_process) {
+		FEerror("Attempt to give up a lock ~S that is not owned by ~S.", 2,
+			lock, cl_env.own_process);
+	}
+	if (--lock->lock.counter == 0) {
+		lock->lock.holder = Cnil;
+	}
 	pthread_mutex_unlock(&lock->lock.mutex);
 	@(return Ct)
 }
 
 @(defun mp::get-lock (lock &optional (wait Ct))
 	cl_object output;
+	int rc;
 @
 	if (type_of(lock) != t_lock)
 		FEwrong_type_argument(@'mp::lock', lock);
+	/* We will complain always if recursive=0 and try to lock recursively. */
+	if (!lock->lock.recursive && (lock->lock.holder == cl_env.own_process)) {
+		FEerror("A recursive attempt was made to hold lock ~S", 1, lock);
+	}
 	if (wait == Ct) {
-		pthread_mutex_lock(&lock->lock.mutex);
-		output = Ct;
-	} else if (pthread_mutex_trylock(&lock->lock.mutex) == 0) {
+		rc = pthread_mutex_lock(&lock->lock.mutex);
+	} else {
+		rc = pthread_mutex_trylock(&lock->lock.mutex);
+	}
+	if (rc == 0) {
+		lock->lock.holder = cl_env.own_process;
+		lock->lock.counter++;
 		output = Ct;
 	} else {
 		output = Cnil;
 	}
 	@(return output)
 @)
+
+/*----------------------------------------------------------------------
+ * CONDITION VARIABLES
+ */
+
+cl_object
+mp_make_condition_variable(void)
+{
+	pthread_condattr_t attr;
+	cl_object output;
+
+	pthread_condattr_init(&attr);
+	output = cl_alloc_object(t_condition_variable);
+	pthread_cond_init(&output->condition_variable.cv, &attr);
+	pthread_condattr_destroy(&attr);
+	si_set_finalizer(output, Ct);
+	@(return output)
+}
+
+cl_object
+mp_condition_variable_wait(cl_object cv, cl_object lock)
+{
+	if (type_of(cv) != t_condition_variable)
+		FEwrong_type_argument(@'mp::condition-variable', cv);
+	if (type_of(lock) != t_lock)
+		FEwrong_type_argument(@'mp::lock', lock);
+	if (pthread_cond_wait(&cv->condition_variable.cv,
+	                      &lock->lock.mutex) == 0)
+		lock->lock.holder = cl_env.own_process;
+	@(return Ct)
+}
+
+cl_object
+mp_condition_variable_timedwait(cl_object cv, cl_object lock, cl_object seconds)
+{
+	int rc;
+	double r;
+	struct timespec   ts;
+	struct timeval    tp;
+
+	if (type_of(cv) != t_condition_variable)
+		FEwrong_type_argument(@'mp::condition-variable', cv);
+	if (type_of(lock) != t_lock)
+		FEwrong_type_argument(@'mp::lock', lock);
+	/* INV: ecl_minusp() makes sure `seconds' is real */
+	if (ecl_minusp(seconds))
+		cl_error(9, @'simple-type-error', @':format-control',
+			 make_constant_base_string("Not a non-negative number ~S"),
+			 @':format-arguments', cl_list(1, seconds),
+			 @':expected-type', @'real', @':datum', seconds);
+
+	gettimeofday(&tp, NULL);
+	/* Convert from timeval to timespec */
+	ts.tv_sec  = tp.tv_sec;
+	ts.tv_nsec = tp.tv_usec * 1000;
+
+	/* Add `seconds' delta */
+	r = ecl_to_double(seconds);
+	ts.tv_sec += (time_t)floor(r);
+	ts.tv_nsec += (long)((r - floor(r)) * 1e9);
+	if (ts.tv_nsec >= 1e9) {
+		ts.tv_nsec -= 1e9;
+		ts.tv_sec++;
+	}
+	if (pthread_cond_timedwait(&cv->condition_variable.cv,
+	                           &lock->lock.mutex, &ts) == 0) {
+		lock->lock.holder = cl_env.own_process;
+		@(return Ct)
+	} else {
+		@(return Cnil)
+	}
+}
+
+cl_object
+mp_condition_variable_signal(cl_object cv)
+{
+	if (type_of(cv) != t_condition_variable)
+		FEwrong_type_argument(@'mp::condition-variable', cv);
+	pthread_cond_signal(&cv->condition_variable.cv);
+	@(return Ct)
+}
+
+cl_object
+mp_condition_variable_broadcast(cl_object cv)
+{
+	if (type_of(cv) != t_condition_variable)
+		FEwrong_type_argument(@'mp::condition-variable', cv);
+	pthread_cond_broadcast(&cv->condition_variable.cv);
+	@(return Ct)
+}
+
+/*----------------------------------------------------------------------
+ * INITIALIZATION
+ */
 
 void
 init_threads()
@@ -346,7 +495,7 @@ init_threads()
 	process->process.env = env = cl_alloc(sizeof(*env));
 
 #ifdef WITH___THREAD
-        cl_env_p = env;
+	cl_env_p = env;
 #else
 	pthread_key_create(&cl_env_key, NULL);
 	pthread_setspecific(cl_env_key, env);

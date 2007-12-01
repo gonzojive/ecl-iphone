@@ -102,6 +102,7 @@ cl_alloc_object(cl_type t)
 #ifdef ECL_THREADS
 	case t_process:
         case t_lock:
+        case t_condition_variable:
 #endif
 	case t_foreign:
 		obj = (cl_object)GC_MALLOC(type_size[t]);
@@ -214,6 +215,8 @@ init_alloc(void)
 #ifdef ECL_THREADS
 	init_tm(t_process, "PROCESS", sizeof(struct ecl_process));
 	init_tm(t_lock, "LOCK", sizeof(struct ecl_lock));
+	init_tm(t_condition_variable, "CONDITION-VARIABLE",
+                sizeof(struct ecl_condition_variable));
 #endif
 #ifdef ECL_LONG_FLOAT
 	init_tm(t_longfloat, "LONG-FLOAT", sizeof(struct ecl_long_float));
@@ -248,6 +251,13 @@ standard_finalizer(cl_object o)
 		CloseHandle(o->lock.mutex);
 #else
 		pthread_mutex_destroy(&o->lock.mutex);
+#endif
+		break;
+	case t_condition_variable:
+#if defined(_MSC_VER) || defined(mingw32)
+		CloseHandle(o->condition_variable.cv);
+#else
+		pthread_cond_destroy(&o->condition_variable.cv);
 #endif
 		break;
 #endif

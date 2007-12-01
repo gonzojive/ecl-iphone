@@ -374,7 +374,10 @@ BEGIN:
 		break;
 	case t_lock:
 		mark_next(x->lock.name);
+		mark_next(x->lock.holder);
 		break;
+	case t_condition_variable:
+                break;
 #endif /* THREADS */
 #ifdef CLOS
 	case t_instance:
@@ -644,6 +647,13 @@ sweep_phase(void)
 				CloseHandle(x->lock.mutex);
 #else
 				pthread_mutex_destroy(&x->lock.mutex);
+#endif
+				break;
+			case t_condition_variable:
+#if defined(_MSC_VER) || defined(mingw32)
+				CloseHandle(x->condition_variable.cv);
+#else
+				pthread_cond_destroy(&x->condition_variable.cv);
 #endif
 				break;
 #endif

@@ -178,6 +178,8 @@ ecl_type_to_symbol(cl_type t)
 		return @'mp::process';
 	case t_lock:
 		return @'mp::lock';
+	case t_condition_variable:
+		return @'mp::condition-variable';
 #endif
 	case t_codeblock:
 		return @'si::code-block';

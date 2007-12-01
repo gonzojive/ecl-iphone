@@ -278,6 +278,8 @@ cl_class_of(cl_object x)
 		t = @'mp::process'; break;
 	case t_lock:
 		t = @'mp::lock'; break;
+	case t_condition_variable:
+		t = @'mp::condition-variable'; break;
 #endif
 	case t_codeblock:
 		t = @'si::code-block'; break;

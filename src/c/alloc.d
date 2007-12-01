@@ -379,6 +379,8 @@ ONCE_MORE:
 	  break;
 	case t_lock:
 	  obj->lock.mutex = OBJNULL;
+	case t_condition_variable:
+	  obj->condition_variable.cv = OBJNULL;
 	  break;
 #endif
 #ifdef CLOS
@@ -729,6 +731,8 @@ init_alloc(void)
 #ifdef ECL_THREADS
 	init_tm(t_process, "tPROCESS", sizeof(struct ecl_process), 2);
 	init_tm(t_lock, "tLOCK", sizeof(struct ecl_lock), 2);
+	init_tm(t_condition_variable, "tCONDITION-VARIABLE",
+                sizeof(struct ecl_condition_variable), 2);
 #endif /* THREADS */
 #ifdef ECL_LONG_FLOAT
 	init_tm(t_longfloat, "tLONGFLOAT", sizeof(struct ecl_long_float), 2);

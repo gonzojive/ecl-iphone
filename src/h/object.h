@@ -504,10 +504,18 @@ struct ecl_process {
 };
 
 struct ecl_lock {
-	HEADER;
-	cl_object name;
-	pthread_mutex_t mutex;
+	HEADER1(recursive);
+        cl_object name;
+        cl_object holder;       /* thread holding the lock or NIL */
+	cl_index counter;
+        pthread_mutex_t mutex;
 };
+
+struct ecl_condition_variable {
+        HEADER;
+        pthread_cond_t cv;
+};
+
 #endif
 
 #ifdef CLOS
@@ -569,6 +577,7 @@ union cl_lispunion {
 #ifdef ECL_THREADS
 	struct ecl_process	process; 	/*  process  */
 	struct ecl_lock		lock; 		/*  lock  */
+        struct ecl_condition_variable condition_variable; /*  condition-variable */
 #endif
 	struct ecl_codeblock	cblock;		/*  codeblock  */
 	struct ecl_foreign	foreign; 	/* user defined data type */
@@ -620,6 +629,7 @@ typedef enum {
 #ifdef ECL_THREADS
 	t_process,
 	t_lock,
+	t_condition_variable,
 #endif
 	t_codeblock,
 	t_foreign,

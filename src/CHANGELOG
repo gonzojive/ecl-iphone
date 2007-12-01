@@ -10,6 +10,10 @@ ECL 1.0:
 
 * New features:
 
+ - ECL now has POSIX condition variables when built with threads. Moreover,
+   locks can be now recursive or non-recursive, that is, the kind that signals
+   an error when tried to grabed twice from the same thread (Dan Corkill).
+
  - SBCL's SERVE-EVENT package has been ported to ECL by Steve Smith.
 
  - New commands, :RESTART, :R1, :R2, etc, allow invoking restarts (contributed

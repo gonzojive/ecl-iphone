@@ -1523,12 +1523,24 @@ si_write_ugly_object(cl_object x, cl_object stream)
 	case t_process:
 		if (ecl_print_readably()) FEprint_not_readable(x);
 		write_str("#<process ", stream);
+                si_write_object_recursive(x->process.name, stream);
+		write_ch(' ', stream);
 		write_addr(x, stream);
 		write_ch('>', stream);
 		break;
 	case t_lock:
 		if (ecl_print_readably()) FEprint_not_readable(x);
 		write_str("#<lock ", stream);
+                if (!x->lock.recursive)
+ 		    write_str("(nonrecursive) ", stream);
+                si_write_object_recursive(x->lock.name, stream);
+		write_ch(' ', stream);
+		write_addr(x, stream);
+		write_ch('>', stream);
+		break;
+	case t_condition_variable:
+		if (ecl_print_readably()) FEprint_not_readable(x);
+		write_str("#<condition-variable ", stream);
 		write_addr(x, stream);
 		write_ch('>', stream);
 		break;

@@ -1401,8 +1401,16 @@ extern cl_object mp_process_preset _ARGS((cl_narg narg, cl_object process, cl_ob
 extern cl_object mp_process_run_function _ARGS((cl_narg narg, cl_object name, cl_object function, ...));
 extern cl_object mp_process_whostate(cl_object process);
 extern cl_object mp_make_lock _ARGS((cl_narg narg, ...));
+extern cl_object mp_recursive_lock_p(cl_object lock);
+extern cl_object mp_lock_name(cl_object lock);
+extern cl_object mp_lock_holder(cl_object lock);
 extern cl_object mp_get_lock _ARGS((cl_narg narg, cl_object lock, ...));
 extern cl_object mp_giveup_lock(cl_object lock);
+extern cl_object mp_make_condition_variable(void);
+extern cl_object mp_condition_variable_wait(cl_object cv, cl_object lock);
+extern cl_object mp_condition_variable_timedwait(cl_object cv, cl_object lock, cl_object seconds);
+extern cl_object mp_condition_variable_signal(cl_object cv);
+extern cl_object mp_condition_variable_broadcast(cl_object cv);
 
 extern void ecl_import_current_thread(cl_object process_name, cl_object process_binding);
 extern void ecl_release_current_thread(void);
