@@ -25,7 +25,9 @@
 	      string result))
     result))
 
-(defun compile-file-pathname (name &key (output-file name) (type :fasl))
+(defun compile-file-pathname (name &key (output-file name) (type :fasl)
+                              verbose print c-file h-file data-file shared-data-file
+                              system-p load)
   (let ((format '())
 	(extension '()))
     (case type
