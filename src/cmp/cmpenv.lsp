@@ -65,6 +65,9 @@
 		     (incf *env*)
 		     (setq *max-env* (max *env* *max-env*))))
 
+(defun find-global-function (fname)
+  (find fname *global-funs* :key #'fun-name :test #'same-fname-p))
+
 (defun function-arg-types (arg-types &aux (types nil))
   (do ((al arg-types (cdr al)))
       ((or (endp al)
@@ -109,7 +112,7 @@
 	    (put-sysprop fname 'PROCLAIMED-ARG-TYPES arg-types))
 	(if (eq return-types '*)
 	    (rem-sysprop fname 'PROCLAIMED-RETURN-TYPE)
-	    (put-sysprop fname 'PROCLAIMED-RETURN-TYPE return-type)))
+	    (put-sysprop fname 'PROCLAIMED-RETURN-TYPE return-types)))
       (warn "The function proclamation ~s ~s is not valid." fname decl)))
 
 (defun add-function-declaration (fname arg-types return-types)
@@ -138,6 +141,51 @@
 (defun get-local-arg-types (fun &aux x)
   (if (setq x (assoc fun *function-declarations*))
       (second x)
+(defun get-arg-rep-types (fname)
+  (get-sysprop fname 'PROCLAIMED-ARG-REP-TYPES))
+
+(defun get-return-rep-type (fname)
+  (or (si:get-sysprop fname 'PROCLAIMED-RETURN-REP-TYPE) :object))
+
+; currently we represent unboxed declarations as
+; (c-name rep-types return-type)
+
+(defun funboxed-c-name (unboxed)
+  (first unboxed))
+
+(defun funboxed-arg-rep-types (unboxed)
+  (second unboxed))
+
+(defun funboxed-return-rep-type (unboxed)
+  (or (third unboxed) :object))
+
+(defun funboxed-c-exported (unboxed)
+  (fourth unboxed))
+
+(defun get-funboxed (fname)
+  (get-sysprop fname 'si::c-funboxed))
+
+(defun get-funboxed-arg-rep-types (fname)
+  (funboxed-arg-rep-types (get-funboxed fname)))
+
+(defun get-funboxed-return-rep-type (fname)
+  (funboxed-return-rep-type (get-funboxed fname)))
+
+(defun get-unboxed (fname)
+  (get-sysprop fname 'si::c-unboxed))
+
+(defun get-unboxed-rep-type (name)
+  (unboxed-rep-type (get-unboxed name)))
+
+(defun unboxed-c-name (unboxed)
+  (first unboxed))
+
+(defun unboxed-rep-type (unboxed)
+  (second unboxed))
+
+(defun unboxed-c-exported (unboxed)
+  (third unboxed))
+
       nil))
 
 (defun get-local-return-type (fun &aux x)
@@ -236,6 +284,14 @@
     ((ARRAY ATOM BASE-CHAR BIGNUM BIT BIT-VECTOR CHARACTER COMPILED-FUNCTION
       COMPLEX CONS DOUBLE-FLOAT EXTENDED-CHAR FIXNUM FLOAT HASH-TABLE INTEGER KEYWORD LIST
       LONG-FLOAT NIL NULL NUMBER PACKAGE PATHNAME RANDOM-STATE RATIO RATIONAL
+    (SI::C-UNBOXED
+     (dolist (x (cddr decl))
+       ; put in syntax checking -- fixme
+       (put-sysprop x 'si::c-unboxed (second decl))))
+    (SI::C-FUNBOXED
+     (dolist (x (cddr decl))
+       ; put in syntax checking -- fixme
+       (put-sysprop x 'si::c-funboxed (second decl))))
       READTABLE SEQUENCE SHORT-FLOAT SIMPLE-ARRAY SIMPLE-BIT-VECTOR
       SIMPLE-STRING SIMPLE-VECTOR SINGLE-FLOAT STANDARD-CHAR STREAM STRING
       SYMBOL T VECTOR SIGNED-BYTE UNSIGNED-BYTE FUNCTION)
@@ -326,7 +382,7 @@
 	       (declare-variables 'OBJECT decl-args))
 	      ;; read-only variable treatment. obsolete!
 	      (:READ-ONLY)
-	      ((OPTIMIZE FTYPE INLINE NOTINLINE DECLARATION SI::C-LOCAL SI::C-GLOBAL
+	      ((OPTIMIZE FTYPE INLINE NOTINLINE DECLARATION SI::C-LOCAL SI::C-GLOBAL SI::C-UNBOXED SI::C-FUNBOXED
 		DYNAMIC-EXTENT IGNORABLE VALUES)
 	       (push decl others))
 	      (otherwise
@@ -383,7 +439,7 @@
 	   (cmperr "Not a valid function name ~s in declaration ~s" fun decl))))
       (DECLARATION
        (do-declaration (rest decl) #'cmperr))
-      ((SI::C-LOCAL SI::C-GLOBAL))
+      ((SI::C-LOCAL SI::C-GLOBAL SI::C-FUNBOXED SI::C-UNBOXED))
       ((DYNAMIC-EXTENT IGNORABLE)
        ;; FIXME! SOME ARE IGNORED!
        )
