@@ -96,7 +96,7 @@ destructively_check_directory(cl_object directory, bool logical)
 						return @':error';
 					CDR(ecl_nthcdr(i-1, directory)) = CDR(ptr);
 				} else if (l == 2 && ecl_char(item,1) == '.') {
-					CAR(directory) = @':back';
+					CAR(ptr) = @':back';
 					goto BEGIN;
 				}
 			}
