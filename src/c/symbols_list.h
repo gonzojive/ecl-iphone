@@ -1504,6 +1504,7 @@ cl_symbols[] = {
 {MP_ "MAKE-PROCESS", MP_ORDINARY, mp_make_process, -1, OBJNULL},
 {MP_ "PROCESS-ACTIVE-P", MP_ORDINARY, mp_process_active_p, 1, OBJNULL},
 {MP_ "PROCESS-ENABLE", MP_ORDINARY, mp_process_enable, 1, OBJNULL},
+{MP_ "PROCESS-YIELD", MP_ORDINARY, mp_process_yield, 0, OBJNULL},
 {MP_ "PROCESS-KILL", MP_ORDINARY, mp_process_kill, 1, OBJNULL},
 {MP_ "PROCESS-NAME", MP_ORDINARY, mp_process_name, 1, OBJNULL},
 {MP_ "PROCESS-PRESET", MP_ORDINARY, mp_process_preset, -1, OBJNULL},

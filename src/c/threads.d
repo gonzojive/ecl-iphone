@@ -26,6 +26,9 @@
 #ifdef HAVE_GETTIMEOFDAY
 # include <sys/time.h>
 #endif
+#ifdef HAVE_SCHED_YIELD
+# include <sched.h>
+#endif
 
 #ifndef WITH___THREAD
 static pthread_key_t cl_env_key;
@@ -205,6 +208,17 @@ mp_process_kill(cl_object process)
 {
 	mp_interrupt_process(process, @'mp::exit-process');
 	@(return Ct)
+}
+
+cl_object
+mp_process_yield(void)
+{
+#ifdef HAVE_SCHED_YIELD
+	sched_yield();
+#else
+	sleep(0); /* Use sleep(0) to yield to a >= priority thread */
+#endif
+	@(return)
 }
 
 cl_object

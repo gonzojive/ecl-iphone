@@ -247,6 +247,8 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_FABSF
 #undef HAVE_FREXPF
 #undef HAVE_LDEXPF
+/* whether we have sched_yield() that gives priority to other threads	*/
+#undef HAVE_SCHED_YIELD
 
 /*
  * we do not manage to get proper signal handling of floating point

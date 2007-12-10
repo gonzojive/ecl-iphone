@@ -1394,6 +1394,7 @@ extern cl_object mp_interrupt_process(cl_object process, cl_object function);
 extern cl_object mp_make_process _ARGS((cl_narg narg, ...));
 extern cl_object mp_process_active_p(cl_object process);
 extern cl_object mp_process_enable(cl_object process);
+extern cl_object mp_process_yield(void);
 extern cl_object mp_process_interrupt(cl_object process, cl_object function);
 extern cl_object mp_process_kill(cl_object process);
 extern cl_object mp_process_name(cl_object process);

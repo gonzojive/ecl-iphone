@@ -18,6 +18,9 @@
 #include <signal.h>
 #include <ecl/ecl.h>
 #include <ecl/internal.h>
+#ifdef HAVE_SCHED_YIELD
+# include <sched.h>
+#endif
 
 /*
  * We have to put this explicit definition here because Boehm GC
@@ -217,6 +220,17 @@ cl_object
 mp_process_kill(cl_object process)
 {
 	return mp_interrupt_process(process, @'mp::exit-process');
+}
+
+cl_object
+mp_process_yield(void)
+{
+#ifdef HAVE_SCHED_YIELD
+	sched_yield();
+#else
+	sleep(0); /* Use sleep(0) to yield to a >= priority thread */
+#endif
+	@(return)
 }
 
 cl_object

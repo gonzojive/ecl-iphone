@@ -446,6 +446,8 @@ AC_CHECK_FUNCS( [nanosleep alarm times isnanf select setenv putenv] \
 AC_CHECK_FUNCS( [expf logf sqrtf cosf sinf tanf sinhf coshf tanhf] \
 		[floorf ceilf fabsf frexpf ldexpf])
 
+AC_CHECK_FUNCS( [sched_yield] )
+
 dnl =====================================================================
 dnl Checks for system services
 

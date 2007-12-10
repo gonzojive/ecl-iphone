@@ -1073,6 +1073,7 @@ EXPORTS
 	mp_make_process
 	mp_process_active_p
 	mp_process_enable
+	mp_process_yield
 	;mp_process_interrupt
 	mp_process_kill
 	mp_process_name
