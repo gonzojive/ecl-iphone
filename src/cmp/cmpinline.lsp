@@ -172,7 +172,7 @@
 		  (out-type (inline-info-return-type ii))
 		  (side-effects-p (function-may-have-side-effects fname))
 		  (fun (inline-info-expansion ii))
-		  (one-liner t))
+		  (one-liner (inline-info-one-liner ii)))
 	     (produce-inline-loc inlined-locs arg-types (list out-rep-type)
 				 fun side-effects-p one-liner))))))
 

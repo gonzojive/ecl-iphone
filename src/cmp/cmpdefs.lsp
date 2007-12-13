@@ -217,6 +217,7 @@
   arg-types		;;; List of lisp types for the arguments
   return-type		;;; Lisp type for the output
   expansion		;;; C template containing the expansion
+  one-liner		;;; Whether the expansion spans more than one line
 )
 
 ;;;

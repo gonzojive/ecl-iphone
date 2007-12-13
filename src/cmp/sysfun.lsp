@@ -66,6 +66,7 @@
   nil)
 
 (defmacro def-inline (name safety arg-types return-rep-type expansion
+                      &key (one-liner t)
 		      &aux arg-rep-types)
   (setf safety
 	(case safety
@@ -82,6 +83,7 @@
 			   :return-type (rep-type->lisp-type return-rep-type)
 			   :arg-types arg-types
 ;			   :side-effects (not (get-sysprop name 'no-side-effects))
+                           :one-liner one-liner
 			   :expansion expansion)))
     (put-sysprop name safety (cons inline-info (get-sysprop name safety))))
   nil)
@@ -258,8 +260,6 @@
 (def-inline both-case-p :always (character) :bool "ecl_both_case_p(#0)")
 
 (proclaim-function digit-char-p (character *) t :no-side-effects t)
-(def-inline digit-char-p :always (character) :bool
- "@0; ((#0) <= '9' && (#0) >= '0')")
 
 (proclaim-function alphanumericp (character) t :predicate t :no-side-effects t)
 (def-inline alphanumericp :always (character) :bool "isalnum(#0)")
