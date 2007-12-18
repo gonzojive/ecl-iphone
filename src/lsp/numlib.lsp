@@ -180,7 +180,7 @@ Returns the hyperbolic arc sine of NUMBER."
 Returns the hyperbolic arc cosine of NUMBER."
   ;(log (+ x (sqrt (* (1- x) (1+ x)))))
   (if #+(or ecl-min) t #-(or ecl-min) (complexp x)
-      (complex-acos x)
+      (complex-acosh x)
       #-(or ecl-min)
       (let* ((x (float x))
 	     (xr (float x 1d0)))
