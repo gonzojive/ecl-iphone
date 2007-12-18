@@ -190,9 +190,7 @@
       (funcall (if (eq mode :safe) #'cmperr #'cmpwarn)
 	       "~?, the type of the form ~s is ~s, not ~s." format-string
 	       format-args original-form type2 type))
-    (unless (eq type1 type2)
-      (setf form (copy-c1form form))
-      (setf (c1form-type form) type1))
+    (setf (c1form-type form) type1)
     form))
 
 (defun default-init (var &optional warn)
@@ -390,12 +388,16 @@
 	  ((endp fl))
 	(unless (endp arg-types)
 	  ;; Check the type of the arguments.
-	  (let ((new (and-form-type (pop arg-types) (first fl) (first al)
-				    :safe "In the argument ~d of a call to ~a" i fname)))
-	    ;; In unsafe mode, we assume that the type of the
+	  (let* ((form (first fl))
+		 (lisp-form (first al))
+		 (expected-type (pop arg-types))
+                 (old-type (c1form-type form)))
+	    (and-form-type expected-type form lisp-form
+			   :safe "In the argument ~d of a call to ~a" i fname)
+	    ;; In safe mode, we cannot assume that the type of the
 	    ;; argument is going to be the right one.
-	    (when (zerop *safety*)
-	      (setf (car fl) new))))))
+	    (unless (zerop *safety*)
+              (setf (c1form-type new) old-type))))))
     return-type))
 
 (defmacro def-type-propagator (fname lambda-list &body body)
