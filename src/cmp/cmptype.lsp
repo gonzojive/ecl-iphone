@@ -186,11 +186,12 @@
 		      (format-string "") &rest format-args)
   (let* ((type2 (c1form-primary-type form))
 	 (type1 (type-and type type2)))
-    (unless type1
-      (funcall (if (eq mode :safe) #'cmperr #'cmpwarn)
-	       "~?, the type of the form ~s is ~s, not ~s." format-string
-	       format-args original-form type2 type))
-    (setf (c1form-type form) type1)
+    ;; We only change the type if it is not NIL. Is this wise?
+    (if type1
+	(setf (c1form-type form) type1)
+	(funcall (if (eq mode :safe) #'cmperr #'cmpwarn)
+		 "~?, the type of the form ~s is ~s, not ~s." format-string
+		 format-args original-form type2 type))
     form))
 
 (defun default-init (var &optional warn)
@@ -397,7 +398,7 @@
 	    ;; In safe mode, we cannot assume that the type of the
 	    ;; argument is going to be the right one.
 	    (unless (zerop *safety*)
-              (setf (c1form-type new) old-type))))))
+              (setf (c1form-type form) old-type))))))
     return-type))
 
 (defmacro def-type-propagator (fname lambda-list &body body)
