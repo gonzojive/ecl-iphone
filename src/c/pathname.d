@@ -417,6 +417,7 @@ parse_directories(cl_object s, int flags, cl_index start, cl_index end,
 			if (j != start) {
 				if (flags & WORD_LOGICAL)
 					return @':error';
+				*end_of_dir = i;
 				continue;
 			}
 			part = (flags & WORD_LOGICAL) ? @':relative' : @':absolute';
