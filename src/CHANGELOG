@@ -64,6 +64,9 @@ ECL 1.0:
 
 * Bugs fixed:
 
+ - Lexical environment variables were not marked as volatile and thus they
+   were sometimes clobbered by the C compiler.
+
  - COMPILE-FILE-PATHNAME accepts the same keyword arguments as COMPILE-FILE.
 
  - COMPILER-LET is not standard and belongs in the EXT package. However, it had

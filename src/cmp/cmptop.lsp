@@ -347,7 +347,7 @@
 ;  (wt-h "#define VU" *reservation-cmacro*)
   (wt-h "#define VLEX" *reservation-cmacro*)
   (when (plusp *max-lex*)
-    (wt-h1 " cl_object lex") (wt-h1 *level*)
+    (wt-h1 " volatile cl_object lex") (wt-h1 *level*)
     (wt-h1 "[") (wt-h1 *max-lex*) (wt-h1 "];"))
   (wt-h "#define CLSR" *reservation-cmacro*)
   (when (plusp *max-env*)
