@@ -414,7 +414,7 @@
     (unless block-p
       (wt-nl "{ ") (setq block-p t))
     (let ((env-lvl *env-lvl*))
-      (wt "volatile cl_object env" (incf *env-lvl*) " = env" env-lvl ";")))
+      (wt *volatile* "cl_object env" (incf *env-lvl*) " = env" env-lvl ";")))
 
   (do ((vl vars (cdr vl))
        (fl forms (cdr fl))

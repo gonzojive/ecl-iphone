@@ -64,8 +64,8 @@ ECL 1.0:
 
 * Bugs fixed:
 
- - Lexical environment variables were not marked as volatile and thus they
-   were sometimes clobbered by the C compiler.
+ - Local C variables are now always marked as volatile if the function code
+   uses setjmp/longjmp. Detection of this cases is also more accurate.
 
  - COMPILE-FILE-PATHNAME accepts the same keyword arguments as COMPILE-FILE.
 

@@ -422,7 +422,7 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
        (i 0 (1+ i)))
       ((endp kwd)
        (when all-kwd
-	 (wt-h "#define " cfun "keys (&" (add-keywords (nreverse all-kwd)) ")")
+	 (wt-nl-h "#define " cfun "keys (&" (add-keywords (nreverse all-kwd)) ")")
 	 (wt-nl "}")))
     (declare (fixnum i))
     (push (first kwd) all-kwd)

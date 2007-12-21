@@ -35,17 +35,19 @@
 
 ;;; from cmpwt.lsp
 (defmacro wt (&rest forms &aux (fl nil))
-  (dolist (form forms (cons 'progn (nreverse (cons nil fl))))
+  (dolist (form forms `(progn ,@(nreverse (cons nil fl))))
     (if (stringp form)
         (push `(princ ,form *compiler-output1*) fl)
         (push `(wt1 ,form) fl))))
 
 (defmacro wt-h (&rest forms &aux (fl nil))
-  (dolist (form forms)
+  (dolist (form forms `(progn ,@(nreverse (cons nil fl))))
     (if (stringp form)
       (push `(princ ,form *compiler-output2*) fl)
-      (push `(wt-h1 ,form) fl)))
-  `(progn (terpri *compiler-output2*) ,@(nreverse (cons nil fl))))
+      (push `(wt-h1 ,form) fl))))
+
+(defmacro wt-nl-h (&rest forms)
+  `(progn (terpri *compiler-output2*) (wt-h ,@forms)))
 
 (defmacro princ-h (form) `(princ ,form *compiler-output2*))
 

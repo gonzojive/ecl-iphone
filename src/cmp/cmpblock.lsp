@@ -55,7 +55,7 @@
 	  (wt " cl_object " blk-var ";"))
 	(when (env-grows (blk-ref-ccb blk))
 	  (let ((env-lvl *env-lvl*))
-	    (wt-nl "volatile cl_object env" (incf *env-lvl*)
+	    (wt-nl *volatile* "cl_object env" (incf *env-lvl*)
 		   " = env" env-lvl ";")))
 	(bind "new_frame_id()" blk-var)
 	(wt-nl "if (frs_push(" blk-var ")!=0) {")
