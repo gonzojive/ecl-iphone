@@ -11973,9 +11973,12 @@ fi
 
 if test "${with_serve_event}" = "yes"; then
 
-
+case "${host_os}" in
+mingw*|cygwin*) ;;
+*)
 LSP_FEATURES="(cons :wants-serve-event ${LSP_FEATURES})"
-
+;;
+esac
 
 fi
 

@@ -516,7 +516,12 @@ if test "${with_tcp}" = "yes"; then
 fi
 
 if test "${with_serve_event}" = "yes"; then
-  ECL_ADD_LISP_MODULE([serve-event])
+  case "${host_os}" in
+    mingw*|cygwin*) ;;
+    *)
+      ECL_ADD_LISP_MODULE([serve-event])
+    ;;
+  esac
 fi
 
 if test "${with_asdf}" = "yes"; then
