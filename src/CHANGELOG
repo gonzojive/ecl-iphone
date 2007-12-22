@@ -64,6 +64,8 @@ ECL 1.0:
 
 * Bugs fixed:
 
+ - The Windows installer works again.
+
  - Local C variables are now always marked as volatile if the function code
    uses setjmp/longjmp. Detection of this cases is also more accurate.
 

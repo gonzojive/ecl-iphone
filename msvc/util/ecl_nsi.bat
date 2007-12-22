@@ -16,7 +16,9 @@ echo HOLA
 for /f %%i in (../aux_dirs) do @echo %%i
 for /f %%i in (../aux_dirs) do @echo File /r "${ECLDIR}\%%i" >> %dest%
 for /f %%i in (../aux_files) do @echo File "${ECLDIR}\%%i" >> %dest%
+@echo File "${ECLDIR}\ecl.exe.manifest" >> %dest%
 type %source%2 >> %dest%
+@echo Delete "${ECLDIR}\ecl.exe.manifest" >> %dest%
 for /f %%i in (../aux_files) do @echo Delete "$INSTDIR\%%i" >> %dest%
 for /f %%i in (../aux_dirs) do @echo RMDir /r "$INSTDIR\%%i" >> %dest%
 type %source%3 >> %dest%

@@ -50,7 +50,7 @@ ECL_DEFSYS  =
 # <END> (ECL configuration)
 # =============================================================
 
-TAR_DIR = %%CD%%\ecl-$(ECL_VERSION)
+TAR_DIR = %CD%\ecl-$(ECL_VERSION)
 
 # Programs used by "make":
 #
@@ -77,10 +77,12 @@ MKNSI   = makensis.exe
 # subdirectories of this directory.  The default values for many of
 # the variables below are expressed in terms of this one, so you may
 # not need to change them.  This defaults to /usr/local.
-prefix=D:\Software\ECL
+prefix=%CD%\package
 exec_prefix=$(prefix)
-bindir=$(prefix)\bin
-libdir=$(prefix)\lib\ecl
+bindir=$(prefix)
+libdir=$(prefix)
+includedir=$(prefix)
+docdir=$(prefix)\doc
 
 # Programs used by "make install":
 #
@@ -298,41 +300,37 @@ sysfun.lsp:
 rt.lisp:
 	$(CP) $(srcdir)\..\contrib\rt\rt.lisp .\
 
-install: install-base
-	for %h in (gc.h gc_local_alloc.h gc_pthread_redirects.h \
-	           gc_config_macros.h leak_detector.h gc_typed.h \
-	           gc_mark.h private\gc_priv.h private\gcconfig.h) \
-	    do $(CP) ecl\%h $(libdir)\ecl
-	$(CP) ecl\gmp.h $(libdir)\ecl\gmp.h
+install:
+	IF NOT EXIST "$(prefix)" $(MKDIR) "$(prefix)"
+	IF NOT EXIST "$(bindir)" $(MKDIR) "$(bindir)"
+	for %i in ($(TARGETS) ecl.dll) do $(CP) %i "$(bindir)\%i"
+	IF EXIST "$(bindir)\ecl2$(EXE)" $(MV) "$(bindir)\ecl2$(EXE)" "$(bindir)\ecl$(EXE)"
+	IF EXIST ecl2$(EXE).manifest $(CP) ecl2$(EXE).manifest "$(bindir)\ecl$(EXE).manifest"
+	IF EXIST ecl.dll.manifest $(CP) ecl.dll.manifest "$(bindir)"
+	$(CP) ecl-config.bat "$(bindir)\ecl-config.bat"
+	$(CP) ecl-cc.bat "$(bindir)\ecl-cc.bat"
+	IF NOT EXIST "$(includedir)\ecl" $(MKDIR) "$(includedir)\ecl"
+	IF NOT EXIST "$(includedir)\ecl\gc" $(MKDIR) $(includedir)\ecl\gc
+	IF NOT EXIST "$(includedir)\ecl\gc\private" $(MKDIR) "$(includedir)\ecl\gc\private"
+	for %i in (ecl\*.h ecl\gc\*.h ecl\gc\private\*.h) do $(CP) %i $(includedir)\%i
 	cd c
-	$(MAKE) install "prefix=$(prefix)"
-install-base:
-	IF NOT EXIST $(bindir) $(MKDIR) $(bindir)
-	IF NOT EXIST $(libdir)\ecl $(MKDIR) $(libdir)\ecl
-	for %i in ($(TARGETS) ecl.dll) do $(CP) %i $(bindir)\%i
-	IF EXIST $(bindir)\ecl2$(EXE) $(MV) $(bindir)\ecl2$(EXE) $(bindir)\ecl$(EXE)
-	IF EXIST ecl2$(EXE).manifest $(CP) ecl2$(EXE).manifest $(bindir)\ecl$(EXE).manifest
-	IF EXIST ecl.dll.manifest $(CP) ecl.dll.manifest $(bindir)
-	$(CP) ecl-config.bat $(bindir)\ecl-config.bat
-	$(CP) ecl-cc.bat $(bindir)\ecl-cc.bat
-	for %i in ($(LIBRARIES) c\dpp.exe BUILD-STAMP help.doc ecl.lib) do $(CP) %i $(libdir)
-	for /f %i in ('type MODULES') do $(CP) %i $(libdir)
-	for %i in (ecl-static.lib) do IF EXIST %i $(CP) %i $(libdir)
-	IF NOT EXIST $(libdir)\ecl $(MKDIR) $(libdir)\ecl
-	IF NOT EXIST $(libdir)\ecl\gc $(MKDIR) $(libdir)\ecl\gc
-	IF NOT EXIST $(libdir)\ecl\gc\private $(MKDIR) $(libdir)\ecl\gc\private
-	for %i in (ecl\*.h ecl\gc\*.h ecl\gc\private\*.h) do $(CP) %i $(libdir)\%i
-flatinstall:
-	$(MAKE) bindir=$(prefix) libdir=$(prefix) install-base
-	cd c
-	$(MAKE) prefix=$(prefix) flatinstall
+	$(MAKE) cut.exe
+	cd ..
+	c\cut.exe < ecl\config.h > $(includedir)\ecl\config.h
+	IF NOT EXIST "$(libdir)" $(MKDIR) "$(libdir)"
+	IF NOT EXIST "$(libdir)\ecl" $(MKDIR) "$(libdir)\ecl"
+	for %i in ($(LIBRARIES) c\dpp.exe BUILD-STAMP help.doc ecl.lib) do $(CP) %i "$(libdir)"
+	for /f %i in ('type MODULES') do $(CP) %i "$(libdir)"
+	for %i in (ecl-static.lib) do IF EXIST %i $(CP) %i "$(libdir)"
+	IF NOT EXIST "$(docdir)" $(MKDIR) "$(docdir)"
+	for %i in (..\Copyright ..\ANNOUNCEMENT ..\LGPL ..\README.1st ..\src\CHANGELOG) do $(CP) %i "$(docdir)"
 
 windows-nsi:
-	IF EXIST $(TAR_DIR) $(RMDIR) $(TAR_DIR)
-	$(MKDIR) $(TAR_DIR)
-	$(MAKE) flatinstall prefix=$(TAR_DIR)
-	util\ecl_nsi.bat %%CD%%\$(srcdir)\util\ecl.nsi $(TAR_DIR) $(ECL_VERSION)
-	$(MKNSI) $(TAR_DIR)/ecl.nsi
+	IF EXIST "$(TAR_DIR)" $(RMDIR) "$(TAR_DIR)"
+	$(MKDIR) "$(TAR_DIR)"
+	$(MAKE) prefix="$(TAR_DIR)" install
+	util\ecl_nsi.bat %%CD%%\"$(srcdir)"\util\ecl.nsi "$(TAR_DIR)" $(ECL_VERSION)
+	"$(MKNSI)" "$(TAR_DIR)/ecl.nsi"
 	$(MV) $(TAR_DIR)\Setup.exe ecl-$(ECL_VERSION).exe
 	$(RMDIR) $(TAR_DIR)
 

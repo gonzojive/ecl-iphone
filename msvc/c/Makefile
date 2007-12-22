@@ -87,19 +87,6 @@ ecl\external.h: $(top_srcdir)/h/external.h Makefile
 cut.exe: $(top_srcdir)/util/cut.c
 	$(CC) $(LDFLAGS) /Fecut.exe $(top_srcdir)/util/cut.c
 
-install: $(HFILES)
-	for %i in ($(HFILES)) do $(CP) %i $(libdir)\ecl
-	cut.exe < ..\ecl\config.h > $(libdir)\ecl\config-install.h
-	$(RM) $(libdir)\ecl\config.h
-	$(MV) $(libdir)\ecl\config-install.h $(libdir)\ecl\config.h
-
-flatinstall: $(HFILES)
-	for %i in ($(HFILES)) do $(CP) %i $(prefix)\ecl
-	cut.exe < ..\ecl\config.h > $(prefix)\ecl\config-install.h
-	for %h in (..\ecl\*.h) do $(CP) %h $(prefix)\ecl
-	$(RM) $(prefix)\ecl\config.h
-	$(MV) $(prefix)\ecl\config-install.h $(prefix)\ecl\config.h
-
 ..\eclmin.lib: $(OBJS:.obj=.c) all_symbols.c $(OBJS) all_symbols.obj all_symbols2.obj
 	-$(RM) $@
 	$(LINK) -lib -out:$@ $(OBJS)
