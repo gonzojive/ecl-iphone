@@ -410,16 +410,16 @@ ecl_mark_env(struct cl_env_struct *env)
 {
 #if 1
 	if (env->stack) {
-		GC_push_conditional((GC_PTR)env->stack, (GC_PTR)env->stack_top, 1);
-		GC_set_mark_bit((GC_PTR)env->stack);
+		GC_push_conditional((void *)env->stack, (void *)env->stack_top, 1);
+		GC_set_mark_bit((void *)env->stack);
 	}
 	if (env->frs_top) {
-		GC_push_conditional((GC_PTR)env->frs_org, (GC_PTR)(env->frs_top+1), 1);
-		GC_set_mark_bit((GC_PTR)env->frs_org);
+		GC_push_conditional((void *)env->frs_org, (void *)(env->frs_top+1), 1);
+		GC_set_mark_bit((void *)env->frs_org);
 	}
 	if (env->bds_top) {
-		GC_push_conditional((GC_PTR)env->bds_org, (GC_PTR)(env->bds_top+1), 1);
-		GC_set_mark_bit((GC_PTR)env->bds_org);
+		GC_push_conditional((void *)env->bds_org, (void *)(env->bds_top+1), 1);
+		GC_set_mark_bit((void *)env->bds_org);
 	}
 #endif
 #if 0
@@ -439,7 +439,7 @@ ecl_mark_env(struct cl_env_struct *env)
 	GC_set_mark_bit((void *)env);
 #else
 	/* When not using threads, "env" is a statically allocated structure. */
-	GC_push_all((GC_PTR)env, (GC_PTR)(env + 1));
+	GC_push_all((void *)env, (void *)(env + 1));
 #endif
 #endif
 }
@@ -454,14 +454,14 @@ stacks_scanner()
 		for (i = 0; i < l->vector.fillp; i++) {
 			cl_object dll = l->vector.self.t[i];
 			if (dll->cblock.locked) {
-				GC_push_conditional((GC_PTR)dll, (GC_PTR)(&dll->cblock + 1), 1);
-				GC_set_mark_bit((GC_PTR)dll);
+				GC_push_conditional((void *)dll, (void *)(&dll->cblock + 1), 1);
+				GC_set_mark_bit((void *)dll);
 			}
 		}
-		GC_set_mark_bit((GC_PTR)l->vector.self.t);
+		GC_set_mark_bit((void *)l->vector.self.t);
 	}
-	GC_push_all((GC_PTR)(&cl_core), (GC_PTR)(&cl_core + 1));
-	GC_push_all((GC_PTR)cl_symbols, (GC_PTR)(cl_symbols + cl_num_symbols_in_core));
+	GC_push_all((void *)(&cl_core), (void *)(&cl_core + 1));
+	GC_push_all((void *)cl_symbols, (void *)(cl_symbols + cl_num_symbols_in_core));
 #ifdef ECL_THREADS
 	l = cl_core.processes;
 	if (l == OBJNULL) {
