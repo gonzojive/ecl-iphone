@@ -54,7 +54,8 @@ cl_stack_set_size(cl_index new_size)
 	/* A stack always has at least one element. This is assumed by cl__va_start
 	 * and friends, which take a sp=0 to have no arguments.
 	 */
-	cl_stack_push(MAKE_FIXNUM(0));
+	if (top == 0)
+		cl_stack_push(MAKE_FIXNUM(0));
 
 	end_critical_section();
 }
