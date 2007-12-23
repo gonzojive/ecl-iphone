@@ -43,7 +43,7 @@
 
 
 # Expect to find configfsf.sub in the same directory as this config.sub
-configfsf_sub="`echo \"$0\" | sed 's/config.sub$/configfsf.sub/'`"
+configfsf_sub="`dirname "$0"`/configfsf.sub"
 if test "$configfsf_sub" = "$0"; then
   echo "Cannot derive configfsf.sub from $0" 1>&2
   exit 1

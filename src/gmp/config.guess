@@ -33,7 +33,7 @@
 
 
 # Expect to find configfsf.guess in the same directory as this config.guess
-configfsf_guess="`echo \"$0\" | sed 's/config.guess$/configfsf.guess/'`"
+configfsf_guess="`dirname "$0"`/configfsf.guess"
 if test "$configfsf_guess" = "$0"; then
   echo "Cannot derive configfsf.guess from $0" 1>&2
   exit 1
