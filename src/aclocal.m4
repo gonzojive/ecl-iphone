@@ -256,6 +256,7 @@ case "${host_os}" in
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		SHAREDPREFIX=''
 		SHAREDEXT='dll'
+		PICFLAG=''
 		;;
 	mingw*)
 		thehost='mingw32'
