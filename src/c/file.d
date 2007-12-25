@@ -46,6 +46,32 @@
 
 static int flisten(FILE *fp);
 
+/*
+ * When using the same stream for input and output operations, we have to
+ * use some file position operation before reading again.
+ */
+
+static void io_stream_begin_write(cl_object strm)
+{
+	if (strm->stream.last_op > 0) {
+		fseek((FILE*)strm->stream.file, 0, SEEK_CUR);
+	}
+	strm->stream.last_op = -1;
+}
+
+/*
+ * When using the same stream for input and output operations, we have to
+ * flush the stream before writing.
+ */
+
+static void io_stream_begin_read(cl_object strm)
+{
+	if (strm->stream.last_op < 0) {
+		ecl_force_output(strm);
+	}
+	strm->stream.last_op = +1;
+}
+
 /*----------------------------------------------------------------------
  *	ecl_input_stream_p(strm) answers
  *	if stream strm is an input stream or not.
@@ -453,6 +479,7 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	x->stream.byte_size = byte_size;
 	x->stream.signed_bytes = signed_bytes;
 	x->stream.header = binary_header;
+	x->stream.last_op = 0;
 	if (bits_left != 0) {
 		x->stream.bits_left = bits_left;
 		x->stream.bit_buffer = bit_buffer;
@@ -505,17 +532,15 @@ static void flush_output_stream_binary(cl_object strm);
 	case smm_input:
 		if (fp == stdin)
 			FEerror("Cannot close the standard input.", 0);
-	DO_CLOSE:
 	case smm_io:
 	case smm_probe:
+	DO_CLOSE:
 		if (fp == NULL)
 			wrong_file_handler(strm);
-		if (!strm->stream.char_stream_p && ecl_output_stream_p(strm)) {
-			if ((strm->stream.byte_size & 7))
-				/* buffered binary output stream -> flush any pending bits */
-				flush_output_stream_binary(strm);
-			/* write header */
-			if (strm->stream.header != 0xFF) {
+		if (ecl_output_stream_p(strm)) {
+			ecl_force_output(strm);
+			if (!strm->stream.char_stream_p && strm->stream.header != 0xFF) {
+				/* write header */
 				if (fseek(fp, 0, SEEK_SET) != 0)
 					io_error(strm);
 				ecl_write_byte8(strm->stream.header, strm);
@@ -658,8 +683,9 @@ BEGIN:
 	if (strm->stream.closed)
 		FEclosed_stream(strm);
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_output:
 	case smm_io:
+		io_stream_begin_write(strm);
+	case smm_output:
 #if defined(ECL_WSOCK)
 	case smm_io_wsock:
 	case smm_output_wsock:
@@ -903,8 +929,9 @@ BEGIN:
 	if (strm->stream.closed)
 		FEclosed_stream(strm);
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_input:
 	case smm_io:
+		io_stream_begin_read(strm);
+	case smm_input:
 	case smm_string_input:
 #if defined(ECL_WSOCK)
 	case smm_io_wsock:
@@ -1041,8 +1068,9 @@ BEGIN:
 	if (strm->stream.closed)
 		FEclosed_stream(strm);
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_input:
-	case smm_io: {
+	case smm_io:
+		io_stream_begin_read(strm);
+	case smm_input: {
 		FILE *fp = (FILE*)strm->stream.file;
 		if (!strm->stream.char_stream_p)
 			not_a_character_stream(strm);
@@ -1157,8 +1185,9 @@ BEGIN:
 		FEclosed_stream(strm);
 	fp = (FILE*)strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_input:
 	case smm_io:
+		io_stream_begin_read(strm);
+	case smm_input:
 		if (!strm->stream.char_stream_p)
 			not_a_character_stream(strm);
 		if (fp == NULL)
@@ -1265,8 +1294,12 @@ BEGIN:
 		FEclosed_stream(strm);
 	fp = (FILE*)strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_input:
 	case smm_io:
+		if (strm->stream.last_op < 0) {
+			goto UNREAD_ERROR;
+		}
+		strm->stream.last_op = +1;
+	case smm_input:
 		if (!strm->stream.char_stream_p)
 			not_a_character_stream(strm);
 		if (fp == NULL)
@@ -1345,8 +1378,9 @@ BEGIN:
 		FEclosed_stream(strm);
 	fp = (FILE*)strm->stream.file;
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_output:
 	case smm_io:
+		io_stream_begin_write(strm);
+	case smm_output:
 		if (!strm->stream.char_stream_p)
 			not_a_character_stream(strm);
 		if (c == '\n')
@@ -1495,6 +1529,9 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	     stream->stream.mode == smm_output))
 	{
 		size_t towrite = end - start;
+		if (stream->stream.mode == smm_io) {
+			io_stream_begin_write(stream);
+		}
 		if (fwrite(seq->vector.self.ch + start, sizeof(char),
 			   towrite, (FILE*)stream->stream.file) < towrite) {
 			io_error(stream);
@@ -1578,9 +1615,13 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	    (stream->stream.mode == smm_io ||
 	     stream->stream.mode == smm_input))
 	{
-		size_t toread = end - start;
-		size_t n = fread(seq->vector.self.ch + start, sizeof(char),
-				 toread, stream->stream.file);
+		size_t toread, n;
+		if (stream->stream.mode == smm_io) {
+			io_stream_begin_write(stream);
+		}
+		toread = end - start;
+		n = fread(seq->vector.self.ch + start, sizeof(char),
+			  toread, stream->stream.file);
 		if (n < toread && ferror((FILE*)stream->stream.file))
 			io_error(stream);
 		start += n;
@@ -1617,8 +1658,9 @@ BEGIN:
 	if (strm->stream.closed)
 		FEclosed_stream(strm);
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_output:
-	case smm_io: {
+	case smm_io:
+		strm->stream.last_op = 0;
+	case smm_output: {
 		FILE *fp = (FILE*)strm->stream.file;
 		if (fp == NULL)
 			wrong_file_handler(strm);
@@ -1920,8 +1962,9 @@ BEGIN:
 	if (strm->stream.closed)
 		FEclosed_stream(strm);
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_input:
 	case smm_io:
+		io_stream_begin_read(strm);
+	case smm_input:
 		fp = (FILE*)strm->stream.file;
 		if (fp == NULL)
 			wrong_file_handler(strm);
@@ -2007,8 +2050,10 @@ BEGIN:
 	if (strm->stream.closed)
 		FEclosed_stream(strm);
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_output:
 	case smm_io:
+		strm->stream.last_op = 0;
+	case smm_output:
+		ecl_force_output(strm);
 	case smm_input: {
 		/* FIXME! This does not handle large file sizes */
 		cl_fixnum small_offset;
@@ -2091,9 +2136,10 @@ BEGIN:
 	if (strm->stream.closed)
 		FEclosed_stream(strm);
 	switch ((enum ecl_smmode)strm->stream.mode) {
+	case smm_io:
 	case smm_input:
-	case smm_output:
-	case smm_io: {
+		ecl_force_output(strm);
+	case smm_output:{
 		FILE *fp = (FILE*)strm->stream.file;
 		if (!strm->stream.char_stream_p) {
 			large_disp = ecl_floor2(ecl_times(large_disp, MAKE_FIXNUM(strm->stream.byte_size)),
@@ -2196,9 +2242,10 @@ BEGIN:
 	if (strm->stream.closed)
 		FEclosed_stream(strm);
 	switch ((enum ecl_smmode)strm->stream.mode) {
-	case smm_input:
+	case smm_io:
 	case smm_output:
-	case smm_io: {
+		ecl_force_output(strm);
+	case smm_input: {
 		FILE *fp = (FILE*)strm->stream.file;
 		cl_index bs;
 		if (fp == NULL)
@@ -2817,6 +2864,7 @@ ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
 	stream->stream.char_stream_p = 1;
 	stream->stream.byte_size = 8;
 	stream->stream.signed_bytes = 0;
+	stream->stream.last_op = 0;
 	si_set_finalizer(stream, Ct);
 	return(stream);
 }

@@ -383,6 +383,7 @@ struct ecl_stream {
 	uint8_t bits_left;
 	int8_t buffer_state;	/* 0: unknown, 1: reading, -1: writing */
 	uint8_t header;		/* number of significant bits in the last byte */
+	int8_t last_op;		/* 0: unknown, 1: reading, -1: writing */
 };
 
 struct ecl_random {
