@@ -146,11 +146,7 @@ install-base:
 	done
 	for i in $(LSP_LIBRARIES) $(LIBRARIES); do \
 	  if test -s $$i ; then \
-	   if (echo $$i | grep '\.dll'); then \
-	     $(INSTALL_PROGRAM) $$i $(DESTDIR)$(bindir); \
-	   else \
-	     $(INSTALL_PROGRAM) $$i $(DESTDIR)$(libdir); \
-	   fi \
+	   $(INSTALL_PROGRAM) $$i $(DESTDIR)$(libdir); \
 	  fi \
 	done
 	for i in c/dpp* ecl_min* `cat MODULES`; do \
