@@ -2137,9 +2137,9 @@ BEGIN:
 		FEclosed_stream(strm);
 	switch ((enum ecl_smmode)strm->stream.mode) {
 	case smm_io:
-	case smm_input:
+	case smm_output:
 		ecl_force_output(strm);
-	case smm_output:{
+	case smm_input:{
 		FILE *fp = (FILE*)strm->stream.file;
 		if (!strm->stream.char_stream_p) {
 			large_disp = ecl_floor2(ecl_times(large_disp, MAKE_FIXNUM(strm->stream.byte_size)),
