@@ -1,9 +1,9 @@
-ECL 1.0:
-========
+ECL 0.9j:
+=========
 
 * New platforms:
 
- - Support for GNU/kFreeBSD
+ - Support for GNU/kFreeBSD and Mac OS X Leopard.
 
  - ECL has additionally been ported to GNU/Hurd (Pierre Thierry) and
    HP NonStop S-Series (Craig McDaniel)

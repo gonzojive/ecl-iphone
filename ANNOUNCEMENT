@@ -1,4 +1,4 @@
-Announcement of ECL v0.9i
+Announcement of ECL v0.9j
 =========================
 
 ECL stands for Embeddable Common-Lisp. The ECL project aims to produce
@@ -20,31 +20,22 @@ ECL is currently hosted at Common-Lisp.net and SourceForge. The home
 page of the project is http://ecls.sourceforge.net, and in it you will
 find source code releases, a CVS tree and some useful documentation.
 
+
 Notes for this release
 ======================
 
-This version adds one port: OSX on Intel/x86. The port uses the latest
-version of the Boehm-Weiser garbage collector and an unoptimized version
-of the GMP library (because the developers refuse to port the Intel/x86
-assembler code to this platform).
+This is mostly a bugfix release, but it includes several interesting
+new features, such as the SERVE-EVENT package, ported from SBCL by
+Steve Smith, finalization of lisp objects and installation of ECL
+on standard unix paths
 
-Apart from that, this release contains mostly bug fixes. Some of them
-are very important. For instance, ECL can now compiled code with
-constants that have no printed representation, such as CLOS classes and
-objects, but also hash tables and arrays with circular references.
 
-ECL can also be built with support for strings and symbols with unicode
-characters (patches by B. Spilsbury). However, since the reader still
-does not understand external formats, there is some way until we can
-claim that ECL supports unicode.
-
-Changes since 0.9h
+Changes since 0.9i
 ==================
 
-See file src/CHANGELOG or browse online version:
+See file src/CHANGELOG or browse it online
 
-http://common-lisp.net/cgi-bin/viewcvs.cgi/ecl/src/CHANGELOG?rev=1.298&root=ecl&view=auto
-
+http://common-lisp.net/cgi-bin/viewcvs.cgi/ecl/src/CHANGELOG?root=ecl&view=markup
 
 ;;; Local Variables: ***
 ;;; mode:text ***
