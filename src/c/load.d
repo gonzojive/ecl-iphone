@@ -78,33 +78,55 @@ copy_object_file(cl_object original)
 
 #ifdef ENABLE_DLOPEN
 cl_object
-ecl_library_open(cl_object filename) {
-	cl_object block;
+ecl_library_find(cl_object filename)
+{
 	cl_object libraries = cl_core.libraries;
-	bool self_destruct = 0;
 	cl_index i;
-	/*
-	 * We are using shared libraries as modules. That is not quite right
-	 * because many operating systems do not allow to load a shared
-	 * library twice, even if it has changed. Hence we have to make a
-	 * unique copy (or a link in Unix) when we load a file with the
-	 * same name of a module we already loaded.
-	 * In Windows we always duplicate the FASL file because otherwise
-	 * it cannot be overwritten. In Unix we need only do that when the
-	 * file has been previously loaded. */
-#if defined(mingw32) || defined(_MSC_VER)
-	filename = copy_object_file(filename);
-#else
 	for (i = 0; i < libraries->vector.fillp; i++) {
 		if (ecl_string_eq(libraries->vector.self.t[i]->cblock.name,
 				  filename))
 		{
-			filename = copy_object_file(filename);
-			self_destruct = 1;
-			break;
+			return libraries->vector.self.t[i];
 		}
 	}
+	return Cnil;
+}
+
+cl_object
+ecl_library_open(cl_object filename, bool force_reload) {
+	cl_object block;
+	cl_object libraries = cl_core.libraries;
+	bool self_destruct = 0;
+	cl_index i;
+	if (!force_reload) {
+		/* When loading a foreign library, such as a dll or a
+		 * so, it cannot contain any executable top level
+		 * code. In that case force_reload=0 and there is no
+		 * need to reload it if it has already been loaded. */
+		block = ecl_library_find(filename);
+		if (!Null(block)) {
+			return block;
+		}
+	} else {
+		/* We are using shared libraries as modules and
+		 * force_reload=1.  Here we have to face the problem
+		 * that many operating systems do not allow to load a
+		 * shared library twice, even if it has changed. Hence
+		 * we have to make a unique copy to be able to load
+		 * the same FASL twice. In Windows this copy is
+		 * _always_ made because otherwise it cannot be
+		 * overwritten. In Unix we need only do that when the
+		 * file has been previously loaded. */
+#if defined(mingw32) || defined(_MSC_VER)
+		filename = copy_object_file(filename);
+#else
+		block = ecl_library_find(filename);
+		if (!Null(block)) {
+			filename = copy_object_file(filename);
+			self_destruct = 1;
+		}
 #endif
+	}
 	block = cl_alloc_object(t_codeblock);
 	block->cblock.self_destruct = self_destruct;
 	block->cblock.name = filename;
@@ -307,7 +329,7 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 	CL_UNWIND_PROTECT_BEGIN {
 #endif
 	/* Try to load shared object file */
-	block = ecl_library_open(filename);
+	block = ecl_library_open(filename, 1);
 	if (block->cblock.handle == NULL) {
 		output = ecl_library_error(block);
 		goto OUTPUT;

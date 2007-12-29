@@ -430,7 +430,7 @@ si_load_foreign_module(cl_object filename)
 			output = libraries->vector.self.t[i];
 			goto OUTPUT;
 		}
-	output = ecl_library_open(filename);
+	output = ecl_library_open(filename, 0);
 	if (output->cblock.handle == NULL)
 	{
 		output = ecl_library_error(output);

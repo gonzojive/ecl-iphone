@@ -786,7 +786,7 @@ extern void ecl_delete_eq(cl_object x, cl_object *l);
 
 /* load.c */
 
-extern cl_object ecl_library_open(cl_object filename);
+extern cl_object ecl_library_open(cl_object filename, bool force_reload);
 extern void *ecl_library_symbol(cl_object block, const char *symbol, bool lock);
 extern cl_object ecl_library_error(cl_object block);
 extern void ecl_library_close(cl_object block);
