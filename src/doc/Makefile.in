@@ -118,8 +118,8 @@ cvs.html: $(srcdir)/cvs.in.html head
 	cat head $(srcdir)/cvs.in.html $(srcdir)/end | $(FILTER) > $@
 install.html: $(srcdir)/install.in.html head
 	cat head $(srcdir)/install.in.html $(srcdir)/end | $(FILTER) > $@
-news.html: head
-	(cat head; echo '<pre>'; cat $(srcdir)/../../ANNOUNCEMENT| sed -e '1d'; echo '</pre>' \
+news.html: head $(srcdir)/../..ANNOUNCEMENT
+	(cat head; echo '<pre>'; cat $(srcdir)/../../ANNOUNCEMENT; echo '</pre>';\
 	 cat $(srcdir)/end) | $(FILTER) > $@
 benchmark.html: $(srcdir)/benchmark.in.html BENCHMARK head
 	(cat head; cat $(srcdir)/benchmark.in.html; \
