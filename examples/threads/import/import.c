@@ -38,14 +38,20 @@
  * or CreateThread (in unix and Windows respectively) with the
  * GC_pthread_create and GC_CreateThread functions.
  */
-
-#include <ecl.h>
+/* Unfortunately, the Bohem-Weiser garbage collector does not keep track
+ * of its configuration. We have to add the following flags by hand in
+ * order to force pthread_create being redefined.
+ */
+#define GC_THREADS
+#define _REENTRANT
+#include <ecl/gc/gc.h>
+#include <ecl/ecl.h>
 
 
 static void *
 thread_entry_point(void *data)
 {
-	cl_object form;
+	cl_object form = (cl_object)data;
 
 	/*
 	 * This is the entry point of the threads we have created.
@@ -53,7 +59,6 @@ thread_entry_point(void *data)
 	 * routine initializes the lisp and makes it ready for working
 	 * in this thread.
 	 */
-
 	ecl_import_current_thread(Cnil, Cnil);
 
 	/*
@@ -66,7 +71,6 @@ thread_entry_point(void *data)
 	 * resources allocated by the lisp environment.
 	 */
 	ecl_release_current_thread();
-
 	return NULL;
 }
 
@@ -90,10 +94,17 @@ int main(int narg, char **argv)
 	 * collector.
 	 */
 	cl_object sym_print = c_string_to_object("PRINT");
-	for (i = 0; i < 10; i++) {
-		cl_object form = cl_list(2, sym_print, MAKE_FIXNUM(i));
+
+	/*
+	 * This array will keep the forms we want to evaluate from
+	 * being garbage collected.
+	 */
+	volatile cl_object forms[4];
+
+	for (i = 0; i < 4; i++) {
+		forms[i] = cl_list(2, sym_print, MAKE_FIXNUM(i));
 		code = pthread_create(&child_thread, NULL, thread_entry_point,
-				      (void*)form);
+				      (void*)forms[i]);
 		if (code) {
 			printf("Unable to create thread\n");
 			exit(1);
