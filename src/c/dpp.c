@@ -57,7 +57,7 @@
 	Each supplied-p parameter becomes a boolean C variable.
 
 	Initforms are C expressions.
-	It an expression contain non-alphanumeric characters,
+	If an expression contains non-alphanumeric characters,
 	it should be surrounded by backquotes (`).
 
 
@@ -138,14 +138,12 @@ int nres;
 put_lineno(void)
 {
 	static int flag = 0;
-#if 1
 	if (flag)
 		fprintf(out, "#line %d\n", lineno);
 	else {
 		flag++;
 		fprintf(out, "#line %d \"%s\"\n", lineno, filename);
 	}
-#endif
 }
 
 error(char *s)
@@ -160,6 +158,7 @@ error_symbol(char *s)
 	exit(1);
 }
 
+int
 readc(void)
 {
 	int c;
@@ -178,6 +177,7 @@ readc(void)
 	return(c);
 }
 
+int
 nextc(void)
 {
 	int c;
@@ -187,6 +187,7 @@ nextc(void)
 	return(c);
 }
 
+void
 unreadc(int c)
 {
 	if (c == '\n')
@@ -196,6 +197,7 @@ unreadc(int c)
 	ungetc(c, in);
 }
 
+void
 put_tabs(int n)
 {
 	put_lineno();
@@ -203,6 +205,7 @@ put_tabs(int n)
 		putc('\t', out);
 }
 
+void
 pushc(int c)
 {
 	if (poolp >= &pool[POOLSIZE])
@@ -210,6 +213,7 @@ pushc(int c)
 	*poolp++ = c;
 }
 
+void
 pushstr(const char *s)
 {
 	while (*s)
@@ -391,6 +395,7 @@ read_token(void)
 	return(p);
 }
 
+void
 reset(void)
 {
 	int i;
@@ -426,6 +431,7 @@ reset(void)
 		= NULL;
 }
 
+void
 get_function(void)
 {
 	function = read_function();
@@ -438,6 +444,7 @@ get_function(void)
 	function_c_name = translate_function(function);
 }
 
+void
 get_lambda_list(void)
 {
 	int c;
@@ -585,6 +592,7 @@ AUX:
 	}
 }
 
+void
 get_return(void)
 {
 	int c;
@@ -598,6 +606,7 @@ get_return(void)
 	}
 }
 
+void
 put_fhead(void)
 {
 	int i;
@@ -611,6 +620,7 @@ put_fhead(void)
 	fprintf(out, ")\n{\n");
 }
 
+void
 put_declaration(void)
 {
   int i;
@@ -736,6 +746,7 @@ put_declaration(void)
   }
 }
 
+void
 put_return(void)
 {
 	int i, t;
@@ -765,10 +776,10 @@ put_return(void)
 	}
 }
 
-char
+int
 jump_to_at(void)
 {
-	char c;
+	int c;
  GO_ON:
 	while ((c = readc()) != '@')
 		putc(c, out);
@@ -779,6 +790,7 @@ jump_to_at(void)
 	return c;
 }
 
+void
 main_loop(void)
 {
 	int c;
@@ -834,6 +846,7 @@ LOOP:
 	goto LOOP;
 }
 
+int
 main(int argc, char **argv)
 {
 	char *p, *q;
@@ -867,4 +880,5 @@ main(int argc, char **argv)
 		error("can't open output file");
 	printf("dpp: %s -> %s\n", filename, outfile);
 	main_loop();
+	return 0;
 }
