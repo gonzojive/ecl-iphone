@@ -125,6 +125,42 @@ void GC_push_all_stacks() {
 	GC_push_one(state.ebp); 
 # endif
 #elif defined(POWERPC)
+# if __DARWIN_UNIX03
+	/* In Leopard, the registers get a prefix */
+	lo = (void*)(state.__r1 - PPC_RED_ZONE_SIZE);
+        
+	GC_push_one(state.__r0); 
+	GC_push_one(state.__r2); 
+	GC_push_one(state.__r3); 
+	GC_push_one(state.__r4); 
+	GC_push_one(state.__r5); 
+	GC_push_one(state.__r6); 
+	GC_push_one(state.__r7); 
+	GC_push_one(state.__r8); 
+	GC_push_one(state.__r9); 
+	GC_push_one(state.__r10); 
+	GC_push_one(state.__r11); 
+	GC_push_one(state.__r12); 
+	GC_push_one(state.__r13); 
+	GC_push_one(state.__r14); 
+	GC_push_one(state.__r15); 
+	GC_push_one(state.__r16); 
+	GC_push_one(state.__r17); 
+	GC_push_one(state.__r18); 
+	GC_push_one(state.__r19); 
+	GC_push_one(state.__r20); 
+	GC_push_one(state.__r21); 
+	GC_push_one(state.__r22); 
+	GC_push_one(state.__r23); 
+	GC_push_one(state.__r24); 
+	GC_push_one(state.__r25); 
+	GC_push_one(state.__r26); 
+	GC_push_one(state.__r27); 
+	GC_push_one(state.__r28); 
+	GC_push_one(state.__r29); 
+	GC_push_one(state.__r30); 
+	GC_push_one(state.__r31);
+# else
 	lo = (void*)(state.r1 - PPC_RED_ZONE_SIZE);
         
 	GC_push_one(state.r0); 
@@ -158,6 +194,7 @@ void GC_push_all_stacks() {
 	GC_push_one(state.r29); 
 	GC_push_one(state.r30); 
 	GC_push_one(state.r31);
+#endif /* __DARWIN_UNIX03 */
 #else
 # error FIXME for non-x86 || ppc architectures
 #endif
@@ -212,6 +249,43 @@ void GC_push_all_stacks() {
 			     (natural_t *)&info, &outCount);
 	if(r != KERN_SUCCESS) ABORT("task_get_state failed");
 
+#      if __DARWIN_UNIX03
+        /* In Leopard, the registers get a prefix */
+	lo = (void*)(info.__r1 - PPC_RED_ZONE_SIZE);
+	hi = (ptr_t)FindTopOfStack(info.__r1);
+
+	GC_push_one(info.__r0); 
+	GC_push_one(info.__r2); 
+	GC_push_one(info.__r3); 
+	GC_push_one(info.__r4); 
+	GC_push_one(info.__r5); 
+	GC_push_one(info.__r6); 
+	GC_push_one(info.__r7); 
+	GC_push_one(info.__r8); 
+	GC_push_one(info.__r9); 
+	GC_push_one(info.__r10); 
+	GC_push_one(info.__r11); 
+	GC_push_one(info.__r12); 
+	GC_push_one(info.__r13); 
+	GC_push_one(info.__r14); 
+	GC_push_one(info.__r15); 
+	GC_push_one(info.__r16); 
+	GC_push_one(info.__r17); 
+	GC_push_one(info.__r18); 
+	GC_push_one(info.__r19); 
+	GC_push_one(info.__r20); 
+	GC_push_one(info.__r21); 
+	GC_push_one(info.__r22); 
+	GC_push_one(info.__r23); 
+	GC_push_one(info.__r24); 
+	GC_push_one(info.__r25); 
+	GC_push_one(info.__r26); 
+	GC_push_one(info.__r27); 
+	GC_push_one(info.__r28); 
+	GC_push_one(info.__r29); 
+	GC_push_one(info.__r30); 
+	GC_push_one(info.__r31);
+#      else
 	lo = (void*)(info.r1 - PPC_RED_ZONE_SIZE);
 	hi = (ptr_t)FindTopOfStack(info.r1);
 
@@ -246,6 +320,8 @@ void GC_push_all_stacks() {
 	GC_push_one(info.r29); 
 	GC_push_one(info.r30); 
 	GC_push_one(info.r31);
+#      endif /* __DARWIN_UNIX03 */
+
 #      else
 	/* FIXME: Remove after testing:	*/
 	WARN("This is completely untested and likely will not work\n", 0);
@@ -258,6 +334,24 @@ void GC_push_all_stacks() {
 	lo = (void*)info.esp;
 	hi = (ptr_t)FindTopOfStack(info.esp);
 
+#      if __DARWIN_UNIX03
+        /* In Leopard, the registers get a prefix */
+	GC_push_one(info.__eax); 
+	GC_push_one(info.__ebx); 
+	GC_push_one(info.__ecx); 
+	GC_push_one(info.__edx); 
+	GC_push_one(info.__edi); 
+	GC_push_one(info.__esi); 
+	/* GC_push_one(info.__ebp);  */
+	/* GC_push_one(info.__esp);  */
+	GC_push_one(info.__ss); 
+	GC_push_one(info.__eip); 
+	GC_push_one(info.__cs); 
+	GC_push_one(info.__ds); 
+	GC_push_one(info.__es); 
+	GC_push_one(info.__fs); 
+	GC_push_one(info.__gs); 
+#      else
 	GC_push_one(info.eax); 
 	GC_push_one(info.ebx); 
 	GC_push_one(info.ecx); 
@@ -273,6 +367,7 @@ void GC_push_all_stacks() {
 	GC_push_one(info.es); 
 	GC_push_one(info.fs); 
 	GC_push_one(info.gs); 
+#      endif /* __DARWIN_UNIX03 */
 #      endif /* !POWERPC */
       }
 #     if DEBUG_THREADS
