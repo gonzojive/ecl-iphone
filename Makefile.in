@@ -34,6 +34,7 @@ MACHINE = @MACHINE_VERSION@
 
 VERSION=@PACKAGE_VERSION@
 WWW=http://ecls.sourceforge.net/
+ADDRESS=anonymous@common-lisp.net:/project/ecl/cvsroot
 
 # ==================== Things `configure' Might Edit ====================
 
@@ -81,13 +82,6 @@ install: build/Makefile
 uninstall:
 	cd build; $(MAKE) uninstall
 
-# ==================== Documentation ====================
-
-info:
-	(cd ${srcdir}/doc; $(MAKE) info)
-dvi:
-	(cd ${srcdir}/doc; $(MAKE) dvi)
-
 # ==================== Cleaning up and miscellanea ====================
 
 #   `clean'
@@ -108,8 +102,7 @@ clean:
 #        distribution.
 
 distclean: clean
-	rm -fr build/config.status
-	rm -f Makefile
+	rm -rf build Makefile
 
 #   `realclean'
 #        Delete everything from the current directory that can be
@@ -121,12 +114,7 @@ distclean: clean
 #        begin to build the program.
 realclean: distclean
 
-TAGS tags:
-	(cd ${srcdir}/src; \
-	 etags c/*.[cd] h/*.h)
-
-check test:
-	cd build; $(MAKE) test
+# ==================== Various means of distribution ====================
 
 TAR_DIR=ecl-$(VERSION)
 
@@ -136,34 +124,29 @@ doc: build/doc/index.html
 build/doc/index.html:
 	cd build/doc; $(MAKE)
 
-source-dist: $(TAR_DIR).tgz $(TAR_DIR)-tests.tgz
+source-dist: $(TAR_DIR).tgz
 
 rpmdir=$(shell rpm --showrc | grep '^-[0-9]*:.*[^{]_topdir' | sed 's,^.*topdir[ 	]*\(.*\)[ 	]*,\1,')
 rpmbuild=$(shell if [ -z `which rpmbuild` ]; then echo "rpm"; else echo "rpmbuild"; fi)
 
-rpm: doc
-	-rm -rf $(TAR_DIR)
-	mkdir $(TAR_DIR) $(TAR_DIR)/src \
-	$(TAR_DIR)/src/tests $(TAR_DIR)/src/ansi-tests && \
-	for i in $(TAR_CONTENTS); do cp -rf $$i $(TAR_DIR)/$$i; done && \
-	tar -cz --exclude '*~' --exclude '#*' --exclude 'CVS' -f $(rpmdir)/SOURCES/$(TAR_DIR).tgz $(TAR_DIR)
-	if [ -f /etc/SuSE-release ]; then HOST=SUSE; else HOST=REDHAT; fi; \
-	cat src/util/ecl.spec |\
-	sed 's,ECL_VERSION,$(VERSION),;s,^#% '$${HOST}' ,,g;'|\
-	grep -v '^#% ' > $(rpmdir)/SPECS/ecl.spec;
-	rpm -ba $(rpmdir)/SPECS/ecl.spec
-$(TAR_DIR).tgz: doc
-	-rm -rf $(TAR_DIR)
-	mkdir $(TAR_DIR) $(TAR_DIR)/src \
-	$(TAR_DIR)/src/tests $(TAR_DIR)/src/ansi-tests && \
-	for i in $(TAR_CONTENTS); do cp -rf $$i $(TAR_DIR)/$$i; done && \
-	tar -cz --exclude '*~' --exclude '#*' --exclude 'CVS' -f $(TAR_DIR).tgz $(TAR_DIR)
-$(TAR_DIR)-tests.tgz:
-	-rm -rf $(TAR_DIR)
-	mkdir $(TAR_DIR) && \
-	mkdir $(TAR_DIR)/src && \
-	cp -rf src/ansi-tests $(TAR_DIR)/src && \
-	tar -cz --exclude '*~' --exclude '#*' --exclude 'CVS' -f $(TAR_DIR)-tests.tgz $(TAR_DIR);
+# OBSOLETE!!!
+# rpm: doc
+# 	-rm -rf $(TAR_DIR)
+# 	mkdir $(TAR_DIR) $(TAR_DIR)/src \
+# 	$(TAR_DIR)/src/tests $(TAR_DIR)/src/ansi-tests && \
+# 	for i in $(TAR_CONTENTS); do cp -rf $$i $(TAR_DIR)/$$i; done && \
+# 	tar -cz --exclude '*~' --exclude '#*' --exclude 'CVS' -f $(rpmdir)/SOURCES/$(TAR_DIR).tgz $(TAR_DIR)
+# 	if [ -f /etc/SuSE-release ]; then HOST=SUSE; else HOST=REDHAT; fi; \
+# 	cat src/util/ecl.spec |\
+# 	sed 's,ECL_VERSION,$(VERSION),;s,^#% '$${HOST}' ,,g;'|\
+# 	grep -v '^#% ' > $(rpmdir)/SPECS/ecl.spec;
+# 	rpm -ba $(rpmdir)/SPECS/ecl.spec
+
+$(TAR_DIR):
+	cvs -z3 -d:pserver:anonymous:$(ADDRESS) co ecl && mv ecl $(TAR_DIR)
+$(TAR_DIR).tgz: $(TAR_DIR)
+	cd $(TAR_DIR) && cvs update -C -P -d
+	tar -cz --exclude '*~' --exclude '.#*' -f $(TAR_DIR).tgz $(TAR_DIR)
 
 binary-dist: all
 	su -c "rm -rf tmp"
@@ -185,6 +168,3 @@ windows-nsi: all
 	`pwd`/src/util/ecl_nsi.sh `pwd`/src/util/ecl.nsi build/$(TAR_DIR)
 	makensis.exe build/$(TAR_DIR)/ecl.nsi
 	mv build/$(TAR_DIR)/Setup.exe ecl-$(VERSION).exe
-
-dist:
-	cd dist; make-dist
