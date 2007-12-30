@@ -571,7 +571,7 @@ string, it is passed as such to the C compiler when building the program. This
 way you can specify FASL code (i.e. compiled lisp code) and additional
 libraries or custom C code.
 
-Hoewever, if the argument is a symbol, it is interpreted as the name of a lisp
+However, if the argument is a symbol, it is interpreted as the name of a lisp
 library of FASL code. You should use symbols to call in optional parts of the
 interpreter, such as the compiler 'CMP or the 'CLX library (not yet available)
 
