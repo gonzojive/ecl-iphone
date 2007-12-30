@@ -103,25 +103,25 @@ get_meth_hash(cl_object *keys, int argno, cl_object hashtable)
 	cl_object hkey, tlist;
 	register cl_index i = 0;
 	int k, n; /* k added by chou */
-	bool b = 1;
 
 	hsize = hashtable->hash.size;
 	htable = hashtable->hash.data;
 	for (n = 0; n < argno; n++)
-	  i += (cl_index)keys[n] / 4; /* instead of:
-				   i += hash_eql(keys[n]);
-				   i += hash_eql(Cnil);
-				 */
+		i += (cl_index)keys[n] / 4; /* instead of:
+					       i += hash_eql(keys[n]);
+					       i += hash_eql(Cnil);
+					    */
 	for (i %= hsize, k = 0; k < hsize;  i = (i + 1) % hsize, k++) {
-	  e = &htable[i];
-	  hkey = e->key;
-	  if (hkey == OBJNULL)
-	    return(e);
-	  for (n = 0, tlist = hkey; b && (n < argno);
-	       n++, tlist = CDR(tlist))
-	    b &= (keys[n] == CAR(tlist));
-	  if (b)
-	    return(&htable[i]);
+		bool b = 1;
+		e = &htable[i];
+		hkey = e->key;
+		if (hkey == OBJNULL)
+			return(e);
+		for (b = 1, n = 0, tlist = hkey; b && (n < argno);
+		     n++, tlist = CDR(tlist))
+			b &= (keys[n] == CAR(tlist));
+		if (b)
+			return(&htable[i]);
 	}
 	ecl_internal_error("get_meth_hash");
 }
