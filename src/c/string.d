@@ -17,6 +17,9 @@
 
 #include <ecl/ecl.h>
 #include <ctype.h>
+#ifdef ECL_UNICODE
+#include <wctype.h>
+#endif
 #include <string.h>
 #include <ecl/ecl-inl.h>
 
