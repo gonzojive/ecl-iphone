@@ -225,8 +225,9 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 	 (disambiguation (c)
 	   (case kind
 	     (:object "")
+             (:program "exe_")
 	     ((:fasl :fas) "fas_")
-	     ((:shared-library :dll :static-library :lib) "lib_")
+	     ((:library :shared-library :dll :static-library :lib) "lib_")
 	     (otherwise (error "Not a valid argument to INIT-FUNCTION-NAME: kind = ~S"
 			       kind)))))
     (setq s (map 'string #'translate-char (string s)))
@@ -397,7 +398,7 @@ static cl_object VV[VM];
     (when (or (symbolp output-name) (stringp output-name))
       (setf output-name (compile-file-pathname output-name :type target)))
     (unless init-name
-      (setf init-name (guess-name-and-flags output-name :prefix nil)))
+      (setf init-name (guess-name-and-flags output-name :prefix nil :kind target)))
     (ecase target
       (:program
        (format c-file +lisp-program-init+ init-name "" shared-data-file
