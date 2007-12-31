@@ -1,5 +1,18 @@
-ECL 0.9j:
-=========
+ECL 0.9j-p1:
+============
+
+* Fixes with respect 0.9j
+
+ - Added a disambiguation prefix that allows an executable to have the same
+   name as one of the object files that are used to create it.
+
+ - Fixed examples/threads/import.c to ensure that the GC_pthread is used.
+
+ - Fixed the code for inspecting the generic function hash table
+   (Ralph Campbell)
+
+ - Added fixes for the Boehm-Weiser garbage collector under Mac OS X
+   Leopard/PPC (Aleix Conchillo)
 
 * New platforms:
 
