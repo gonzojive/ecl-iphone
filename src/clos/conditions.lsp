@@ -42,14 +42,33 @@ strings."
   (declare (inline apply) ;; So as not to get bogus frames in debugger
 	   (ignore error-name))
   (let ((condition (coerce-to-condition datum args 'simple-error 'error)))
-    (if continue-string
-      (with-simple-restart
-	  (continue "~A" (format nil "~?" continue-string args))
-	(signal condition)
-	(invoke-debugger condition))
-      (progn
-	(signal condition)
-	(invoke-debugger condition)))))
+    (cond
+      ((eq t continue-string)
+       ; from CEerror; mostly allocation errors
+       (with-simple-restart (ignore "Ignore the error, and try the operation again")
+	 (signal condition)
+	 (invoke-debugger condition)))
+      ((stringp continue-string)
+       (with-simple-restart
+	 (continue "~A" (format nil "~?" continue-string args))
+	 (signal condition)
+	 (invoke-debugger condition)))
+      ((and continue-string (symbolp continue-string))
+       ; from CEerror
+       (with-simple-restart (accept "Accept the error, returning NIL")
+	 (multiple-value-bind (rv used-restart)
+	   (with-simple-restart (ignore "Ignore the error, and try the operation again")
+	     (multiple-value-bind (rv used-restart)
+	       (with-simple-restart (continue "Continue, using ~S" continue-string)
+		 (signal condition)
+		 (invoke-debugger condition))
+
+	       (if used-restart continue-string rv)))
+	   (if used-restart t rv))))
+      (t
+	(progn
+	  (signal condition)
+	  (invoke-debugger condition))))))
 
 (defun sys::tpl-continue-command (&rest any)
   (apply #'invoke-restart 'continue any))

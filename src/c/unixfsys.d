@@ -47,6 +47,7 @@
 #ifndef HAVE_MKSTEMP
 # include <fcntl.h>
 #endif
+#include <errno.h>
 
 #if defined(_MSC_VER) || defined(mingw32)
 static void
@@ -287,10 +288,10 @@ ecl_file_len(void *fp)
 	return ecl_make_integer(filestatus.st_size);
 }
 
-cl_object
-cl_rename_file(cl_object oldn, cl_object newn)
-{
+@(defun rename-file (oldn newn &key (if_exists @':error'))
 	cl_object old_filename, new_filename, old_truename, new_truename;
+	int error;
+@
 
 	/* 1) Get the old filename, and complain if it has wild components,
 	 *    or if it does not exist. Notice that the filename to be renamed
@@ -303,12 +304,93 @@ cl_rename_file(cl_object oldn, cl_object newn)
 	newn = ecl_merge_pathnames(newn, oldn, @':newest');
 	new_filename = si_coerce_to_filename(newn);
 
-	/* 3) Try renaming and signal an error when it was not possible. */
-	if (rename(old_filename->base_string.self, new_filename->base_string.self) < 0)
-		FElibc_error("Cannot rename the file ~S to ~S.", 2, oldn, newn);
-	new_truename = cl_truename(newn);
+	while (if_exists == @':error' || if_exists == Cnil) {
+#if defined(_MSC_VER) || defined(mingw32)
+		error = SetErrorMode(0);
+		if (MoveFile(old_filename->base_string.self, new_filename->base_string.self)) {
+			SetErrorMode(error);
+			goto SUCCESS;
+		}
+		SetErrorMode(error);
+		switch (GetLastError()) {
+		case ERROR_ALREADY_EXISTS:
+		case ERROR_FILE_EXISTS:
+			break;
+		default:
+			goto FAILURE_CLOBBER;
+		};
+#else
+		if (link(old_filename->base_string.self, new_filename->base_string.self) == 0) {
+			(void)unlink(old_filename->base_string.self);
+			goto SUCCESS;
+		}
+		if (errno != EEXIST && errno != ENOTEMPTY) {
+			goto FAILURE_CLOBBER;
+		}
+#endif
+		/* if the file already exists */
+		if (if_exists != Cnil) {
+			if_exists = CEerror(@':supersede',
+					"When trying to rename ~S, ~S already exists", 2,
+					oldn, new_filename);
+			if (if_exists == Ct) if_exists= @':error';
+		}
+
+		if (if_exists == Cnil) {
+			@(return Cnil)
+		}
+	}
+	
+	if (if_exists == @':supersede' || if_exists == Ct) {
+#if defined(_MSC_VER) || defined(mingw32)
+		error = SetErrorMode(0);
+		if (MoveFile(old_filename->base_string.self, new_filename->base_string.self)) {
+			SetErrorMode(error);
+			goto SUCCESS;
+		}
+		switch (GetLastError()) {
+		case ERROR_ALREADY_EXISTS:
+		case ERROR_FILE_EXISTS:
+			break;
+		default:
+			goto FAILURE_CLOBBER;
+		};
+		if (MoveFileEx(old_filename->base_string.self, new_filename->base_string.self,
+					MOVEFILE_REPLACE_EXISTING)) {
+			SetErrorMode(error);
+			goto SUCCESS;
+		}
+		/* hack for win95/novell */
+		chmod(old_filename->base_string.self, 0777);
+		chmod(new_filename->base_string.self, 0777);
+		SetFileAttributesA(new_filename->base_string.self, FILE_ATTRIBUTE_NORMAL);
+		SetFileAttributesA(new_filename->base_string.self, FILE_ATTRIBUTE_TEMPORARY);
+		if (MoveFile(old_filename->base_string.self, new_filename->base_string.self)) {
+			SetErrorMode(error);
+			goto SUCCESS;
+		}
+		/* fallback on old behavior */
+		(void)DeleteFileA(new_filename->base_string.self);
+		if (MoveFile(old_filename->base_string.self, new_filename->base_string.self)) {
+			SetErrorMode(error);
+			goto SUCCESS;
+		}
+		/* fall through */
+#else
+		if (rename(old_filename->base_string.self, new_filename->base_string.self) == 0) {
+			goto SUCCESS;
+		}
+#endif
+	} else {
+		/* invalid key */
+		FEerror("~S is an illegal IF-EXISTS option for RENAME-FILE.", 1, if_exists);
+	}
+FAILURE_CLOBBER:
+	FElibc_error("Cannot rename the file ~S to ~S.", 2, oldn, newn);
+
+SUCCESS:new_truename = cl_truename(newn);
 	@(return newn old_truename new_truename)
-}
+@)
 
 cl_object
 cl_delete_file(cl_object file)

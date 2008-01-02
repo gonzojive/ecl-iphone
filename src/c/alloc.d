@@ -432,7 +432,7 @@ CALL_GC:
 	GC_disable();
 	{ cl_object s = make_simple_base_string(tm_table[(int)t].tm_name+1);
 	GC_enable();
-	CEerror("The storage for ~A is exhausted.~%\
+	CEerror(Ct, "The storage for ~A is exhausted.~%\
 Currently, ~D pages are allocated.~%\
 Use ALLOCATE to expand the space.",
 		2, s, MAKE_FIXNUM(tm->tm_npage));
@@ -488,7 +488,7 @@ CALL_GC:
 			tm->tm_maxpage += tm->tm_maxpage/2;
 		goto ONCE_MORE;
 	}
-	CEerror("The storage for CONS is exhausted.~%\
+	CEerror(Ct, "The storage for CONS is exhausted.~%\
 Currently, ~D pages are allocated.~%\
 Use ALLOCATE to expand the space.",
 		1, MAKE_FIXNUM(tm->tm_npage));
@@ -551,7 +551,7 @@ ONCE_MORE:
 			g = FALSE;
 			goto ONCE_MORE;
 		}
-		CEerror("Contiguous blocks exhausted.~%\
+		CEerror(Ct, "Contiguous blocks exhausted.~%\
 Currently, ~D pages are allocated.~%\
 Use ALLOCATE-CONTIGUOUS-PAGES to expand the space.",
 			1, MAKE_FIXNUM(ncbpage));

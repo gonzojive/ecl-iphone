@@ -750,7 +750,7 @@ cl_symbols[] = {
 {"REMOVE-IF", CL_ORDINARY, ECL_NAME(cl_remove_if), -1, OBJNULL},
 {"REMOVE-IF-NOT", CL_ORDINARY, ECL_NAME(cl_remove_if_not), -1, OBJNULL},
 {"REMPROP", CL_ORDINARY, cl_remprop, 2, OBJNULL},
-{"RENAME-FILE", CL_ORDINARY, cl_rename_file, 2, OBJNULL},
+{"RENAME-FILE", CL_ORDINARY, cl_rename_file, -1, OBJNULL},
 {"RENAME-PACKAGE", CL_ORDINARY, cl_rename_package, -1, OBJNULL},
 {"REPLACE", CL_ORDINARY, ECL_NAME(cl_replace), -1, OBJNULL},
 {"REQUIRE", CL_ORDINARY, ECL_NAME(cl_require), -1, OBJNULL},

@@ -588,8 +588,8 @@ si_setenv(cl_object var, cl_object value)
 #endif
 	}
 	if (ret_val == -1)
-		CEerror("SI:SETENV failed: insufficient space in environment.",
-			1, "Continue anyway");
+		CEerror(Ct, "SI:SETENV failed: insufficient space in environment.",
+			1, Cnil);
 	@(return (value))
 }
 #endif

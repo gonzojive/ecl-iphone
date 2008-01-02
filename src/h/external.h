@@ -473,7 +473,7 @@ extern void FEassignment_to_constant(cl_object v) /*__attribute__((noreturn))*/;
 extern void FEundefined_function(cl_object fname) /*__attribute__((noreturn))*/;
 extern void FEinvalid_function(cl_object obj) /*__attribute__((noreturn))*/;
 extern void FEinvalid_function_name(cl_object obj) /*__attribute__((noreturn))*/;
-extern cl_object CEerror(const char *err_str, int narg, ...);
+extern cl_object CEerror(cl_object c, const char *err_str, int narg, ...);
 extern void FEillegal_index(cl_object x, cl_object i);
 extern void FEtype_error_symbol(cl_object obj) /*__attribute__((noreturn))*/;
 extern void FElibc_error(const char *msg, int narg, ...) /*__attribute__((noreturn))*/;
@@ -1462,7 +1462,7 @@ extern cl_object ecl_check_type_string(cl_object fun, cl_object p);
 /* unixfsys.c */
 
 extern cl_object cl_truename(cl_object file);
-extern cl_object cl_rename_file(cl_object old_obj, cl_object new_obj);
+extern cl_object cl_rename_file _ARGS((cl_narg narg, cl_object old_obj, cl_object new_obj, ...));
 extern cl_object cl_delete_file(cl_object file);
 extern cl_object cl_probe_file(cl_object file);
 extern cl_object cl_file_write_date(cl_object file);

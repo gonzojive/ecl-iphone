@@ -65,12 +65,12 @@ FEerror(const char *s, int narg, ...)
 }
 
 cl_object
-CEerror(const char *err, int narg, ...)
+CEerror(cl_object c, const char *err, int narg, ...)
 {
 	cl_va_list args;
 	cl_va_start(args, narg, narg, 0);
 	return funcall(4, @'si::universal-error-handler',
-		       Ct,			/*  correctable  */
+		       c,			/*  correctable  */
 		       make_constant_base_string(err),	/*  continue-format-string  */
 		       cl_grab_rest_args(args));
 }

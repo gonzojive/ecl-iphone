@@ -379,7 +379,7 @@
 ;; file unixfsys.d
 
 (proclaim-function truename (t) t)
-(proclaim-function rename-file (t t) t)
+(proclaim-function rename-file (t t *) t)
 (proclaim-function si:specialp (t) t :predicate t)
 (proclaim-function delete-file (t) t)
 (proclaim-function probe-file (t) t)

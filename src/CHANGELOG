@@ -7,6 +7,9 @@ ECL 0.9k:
    is a different tree (ecl-doc) which contains the XML sources for a more
    complete manual.
 
+ - RENAME-FILE now accepts a keyword argument :IF-EXISTS, which defines the
+   behavior when a file with the new name already exists (Geo Carncross).
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

@@ -2714,11 +2714,15 @@ Returns a copy of SEQUENCE with elements not satisfying TEST removed.")
 Removes the specified property from the property list associated with SYMBOL.
 Returns T if the property list had the specified property; NIL otherwise.")
 
-(docfun rename-file function (filespec new-filespec) "
+(docfun rename-file function (filespec new-filespec &key (if-exists :error)) "
 Renames the file specified by FILESPEC as specified by NEW-FILESPEC.  Returns
 as three values the new pathname, the old full pathname, and the new full
 pathname.  FILESPEC and NEW-FILESPEC may be a symbol, a string, a pathname, or
-a file stream.")
+a file stream.
+
+:IF-EXISTS is an ECL-specific extension that modifies the behavior of rename-file
+if new-filespec already exists. It may be :ERROR (the default), NIL, :SUPERSEDE,
+or T.")
 
 (docfun rename-package function (package new-name &optional (new-nicknames nil)) "
 Renames PACKAGE to NEW-NAME and replaces the nicknames with NEW-NICKNAMES.
