@@ -10,6 +10,8 @@ ECL 0.9k:
  - RENAME-FILE now accepts a keyword argument :IF-EXISTS, which defines the
    behavior when a file with the new name already exists (Geo Carncross).
 
+ - Improved hashing on 64-bit machines.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
