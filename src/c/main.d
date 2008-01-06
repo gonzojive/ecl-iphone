@@ -93,6 +93,17 @@ ecl_init_env(struct cl_env_struct *env)
 	((struct ecl_fficall*)env->fficall)->registers = 0;
 #endif
 
+#ifdef CLOS
+#ifdef ECL_THREADS
+	env->gfun_hash_clear_list = Cnil;
+#endif
+	env->gfun_hash =
+		cl__make_hash_table(@'equalp', MAKE_FIXNUM(1024), /* size */
+				    ecl_make_singlefloat(1.5f), /* rehash-size */
+				    ecl_make_singlefloat(0.5f), /* rehash-threshold */
+				    Cnil); /* thread-safe */
+#endif
+
 	init_stacks(&i);
 }
 

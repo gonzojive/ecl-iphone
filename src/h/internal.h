@@ -165,9 +165,8 @@ extern void ecl_extend_hashtable(cl_object hashtable);
 /* gfun.d, kernel.lsp */
 
 #define GFUN_NAME(x) ((x)->instance.slots[0])
-#define GFUN_HASH(x) ((x)->instance.slots[1])
-#define GFUN_SPEC(x) ((x)->instance.slots[2])
-#define GFUN_COMB(x) ((x)->instance.slots[3])
+#define GFUN_SPEC(x) ((x)->instance.slots[1])
+#define GFUN_COMB(x) ((x)->instance.slots[2])
 
 /* package.d */
 

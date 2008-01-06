@@ -97,6 +97,16 @@ struct cl_env_struct {
 #endif
 	int interrupt_pending;
 
+	/* The following is a hash table for caching invocations of
+	   generic functions. In a multithreaded environment we must
+	   queue operations in which the hash is cleared from updated
+	   generic functions. */
+#ifdef CLOS
+	cl_object gfun_hash;
+#ifdef ECL_THREADS
+	cl_object gfun_hash_clear_list;
+#endif
+#endif
 	/* foreign function interface */
 	void *fficall;
 };
@@ -630,6 +640,7 @@ extern void ecl_register_root(cl_object *p);
 /* gfun.c */
 
 #ifdef CLOS
+extern cl_object si_clear_gfun_hash(cl_object what);
 extern cl_object clos_set_funcallable_instance_function(cl_object x, cl_object function_or_t);
 extern cl_object si_generic_function_p(cl_object instance);
 

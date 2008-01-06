@@ -86,13 +86,6 @@
   (defparameter +standard-generic-function-slots+
     '((name :initarg :name :initform nil
        :accessor generic-function-name)
-      (method-hash :accessor generic-function-method-hash
-       :initform (make-hash-table
-		  :test #'eql
-		  ;; use fixnums as limits for efficiency:
-		  :size *default-method-cache-size*
-		  :rehash-size #.(/ *default-method-cache-size* 2)
-		  :rehash-threshold 0.5f0))
       (spec-list :initform nil :accessor generic-function-spec-list)
       (method-combination 
        :initarg :method-combination :initform '(standard)
@@ -202,13 +195,7 @@
       (fdefinition name)
       ;; create a fake standard-generic-function object:
       (let ((gfun (si:allocate-raw-instance nil (find-class 't)
-		     #.(length +standard-generic-function-slots+)))
-	    (hash (make-hash-table
-		   :test #'eql
-		   ;; use fixnums as limits for efficiency:
-		   :size *default-method-cache-size*
-		   :rehash-size #.(/ *default-method-cache-size* 2)
-		   :rehash-threshold 0.5f0)))
+		     #.(length +standard-generic-function-slots+))))
 	(declare (type standard-object gfun))
 	;; create a new gfun
 	(si::instance-sig-set gfun)
@@ -216,8 +203,7 @@
 	      (generic-function-lambda-list gfun) lambda-list
 	      (generic-function-method-combination gfun) '(standard)
 	      (generic-function-methods gfun) nil
-	      (generic-function-spec-list gfun) nil
-	      (generic-function-method-hash gfun) hash)
+	      (generic-function-spec-list gfun) nil)
 	(when l-l-p
 	  (setf (generic-function-argument-precedence-order gfun)
 		(rest (si::process-lambda-list lambda-list t))))
@@ -367,7 +353,7 @@
 			      (list ,@a-p-o)))
 			  'function))))))
     (setf (generic-function-a-p-o-function gf) function)
-    (clrhash (generic-function-method-hash gf)))))
+    (si:clear-gfun-hash gf))))
 
 (defun print-object (object stream)
   (print-unreadable-object (object stream)))

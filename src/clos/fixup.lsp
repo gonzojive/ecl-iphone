@@ -189,7 +189,7 @@ their lambda lists ~A and ~A are not congruent."
   (setf (generic-function-methods gf)
 	(delete method (generic-function-methods gf))
 	(method-generic-function method) nil)
-  (clrhash (generic-function-method-hash gf))
+  (si:clear-gfun-hash gf)
   gf)
 
 ;;; ----------------------------------------------------------------------

@@ -15,6 +15,54 @@
 #include <string.h>
 #include <ecl/ecl.h>
 #include <ecl/internal.h>
+#include "newhash.h"
+
+static cl_object
+do_clear_gfun_hash(cl_object target)
+{
+	cl_object table = cl_env.gfun_hash;
+	if (target == Ct) {
+		cl_clrhash(table);
+	} else {
+		cl_index hsize = table->hash.size;
+		struct ecl_hashtable_entry *htable = table->hash.data;
+		for (; hsize; htable++, hsize--) {
+			if (htable->key != OBJNULL) {
+				cl_object gfun = CAR(htable->key);
+				if (gfun == target) {
+					htable->key = OBJNULL;
+					htable->value = OBJNULL;
+					table->hash.entries--;
+				}
+			}
+		}
+	}
+}
+
+cl_object
+si_clear_gfun_hash(cl_object what)
+{
+	/*
+	 * This function clears the generic function call hashes selectively.
+	 *	what = Ct means clear the hash completely
+	 *	what = generic function, means cleans only these entries
+	 * If we work on a multithreaded environment, we simply enqueue these
+	 * operations and wait for the destination thread to update its own hash.
+	 */
+#ifdef ECL_THREADS
+	cl_object list;
+	THREAD_OP_LOCK();
+	list = cl_core.processes;
+	for (; list != Cnil; list = CDR(list)) {
+		cl_object process = CAR(list);
+		struct cl_env_struct *env = process->process.env;
+		env->gfun_hash_clear_list = CONS(what, env->gfun_hash_clear_list);
+	}
+	THREAD_OP_UNLOCK();
+#else
+	do_clear_gfun_hash(what);
+#endif
+}
 
 static void
 reshape_instance(cl_object x, int delta)
@@ -98,20 +146,22 @@ si_generic_function_p(cl_object x)
 static struct ecl_hashtable_entry *
 get_meth_hash(cl_object *keys, int argno, cl_object hashtable)
 {
-	int hsize;
+	cl_index hsize;
 	struct ecl_hashtable_entry *e, *htable;
 	cl_object hkey, tlist;
-	register cl_index i = 0;
-	int k, n; /* k added by chou */
+	register cl_index i;
+	int k, n;
+
+	for (i = 0, n = 0; n < argno; n++) {
+		register cl_index a = (cl_index)keys[n];
+		register cl_index b = GOLDEN_RATIO;
+		mix(a, b, i);
+	}
 
 	hsize = hashtable->hash.size;
 	htable = hashtable->hash.data;
-	for (n = 0; n < argno; n++)
-		i += (cl_index)keys[n] / 4; /* instead of:
-					       i += hash_eql(keys[n]);
-					       i += hash_eql(Cnil);
-					    */
-	for (i %= hsize, k = 0; k < hsize;  i = (i + 1) % hsize, k++) {
+	i = i % hsize;
+	for (k = 0; k < hsize; k++) {
 		bool b = 1;
 		e = &htable[i];
 		hkey = e->key;
@@ -122,6 +172,7 @@ get_meth_hash(cl_object *keys, int argno, cl_object hashtable)
 			b &= (keys[n] == CAR(tlist));
 		if (b)
 			return(&htable[i]);
+		if (++i >= hsize) i = 0;
 	}
 	ecl_internal_error("get_meth_hash");
 }
@@ -134,12 +185,14 @@ set_meth_hash(cl_object *keys, int argno, cl_object hashtable, cl_object value)
 	cl_index i;
 
 	i = hashtable->hash.entries + 1;
-	if (i > 512) {
-		/* It does not make sense to let these hashes grow large */
-		cl_clrhash(hashtable);
-	} else if (i >= hashtable->hash.size ||
-		   i >= (hashtable->hash.size * hashtable->hash.factor)) {
-		ecl_extend_hashtable(hashtable);
+	if (i >= hashtable->hash.size ||
+	    i >= (hashtable->hash.size * hashtable->hash.factor)) {
+		if (hashtable->hash.size > 4092) {
+			/* It does not make sense to let these hashes grow large */
+			cl_clrhash(hashtable);
+		} else {
+			ecl_extend_hashtable(hashtable);
+		}
 	}
 	keylist = Cnil;
 	for (p = keys + argno; p > keys; p--) keylist = CONS(p[-1], keylist);
@@ -157,10 +210,24 @@ standard_dispatch(cl_narg narg, cl_object gf, cl_object *args)
 	int i, spec_no;
 	struct ecl_hashtable_entry *e;
 	cl_object spec_how_list = GFUN_SPEC(gf);
-	cl_object table = GFUN_HASH(gf);
-	cl_object argtype[LAMBDA_PARAMETERS_LIMIT];
+	cl_object table = cl_env.gfun_hash;
+	cl_object argtype[1+LAMBDA_PARAMETERS_LIMIT];
 
-	for (spec_no = 0; spec_how_list != Cnil;) {
+#ifdef ECL_THREADS
+	/* See whether we have to clear the hash from some generic functions right now. */
+	if (cl_env.gfun_hash_clear_list != Cnil) {
+		cl_object clear_list;
+		THREAD_OP_LOCK();
+		clear_list = cl_env.gfun_hash_clear_list;
+		for ( ; clear_list != Cnil ; clear_list = CDR(clear_list)) {
+			do_clear_gfun_hash(CAR(clear_list));
+		}
+		cl_env.gfun_hash_clear_list = Cnil;
+		THREAD_OP_UNLOCK();
+	}
+#endif
+	argtype[0] = gf;
+	for (spec_no = 1; spec_how_list != Cnil;) {
 		cl_object spec_how = CAR(spec_how_list);
 		cl_object spec_type = CAR(spec_how);
 		int spec_position = fix(CDR(spec_how));

@@ -1673,6 +1673,10 @@ cl_symbols[] = {
 
 {SYS_ "CODE-BLOCK",NULL},
 
+#ifdef CLOS
+{SYS_ "CLEAR-GFUN-HASH","si_clear_gfun_hash"},
+#endif
+
 /* Tag for end of list */
 {NULL,NULL}};
 
