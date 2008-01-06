@@ -535,38 +535,40 @@ ecl_parse_namestring(cl_object s, cl_index start, cl_index end, cl_index *ep,
  physical:
 	/*
 	 * Physical pathname format:
-	 *	[device:][[//hostname]/][directory-component/]*[pathname-name][.pathname-type]
+	 *	[[device:[//hostname]]/][directory-component/]*[pathname-name][.pathname-type]
 	 */
 	logical = FALSE;
 	device = parse_word(s, is_colon, WORD_INCLUDE_DELIM|WORD_EMPTY_IS_NIL,
 			    start, end, ep);
-	if (device == @':error')
+	if (device == @':error' || device == Cnil) {
+		/* We only parse a hostname when the device was present. */
 		device = Cnil;
-	else if (device != Cnil) {
-		if (!ecl_stringp(device))
-			return Cnil;
+		host = Cnil;
+	} else if (!ecl_stringp(device)) {
+		return Cnil;
+	} else {
+		/* Files have no effective device. */
 		if (@string-equal(2, device, @':file') == Ct)
 			device = Cnil;
-	}
-	start = *ep;
-	if ((start+2) <= end && is_slash(ecl_char(s, start)) &&
-	    is_slash(ecl_char(s, start+1)))
-	{
-		host = parse_word(s, is_slash, WORD_EMPTY_IS_NIL,
-				  start+2, end, ep);
-		if (host != Cnil) {
-			start = *ep;
-			if (is_slash(ecl_char(s,--start))) *ep = start;
+		start = *ep;
+		host = Cnil;
+		if ((start+2) <= end && is_slash(ecl_char(s, start)) &&
+		    is_slash(ecl_char(s, start+1)))
+		{
+			host = parse_word(s, is_slash, WORD_EMPTY_IS_NIL,
+					  start+2, end, ep);
+			if (host == @':error') {
+				host = Cnil;
+			} else if (host != Cnil) {
+				if (!ecl_stringp(host))
+					return Cnil;
+				start = *ep;
+				if (is_slash(ecl_char(s,--start)))
+					*ep = start;
+			}
 		}
-	} else {
-		host = Cnil;
 	}
-	if (host == @':error') {
-		host = Cnil;
-	} else if (host != Cnil) {
-		if (!ecl_stringp(host))
-			return Cnil;
-	}
+ done_device_and_host:
 	path = parse_directories(s, 0, *ep, end, ep);
 	if (CONSP(path)) {
 		if (CAR(path) != @':relative' && CAR(path) != @':absolute')
