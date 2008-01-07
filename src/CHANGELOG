@@ -21,6 +21,10 @@ ECL 0.9k:
  - When caching generic function calls, ECL now uses a thread-local hash table
    instead of one hash table per generic function.
 
+* Bugs fixed:
+
+ - The bignums produced by RANDOM did not have enough random bits.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
