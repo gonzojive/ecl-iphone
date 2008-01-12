@@ -17,53 +17,6 @@
 #include <ecl/internal.h>
 #include "newhash.h"
 
-static cl_object
-do_clear_gfun_hash(cl_object target)
-{
-	cl_object table = cl_env.gfun_hash;
-	if (target == Ct) {
-		cl_clrhash(table);
-	} else {
-		cl_index hsize = table->hash.size;
-		struct ecl_hashtable_entry *htable = table->hash.data;
-		for (; hsize; htable++, hsize--) {
-			if (htable->key != OBJNULL) {
-				cl_object gfun = CAR(htable->key);
-				if (gfun == target) {
-					htable->key = OBJNULL;
-					htable->value = OBJNULL;
-					table->hash.entries--;
-				}
-			}
-		}
-	}
-}
-
-cl_object
-si_clear_gfun_hash(cl_object what)
-{
-	/*
-	 * This function clears the generic function call hashes selectively.
-	 *	what = Ct means clear the hash completely
-	 *	what = generic function, means cleans only these entries
-	 * If we work on a multithreaded environment, we simply enqueue these
-	 * operations and wait for the destination thread to update its own hash.
-	 */
-#ifdef ECL_THREADS
-	cl_object list;
-	THREAD_OP_LOCK();
-	list = cl_core.processes;
-	for (; list != Cnil; list = CDR(list)) {
-		cl_object process = CAR(list);
-		struct cl_env_struct *env = process->process.env;
-		env->gfun_hash_clear_list = CONS(what, env->gfun_hash_clear_list);
-	}
-	THREAD_OP_UNLOCK();
-#else
-	do_clear_gfun_hash(what);
-#endif
-}
-
 static void
 reshape_instance(cl_object x, int delta)
 {
@@ -138,94 +91,200 @@ si_generic_function_p(cl_object x)
 		   (x->instance.isgf))? Ct : Cnil))
 }
 
+/**********************************************************************
+ * METHOD HASH
+ */
+
+#define RECORD_KEY(e) ((e)[0])
+#define RECORD_VALUE(e) ((e)[1])
+#define RECORD_GEN(e) (((cl_fixnum*)(e+2))[0])
+
+static cl_object
+do_clear_method_hash(struct cl_env_struct *env, cl_object target)
+{
+	cl_object table = env->method_hash;
+	cl_index i, total_size = table->vector.dim;
+	if (target == Ct) {
+		env->method_generation = 0;
+		for (i = 0; i < total_size; i+=3) {
+			table->vector.self.t[i] = OBJNULL;
+			table->vector.self.t[i+1] = OBJNULL;
+			table->vector.self.fix[i+2] = 0;
+		}
+#ifdef ECL_THREADS
+		env->method_hash_clear_list = Cnil;
+#endif
+	} else {
+		for (i = 0; i < total_size; i+=3) {
+			cl_object key = table->vector.self.t[i];
+			if (key != OBJNULL) {
+				if (target == key->vector.self.t[0]) {
+					table->vector.self.t[i] = OBJNULL;
+					table->vector.self.fix[i+2] = 0;
+				}
+			}
+		}
+	}
+}
+
+void
+_ecl_set_method_hash_size(struct cl_env_struct *env, cl_index size)
+{
+	cl_index i;
+	env->method_spec_vector =
+		si_make_vector(Ct, /* element type */
+			       MAKE_FIXNUM(64), /* Maximum size */
+			       Ct, /* adjustable */
+			       MAKE_FIXNUM(0), /* fill pointer */
+			       Cnil, /* displaced */
+			       Cnil);
+	env->method_hash =
+		si_make_vector(Ct, /* element type */
+			       MAKE_FIXNUM(3*size), /* Maximum size */
+			       Cnil, /* adjustable */
+			       Cnil, /* fill pointer */
+			       Cnil, /* displaced */
+			       Cnil);
+	do_clear_method_hash(env, Ct);
+}
+
+cl_object
+si_clear_gfun_hash(cl_object what)
+{
+	/*
+	 * This function clears the generic function call hashes selectively.
+	 *	what = Ct means clear the hash completely
+	 *	what = generic function, means cleans only these entries
+	 * If we work on a multithreaded environment, we simply enqueue these
+	 * operations and wait for the destination thread to update its own hash.
+	 */
+#ifdef ECL_THREADS
+	cl_object list;
+	THREAD_OP_LOCK();
+	list = cl_core.processes;
+	for (; list != Cnil; list = CDR(list)) {
+		cl_object process = CAR(list);
+		struct cl_env_struct *env = process->process.env;
+		env->method_hash_clear_list = CONS(what, env->method_hash_clear_list);
+	}
+	THREAD_OP_UNLOCK();
+#else
+	do_clear_method_hash(&cl_env, what);
+#endif
+}
+
+static cl_index
+vector_hash_key(cl_object keys)
+{
+	cl_index c, n, a = GOLDEN_RATIO, b = GOLDEN_RATIO;
+	for (c = 0, n = keys->vector.fillp; n >= 3; ) {
+		c += keys->vector.self.index[--n];
+		b += keys->vector.self.index[--n];
+		a += keys->vector.self.index[--n];
+		mix(a, b, c);
+	}
+	switch (n) {
+	case 2:	b += keys->vector.self.index[--n];
+	case 1:	a += keys->vector.self.index[--n];
+		c += keys->vector.dim;
+		mix(a,b,c);
+	}
+	return c;
+}
+
+
 /*
  * variation of ecl_gethash from hash.d, which takes an array of objects as key
  * It also assumes that entries are never removed except by clrhash.
  */
 
-static struct ecl_hashtable_entry *
-get_meth_hash(cl_object *keys, int argno, cl_object hashtable)
+static cl_object *
+search_method_hash(cl_object keys, cl_object table)
 {
-	cl_index hsize;
-	struct ecl_hashtable_entry *e, *htable;
-	cl_object hkey, tlist;
-	register cl_index i;
-	int k, n;
-
-	for (i = 0, n = 0; n < argno; n++) {
-		register cl_index a = (cl_index)keys[n];
-		register cl_index b = GOLDEN_RATIO;
-		mix(a, b, i);
+	cl_index argno = keys->vector.fillp;
+	cl_index i = vector_hash_key(keys);
+	cl_index total_size = table->vector.dim;
+	cl_fixnum min_gen, gen;
+	cl_object *min_e;
+	int k;
+	i = i % total_size;
+	i = i - (i % 3);
+	min_gen = cl_env.method_generation;
+	min_e = 0;
+	for (k = 20; k--; ) {
+		cl_object *e = table->vector.self.t + i;
+		cl_object hkey = RECORD_KEY(e);
+		if (hkey == OBJNULL) {
+			min_gen = -1;
+			min_e = e;
+			if (RECORD_VALUE(e) == OBJNULL) {
+				/* This record is not only deleted but empty
+				 * Hence we cannot find our method ahead */
+				break;
+			}
+			/* Else we only know that the record has been
+			 * delete, but we might find our data ahead. */
+		} else if (argno == hkey->vector.fillp) {
+			cl_index n;
+			for (n = 0; n < argno; n++) {
+				if (keys->vector.self.t[n] !=
+				    hkey->vector.self.t[n])
+					goto NO_MATCH;
+			}
+			min_e = e;
+			goto FOUND;
+		} else if (min_gen >= 0) {
+		NO_MATCH:
+			/* Unless we have found a deleted record, keep
+			 * looking for the oldest record that we can
+			 * overwrite with the new data. */
+			gen = RECORD_GEN(e);
+			if (gen < min_gen) {
+				min_gen = gen;
+				min_e = e;
+			}
+		}
+		i += 3;
+		if (i >= total_size) i = 0;
 	}
-
-	hsize = hashtable->hash.size;
-	htable = hashtable->hash.data;
-	i = i % hsize;
-	for (k = 0; k < hsize; k++) {
-		bool b = 1;
-		e = &htable[i];
-		hkey = e->key;
-		if (hkey == OBJNULL)
-			return(e);
-		for (b = 1, n = 0, tlist = hkey; b && (n < argno);
-		     n++, tlist = CDR(tlist))
-			b &= (keys[n] == CAR(tlist));
-		if (b)
-			return(&htable[i]);
-		if (++i >= hsize) i = 0;
+	if (min_e == 0) {
+		ecl_internal_error("search_method_hash");
 	}
-	ecl_internal_error("get_meth_hash");
-}
-
-static void
-set_meth_hash(cl_object *keys, int argno, cl_object hashtable, cl_object value)
-{
-	struct ecl_hashtable_entry *e;
-	cl_object keylist, *p;
-	cl_index i;
-
-	i = hashtable->hash.entries + 1;
-	if (i >= hashtable->hash.size ||
-	    i >= (hashtable->hash.size * hashtable->hash.factor)) {
-		if (hashtable->hash.size > 4092) {
-			/* It does not make sense to let these hashes grow large */
-			cl_clrhash(hashtable);
-		} else {
-			ecl_extend_hashtable(hashtable);
+	RECORD_KEY(min_e) = OBJNULL;
+	cl_env.method_generation++;
+ FOUND:
+	/*
+	 * Once we have reached here, we set the new generation of
+	 * this record and perform a global shift so that the total
+	 * generation number does not become too large and we can
+	 * expire some elements.
+	 */
+	RECORD_GEN(min_e) = gen = cl_env.method_generation;
+	if (gen >= total_size/2) {
+		cl_object *e = table->vector.self.t;
+		gen = 0.5*gen;
+		cl_env.method_generation -= gen;
+		for (i = table->vector.dim; i; i-= 3, e += 3) {
+			cl_fixnum g = RECORD_GEN(e) - gen;
+			if (g <= 0) {
+				RECORD_KEY(e) = OBJNULL;
+				RECORD_VALUE(e) = Cnil;
+				g = 0;
+			}
+			RECORD_GEN(e) = g;
 		}
 	}
-	keylist = Cnil;
-	for (p = keys + argno; p > keys; p--) keylist = CONS(p[-1], keylist);
-	e = get_meth_hash(keys, argno, hashtable);
-	if (e->key == OBJNULL) {
-		e->key = keylist;
-		hashtable->hash.entries++;
-	}
-	e->value = value;
+	return min_e;
 }
 
 static cl_object
-standard_dispatch(cl_narg narg, cl_object gf, cl_object *args)
+get_spec_vector(cl_narg narg, cl_object gf, cl_object *args)
 {
-	int i, spec_no;
-	struct ecl_hashtable_entry *e;
 	cl_object spec_how_list = GFUN_SPEC(gf);
-	cl_object table = cl_env.gfun_hash;
-	cl_object argtype[1+LAMBDA_PARAMETERS_LIMIT];
+	cl_object vector = cl_env.method_spec_vector;
+	cl_object *argtype = vector->vector.self.t;
+	int spec_no;
 
-#ifdef ECL_THREADS
-	/* See whether we have to clear the hash from some generic functions right now. */
-	if (cl_env.gfun_hash_clear_list != Cnil) {
-		cl_object clear_list;
-		THREAD_OP_LOCK();
-		clear_list = cl_env.gfun_hash_clear_list;
-		for ( ; clear_list != Cnil ; clear_list = CDR(clear_list)) {
-			do_clear_gfun_hash(CAR(clear_list));
-		}
-		cl_env.gfun_hash_clear_list = Cnil;
-		THREAD_OP_UNLOCK();
-	}
-#endif
 	argtype[0] = gf;
 	for (spec_no = 1; spec_how_list != Cnil;) {
 		cl_object spec_how = CAR(spec_how_list);
@@ -238,33 +297,71 @@ standard_dispatch(cl_narg narg, cl_object gf, cl_object *args)
 			 Null(ecl_memql(args[spec_position], spec_type))) ?
 			cl_class_of(args[spec_position]) :
 			args[spec_position];
+		if (spec_no > vector->vector.dim)
+			return OBJNULL;
 		spec_how_list = CDR(spec_how_list);
 	}
+	vector->vector.fillp = spec_no;
+	return vector;
+}
 
-	e = get_meth_hash(argtype, spec_no, table);
-
-	if (e->key != OBJNULL) {
-		return e->value;
+static cl_object
+compute_applicable_method(cl_narg narg, cl_object gf, cl_object *args)
+{
+	/* method not cached */
+	cl_object methods, arglist, func;
+	int i;
+	for (i = narg, arglist = Cnil; i-- > 0; ) {
+		arglist = CONS(args[i], arglist);
+	}
+	methods = funcall(3, @'compute-applicable-methods', gf, arglist);
+	if (methods == Cnil) {
+		func = funcall(3, @'no-applicable-method', gf, arglist);
+		args[0] = 0;
+		return func;
 	} else {
-		/* method not cached */
-		cl_object methods, arglist, func;
-		for (i = narg, arglist = Cnil; i-- > 0; ) {
-			arglist = CONS(args[i], arglist);
+		return funcall(4, @'clos::compute-effective-method', gf,
+			       GFUN_COMB(gf), methods);
+	}
+}
+
+static cl_object
+standard_dispatch(cl_narg narg, cl_object gf, cl_object *args)
+{
+	cl_object vector;
+#ifdef ECL_THREADS
+	/* See whether we have to clear the hash from some generic functions right now. */
+	if (cl_env.method_hash_clear_list != Cnil) {
+		cl_object clear_list;
+		THREAD_OP_LOCK();
+		clear_list = cl_env.method_hash_clear_list;
+		for ( ; clear_list != Cnil ; clear_list = CDR(clear_list)) {
+			do_clear_method_hash(&cl_env, CAR(clear_list));
 		}
-		
-		methods = funcall(3, @'compute-applicable-methods', gf,
-				  arglist);
-		if (methods == Cnil) {
-			func = funcall(3, @'no-applicable-method', gf,
-				       arglist);
-			args[0] = 0;
+		cl_env.method_hash_clear_list = Cnil;
+		THREAD_OP_UNLOCK();
+	}
+#endif
+	vector = get_spec_vector(narg, gf, args);
+	if (vector == OBJNULL) {
+		return compute_applicable_method(narg, gf, args);
+	} else {
+		cl_object table = cl_env.method_hash;
+		cl_object *e = search_method_hash(vector, table);
+		if (RECORD_KEY(e) != OBJNULL) {
+			return RECORD_VALUE(e);
+		} else {
+			cl_object keys = cl_copy_seq(vector);
+			cl_object func = compute_applicable_method(narg, gf, args);
+			if (RECORD_KEY(e) != OBJNULL) {
+				/* The cache might have changed while we
+				 * computed applicable methods */
+				e = search_method_hash(vector, table);
+			}
+			RECORD_KEY(e) = keys;
+			RECORD_VALUE(e) = func;
 			return func;
 		}
-		func = funcall(4, @'clos::compute-effective-method', gf,
-			       GFUN_COMB(gf), methods);
-		/* update cache */
-		set_meth_hash(argtype, spec_no, table, func);
-		return func;
 	}
 }
 
