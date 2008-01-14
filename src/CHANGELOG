@@ -25,6 +25,9 @@ ECL 0.9k:
 
  - The bignums produced by RANDOM did not have enough random bits.
 
+ - ECL formerly accepted spaces between the comma and the @ and . characters
+   in expressions like ,@ or ,.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
