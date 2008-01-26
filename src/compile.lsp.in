@@ -210,7 +210,7 @@
 ;;; THE FINAL EXECUTABLE
 ;;;
 
-(setq si::*init-function-prefix* "ECL")
+(setq si::*init-function-prefix* NIL)
 
 (compiler::build-program
  #+:msvc "ecl2"

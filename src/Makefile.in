@@ -62,7 +62,6 @@ c/ecl/external.h: $(top_srcdir)/h/external.h
 	sed 's,__declspec(dllimport),,g' $(top_srcdir)/h/external.h > $@
 ecl/external.h: c/ecl/external.h c/ecl/external.h
 	cp $(srcdir)/h/*.h ecl/
-	if grep 'undef ENABLE_DLOPEN' ecl/config.h; then cp c/external.h h; fi
 
 bin/ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp ecl/external.h BUILD-STAMP
 	if [ -f CROSS-COMPILER ]; then \

@@ -125,7 +125,7 @@ AC_ARG_WITH(tcp,
 AC_ARG_WITH(serve_event,
   AS_HELP_STRING( [--with-serve-event],
                   [include serve-event module (default=YES)]),
-  [], [with_serve_event=yes])
+  [], [with_serve_event=${enable_shared}])
 
 AC_ARG_WITH(clx,
   AS_HELP_STRING( [--with-clx],
