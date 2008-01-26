@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     alloc_2.c -- Memory allocation based on the Boehmn GC.
 */

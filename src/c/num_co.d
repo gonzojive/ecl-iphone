@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     num_co.c -- Operations on floating-point numbers.
 */

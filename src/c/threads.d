@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     threads.d -- Posix threads with support from GCC.
 */

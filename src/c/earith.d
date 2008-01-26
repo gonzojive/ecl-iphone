@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     earith.c -- Support for bignum arithmetic.
 */

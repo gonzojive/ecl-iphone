@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 #ifdef __cplusplus
 extern "C" {
 #endif

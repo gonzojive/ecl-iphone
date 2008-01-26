@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     load.d -- Binary loader (contains also open_fasl_data).
 */

@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 #include <ecl/ecl.h>
 #include <ctype.h>
 #include <limits.h>

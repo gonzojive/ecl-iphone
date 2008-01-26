@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 #include <sys/times.h>
 #include <sys/resource.h>
 

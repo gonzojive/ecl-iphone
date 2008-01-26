@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     apply.c -- Interface to C call mechanism.
 */

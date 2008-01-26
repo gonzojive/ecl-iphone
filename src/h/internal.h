@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     internal.h -- Structures and functions that are not meant for the end user
 */

@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 #ifdef ECL_CMU_FORMAT
 # define ECL_NAME_PPRINT(x) ECL_NAME(x)
 #else

@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     unixfsys.c  -- Unix file system interface.
 */

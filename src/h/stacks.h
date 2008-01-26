@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     stacks.h -- Bind/Jump/Frame stacks.
 */

@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     fpe_x86.c -- Nonportable component of the floating point code
 */

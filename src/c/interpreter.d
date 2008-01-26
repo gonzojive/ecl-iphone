@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     interpreter.c -- Bytecode interpreter.
 */

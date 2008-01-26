@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     ecl-cmp.h  -- Include file for compiled code.
 */

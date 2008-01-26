@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     ffi.c -- User defined data types and foreign functions interface.
 */

@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     cmpaux.c -- Auxiliaries used in compiled Lisp code.
 */

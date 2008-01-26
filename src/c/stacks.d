@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     stacks.c -- Binding/History/Frame stacks.
 */

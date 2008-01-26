@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     unixsys.s  -- Unix shell interface.
 */

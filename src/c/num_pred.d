@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     num_pred.c  -- Predicates on numbers.
 */

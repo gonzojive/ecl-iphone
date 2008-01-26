@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /* 
     big_ll.c -- Bignum emulation with long long.
  */

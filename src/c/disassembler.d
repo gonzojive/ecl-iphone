@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 8 -*- */
 /*
     disassembler.c -- Byte compiler and function evaluator
 */
