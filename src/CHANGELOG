@@ -16,6 +16,20 @@ ECL 0.9k:
    to [[device:[//hostname]]/]... The reason is that this allows proper
    parsing of Unix pathnames such as "//usr/".
 
+ - In interpreted functions, blocks are only created when used. The current
+   algorithm for detecting unused blocks is inefficient, with a performance
+   penalty 2^{# unused blocks}, but this seems to pay off when running the
+   interpreted code, due to decreased consing
+	> (defun foo () )         
+	FOO
+	> (time (dotimes (i 100000) (foo)))
+	real time : 0.045 secs
+	run time  : 0.048 secs
+	gc count  : 1 times
+	consed    : 160 bytes
+   Formerly, this would cons 3200192 bytes.
+
+
 * CLOS:
 
  - When caching generic function calls, ECL now uses a thread-local hash table

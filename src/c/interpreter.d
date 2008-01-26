@@ -341,7 +341,6 @@ ecl_apply_lambda(cl_narg narg, cl_object fun)
 	/* Establish bindings */
 	lambda_bind(narg, fun, args);
 
-	/* If it is a named lambda, set a block for RETURN-FROM */
 	VALUES(0) = Cnil;
 	NVALUES = 0;
 	name = fun->bytecodes.name;
