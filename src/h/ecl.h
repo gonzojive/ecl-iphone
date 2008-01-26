@@ -44,6 +44,7 @@ typedef unsigned short uint16_t;
 #  include <windows.h>
    typedef HANDLE pthread_t;
    typedef HANDLE pthread_mutex_t;
+   typedef HANDLE pthread_cond_t; /*Dummy, not really used*/
 #  undef ERROR
 #  ifdef GBC_BOEHM
 #   define CreateThread GC_CreateThread
