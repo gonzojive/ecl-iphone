@@ -229,7 +229,7 @@ mp_process_yield(void)
 #ifdef HAVE_SCHED_YIELD
 	sched_yield();
 #else
-	sleep(0); /* Use sleep(0) to yield to a >= priority thread */
+	Sleep(0); /* Use sleep(0) to yield to a >= priority thread */
 #endif
 	@(return)
 }
