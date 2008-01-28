@@ -374,9 +374,7 @@ output = cl_safe_eval(c_string_to_object(lisp_code), Cnil, OBJNULL);
 	     (when flags (push flags ld-flags))
 	     (push init-fn submodules))))))
     (setq c-file (open c-name :direction :output))
-    (format c-file +lisp-program-header+
-            #-(or :win32 :mingw32 :darwin) (if (eq :fasl target) nil submodules)
-            #+(or :win32 :mingw32 :darwin) submodules)
+    (format c-file +lisp-program-header+ submodules)
     (cond (shared-data-file
 	   (data-init shared-data-file)
 	   (format c-file "
@@ -439,19 +437,14 @@ static cl_object VV[VM];
        (apply #'shared-cc output-name o-name ld-flags))
       #+dlopen
       (:fasl
-       #-(or :win32 :mingw32 :darwin)
-       (setf submodules
-	     (mapcar #'(lambda (sm)
-			 (format nil "((ecl_init_function_t) ecl_library_symbol(Cblock, \"~A\", 0))" sm))
-		     submodules))
        (format c-file +lisp-program-init+ init-name prologue-code shared-data-file
 	       submodules epilogue-code)
        (close c-file)
        (compiler-cc c-name o-name)
        (apply #'bundle-cc output-name init-name o-name ld-flags)))
-    (cmp-delete-file tmp-name)
-    (cmp-delete-file c-name)
-    (cmp-delete-file o-name)
+    ;(cmp-delete-file tmp-name)
+    ;(cmp-delete-file c-name)
+    ;(cmp-delete-file o-name)
     output-name))
 
 (defun build-fasl (&rest args)
