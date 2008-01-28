@@ -41,8 +41,8 @@
 (setq c::*cc-flags*
       #-msvc "@CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@ -I\"@true_srcdir@/c\""
       #+msvc "@CFLAGS@ @ECL_CFLAGS@"
-      c::*ecl-include-directory* "@true_builddir@"
-      c::*ecl-library-directory* "@true_builddir@")
+      c::*ecl-include-directory* "@true_builddir@/"
+      c::*ecl-library-directory* "@true_builddir@/")
 #-:wants-dlopen 
 (setf c::*ld-flags*
       "@LDFLAGS@ @LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ @CORE_LIBS@ @LIBS@ @FASL_LIBS@")
