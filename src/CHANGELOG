@@ -29,6 +29,15 @@ ECL 0.9k:
 	consed    : 160 bytes
    Formerly, this would cons 3200192 bytes.
 
+ - When compiling object files that will form part of either a unified FASL or
+   of a library (static or dynamically linked), there used to be name
+   collisions between the initialization functions of different modules. Now
+   ECL uses a cleverer hashing algorithm to name these functions, storing the
+   key in a string in the object file, which is later searched before linking
+   the file.  Currently the hash key only depends on the pathname of the source
+   file and the universal time at which is compiled, hence there may still be
+   collisions between files compiled on different machines. In short: you should
+   only worry if you regularly use the function C::BUILD.
 
 * CLOS:
 

@@ -134,7 +134,7 @@
 		    0
 		    i)))
 
-(defun data-dump (stream &optional as-lisp-file &aux must-close)
+(defun data-dump (stream &key as-lisp-file init-name &aux must-close)
   (etypecase stream
     (null (return-from data-dump))
     ((or pathname string)

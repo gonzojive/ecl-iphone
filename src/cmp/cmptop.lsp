@@ -145,7 +145,11 @@
       (wt-nl "return;}")
       (wt-nl "#ifdef ECL_DYNAMIC_VV")
       (wt-nl "VV = Cblock->cblock.data;")
-      (wt-nl "#endif"))
+      (wt-nl "#endif")
+      ;; With this we ensure creating a constant with the tag
+      ;; and the initialization file
+      (wt-nl "Cblock->cblock.data_text = \"" (init-name-tag name) "\";")
+      )
     (when si::*compiler-constants*
       (wt-nl "{cl_object data = ecl_symbol_value("
 	     (nth-value 1 (si::mangle-name '*compiler-constants* nil))

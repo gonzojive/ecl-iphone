@@ -31,6 +31,7 @@
   "src:cmp;cmpcbk.lsp"
   "src:cmp;cmpct.lsp"
   "src:cmp;cmpnum.lsp"
+  "src:cmp;cmpname.lsp"
   "src:cmp;cmpmain.lsp"))
 
 (let ((si::*keep-documentation* nil))
