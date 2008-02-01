@@ -145,3 +145,39 @@ static cl_index hash_word(cl_index c, cl_index a)
 	return c;
 }
 
+static cl_index hash_base_string(const char *s, cl_index len, cl_index h)
+{
+	cl_index a = GOLDEN_RATIO, b = GOLDEN_RATIO, i;
+	for (i = len; i >= 3; i -= 3) {
+		a += *s; s++;
+		b += *s; s++;
+		h += *s; s++;
+		mix(a, b, h);
+	}
+	switch (i) {
+	case 2: a += *s; s++;
+	case 1: b += *s;
+	default: h += len;
+	}
+	mix(a, b, h);
+	return h;
+}
+
+static cl_index hash_full_string(const cl_object *s, cl_index len, cl_index h)
+{
+	cl_index a = GOLDEN_RATIO, b = GOLDEN_RATIO, i;
+	for (i = len; i >= 3; i -= 3) {
+		a += CHAR_CODE(*s); s++;
+		b += CHAR_CODE(*s); s++;
+		h += CHAR_CODE(*s); s++;
+		mix(a, b, h);
+	}
+	switch (i) {
+	case 2: a += CHAR_CODE(*s); s++;
+	case 1: b += CHAR_CODE(*s);
+	default: h += len;
+	}
+	mix(a, b, h);
+	return h;
+}
+

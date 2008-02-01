@@ -84,22 +84,10 @@ _hash_equal(int depth, cl_hashkey h, cl_object x)
 	case t_symbol:
 		x = x->symbol.name;
 #ifdef ECL_UNICODE
-	case t_base_string: {
-		cl_index i;
-		for (i = 0; i < x->base_string.fillp; i++) {
-			cl_index w = x->base_string.self[i];
-			h = hash_word(h, w);
-		}
-		break;
-	}
-	case t_string: {
-		cl_index i;
-		for (i = 0; i < x->string.fillp; i++) {
-			cl_index w = CHAR_CODE(x->string.self[i]);
-			h = hash_word(h, w);
-		}
-		break;
-	}
+	case t_base_string:
+		return hash_base_string(x->base_string.self, x->base_string.fillp, h);
+	case t_string:
+		return hash_full_string(x->base_string.self, x->base_string.fillp, h);
 #else
 	case t_base_string:
 		return hash_string(h, x->base_string.self, x->base_string.fillp);
