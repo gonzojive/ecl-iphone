@@ -1439,6 +1439,7 @@ extern void ecl_release_current_thread(void);
 extern cl_object cl_sleep(cl_object z);
 extern cl_object cl_get_internal_run_time(void);
 extern cl_object cl_get_internal_real_time(void);
+extern cl_object cl_get_universal_time(void);
 
 
 /* typespec.c */
@@ -1597,7 +1598,6 @@ extern cl_object cl_logical_pathname_translations _ARGS((cl_narg narg, cl_object
 extern cl_object cl_load_logical_pathname_translations _ARGS((cl_narg, cl_object V1, ...));
 extern cl_object cl_decode_universal_time _ARGS((cl_narg narg, cl_object V1, ...));
 extern cl_object cl_encode_universal_time _ARGS((cl_narg narg, cl_object V1, cl_object V2, cl_object V3, cl_object V4, cl_object V5, cl_object V6, ...));
-extern cl_object cl_get_universal_time _ARGS((cl_narg narg, ...));
 extern cl_object cl_get_decoded_time _ARGS((cl_narg narg, ...));
 extern cl_object cl_ensure_directories_exist _ARGS((cl_narg narg, cl_object V1, ...));
 extern cl_object si_simple_program_error _ARGS((cl_narg narg, cl_object format, ...)) /*__attribute__((noreturn))*/;

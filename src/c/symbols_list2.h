@@ -447,7 +447,7 @@ cl_symbols[] = {
 {"GET-OUTPUT-STREAM-STRING","cl_get_output_stream_string"},
 {"GET-PROPERTIES","cl_get_properties"},
 {"GET-SETF-EXPANSION",NULL},
-{"GET-UNIVERSAL-TIME","ECL_NAME(cl_get_universal_time)"},
+{"GET-UNIVERSAL-TIME","cl_get_universal_time"},
 {"GETF","cl_getf"},
 {"GETHASH","cl_gethash"},
 {"GO",NULL},

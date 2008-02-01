@@ -182,6 +182,13 @@ cl_get_internal_real_time()
 				 tv.tv_usec - beginning.tv_usec))
 }
 
+cl_object
+cl_get_universal_time()
+{
+	cl_object utc = ecl_make_integer(time(0));
+	@(return ecl_plus(utc, cl_core.Jan1st1970UT))
+}
+
 void
 init_unixtime(void)
 {

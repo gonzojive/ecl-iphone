@@ -236,15 +236,6 @@ Universal Time UT, which defaults to the current time."
 }"
 		 :one-liner nil)))
 
-(defun get-universal-time ()
-  #-ecl-min
-  (ffi:c-inline () () :object "
-{
-	cl_object utc = ecl_make_integer(time(0));
-	@(return) = ecl_plus(utc, cl_core.Jan1st1970UT);
-}"
-		:one-liner nil))
-
 (defun get-decoded-time ()
   "Args: ()
 Returns the current day-and-time as nine values:
