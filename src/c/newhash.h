@@ -138,9 +138,9 @@ hash_string(cl_index initval, const unsigned char *k, cl_index len)
 }
 #endif
 
-static cl_index hash_word(cl_index c, cl_index a)
+static cl_index hash_word(cl_index c, cl_index w)
 {
-	cl_index b = GOLDEN_RATIO;
+	cl_index a = w + GOLDEN_RATIO, b = GOLDEN_RATIO;
 	mix(a, b, c);
 	return c;
 }

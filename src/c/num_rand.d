@@ -62,8 +62,9 @@ generate_double(cl_object rs)
 cl_object
 init_random_state()
 {
-	cl_object a = ecl_alloc_simple_vector(MT_N + 1, aet_index);
-	ulong *mt = a->vector.self.index;
+	cl_index bytes = sizeof(ulong) * (MT_N + 1);
+	cl_object a = cl_alloc_simple_base_string(bytes);
+	ulong *mt = (ulong*)a->base_string.self;
 	int j;
 #if !defined(_MSC_VER) && !defined(mingw32)
 	FILE *fp = fopen("/dev/urandom","r");
@@ -92,7 +93,7 @@ generate_int32(cl_object state)
 {
 	static ulong mag01[2]={0x0UL, MATRIX_A};
 	ulong y;
-	ulong *mt = state->vector.self.index;
+	ulong *mt = (ulong*)state->base_string.self;
 	if (mt[MT_N] >= MT_N){
 		/* refresh data */
 		int kk;
