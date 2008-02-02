@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: C -*-
+;;;;
 
 (in-package 'system)
 

@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: SYSTEM -*-
+;;;;
 ;;;   -*- Mode:LISP; Syntax:Common-Lisp; Package:LOOP; Base:10; Lowercase:T -*-
 ;;;   *************************************************************************
 ;;;   ******* Common Lisp ******** LOOP Iteration Macro ***********************

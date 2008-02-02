@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: C -*-
+;;;;
 ;;;;  CMPTOP  --  Compiler top-level.
 
 ;;;;  Copyright (c) 1984, Taiichi Yuasa and Masami Hagiya.

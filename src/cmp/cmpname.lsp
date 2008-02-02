@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: C -*-
+;;;;
 ;;;;  Copyright (c) 2007, Juan Jose Garcia Ripoll.
 ;;;;
 ;;;;    This program is free software; you can redistribute it and/or
@@ -42,7 +44,7 @@ machine."
 			  (encode-number-in-name (sxhash pathname))
 			  "_"
 			  (encode-number-in-name (get-universal-time)))))
-    (cmpnote "Creating tag: ~S" tag)
+    (cmpnote "Creating tag: ~S for ~S" tag pathname)
     tag))
 
 (defun init-name-tag (init-name)

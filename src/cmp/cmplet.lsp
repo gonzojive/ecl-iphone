@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: C -*-
+;;;;
 ;;;;  CMPLET  Let and Let*.
 ;;;;
 ;;;;  Copyright (c) 1984, Taiichi Yuasa and Masami Hagiya.

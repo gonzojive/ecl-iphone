@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: SYSTEM -*-
+;;;;
 ;;;   -*- Mode: LISP; Syntax: Common-lisp; Base: 10; Lowercase:T -*-
 ;;;>
 ;;;> Portions of LOOP are Copyright (c) 1986 by the Massachusetts Institute of Technology.

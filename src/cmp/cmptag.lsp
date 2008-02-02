@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: C -*-
+;;;;
 ;;;;  CMPTAG  --  Tagbody and Go.
 
 ;;;;  Copyright (c) 1984, Taiichi Yuasa and Masami Hagiya.

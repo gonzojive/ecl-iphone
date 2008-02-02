@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: CLOS -*-
+;;;;
 ;;;;  Copyright (c) 1992, Giuseppe Attardi.
 ;;;;
 ;;;;    ECoLisp is free software; you can redistribute it and/or

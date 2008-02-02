@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: C -*-
+;;;;
 ;;;;  CMPFFI --  Foreign functions interface.
 
 ;;;;  Copyright (c) 2003, Juan Jose Garcia-Ripoll.

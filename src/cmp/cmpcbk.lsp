@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: C -*-
+;;;;
 ;;;;  CMPCBK --  Callbacks: lisp functions that can be called from the C world
 
 ;;;;  Copyright (c) 2003, Juan Jose Garcia-Ripoll.

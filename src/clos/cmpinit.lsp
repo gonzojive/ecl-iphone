@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: CLOS -*-
+;;;;
 (defvar std-compile (symbol-function 'compile-file))
 (defun compile-file (file &key (output-file (make-pathname :type "o" :defaults file)))
   (funcall std-compile

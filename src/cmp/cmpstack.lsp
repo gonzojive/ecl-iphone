@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: C -*-
+;;;;
 ;;;;  Copyright (c) 2006, Juan Jose Garcia-Ripoll
 ;;;;
 ;;;;    This program is free software; you can redistribute it and/or

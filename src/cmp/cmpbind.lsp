@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: C -*-
+;;;;
 ;;;;  CMPBIND  Variable Binding.
 ;;;;
 ;;;;  Copyright (c) 1990, Giuseppe Attardi.

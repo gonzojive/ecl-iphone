@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: SYSTEM -*-
+;;;;
 ;;;;  cmdline.lsp -- command line processing
 ;;;;
 ;;;;  Copyright (c) 2005, Juan Jose Garcia-Ripoll

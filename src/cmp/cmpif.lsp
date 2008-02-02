@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: C -*-
+;;;;
 ;;;;  Copyright (c) 1984, Taiichi Yuasa and Masami Hagiya.
 ;;;;  Copyright (c) 1990, Giuseppe Attardi.
 ;;;;

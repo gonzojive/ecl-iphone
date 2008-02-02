@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: SYSTEM -*-
+;;;;
 ;;;;  top.lsp -- Top-level loop, break loop, and error handlers
 ;;;;
 ;;;;  Copyright (c) 1990, Giuseppe Attardi.

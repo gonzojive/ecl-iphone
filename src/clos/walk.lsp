@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: CLOS -*-
+;;;;
 ;;;-*- Mode:LISP; Package:(WALKER LISP 1000); Base:10; Syntax:Common-lisp -*-
 ;;;
 ;;; *************************************************************************

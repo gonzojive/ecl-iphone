@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: SYSTEM -*-
+;;;;
 ;;; -*- Mode: LISP; Syntax: Common-lisp; Base: 10; Package: (DEFPACKAGE :COLON-MODE :EXTERNAL) -*-
 ;;;
 ;;;				 THE BOEING COMPANY

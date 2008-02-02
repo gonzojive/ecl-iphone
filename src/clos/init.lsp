@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: CLOS -*-
+;;;;
 (load "../util/system")
 (load "defsys")
 (load "cmpinit")

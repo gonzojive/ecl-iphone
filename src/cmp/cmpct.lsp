@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: C -*-
+;;;;
 ;;;; CMPCT --  Optimizer for several constant values
 
 ;;;;  Copyright (c) 2003, Juan Jose Garcia Ripoll.

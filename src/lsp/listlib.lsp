@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: SYSTEM -*-
+;;;;
 ;;;;  Copyright (c) 1995, Giuseppe Attardi.
 ;;;;
 ;;;;    This program is free software; you can redistribute it and/or

@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: C -*-
+;;;;
 ;;; CMPSYSFUN   Database for system functions.
 ;;;
 ;;; Copyright (c) 2003, Juan Jose Garcia Ripoll

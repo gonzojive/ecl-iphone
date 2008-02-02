@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: C -*-
+;;;;
 ;;;;  CMPFLET  Flet, Labels, and Macrolet.
 
 ;;;;  Copyright (c) 1984, Taiichi Yuasa and Masami Hagiya.

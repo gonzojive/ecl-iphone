@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: C -*-
+;;;;
 ;;;;  CMPCALL  Function call.
 
 ;;;;  Copyright (c) 1984, Taiichi Yuasa and Masami Hagiya.

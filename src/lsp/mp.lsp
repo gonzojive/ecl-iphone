@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: SYSTEM -*-
+;;;;
 ;;;;  MP.LSP  -- Multiprocessing capabilities.
 
 ;;;;  Copyright (c) 2003, Juan Jose Garcia-Ripoll

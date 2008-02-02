@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: C -*-
+;;;;
 ;;;; CMPNUM -- Optimizer for numerical expressions.
 
 ;;;;  Copyright (c) 2005, Juan Jose Garcia Ripoll

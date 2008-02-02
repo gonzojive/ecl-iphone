@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: C -*-
+;;;;
 ;;; ----------------------------------------------------------------------
 ;;; Macros only used in the code of the compiler itself:
 

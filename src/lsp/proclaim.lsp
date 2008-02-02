@@ -1,3 +1,5 @@
+;;;;  -*- Mode: Lisp; Syntax: Common-Lisp; Package: SYSTEM -*-
+;;;;
 (in-package "SYSTEM")
 (proclaim '(FTYPE (FUNCTION (T T T) T) DEFMACRO*))
 (proclaim '(FTYPE (FUNCTION (T T T) T) DM-VL))
