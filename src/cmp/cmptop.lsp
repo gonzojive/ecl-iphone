@@ -358,7 +358,7 @@
   ;; are going to pass pointers of this array around and the compiler
   ;; should definitely keep this in memory.
   (when (plusp *max-lex*)
-    (wt-h " cl_object lex" *level* "[" *max-lex* "];"))
+    (wt-h " volatile cl_object lex" *level* "[" *max-lex* "];"))
   (wt-nl-h "#define CLSR" *reservation-cmacro*)
   (when (plusp *max-env*)
     (unless (eq closure-type 'CLOSURE)
@@ -535,8 +535,8 @@
       (wt *volatile* "cl_narg narg")
       (setf comma ", "))
     (dotimes (n level)
-      (wt-h comma "cl_object  *")
-      (wt comma "cl_object *lex" n)
+      (wt-h comma "volatile cl_object  *")
+      (wt comma "volatile cl_object *lex" n)
       (setf comma ", "))
     (when (eq (fun-closure fun) 'CLOSURE)
       (wt-h comma "cl_object " *volatile*)
