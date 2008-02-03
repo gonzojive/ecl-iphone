@@ -413,7 +413,9 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
 		  (wt-nl "cl_parse_key(args," nkey "," cfun "keys,keyvars"))
 		 (t
 		  (wt-nl "cl_parse_key(args,0,NULL,NULL")))
-	   (if rest (wt ",&" rest-loc) (wt ",NULL"))
+	   ;; This explicit coercion is required to remove the "volatile"
+	   ;; declaration on some variables.
+	   (if rest (wt ",(cl_object*)&" rest-loc) (wt ",NULL"))
 	   (wt (if allow-other-keys ",TRUE);" ",FALSE);"))))
     (when rest (bind rest-loc rest)))
 
