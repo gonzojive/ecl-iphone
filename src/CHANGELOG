@@ -43,6 +43,10 @@ ECL 0.9k:
 
  - ECL ships with ASDF v1.111
 
+ - We now activate CMUCL's implementation of FORMATTER, which compiles format
+   strings into lisp functions, instead of a dummy function that calls
+   FORMAT. This leads to some speedup when pretty-printing.
+
 * CLOS:
 
  - When caching generic function calls, ECL now uses a thread-local hash table

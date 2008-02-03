@@ -17,6 +17,8 @@
 
 (in-package "SYS")
 
+(push :formatter *features*)
+
 ;;;; Float printing.
 
 ;;;
@@ -277,6 +279,8 @@
   (colonp nil :type (member t nil))
   (atsignp nil :type (member t nil))
   (params nil :type list))
+
+(deftype format-directive () 'vector)
 
 #-ecl
 (defun %print-format-directive (struct stream depth)
@@ -614,6 +618,9 @@
 (defun expand-directive (directive more-directives)
   (declare (si::c-local))
   (etypecase directive
+    (simple-string
+     (values `(write-string ,directive stream)
+	     more-directives))
     (format-directive
      (let ((expander
 	    (aref *format-directive-expanders*
@@ -623,10 +630,7 @@
        (if expander
 	   (funcall expander directive more-directives)
 	   (error 'format-error
-		  :complaint "Unknown directive."))))
-    (simple-string
-     (values `(write-string ,directive stream)
-	     more-directives))))
+		  :complaint "Unknown directive."))))))
 
 (defun expand-next-arg (&optional offset)
   (declare (si::c-local))
@@ -685,8 +689,6 @@
      (pop args)))
 
 (defmacro def-complex-format-directive (char lambda-list &body body)
-  #-formatter
-  nil
   #+formatter
   (let ((directive (gensym))
 	(directives (if lambda-list (car (last lambda-list)) (gensym))))
@@ -707,8 +709,6 @@
 		 ,@body))))))
 
 (defmacro def-format-directive (char lambda-list &body body)
-  #-formatter
-  nil
   #+formatter
   (let ((directives (gensym))
 	(declarations nil)
@@ -2068,7 +2068,6 @@
 ;;;; Conditionals
 
 (defun parse-conditional-directive (directives)
-  #-formatter
   (declare (si::c-local))
   (let ((sublists nil)
 	(last-semi-with-colon-p nil)
@@ -2111,9 +2110,10 @@
 		 (error 'format-error
 			:complaint
 			"Must specify exactly two sections."))
-	     (expand-bind-defaults ((index (expand-next-arg))) params
+	     (expand-bind-defaults ((index nil)) params
 	       (setf *only-simple-args* nil)
-	       (let ((clauses nil))
+	       (let* ((clauses nil)
+		      (case `(or ,index ,(expand-next-arg))))
 		 (when last-semi-with-colon-p
 		   (push `(t ,@(expand-directive-list (pop sublists)))
 			 clauses))
@@ -2122,7 +2122,7 @@
 		     (push `(,(decf count)
 			     ,@(expand-directive-list sublist))
 			   clauses)))
-		 `(case ,index ,@clauses)))))
+		 `(case ,case ,@clauses)))))
      remaining)))
 
 #+formatter
@@ -2278,11 +2278,11 @@
 	   :complaint "Attempt to use ~~:^ outside a ~~:{...~~} construct."))
   `(when ,(expand-bind-defaults ((arg1 nil) (arg2 nil) (arg3 nil)) params
 	    (setf *only-simple-args* nil)
-	    `(cond (arg3 (<= arg1 arg2 arg3))
-		(arg2 (equal arg1 arg2))
-		(arg1 (equal arg1 0))
-		(,colonp (null outside-args))
-		(t (null args))))
+	    `(cond (,arg3 (<= ,arg1 ,arg2 ,arg3))
+		   (,arg2 (equal ,arg1 ,arg2))
+		   (,arg1 (equal ,arg1 0))
+		   (,colonp (null outside-args))
+		   (t (null args))))
      ,(if colonp
 	  '(return-from outside-loop nil)
 	  '(return))))
@@ -2532,7 +2532,6 @@
     remaining))
 
 (defun parse-format-justification (directives)
-  #-formatter
   (declare (si::c-local))
   (let ((first-semi nil)
 	(close nil)
@@ -2594,7 +2593,6 @@
 
 (defun interpret-format-justification
        (stream orig-args args segments colonp atsignp first-semi params)
-  #-formatter
   (declare (si::c-local))
   (interpret-bind-defaults
       ((mincol 0) (colinc 1) (minpad 0) (padchar #\space))
@@ -2676,7 +2674,6 @@
 
 (defun parse-format-logical-block
        (segments colonp first-semi close params string end)
-  #-formatter
   (declare (si::c-local))
   (check-output-layout-mode 1)
   (when params
@@ -2721,6 +2718,7 @@
 	    suffix)))
 
 (defun add-fill-style-newlines (list string offset)
+  (declare (si::c-local))
   (if list
       (let ((directive (car list)))
 	(if (simple-string-p directive)
@@ -2779,7 +2777,6 @@
 
 (defun interpret-format-logical-block
        (stream orig-args args prefix per-line-p insides suffix atsignp)
-  #-formatter
   (declare (si::c-local))
   (let ((arg (if atsignp args (next-arg))))
     (if per-line-p
@@ -2833,7 +2830,6 @@
       (apply (fdefinition symbol) stream (next-arg) colonp atsignp (args)))))
 
 (defun extract-user-function-name (string start end)
-  #-formatter
   (declare (si::c-local))
   (let ((slash (position #\/ string :start start :end (1- end)
 			 :from-end t)))
