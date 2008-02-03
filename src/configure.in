@@ -397,6 +397,10 @@ if test "${GCC}" = "yes"; then
   CFLAGS="${CFLAGS} -fstrict-aliasing"
 fi
 
+dnl ----------------------------------------------------------------------
+dnl Check the appropiate type for cl_fixnum/cl_index
+ECL_FIXNUM_TYPE
+
 ECL_LINEFEED_MODE
 ECL_FIND_SETJMP
 ECL_FILE_STRUCTURE
@@ -413,10 +417,6 @@ fi
 dnl -----------------------------------------------------------------------
 dnl Study the call conventions
 ECL_STACK_DIRECTION
-
-dnl ----------------------------------------------------------------------
-dnl Check the appropiate type for cl_fixnum/cl_index
-ECL_FIXNUM_TYPE
 
 dnl =====================================================================
 dnl Checks for library functions

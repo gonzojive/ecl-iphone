@@ -558,7 +558,11 @@ case "${host_cpu}" in
 	dynamic_ffi=yes
 	;;
    x86_64 )
-	EXTRA_OBJS="${EXTRA_OBJS} ffi_x86_64.o"
+        if [ "${CL_FIXNUM_BITS}" = 32 ]; then
+	  EXTRA_OBJS="${EXTRA_OBJS} ffi_x86.o"
+	else
+	  EXTRA_OBJS="${EXTRA_OBJS} ffi_x86_64.o"
+	fi
 	dynamic_ffi=yes
 	;;
    *)
