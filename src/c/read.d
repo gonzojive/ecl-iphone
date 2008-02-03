@@ -136,11 +136,10 @@ invert_buffer_case(cl_object x, cl_object escape_list, int sign)
 }
 
 static cl_object
-ecl_read_object_with_delimiter(cl_object in, int delimiter, bool only_token)
+ecl_read_object_with_delimiter(cl_object in, int delimiter, bool only_token, enum ecl_chattrib a)
 {
 	cl_object x, token;
 	int c, base;
-	enum ecl_chattrib a;
 	cl_object p;
 	cl_index length, i;
 	int colon, intern_flag;
@@ -151,6 +150,10 @@ ecl_read_object_with_delimiter(cl_object in, int delimiter, bool only_token)
 	cl_fixnum upcase; /* # uppercase characters - # downcase characters */
 	cl_fixnum count; /* number of unescaped characters */
 	bool suppress = read_suppress;
+	if (a != cat_constituent) {
+		c = 0;
+		goto LOOP;
+	}
 BEGIN:
 	do {
 		c = ecl_read_char(in);
@@ -168,6 +171,7 @@ BEGIN:
 					 2, x, MAKE_FIXNUM(i));
 		return o;
 	}
+LOOP:
 	p = escape_list = Cnil;
 	upcase = count = length = 0;
 	external_symbol = colon = 0;
@@ -357,7 +361,7 @@ BEGIN:
 cl_object
 ecl_read_object(cl_object in)
 {
-	return ecl_read_object_with_delimiter(in, EOF, 0);
+	return ecl_read_object_with_delimiter(in, EOF, 0, cat_constituent);
 }
 
 #define	ecl_exponent_marker_p(i)	\
@@ -765,8 +769,7 @@ sharp_backslash_reader(cl_object in, cl_object c, cl_object d)
 			FEreader_error("~S is an illegal CHAR-FONT.", in, 1, d);
 			/*  assuming that CHAR-FONT-LIMIT is 1  */
 	bds_bind(@'*readtable*', cl_core.standard_readtable);
-	ecl_unread_char('\\', in);
-	token = ecl_read_object_with_delimiter(in, EOF, 1);
+	token = ecl_read_object_with_delimiter(in, EOF, 1, cat_single_escape);
 	bds_unwind_n(1);
 	if (token == Cnil) {
 		c = Cnil;
@@ -897,7 +900,7 @@ sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 		cl_index i;
 		v = ecl_alloc_simple_vector(dim, aet_object);
 		for (i = 0, last = Cnil;; i++) {
-			cl_object aux = ecl_read_object_with_delimiter(in, ')', 0);
+			cl_object aux = ecl_read_object_with_delimiter(in, ')', 0, cat_constituent);
 			if (aux == OBJNULL)
 				break;
 			if (i >= dim) {
@@ -1439,7 +1442,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 	cl_object x, y = Cnil;
 	cl_object *p = &y;
 	do {
-		x = ecl_read_object_with_delimiter(in, d, 0);
+		x = ecl_read_object_with_delimiter(in, d, 0, cat_constituent);
 		if (x == OBJNULL) {
 			/* End of the list. */
 			if (after_dot == 1) {

@@ -63,6 +63,9 @@ ECL 0.9k:
  - Problems in the use of "volatile" keywords prevented ECL from compiling
    with a C++ compiler.
 
+ - The reader function for #\ was not suitable for being invoked by the
+   user on an arbitrary stream.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
