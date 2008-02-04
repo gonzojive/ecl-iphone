@@ -2307,78 +2307,78 @@
   (let ((close (find-directive directives #\} nil)))
     (unless close
       (error 'format-error
-	     :complaint
-	     "No corresponding close brace."))
+             :complaint "no corresponding close brace"))
     (let* ((closed-with-colon (format-directive-colonp close))
-	   (posn (position close directives)))
+           (posn (position close directives)))
       (labels
-	  ((compute-insides ()
-	     (if (zerop posn)
-		 (if *orig-args-available*
-		     `((handler-bind
-			   ((format-error
-			     #'(lambda (condition)
-				 (error 'format-error
-					:complaint
-			"~A~%while processing indirect format string:"
-					:arguments (list condition)
-					:print-banner nil
-					:control-string ,string
-					:offset ,(1- end)))))
-			 (setf args
-			       (formatter-aux stream inside-string orig-args args))))
-		     (throw 'need-orig-args nil))
-		 (let ((*up-up-and-out-allowed* colonp))
-		   (expand-directive-list (subseq directives 0 posn)))))
-	   (compute-loop-aux (count)
-	     (when atsignp
-	       (setf *only-simple-args* nil))
-	     `(loop
-		,@(unless closed-with-colon
-		    '((when (null args)
-			(return))))
-		,@(when count
-		    `((when (and ,count (minusp (decf ,count)))
-			(return))))
-		,@(if colonp
-		      (let ((*expander-next-arg-macro* 'expander-next-arg)
-			    (*only-simple-args* nil)
-			    (*orig-args-available* t))
-			`((let* ((orig-args ,(expand-next-arg))
-				 (outside-args args)
-				 (args orig-args))
-			    (declare (ignorable orig-args outside-args args))
-			    (block nil
-			      ,@(compute-insides)))))
-		      (compute-insides))
-		,@(when closed-with-colon
-		    '((when (null args)
-			(return))))))
-	   (compute-loop ()
-	     (if params
-		 (expand-bind-defaults ((count nil)) params
-		   (compute-loop-aux count))
-		 (compute-loop-aux nil)))
-	   (compute-block ()
-	     (if colonp
-		 `(block outside-loop
-		    ,(compute-loop))
-		 (compute-loop)))
-	   (compute-bindings ()
-	     (if atsignp
-		 (compute-block)
-		 `(let* ((orig-args ,(expand-next-arg))
-			 (args orig-args))
-		    (declare (ignorable orig-args args))
-		    ,(let ((*expander-next-arg-macro* 'expander-next-arg)
-			   (*only-simple-args* nil)
-			   (*orig-args-available* t))
-		       (compute-block))))))
-	(values (if (zerop posn)
-		    `(let ((inside-string ,(expand-next-arg)))
-		       ,(compute-bindings))
-		    (compute-bindings))
-		(nthcdr (1+ posn) directives))))))
+          ((compute-insides ()
+             (if (zerop posn)
+                 (if *orig-args-available*
+                     `((handler-bind
+                           ((format-error
+                             (lambda (condition)
+                               (error 'format-error
+                                      :complaint
+                              "~A~%while processing indirect format string:"
+                                      :args (list condition)
+                                      :print-banner nil
+                                      :control-string ,string
+                                      :offset ,(1- end)))))
+                         (setf args
+                               (formatter-aux stream inside-string orig-args args))))
+                     (throw 'need-orig-args nil))
+                 (let ((*up-up-and-out-allowed* colonp))
+                   (expand-directive-list (subseq directives 0 posn)))))
+           (compute-loop (count)
+             (when atsignp
+               (setf *only-simple-args* nil))
+             `(loop
+                ,@(unless closed-with-colon
+                    '((when (null args)
+                        (return))))
+                ,@(when count
+                    `((when (and ,count (minusp (decf ,count)))
+                        (return))))
+                ,@(if colonp
+                      (let ((*expander-next-arg-macro* 'expander-next-arg)
+                            (*only-simple-args* nil)
+                            (*orig-args-available* t))
+                        `((let* ((orig-args ,(expand-next-arg))
+                                 (outside-args args)
+                                 (args orig-args))
+                            (declare (ignorable orig-args outside-args args))
+                            (block nil
+                              ,@(compute-insides)))))
+                      (compute-insides))
+                ,@(when closed-with-colon
+                    '((when (null args)
+                        (return))))))
+           (compute-block (count)
+             (if colonp
+                 `(block outside-loop
+                    ,(compute-loop count))
+                 (compute-loop count)))
+           (compute-bindings (count)
+             (if atsignp
+                 (compute-block count)
+                 `(let* ((orig-args ,(expand-next-arg))
+                         (args orig-args))
+                   (declare (ignorable orig-args args))
+                   ,(let ((*expander-next-arg-macro* 'expander-next-arg)
+                          (*only-simple-args* nil)
+                          (*orig-args-available* t))
+                      (compute-block count))))))
+        (values (if params
+                    (expand-bind-defaults ((count nil)) params
+                      (if (zerop posn)
+                          `(let ((inside-string ,(expand-next-arg)))
+                            ,(compute-bindings count))
+                          (compute-bindings count)))
+                    (if (zerop posn)
+                        `(let ((inside-string ,(expand-next-arg)))
+                          ,(compute-bindings nil))
+                        (compute-bindings nil)))
+                (nthcdr (1+ posn) directives))))))
 
 (def-complex-format-interpreter #\{
 				(colonp atsignp params string end directives)
