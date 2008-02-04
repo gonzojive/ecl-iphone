@@ -2130,12 +2130,11 @@
 		(setf args prev-args)
 		,@(expand-directive-list sublist)))))
     (if *only-simple-args*
-	(multiple-value-bind
-	    (guts new-args)
+	(multiple-value-bind (guts new-args)
 	    (let ((*simple-args* *simple-args*))
 	      (values (expand-directive-list sublist)
 		      *simple-args*))
-	  (cond ((eq *simple-args* (cdr new-args))
+	  (cond ((and new-args (eq *simple-args* (cdr new-args)))
 		 (setf *simple-args* new-args)
 		 `(when ,(caar new-args)
 		    ,@guts))
