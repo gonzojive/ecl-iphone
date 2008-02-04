@@ -1351,6 +1351,25 @@ EXPORTS
 	cl_merge
 	cl_constantly
 
+	; format.lsp
+
+	si_format_princ
+	si_format_prin1
+	si_format_print_named_character
+	si_format_print_integer
+	si_format_print_cardinal
+	si_format_print_ordinal
+	si_format_print_old_roman
+	si_format_print_roman
+	si_decimal_string
+	si_format_fixed
+	si_format_exponential
+	si_format_general
+	si_format_dollars
+	si_format_relative_tab
+	si_format_absolute_tab
+	si_format_justification
+
 	; pprint.lsp
 
 	cl_pprint_newline

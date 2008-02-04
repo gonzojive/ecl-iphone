@@ -690,10 +690,12 @@
 
 (defmacro def-complex-format-directive (char lambda-list &body body)
   #+formatter
-  (let ((directive (gensym))
-	(directives (if lambda-list (car (last lambda-list)) (gensym))))
+  (let* ((name (or (char-name char) (string char)))
+	 (defun-name (intern (concatenate 'string name "-FORMAT-DIRECTIVE-EXPANDER")))
+	 (directive (gensym))
+	 (directives (if lambda-list (car (last lambda-list)) (gensym))))
     `(%set-format-directive-expander ,char
-       (lambda (,directive ,directives)
+       (ext::lambda-block ,defun-name (,directive ,directives)
 	 ,@(if lambda-list
 	       `((let ,(mapcar #'(lambda (var)
 				   `(,var
@@ -852,7 +854,6 @@
 ;;;; Simple outputting noise.
 
 (defun format-write-field (stream string mincol colinc minpad padchar padleft)
-  #-formatter
   (declare (si::c-local))
   (unless padleft
     (write-string string stream))
@@ -1013,7 +1014,6 @@
 	(princ number stream))))
 
 (defun format-add-commas (string commachar commainterval)
-  #-formatter
   (declare (si::c-local))
   (let ((length (length string)))
     (multiple-value-bind (commas extra)
@@ -1077,24 +1077,23 @@
   (interpret-format-integer 16))
 
 (def-format-directive #\R (colonp atsignp params)
-  (let ((text
-	 (if atsignp
-	      (if colonp
-		  `(format-print-old-roman stream ,(expand-next-arg))
-		  `(format-print-roman stream ,(expand-next-arg)))
-	      (if colonp
-		  `(format-print-ordinal stream ,(expand-next-arg))
-		  `(format-print-cardinal stream ,(expand-next-arg))))))
-    (if params
-	(expand-bind-defaults
-	 ((base 10) (mincol 0) (padchar #\space) (commachar #\,)
-	  (commainterval 3))
-	 params
-	 `(if ,base
-	      `(format-print-integer stream ,(expand-next-arg) ,colonp ,atsignp
-		,base ,mincol ,padchar ,commachar ,commainterval)
-	      ,text))
-	text)))
+  (expand-bind-defaults
+      ((base nil) (mincol 0) (padchar #\space) (commachar #\,)
+       (commainterval 3))
+      params
+    (let ((n-arg (gensym)))
+      `(let ((,n-arg ,(expand-next-arg)))
+         (if ,base
+             (format-print-integer stream ,n-arg ,colonp ,atsignp
+                                   ,base ,mincol
+                                   ,padchar ,commachar ,commainterval)
+             ,(if atsignp
+                  (if colonp
+                      `(format-print-old-roman stream ,n-arg)
+                      `(format-print-roman stream ,n-arg))
+                  (if colonp
+                      `(format-print-ordinal stream ,n-arg)
+                      `(format-print-cardinal stream ,n-arg))))))))
 
 (def-format-interpreter #\R (colonp atsignp params)
   (interpret-bind-defaults
@@ -1141,7 +1140,6 @@
   "Table of ordinal tens-place digits in English")
 
 (defun format-print-small-cardinal (stream n)
-  #-formatter
   (declare (si::c-local))
   (multiple-value-bind 
       (hundreds rem) (truncate n 100)
@@ -1304,7 +1302,6 @@
 ;;;; Floating point noise.
 
 (defun decimal-string (n)
-  #-formatter
   (declare (si::c-local))
   (write-to-string n :base 10 :radix nil :escape nil))
 
@@ -1427,7 +1424,6 @@
 
 
 (defun format-exponent-marker (number)
-  #-formatter
   (declare (si::c-local))
   (if (typep number *read-default-float-format*)
       #\e
@@ -1779,7 +1775,6 @@
 	    (format-absolute-tab stream colnum colinc)))))
 
 (defun output-spaces (stream n)
-  #-formatter
   (declare (si::c-local))
   (let ((spaces #.(make-string 100 :initial-element #\space)))
     (loop
@@ -2272,37 +2267,39 @@
 (def-format-directive #\^ (colonp atsignp params)
   (when atsignp
     (error 'format-error
-	   :complaint "Cannot specify the at-sign modifier."))
+           :complaint "cannot use the at-sign modifier with this directive"))
   (when (and colonp (not *up-up-and-out-allowed*))
     (error 'format-error
-	   :complaint "Attempt to use ~~:^ outside a ~~:{...~~} construct."))
+           :complaint "attempt to use ~~:^ outside a ~~:{...~~} construct"))
   `(when ,(expand-bind-defaults ((arg1 nil) (arg2 nil) (arg3 nil)) params
-	    (setf *only-simple-args* nil)
-	    `(cond (,arg3 (<= ,arg1 ,arg2 ,arg3))
-		   (,arg2 (equal ,arg1 ,arg2))
-		   (,arg1 (equal ,arg1 0))
-		   (,colonp (null outside-args))
-		   (t (null args))))
+            `(cond (,arg3 (<= ,arg1 ,arg2 ,arg3))
+                   (,arg2 (eql ,arg1 ,arg2))
+                   (,arg1 (eql ,arg1 0))
+                   (t ,(if colonp
+                           '(null outside-args)
+                           (progn
+                             (setf *only-simple-args* nil)
+                             '(null args))))))
      ,(if colonp
-	  '(return-from outside-loop nil)
-	  '(return))))
+          '(return-from outside-loop nil)
+          '(return))))
 
 (def-format-interpreter #\^ (colonp atsignp params)
   (when atsignp
     (error 'format-error
-	   :complaint "Cannot specify the at-sign modifier."))
+           :complaint "cannot specify the at-sign modifier"))
   (when (and colonp (not *up-up-and-out-allowed*))
     (error 'format-error
-	   :complaint "Attempt to use ~~:^ outside a ~~:{...~~} construct."))
+           :complaint "attempt to use ~~:^ outside a ~~:{...~~} construct"))
   (when (interpret-bind-defaults ((arg1 nil) (arg2 nil) (arg3 nil)) params
-	  (cond (arg3 (<= arg1 arg2 arg3))
-		(arg2 (equal arg1 arg2))
-		(arg1 (equal arg1 0))
-		(colonp (null *outside-args*))
-		(t (null args))))
-    (if colonp
-	(throw 'up-up-and-out *outside-args*)
-	(throw 'up-and-out args))))
+          (cond (arg3 (<= arg1 arg2 arg3))
+                (arg2 (eql arg1 arg2))
+                (arg1 (eql arg1 0))
+                (t (if colonp
+                       (null *outside-args*)
+                       (null args)))))
+    (throw (if colonp 'up-up-and-out 'up-and-out)
+           args)))
 
 
 ;;;; Iteration.

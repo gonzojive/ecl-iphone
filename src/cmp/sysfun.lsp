@@ -1439,11 +1439,18 @@ type_of(#0)==t_bitvector")
     si::pprint-logical-block-helper si::pprint-pop-helper
     si::make-seq-iterator si::seq-iterator-ref si::seq-iterator-set si::seq-iterator-next
     si::assert-slot-type si::define-structure
-    .
-    #-clos
-    nil
+    #+formatter
+    ,@'(
+    format-princ format-prin1 format-print-named-character
+    format-print-integer
+    format-print-cardinal format-print-ordinal format-print-old-roman
+    format-print-roman format-fixed format-exponential
+    format-general format-dollars
+    format-relative-tab format-absolute-tab
+    format-justification
+	)
     #+clos
-    (;; defclass.lsp
+    ,@'(;; defclass.lsp
      clos::ensure-class
      ;; boot.lsp
      clos::slot-boundp
