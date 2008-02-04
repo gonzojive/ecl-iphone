@@ -1996,13 +1996,16 @@
 							:downcase)))))
 	    ,@(expand-directive-list before))
 	 #+ecl
-	 `(princ
-	   (,(if colonp
-		 (if atsignp 'nstring-upcase 'nstring-capitalize)
-		 (if atsignp 'nstring-capitalize-first 'nstring-downcase))
-	    (with-output-to-string (stream)
-	      ,@(expand-directive-list before)))
-	   stream))
+	 `(let ((string (make-array 10 :element-type 'character :fill-pointer 0
+								:adjustable t)))
+	    (unwind-protect
+		 (with-output-to-string (stream string)
+		   ,@(expand-directive-list before))
+	      (princ (,(if colonp
+			   (if atsignp 'nstring-upcase 'nstring-capitalize)
+			   (if atsignp 'nstring-capitalize-first 'nstring-downcase))
+		       string)
+		     stream))))
        after))))
 
 (def-complex-format-interpreter #\( (colonp atsignp params directives)
@@ -2029,26 +2032,17 @@
       (let* ((posn (position close directives))
 	     (before (subseq directives 0 posn))
 	     (jumped t)
-	     (after (nthcdr (1+ posn) directives)))
-	(princ
-	 (funcall (if colonp
-		      (if atsignp
-			  'nstring-upcase
-			  'nstring-capitalize)
-		      (if atsignp
-			  'nstring-capitalize-first
-			  'nstring-downcase))
-		  (with-output-to-string (stream)
-		    (setf args
-			  (catch 'up-and-out
-			    (prog1
-				(interpret-directive-list stream before
-							  orig-args args)
-			      (setf jumped nil)
-			      )))))
-	 stream)
-	(when jumped
-	  (throw 'up-and-out args))
+	     (after (nthcdr (1+ posn) directives))
+	     (string (make-array 10 :element-type 'character :adjustable t
+				 :fill-pointer 0)))
+	(unwind-protect
+	     (with-output-to-string (stream string)
+	       (setf args (interpret-directive-list stream before orig-args args)))
+	  (princ (funcall
+		  (if colonp
+		      (if atsignp 'nstring-upcase 'nstring-capitalize)
+		      (if atsignp 'nstring-capitalize-first 'nstring-downcase))
+		  string) stream))
 	after))))
 
 (def-complex-format-directive #\) ()
