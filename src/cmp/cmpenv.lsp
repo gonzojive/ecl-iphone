@@ -163,7 +163,7 @@
 
 (defun inline-possible (fname)
   (not (or ; (compiler-<push-events)
-	(>= *debug* 2)
+	;(>= *debug* 2) Breaks compilation of STACK-PUSH-VALUES
 	(member fname *notinline* :test #'same-fname-p)
 	(and (symbolp fname) (get-sysprop fname 'CMP-NOTINLINE)))))
 
