@@ -124,7 +124,6 @@
 (build-module "cmp" +cmp-module-files+ 
               :dir "build:cmp;" :prefix "CMP" :additional-files '("sysfun.lsp"))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; EXTENSIONS
@@ -146,6 +145,15 @@
 (build-module "asdf"
               '("ext:asdf;asdf.lisp"
 		"ext:asdf;asdf-ecl.lisp")
+              :dir "build:ext;"
+              :prefix "EXT")
+
+;;;
+;;; * PROFILE
+;;;
+#+WANTS-PROFILE
+(build-module "profile"
+              '("ext:profile;profile.lisp")
               :dir "build:ext;"
               :prefix "EXT")
 

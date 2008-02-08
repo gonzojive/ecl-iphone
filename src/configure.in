@@ -165,6 +165,12 @@ AC_ARG_WITH(rt,
                   [(default=YES)]),
   [], [with_rt=${enable_shared}])
 
+AC_ARG_WITH(profile,
+  AS_HELP_STRING( [--with-profile],
+                  [include CMUCL's simple profiler]
+                  [(default=YES if Boehm-Weiser garbage collector used)]),
+  [], [with_profile=yes])
+
 AC_ARG_ENABLE(unicode,
   AS_HELP_STRING( [--enable-unicode],
                   [enable support for unicode (default=NO)]),
@@ -530,6 +536,12 @@ fi
 
 if test "${with_defsystem}" = "yes"; then
   ECL_ADD_LISP_MODULE([defsystem])
+fi
+
+if test "${with_profile}" = "yes"; then
+  if test "${enable_boehm}" != "no"; then
+    ECL_ADD_LISP_MODULE([profile])
+  fi
 fi
 
 if test "${with_rt}" = "yes"; then

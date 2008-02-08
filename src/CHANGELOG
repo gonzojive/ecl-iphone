@@ -53,6 +53,8 @@ ECL 0.9k:
 
  - Declaration SI:C-LOCAL is deactivated by (DEBUG > 0).
 
+ - Ported CMUCL's profiler as a contributed package.
+
 * CLOS:
 
  - When caching generic function calls, ECL now uses a thread-local hash table
