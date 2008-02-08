@@ -89,8 +89,12 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
 				     (si::function-block-name name)))
 	 (children (fun-child-funs fun))
 	 (global (and (assoc 'SI::C-GLOBAL decl) 'T))
-	 (no-entry (and (plusp *debug*) (assoc 'SI::C-LOCAL decl) 'T))
+	 (debug (search-optimization-quality decl 'debug))
+	 (no-entry (assoc 'SI::C-LOCAL decl))
 	 cfun exported minarg maxarg)
+    (when (and no-entry (>= debug 2))
+      (setf no-entry nil)
+      (cmpnote "Ignoring SI::C-LOCAL declaration for ~A when DEBUG is ~D" name debug))
     (unless (eql setjmps *setjmps*)
       (setf (c1form-volatile lambda-expr) t))
     (setf (fun-lambda fun) lambda-expr)
@@ -117,7 +121,8 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
 	  (fun-minarg fun) minarg
 	  (fun-maxarg fun) maxarg
 	  (fun-description fun) name
-	  (fun-no-entry fun) no-entry)
+	  (fun-no-entry fun) no-entry
+	  (fun-debug fun) debug)
     (reduce #'add-referred-variables-to-function
 	    (mapcar #'fun-referred-vars children)
 	    :initial-value fun)
@@ -280,7 +285,6 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
 		 (*permanent-data* t)
 		 (*unwind-exit* *unwind-exit*)
 		 (*env* *env*)
-		 (block-p nil)
 		 (last-arg))
   (declare (fixnum nreq nkey))
 
@@ -302,7 +306,7 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
 
   ;; check arguments
   (unless (or local-entry-p (not (compiler-check-args)))
-    (setq block-p t)
+    (incf *inline-blocks*)
     (if (and use-narg (not varargs))
 	(wt-nl "if(narg!=" nreq ") FEwrong_num_arguments_anonym();")
 	(when varargs
@@ -461,7 +465,7 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
   ;;; Now the parameters are ready, after all!
   (c2expr body)
 
-  (when block-p (wt-nl "}"))
+  ;;; Closing braces is done i cmptop.lsp
   )
 
 (defun optimize-funcall/apply-lambda (lambda-form arguments apply-p

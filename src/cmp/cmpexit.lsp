@@ -14,7 +14,7 @@
 
 (in-package "COMPILER")
 
-(defun unwind-bds (bds-lcl bds-bind stack-sp)
+(defun unwind-bds (bds-lcl bds-bind stack-sp ihs-p)
   (declare (fixnum bds-bind))
   (when stack-sp
     (wt-nl "cl_stack_set_index(" stack-sp ");"))
@@ -22,9 +22,11 @@
     (wt-nl "bds_unwind(" bds-lcl ");"))
   (if (< bds-bind 4)
       (dotimes (n bds-bind) (declare (fixnum n)) (wt-nl "bds_unwind1();"))
-      (wt-nl "bds_unwind_n(" bds-bind ");")))
+      (wt-nl "bds_unwind_n(" bds-bind ");"))
+  (when ihs-p
+    (wt-nl "ihs_pop();")))
 
-(defun unwind-exit (loc &optional (jump-p nil) &aux (bds-lcl nil) (bds-bind 0) (stack-sp nil))
+(defun unwind-exit (loc &optional (jump-p nil) &aux (bds-lcl nil) (bds-bind 0) (stack-sp nil) (ihs-p nil))
   (declare (fixnum bds-bind))
   (when (consp *destination*)
     (case (car *destination*)
@@ -47,7 +49,7 @@
 	      (cond ((and (consp *destination*)
 			  (or (eq (car *destination*) 'JUMP-TRUE)
 			      (eq (car *destination*) 'JUMP-FALSE)))
-		     (unwind-bds bds-lcl bds-bind stack-sp))
+		     (unwind-bds bds-lcl bds-bind stack-sp ihs-p))
 		    ((not (or bds-lcl (plusp bds-bind) stack-sp))
 		     (set-loc loc))
 		    ;; Save the value if LOC may possibly refer
@@ -58,33 +60,34 @@
 			    (temp (make-temp-var)))
 		       (let ((*destination* temp))
 			 (set-loc loc)) ; temp <- loc
-		       (unwind-bds bds-lcl bds-bind stack-sp)
+		       (unwind-bds bds-lcl bds-bind stack-sp ihs-p)
 		       (set-loc temp))) ; *destination* <- temp
 		    (t
 		     (set-loc loc)
-		     (unwind-bds bds-lcl bds-bind stack-sp)))
+		     (unwind-bds bds-lcl bds-bind stack-sp ihs-p)))
 	      (when jump-p (wt-nl) (wt-go *exit*))
 	      (return))
 	     (t (setq jump-p t))))
       ((numberp ue) (baboon)
        (setq bds-lcl ue bds-bind 0))
       (t (case ue
+	   (IHS (setf ihs-p t))
 	   (BDS-BIND (incf bds-bind))
 	   (RETURN
 	     (unless (eq *exit* 'RETURN) (baboon))
 	     ;; *destination* must be either RETURN or TRASH.
 	     (cond ((eq loc 'VALUES)
 		    ;; from multiple-value-prog1 or values
-		    (unwind-bds bds-lcl bds-bind stack-sp)
+		    (unwind-bds bds-lcl bds-bind stack-sp ihs-p)
 		    (wt-nl "return VALUES(0);"))
 		   ((eq loc 'RETURN)
 		    ;; from multiple-value-prog1 or values
-		    (unwind-bds bds-lcl bds-bind stack-sp)
+		    (unwind-bds bds-lcl bds-bind stack-sp ihs-p)
 		    (wt-nl "return value0;"))      
 		   (t
 		    (let* ((*destination* 'RETURN))
 		      (set-loc loc))
-		    (unwind-bds bds-lcl bds-bind stack-sp)
+		    (unwind-bds bds-lcl bds-bind stack-sp ihs-p)
 		    (wt-nl "return value0;")))
 	     (return))
 	   ((RETURN-FIXNUM RETURN-CHARACTER RETURN-DOUBLE-FLOAT
@@ -102,7 +105,7 @@
 	      (if (or bds-lcl (plusp bds-bind))
 		  (let ((lcl (make-lcl-var :type (second loc))))
 		    (wt-nl "{cl_fixnum " lcl "= " loc ";")
-		    (unwind-bds bds-lcl bds-bind stack-sp)
+		    (unwind-bds bds-lcl bds-bind stack-sp ihs-p)
 		    (wt-nl "return(" lcl ");}"))
 		  (progn
 		    (wt-nl "return(" loc ");")))
@@ -118,13 +121,13 @@
   ;;; Never reached
   )
 
-(defun unwind-no-exit (exit &aux (bds-lcl nil) (bds-bind 0) (stack-sp nil))
+(defun unwind-no-exit (exit &aux (bds-lcl nil) (bds-bind 0) (stack-sp nil) (ihs-p nil))
   (declare (fixnum bds-bind))
   (dolist (ue *unwind-exit* (baboon))
     (cond
        ((consp ue)
 	(cond ((eq ue exit)
-	       (unwind-bds bds-lcl bds-bind stack-sp)
+	       (unwind-bds bds-lcl bds-bind stack-sp ihs-p)
 	       (return))
 	      ((eq (first ue) 'STACK)
 	       (setf stack-sp (second ue)))))
@@ -133,7 +136,7 @@
        ((member ue '(RETURN RETURN-OBJECT RETURN-FIXNUM RETURN-CHARACTER
                             RETURN-DOUBLE-FLOAT RETURN-SINGLE-FLOAT))
         (if (eq exit ue)
-          (progn (unwind-bds bds-lcl bds-bind stack-sp)
+          (progn (unwind-bds bds-lcl bds-bind stack-sp ihs-p)
                  (return))
           (baboon))
         ;;; Never reached
@@ -141,7 +144,7 @@
        ((eq ue 'FRAME) (wt-nl "frs_pop();"))
        ((eq ue 'TAIL-RECURSION-MARK)
         (if (eq exit 'TAIL-RECURSION-MARK)
-          (progn (unwind-bds bds-lcl bds-bind stack-sp)
+          (progn (unwind-bds bds-lcl bds-bind stack-sp ihs-p)
                  (return))
           (baboon))
         ;;; Never reached

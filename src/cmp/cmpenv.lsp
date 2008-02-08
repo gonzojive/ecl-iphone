@@ -346,6 +346,23 @@
   (values body ss ts is others doc all-declarations)
   )
 
+(defun default-optimization (optimization)
+  (ecase optimization
+    (speed *speed*)
+    (safety *safety*)
+    (space *space*)
+    (debug *debug*)))
+
+(defun search-optimization-quality (declarations what)
+  (dolist (i (reverse declarations)
+	   (default-optimization what))
+    (when (and (consp i) (eq (first i) 'optimize))
+      (dolist (j (rest i))
+	(cond ((consp j)
+	       (when (eq (first j) what) (return (second j))))
+	      ((eq j what)
+	       (return 3)))))))
+
 (defun c1add-declarations (decls &aux (dl nil))
   (dolist (decl decls dl)
     (case (car decl)

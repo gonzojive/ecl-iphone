@@ -852,8 +852,8 @@ Cannot compile ~a."
    ))
 
 (defun print-compiler-info ()
-  (format t "~&;;; OPTIMIZE levels: Safety=~d, Space=~d, Speed=~d~%"
-	  *safety* *space* *speed*))
+  (format t "~&;;; OPTIMIZE levels: Safety=~d, Space=~d, Speed=~d, Debug=~d~%"
+	  *safety* *space* *speed* *debug*))
 
 (defmacro with-compilation-unit (options &rest body)
   `(progn ,@body))

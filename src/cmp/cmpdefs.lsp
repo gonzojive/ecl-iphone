@@ -171,6 +171,7 @@
   (referred-funs nil)	;;; List of external functions called in this one.
 			;;; We only register direct calls, not calls via object.
   (child-funs nil)	;;; List of local functions defined here.
+  (debug 0)		;;; Debug quality
   )
 
 (defstruct (blk (:include ref))

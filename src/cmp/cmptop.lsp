@@ -117,8 +117,7 @@
 	 (c-output-file *compiler-output1*)
 	 (*compiler-output1* (make-string-output-stream))
 	 (*emitted-local-funs* nil)
-	 (*compiler-declared-globals* (make-hash-table))
-	 #+PDE (optimize-space (>= *space* 3)))
+	 (*compiler-declared-globals* (make-hash-table)))
     (unless shared-data
       (wt-nl1 "#include \"" (si::coerce-to-filename data-pathname) "\""))
     (wt-nl1 "#ifdef __cplusplus")
@@ -569,6 +568,8 @@
 	" VLEX" *reservation-cmacro*
 	" CLSR" *reservation-cmacro*)
     (wt-nl *volatile* "cl_object value0;")
+    (when (>= (fun-debug fun) 2)
+      (wt-nl "struct ihs_frame ihs;"))
     (when (eq (fun-closure fun) 'CLOSURE)
       (let ((clv-used (remove-if
 		       #'(lambda (x)
@@ -602,6 +603,12 @@
               (pop clv-used)))
 	  (wt-nl "{ /* ... closure scanning finished */")
 	  (incf *inline-blocks*)))
+    ;; If we ask for high level of debugging information, we push the function
+    ;; name into the invocation stack
+    (when (>= (fun-debug fun) 2)
+      (push 'IHS *unwind-exit*)
+      (wt-nl "ihs_push(&ihs," (add-symbol (fun-name fun)) ");"))
+
     (c2lambda-expr (c1form-arg 0 lambda-expr)
 		   (c1form-arg 2 lambda-expr)
 		   (fun-cfun fun) (fun-name fun)
