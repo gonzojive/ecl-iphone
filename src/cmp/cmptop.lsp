@@ -479,6 +479,7 @@
   (let ((*safety* *safety*)
 	(*space* *space*)
 	(*speed* *speed*)
+	(*debug* *debug*)
         (*notinline* *notinline*))
     (c1add-declarations decls)
     (t2expr body)))

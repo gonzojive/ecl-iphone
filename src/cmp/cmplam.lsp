@@ -89,7 +89,7 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
 				     (si::function-block-name name)))
 	 (children (fun-child-funs fun))
 	 (global (and (assoc 'SI::C-GLOBAL decl) 'T))
-	 (no-entry (and (assoc 'SI::C-LOCAL decl) 'T))
+	 (no-entry (and (plusp *debug*) (assoc 'SI::C-LOCAL decl) 'T))
 	 cfun exported minarg maxarg)
     (unless (eql setjmps *setjmps*)
       (setf (c1form-volatile lambda-expr) t))

@@ -294,6 +294,7 @@ The default value is NIL.")
 (defvar *safety* 2)
 (defvar *speed* 3)
 (defvar *space* 0)
+(defvar *debug* 0)
 
 ;;;
 ;;; Compiled code uses the following kinds of variables:

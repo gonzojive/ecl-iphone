@@ -162,7 +162,8 @@
 ;;; Proclamation and declaration handling.
 
 (defun inline-possible (fname)
-  (not (or ; (compiler-push-events)
+  (not (or ; (compiler-<push-events)
+	(>= *debug* 2)
 	(member fname *notinline* :test #'same-fname-p)
 	(and (symbolp fname) (get-sysprop fname 'CMP-NOTINLINE)))))
 
@@ -185,7 +186,7 @@
                (not (<= 0 (second x) 3)))
            (warn "The OPTIMIZE proclamation ~s is illegal." x)
            (case (car x)
-		 (DEBUG)
+		 (DEBUG (setq *debug* (second x)))
                  (SAFETY (setq *safety* (second x)))
                  (SPACE (setq *space* (second x)))
                  (SPEED (setq *speed* (second x)))
@@ -358,7 +359,7 @@
 		 (not (<= 0 (second x) 3)))
 	   (cmpwarn "The OPTIMIZE proclamation ~s is illegal." x)
 	   (case (car x)
-	     (DEBUG)
+	     (DEBUG (setq *debug* (second x)))
 	     (SAFETY (setq *safety* (second x)))
 	     (SPACE (setq *space* (second x)))
 	     ((SPEED COMPILATION-SPEED))
@@ -402,6 +403,7 @@
 	     (*safety* *safety*)
 	     (*space* *space*)
  	     (*speed* *speed*)
+	     (*debug* *debug*)
 	     (dl (c1add-declarations decls)))
 	(setq body (c1progn body))
 	(make-c1form 'DECL-BODY body dl body))))
@@ -412,6 +414,7 @@
   (let ((*safety* *safety*)
         (*space* *space*)
 	(*speed* *speed*)
+	(*debug* *debug*)
         (*notinline* *notinline*))
     (c1add-declarations decls)
     (c2expr body)))

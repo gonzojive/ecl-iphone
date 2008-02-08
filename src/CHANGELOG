@@ -47,6 +47,12 @@ ECL 0.9k:
    strings into lisp functions, instead of a dummy function that calls
    FORMAT. This leads to some speedup when pretty-printing.
 
+ - When using (OPTIMIZE (DEBUG n)) for n >= 1, calls to functions in the same
+   file are not inlined and always go through cl_funcall. This way they show up
+   in backtraces in the debugger, and the function can be traced and profiled.
+
+ - Declaration SI:C-LOCAL is deactivated by (DEBUG > 0).
+
 * CLOS:
 
  - When caching generic function calls, ECL now uses a thread-local hash table

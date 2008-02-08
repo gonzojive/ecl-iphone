@@ -154,7 +154,7 @@
   (cond
     ;; Check whether it is a global function that we cannot call directly.
      ((and (or (null loc) (fun-global loc)) (not (inline-possible fname)))
-      (if *compile-to-linking-call*
+      (if (and *compile-to-linking-call* (< *debug* 1))
 	  (call-linking-loc fname narg args)
 	  (call-unknown-global-loc fname nil narg args)))
 
@@ -164,7 +164,8 @@
       loc)
 
      ;; Call to a function defined in the same file.
-     ((fun-p loc)
+     ((and (fun-p loc)
+	   (< *debug* 1))
       (call-loc fname loc narg args))
 
      ((and (null loc) (setf loc (find fname *global-funs* :test #'same-fname-p
@@ -188,7 +189,7 @@
       (call-exported-function-loc fname narg args fd minarg maxarg t))
 
      ;; Linking calls can only be made to symbols
-     (*compile-to-linking-call*
+     ((and *compile-to-linking-call* (< *debug* 1))
       (call-linking-loc fname narg args))
 
      (t (call-unknown-global-loc fname loc narg args))))
