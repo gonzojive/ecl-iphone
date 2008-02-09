@@ -163,12 +163,13 @@
 	   (setq loc (inline-function fname args return-type)))
       loc)
 
-     ;; Call to a function defined in the same file.
-     ((and (fun-p loc) (<= *debug* 1))
-      (call-loc fname loc narg args))
-
-     ((and (null loc) (setf loc (find fname *global-funs* :test #'same-fname-p
-				      :key #'fun-name)))
+     ;; Call to a function defined in the same file. Direct calls are
+     ;; only emitted for low or neutral values of DEBUG is >= 2.
+     ((and (<= *debug* 1)
+	   (or (fun-p loc)
+	       (and (null loc)
+		    (setf loc (find fname *global-funs* :test #'same-fname-p
+				      :key #'fun-name)))))
       (call-loc fname loc narg args))
 
      ;; Call to a global (SETF ...) function
