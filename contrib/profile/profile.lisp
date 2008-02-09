@@ -37,22 +37,17 @@
 )
 
 (ffi:clines "
-static size_t old_bytes_consed  = 0;
 ")
 
-(defun get-bytes-consed ()
-  (ffi:c-inline () () :object "
-size_t bytes_consed = GC_get_total_bytes();
-size_t delta;
-if (bytes_consed < old_bytes_consed) {
-   delta = ~((size_t)0) - old_bytes_consed;
-   delta += bytes_consed;
-} else {
-   delta = bytes_consed - old_bytes_consed;
-}
-old_bytes_consed = bytes_consed;
-@(return) = ecl_make_unsigned_integer(delta);
-"))
+(defconstant +wrap+ (ffi:c-inline () () :object "ecl_make_unsigned_integer(~((size_t)0))"
+			     :one-liner t))
+
+(defun get-bytes-consed (orig)
+  (let ((bytes (ffi:c-inline () () :object "ecl_make_unsigned_integer(GC_get_total_bytes())"
+			     :one-liner t)))
+    (if (< bytes orig)
+	(+ (- +wrap+ orig) bytes)
+	(- bytes orig))))
 
 (deftype counter () '(integer 0 *))
 
@@ -194,7 +189,7 @@ old_bytes_consed = bytes_consed;
 	     (old-enclosed-consing *enclosed-consing*)
 	     (old-enclosed-profiles *enclosed-profiles*)
 	     (start-ticks (get-internal-ticks))
-	     (start-consed (get-bytes-consed)))
+	     (start-consed (get-bytes-consed 0)))
          (unwind-protect
 	      (progn
 		(setf *enclosed-ticks* 0
@@ -202,7 +197,7 @@ old_bytes_consed = bytes_consed;
 		      *enclosed-consing* 0)
 		(apply encapsulated-fun args))
 	   (setf dticks (- (get-internal-ticks) start-ticks))
-	   (setf dconsing (- (get-bytes-consed) start-consed))
+	   (setf dconsing (get-bytes-consed start-consed))
 	   (setf inner-enclosed-profiles *enclosed-profiles*)
 	   (let ((net-dticks (- dticks *enclosed-ticks*)))
 	     (incf ticks net-dticks))
