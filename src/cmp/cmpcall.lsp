@@ -179,7 +179,8 @@
      ;; Call to a function whose C language function name is known,
      ;; either because it has been proclaimed so, or because it belongs
      ;; to the runtime.
-     ((and (setf fd (get-sysprop fname 'Lfun))
+     ((and (<= *debug* 1)
+	   (setf fd (get-sysprop fname 'Lfun))
 	   (multiple-value-setq (minarg maxarg) (get-proclaimed-narg fname)))
       (call-exported-function-loc fname narg args fd minarg maxarg
 				  #-ecl-min nil
