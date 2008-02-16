@@ -159,11 +159,13 @@ ecl_dynamic_callback_execute(long i1, long i2, long i3, long i4, long i5, long i
 {
 	cl_object fun, rtype, argtypes;
 	cl_object result;
-	cl_index i, size, i_reg_index, f_reg_index;
+	cl_index size, i_reg_index, f_reg_index;
 	union ecl_ffi_values output;
 	enum ecl_ffi_tag tag;
 	long i_reg[MAX_INT_REGISTERS];
 	double f_reg[MAX_FP_REGISTERS];
+
+	ECL_BUILD_STACK_FRAME(frame);
 
 	fun = CAR(cbk_info);
 	rtype = CADR(cbk_info);
@@ -208,11 +210,11 @@ ARG_FROM_STACK:
 				arg_buffer += (sp);
 			}
 		}
-		cl_stack_push(result);
+		ecl_stack_frame_push(frame, result);
 	}
 
-	result = cl_apply_from_stack(i, fun);
-	cl_stack_pop_n(i);
+	result = cl_apply_from_stack_frame(frame, fun);
+	cl_stack_frame_close(frame);
 
 	tag = ecl_foreign_type_code(rtype);
 	memset(&output, 0, sizeof(output));
