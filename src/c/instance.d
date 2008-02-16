@@ -286,6 +286,8 @@ cl_class_of(cl_object x)
 		t = @'si::code-block'; break;
 	case t_foreign:
 		t = @'si::foreign-data'; break;
+	case t_frame:
+		t = @'si::frame'; break;
 	default:
 		ecl_internal_error("not a lisp data object");
 	}

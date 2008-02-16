@@ -440,6 +440,16 @@ extern cl_object si_eval_with_env _ARGS((cl_narg narg, cl_object form, ...));
 /* interpreter.c */
 
 extern cl_object si_interpreter_stack _ARGS((cl_narg narg));
+extern void ecl_stack_frame_reserve(cl_object f, cl_index size);
+extern void ecl_stack_frame_push(cl_object f, cl_object o);
+extern void ecl_stack_frame_push_values(cl_object f);
+extern void ecl_stack_frame_push_va_list(cl_object f, cl_va_list args);
+extern void ecl_stack_frame_close(cl_object f);
+extern cl_object ecl_stack_frame_pop_values(cl_object f);
+extern cl_object ecl_stack_frame_elt(cl_object f, cl_index n);
+extern void ecl_stack_frame_elt_set(cl_object f, cl_index n, cl_object o);
+extern cl_object ecl_apply_from_stack_frame(cl_object f, cl_object o);
+#define si_apply_from_stack_frame ecl_apply_from_stack_frame
 
 extern void cl_stack_push(cl_object o);
 extern cl_object cl_stack_pop(void);
@@ -454,7 +464,7 @@ extern void cl_stack_push_n(cl_index n, cl_object *args);
 extern cl_index cl_stack_push_values(void);
 extern void cl_stack_pop_values(cl_index n);
 
-extern cl_object ecl_apply_lambda(cl_narg narg, cl_object fun);
+extern cl_object ecl_apply_lambda(cl_object frame, cl_object fun);
 extern void *ecl_interpret(cl_object bytecodes, void *pc);
 
 /* disassembler.c */
@@ -649,7 +659,7 @@ extern cl_object si_clear_gfun_hash(cl_object what);
 extern cl_object clos_set_funcallable_instance_function(cl_object x, cl_object function_or_t);
 extern cl_object si_generic_function_p(cl_object instance);
 
-extern cl_object _ecl_compute_method(cl_narg narg, cl_object fun, cl_object *args);
+extern cl_object _ecl_standard_dispatch(cl_object frame, cl_object fun);
 #endif /* CLOS */
 
 

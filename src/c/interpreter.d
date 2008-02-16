@@ -164,6 +164,93 @@ cl_stack_push_list(cl_object list)
 	return n;
 }
 
+void
+ecl_stack_frame_reserve(cl_object f, cl_index size)
+{
+	cl_index sp = cl_stack_index();
+	cl_index n = f->frame.narg;
+	if (n == 0) {
+		f->frame.sp = sp;
+	} else if (sp != f->frame.sp + n) {
+		ecl_internal_error("Inconsistency in interpreter stack frame");
+	}
+	f->frame.narg = n+size;
+	cl_stack_insert(sp, size);
+}
+
+void
+ecl_stack_frame_push(cl_object f, cl_object o)
+{
+	cl_index sp = cl_stack_index();
+	cl_index n = f->frame.narg;
+	if (n == 0) {
+		f->frame.sp = sp;
+	} else if (sp != f->frame.sp + n) {
+		ecl_internal_error("Inconsistency in interpreter stack frame");
+	}
+	f->frame.narg = n+1;
+	cl_stack_push(o);
+}
+
+void
+ecl_stack_frame_push_values(cl_object f)
+{
+	cl_index sp = cl_stack_index();
+	cl_index n = f->frame.narg;
+	if (n == 0) {
+		f->frame.sp = sp;
+	} else if (sp != f->frame.sp + n) {
+		ecl_internal_error("Inconsistency in interpreter stack frame");
+	}
+	f->frame.narg = n+cl_stack_push_values();
+}
+
+void
+ecl_stack_frame_push_va_list(cl_object f, cl_va_list args)
+{
+	cl_index sp = cl_stack_index();
+	cl_index n = f->frame.narg;
+	if (n == 0) {
+		f->frame.sp = sp;
+	} else if (sp != f->frame.sp + n) {
+		ecl_internal_error("Inconsistency in interpreter stack frame");
+	}
+	f->frame.narg = n + args[0].narg;
+	cl_stack_push_va_list(args);
+}
+
+cl_object
+ecl_stack_frame_pop_values(cl_object f)
+{
+	cl_stack_pop_values(f->frame.narg);
+	return VALUES(0);
+}
+
+cl_object
+ecl_stack_frame_elt(cl_object f, cl_index ndx)
+{
+	if (ndx >= f->frame.narg) {
+		FEtype_error_index(f, ecl_make_unsigned_integer(ndx));
+	}
+	return cl_env.stack[f->frame.sp + ndx];
+}
+
+void
+ecl_stack_frame_elt_set(cl_object f, cl_index ndx, cl_object o)
+{
+	if (ndx >= f->frame.narg) {
+		FEtype_error_index(f, ecl_make_unsigned_integer(ndx));
+	}
+	cl_env.stack[f->frame.sp + ndx] = o;
+}
+
+void
+ecl_stack_frame_close(cl_object f)
+{
+	if (f->frame.narg) cl_stack_set_index(f->frame.sp);
+}
+
+
 /* ------------------------------ LEXICAL ENV. ------------------------------ */
 
 #define bind_var(var, val) \
@@ -323,9 +410,8 @@ lambda_bind(cl_narg narg, cl_object lambda, cl_index sp)
 }
 
 cl_object
-ecl_apply_lambda(cl_narg narg, cl_object fun)
+ecl_apply_lambda(cl_object frame, cl_object fun)
 {
-	cl_index args = cl_stack_index() - narg;
 	cl_object name;
 	bds_ptr old_bds_top;
 	struct ihs_frame ihs;
@@ -339,7 +425,7 @@ ecl_apply_lambda(cl_narg narg, cl_object fun)
 	old_bds_top = cl_env.bds_top;
 
 	/* Establish bindings */
-	lambda_bind(narg, fun, args);
+	lambda_bind(frame->frame.narg, fun, frame->frame.sp);
 
 	VALUES(0) = Cnil;
 	NVALUES = 0;
@@ -369,80 +455,19 @@ search_global(register cl_object s) {
  * (cl_env.lex_env) needs to be saved.
  */
 static cl_object
-interpret_funcall(cl_narg narg, cl_object fun) {
+interpret_funcall(cl_narg narg, cl_object fun)
+{
 	cl_object lex_env = cl_env.lex_env;
-	cl_object *args;
-	cl_object x;
-	args = cl_env.stack_top - narg;
-	if (fun == OBJNULL || fun == Cnil)
-		goto ERROR;
- AGAIN:
-	switch (type_of(fun)) {
-	case t_cfun: {
-		struct ihs_frame ihs;
-		ihs_push(&ihs, fun->cfun.name);
-		if (fun->cfun.narg >= 0) {
-			if (narg != fun->cfun.narg)
-				FEwrong_num_arguments(fun);
-			x = APPLY_fixed(narg, (cl_objectfn_fixed)fun->cfun.entry, args);
-		} else {
-			x = APPLY(narg, fun->cfun.entry, args);
-		}
-		ihs_pop();
-		break;
-	}
-	case t_cclosure:{
-		struct ihs_frame ihs;
-		ihs_push(&ihs, fun);
-		x = APPLY_closure(narg, fun->cclosure.entry, fun->cclosure.env, args);
-		ihs_pop();
-		break;
-	}
-#ifdef CLOS
-	case t_instance:
-		fun = _ecl_compute_method(narg, fun, args);
-		if (fun == NULL) {
-			x = VALUES(0);
-			break;
-		}
-		goto AGAIN;
-#endif
-	case t_bytecodes:
-		x = ecl_apply_lambda(narg, fun);
-		break;
-	case t_symbol: {
-		cl_object function = SYM_FUN(fun);
-		if (function == Cnil || fun->symbol.mflag)
-			FEundefined_function(fun);
-		fun = function;
-		goto AGAIN;
-	}
-	default: ERROR:
-		FEinvalid_function(fun);
-	}
+	struct ecl_stack_frame frame_aux;
+	cl_object frame = (cl_object)&frame_aux;
+	frame->frame.t = t_frame;
+	frame->frame.narg = narg;
+	frame->frame.sp = (cl_env.stack_top - cl_env.stack) - narg;
+	fun = ecl_apply_from_stack_frame(frame, fun);
 	cl_env.lex_env = lex_env;
-	cl_stack_pop_n(narg);
-	return x;
+	ecl_stack_frame_close(frame);
+	return fun;
 }
-
-@(defun apply (fun lastarg &rest args)
-	cl_index i;
-@
-	narg -= 2;
-	for (i = 0; narg; i++,narg--) {
-		cl_stack_push(lastarg);
-		lastarg = cl_va_arg(args);
-	}
-	loop_for_in (lastarg) {
-		if (i >= CALL_ARGUMENTS_LIMIT) {
-			cl_stack_pop_n(i);
-			FEprogram_error("CALL-ARGUMENTS-LIMIT exceeded",0);
-		}
-		cl_stack_push(CAR(lastarg));
-		i++;
-	} end_loop_for_in;
-	returnn(interpret_funcall(i, fun));
-@)
 
 /* -------------------- THE INTERPRETER -------------------- */
 
@@ -1225,6 +1250,7 @@ ecl_interpret(cl_object bytecodes, void *pc) {
 		cl_stack_pop_values(n);
 		break;
 	}
+
 	default:
 		FEerror("Internal error: Unknown code ~S",
 			1, MAKE_FIXNUM(*(vector-1)));

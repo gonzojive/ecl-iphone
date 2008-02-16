@@ -186,6 +186,8 @@ ecl_type_to_symbol(cl_type t)
 		return @'si::code-block';
 	case t_foreign:
 		return @'si::foreign-data';
+	case t_frame:
+		return @'si::frame';
 	default:
 		ecl_internal_error("not a lisp data object");
 	}

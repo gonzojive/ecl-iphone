@@ -1918,7 +1918,8 @@ compile_form(cl_object stmt, int flags) {
 		stmt = CAR(stmt);
 		goto QUOTED;
 	}
-	for (l = database; l->symbol != OBJNULL; l++)
+	for (l = database; l->symbol != OBJNULL; l++) {
+		/*cl_print(1, l->symbol);*/
 		if (l->symbol == function) {
 			ENV->lexical_level += l->lexical_increment;
 			if (ENV->stepping && function != @'function' &&
@@ -1930,6 +1931,7 @@ compile_form(cl_object stmt, int flags) {
 				asm_op(OP_STEPOUT);
 			goto OUTPUT;
 		}
+	}
 	/*
 	 * Next try to macroexpand
 	 */
@@ -2389,7 +2391,13 @@ ecl_make_lambda(cl_object name, cl_object lambda) {
 	if (Null(si_valid_function_name_p(name)))
 		FEprogram_error("LAMBDA: Not a valid function name ~S",1,name);
 
-	ENV->constants = reqs;			/* Special arguments */
+	/* We register as special variable a symbol which is not
+	 * to be used. We use this to mark the boundary of a function
+	 * environment and when code-walking */
+	c_register_var(cl_make_symbol(make_constant_base_string("FUNCTION")),
+		       TRUE, TRUE);
+
+	ENV->constants = reqs;			/* Required arguments */
 	reqs = CDR(reqs);
 	while (!ecl_endp(reqs)) {
 		cl_object v = pop(&reqs);

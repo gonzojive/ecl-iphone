@@ -23,32 +23,43 @@
 (in-package "COMPILER")
 
 (defun c1with-stack (forms)
-  (let ((body (c1expr `(progn ,@forms))))
-    (make-c1form* 'WITH-STACK :type (c1form-type body)
-		  :args body)))
+  (let* ((var (pop forms))
+	 (body (c1expr `(let ((,var (innermost-stack-frame))) ,@forms))))
+      (make-c1form* 'WITH-STACK
+		    :type (c1form-type body)
+		    :args body)))
+
+(defvar +ecl-stack-frame-variable+ "_ecl_inner_frame")
 
 (defun c2with-stack (body)
   (let* ((new-destination (tmp-destination *destination*))
-	 (*temp* *temp*)
-	 (sp (make-lcl-var :rep-type :cl-index)))
-    (wt-nl "{cl_index " sp "=cl_stack_index();")
+	 (*temp* *temp*))
+    (wt-nl "{ struct ecl_stack_frame _ecl_inner_frame_aux;")
+    (wt-nl *volatile* "cl_object _ecl_inner_frame = (_ecl_inner_frame_aux.narg=0,_ecl_inner_frame_aux.sp=0,_ecl_inner_frame_aux.t=t_frame,(cl_object)&_ecl_inner_frame_aux);")
     (let* ((*destination* new-destination)
-	   (*unwind-exit* `((STACK ,sp) ,@*unwind-exit*)))
+	   (*unwind-exit* `((STACK ,+ecl-stack-frame-variable+) ,@*unwind-exit*)))
       (c2expr* body))
-    (wt-nl "cl_stack_set_index(" sp ");}")
+    (wt-nl "ecl_stack_frame_close(_ecl_inner_frame);}")
     (unwind-exit new-destination)))
+
+(defun c1innermost-stack-frame (args)
+  (c1expr `(c-inline () () :object ,+ecl-stack-frame-variable+
+	    :one-liner t :side-effects nil)))
 
 (defun c1stack-push (args)
   (c1expr `(progn
-	     (c-inline ,args (t) :void "cl_stack_push(#0)"
+	     (c-inline ,args (t t) :void "ecl_stack_frame_push(#0,#1)"
 		       :one-liner t :side-effects t)
 	     1)))
 
 (defun c1stack-push-values (args)
-  (make-c1form* 'STACK-PUSH-VALUES :type 'fixnum
-		:args (c1expr (first args))
-		(c1expr `(c-inline () () fixnum "cl_stack_push_values()"
-				   :one-liner t :side-effects t))))
+  (let ((frame-var (pop args))
+	(form (pop args)))
+    (make-c1form* 'STACK-PUSH-VALUES :type '(VALUES)
+		  :args
+		  (c1expr form)
+		  (c1expr `(c-inline (,frame-var) (t) :void "ecl_stack_frame_push_values(#0)"
+				     :one-liner t :side-effects t)))))
 
 (defun c2stack-push-values (form push-statement)
   (let ((*destination* 'VALUES))
@@ -56,26 +67,20 @@
   (c2expr push-statement))
 
 (defun c1stack-pop (args)
-  (let ((action (c1expr `(c-inline ,args (fixnum) :void
-				  "cl_stack_pop_values(#0)"
-				  :one-liner t
-				  :side-effects t))))
-    (make-c1form* 'STACK-POP :type t :args action)))
+  (c1expr `(c-inline ,args (t) (values &rest t)
+		     "VALUES(0)=ecl_stack_frame_pop_values(#0);"
+		     :one-liner nil :side-effects t)))
 
-(defun c2stack-pop (action)
-  (let ((*destination* 'TRASH))
-    (c2expr* action))
-  (unwind-exit 'VALUES))
-
-(defun c1apply-from-stack (args)
-  (c1expr `(c-inline ,args (fixnum t) (values &rest t) "cl_apply_from_stack(#0,#1);"
+(defun c1apply-from-stack-frame (args)
+  (c1expr `(c-inline ,args (t t) (values &rest t)
+		     "VALUES(0)=ecl_apply_from_stack_frame(#0,#1);"
 		     :one-liner nil :side-effects t)))
 
 (put-sysprop 'with-stack 'C1 #'c1with-stack)
 (put-sysprop 'with-stack 'c2 #'c2with-stack)
+(put-sysprop 'innermost-stack-frame 'C1 #'c1innermost-stack-frame)
 (put-sysprop 'stack-push 'C1 #'c1stack-push)
 (put-sysprop 'stack-push-values 'C1 #'c1stack-push-values)
 (put-sysprop 'stack-push-values 'C2 #'c2stack-push-values)
 (put-sysprop 'stack-pop 'C1 #'c1stack-pop)
-(put-sysprop 'stack-pop 'C2 #'c2stack-pop)
-(put-sysprop 'apply-from-stack 'c1 #'c1apply-from-stack)
+(put-sysprop 'si::apply-from-stack-frame 'c1 #'c1apply-from-stack-frame)

@@ -31,22 +31,20 @@
    (t
     (c1expr
      (let ((function (gensym))
-	   (nargs (gensym)))
-     `(with-stack
-       (let* ((,function ,(first args))
-	      (,nargs  (+ ,@(loop for i in (rest args)
-				  collect `(stack-push-values ,i)))))
-	 (declare (fixnum ,nargs))
-	 (apply-from-stack ,nargs ,function))))))))
+	   (frame (gensym)))
+     `(with-stack ,frame
+       (let* ((,function ,(first args)))
+	 ,@(loop for i in (rest args)
+	      collect `(stack-push-values ,frame ,i))
+	 (si::apply-from-stack-frame ,frame ,function))))))))
 
 (defun c1multiple-value-prog1 (args)
   (check-args-number 'MULTIPLE-VALUE-PROG1 args 1)
-  (c1expr (let ((l (gensym)))
-	    `(with-stack
-	      (let ((,l (stack-push-values ,(first args))))
-		(declare (fixnum ,l))
-		,@(rest args)
-		(stack-pop ,l))))))
+  (c1expr (let ((frame (gensym)))
+	    `(with-stack ,frame
+	       (stack-push-values ,frame ,(first args))
+	       ,@(rest args)
+	       (stack-pop ,frame)))))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -61,24 +61,11 @@ cl_va_arg(cl_va_list args)
 	return va_arg(args[0].args, cl_object);
 }
 
-
-/*
- *----------------------------------------------------------------------
- *
- *     apply --
- *	    applies a Lisp function to the arguments in array args.
- *	    narg is their count.
- *
- *     Results:
- *	    number of values
- *
- *     Side Effect:
- *	    values are placed into the array Values
- *----------------------------------------------------------------------
- */
 cl_object
-cl_apply_from_stack(cl_index narg, cl_object x)
+ecl_apply_from_stack_frame(cl_object frame, cl_object x)
 {
+	cl_index narg = frame->frame.narg;
+	cl_object *sp = frame->frame.sp + cl_env.stack;
 	cl_object fun = x;
       AGAIN:
 	if (fun == OBJNULL || fun == Cnil)
@@ -89,17 +76,22 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 			if (narg != (cl_index)fun->cfun.narg)
 				FEwrong_num_arguments(fun);
 			return APPLY_fixed(narg, (cl_objectfn_fixed)fun->cfun.entry,
-					   cl_env.stack_top - narg);
+					   sp);
 		}
-		return APPLY(narg, fun->cfun.entry, cl_env.stack_top - narg);
+		return APPLY(narg, fun->cfun.entry, sp);
 	case t_cclosure:
 		return APPLY_closure(narg, fun->cclosure.entry,
-				     fun->cclosure.env, cl_env.stack_top - narg);
+				     fun->cclosure.env, sp);
 #ifdef CLOS
 	case t_instance:
-		fun = _ecl_compute_method(narg, fun, cl_env.stack_top - narg);
-		if (fun == NULL)
-			return VALUES(0);
+		switch (fun->instance.isgf) {
+		case ECL_STANDARD_DISPATCH:
+			return _ecl_standard_dispatch(frame, fun);
+		case ECL_USER_DISPATCH:
+			fun = fun->instance.slots[fun->instance.length - 1];
+		default:
+			FEinvalid_function(fun);
+		}
 		goto AGAIN;
 #endif
 	case t_symbol:
@@ -108,7 +100,7 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 		fun = SYM_FUN(fun);
 		goto AGAIN;
 	case t_bytecodes:
-		return ecl_apply_lambda(narg, fun);
+		return ecl_apply_lambda(frame, fun);
 	default:
 	ERROR:
 		FEinvalid_function(x);
@@ -122,15 +114,19 @@ cl_apply_from_stack(cl_index narg, cl_object x)
 cl_object
 _ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_list args)
 {
-	cl_index sp;
 	cl_object out, fun = ecl_fdefinition(sym);
+	struct ecl_stack_frame frame_aux;
+	cl_object frame;
 
 	if (fun == OBJNULL)
 		FEerror("Undefined function.", 0);
+	frame = (cl_object)&frame_aux;
+	frame->frame.t = t_frame;
+	frame->frame.narg = narg;
 	if (args[0].sp)
-		sp = args[0].sp;
+		frame->frame.sp = args[0].sp;
 	else
-		sp = cl_stack_push_va_list(args);
+		frame->frame.sp = cl_stack_push_va_list(args);
  AGAIN:
 	if (fun == OBJNULL)
 		goto ERROR;
@@ -140,7 +136,7 @@ _ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_v
 			if (narg != fun->cfun.narg)
 				FEwrong_num_arguments(fun);
 			out = APPLY_fixed(narg, (cl_objectfn_fixed)fun->cfun.entry,
-					  cl_env.stack_top - narg);
+					  cl_env.stack + frame->frame.sp);
 		} else {
 			if (pLK) {
 				si_put_sysprop(sym, @'si::link-from',
@@ -151,33 +147,34 @@ _ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_v
 				cblock->cblock.links =
 				    CONS(sym, cblock->cblock.links);
 			}
-			out = APPLY(narg, fun->cfun.entry, cl_env.stack + sp);
+			out = APPLY(narg, fun->cfun.entry, cl_env.stack + frame->frame.sp);
 		}
 		break;
 #ifdef CLOS
-	case t_instance: {
-		fun = _ecl_compute_method(narg, fun, cl_env.stack + sp);
-		pLK = NULL;
-		if (fun == NULL) {
-			out = VALUES(0);
-			break;
+	case t_instance:
+		switch (fun->instance.isgf) {
+		case ECL_STANDARD_DISPATCH:
+			return _ecl_standard_dispatch(frame, fun);
+		case ECL_USER_DISPATCH:
+			fun = fun->instance.slots[fun->instance.length - 1];
+		default:
+			FEinvalid_function(fun);
 		}
 		goto AGAIN;
-	}
 #endif /* CLOS */
 	case t_cclosure:
 		out = APPLY_closure(narg, fun->cclosure.entry,
-				    fun->cclosure.env, cl_env.stack + sp);
+				    fun->cclosure.env, cl_env.stack + frame->frame.sp);
 		break;
 	case t_bytecodes:
-		out = ecl_apply_lambda(narg, fun);
+		out = ecl_apply_lambda(frame, fun);
 		break;
 	default:
 	ERROR:
 		FEinvalid_function(fun);
 	}
 	if (!args[0].sp)
-		cl_stack_set_index(sp);
+		ecl_stack_frame_close(frame);
 	return out;
 }
 
@@ -202,56 +199,62 @@ si_unlink_symbol(cl_object s)
 }
 
 @(defun funcall (function &rest funargs)
-	cl_index sp;
-	cl_object fun = function, out;
+	struct ecl_stack_frame frame_aux;
+	cl_object frame;
+	cl_object out;
 @
-	narg--;
+	frame = (cl_object)&frame_aux;
+	frame->frame.t = t_frame;
+	frame->frame.narg = narg-1;
 	if (funargs[0].sp)
-		sp = funargs[0].sp;
+		frame->frame.sp = funargs[0].sp;
 	else
-		sp = cl_stack_push_va_list(funargs);
-      AGAIN:
-	if (fun == OBJNULL || fun == Cnil)
-		FEundefined_function(function);
-	switch (type_of(fun)) {
-	case t_cfun:
-		if (fun->cfun.narg >= 0) {
-			if (narg != fun->cfun.narg)
-				FEwrong_num_arguments(fun);
-			out = APPLY_fixed(narg, (cl_objectfn_fixed)fun->cfun.entry,
-					  cl_env.stack_top - narg);
-		} else {
-			out = APPLY(narg, fun->cfun.entry, cl_env.stack + sp);
-		}
-		break;
-	case t_cclosure:
-		out = APPLY_closure(narg, fun->cclosure.entry,
-				    fun->cclosure.env, cl_env.stack + sp);
-		break;
-#ifdef CLOS
-	case t_instance:
-		fun = _ecl_compute_method(narg, fun, cl_env.stack + sp);
-		if (fun == NULL) {
-			out = VALUES(0);
-			break;
-		}
-		goto AGAIN;
-#endif
-	case t_symbol:
-		if (fun->symbol.mflag)
-			FEundefined_function(fun);
-		fun = SYM_FUN(fun);
-		goto AGAIN;
-	case t_bytecodes:
-		out = ecl_apply_lambda(narg, fun);
-		break;
-	default:
-	ERROR:
-		FEinvalid_function(fun);
+		frame->frame.sp = cl_stack_push_va_list(funargs);
+        out = ecl_apply_from_stack_frame(frame, function);
+	if (!funargs[0].sp) {
+		/* Closing a frame implies popping out all arguments.
+		 * If the arguments had been previously pushed, we must
+		 * avoid this and leave that task to the caller */
+		ecl_stack_frame_close(frame);
 	}
-	if (!funargs[0].sp)
-		cl_stack_set_index(sp);
 	return out;
+@)
+
+@(defun apply (fun lastarg &rest args)
+@
+	if (narg == 2 && type_of(lastarg) == t_frame) {
+		return ecl_apply_from_stack_frame(lastarg, fun);
+	} else {
+		cl_object out;
+		cl_index i;
+		struct ecl_stack_frame frame_aux;
+		const cl_object frame = (cl_object)&frame_aux;
+		frame->frame.t = t_frame;
+		frame->frame.narg = frame->frame.sp = 0;
+		narg -= 2;
+		for (i = 0; narg; i++,narg--) {
+			ecl_stack_frame_push(frame, lastarg);
+			lastarg = cl_va_arg(args);
+		}
+		if (type_of(lastarg) == t_frame) {
+			ecl_stack_frame_reserve(frame, lastarg->frame.narg);
+			/* This could be replaced with a memcpy() */
+			for (i = 0; i < lastarg->frame.narg; i++) {
+				cl_object o = ecl_stack_frame_elt(lastarg, i);
+				ecl_stack_frame_elt_set(frame, i, o);
+			}
+		} else loop_for_in (lastarg) {
+			if (i >= CALL_ARGUMENTS_LIMIT) {
+				ecl_stack_frame_close(frame);
+				FEprogram_error("CALL-ARGUMENTS-LIMIT exceeded",0);
+			}
+			ecl_stack_frame_push(frame, CAR(lastarg));
+			i++;
+		} end_loop_for_in;
+		out = ecl_apply_from_stack_frame(frame, fun);
+		ecl_stack_frame_close(frame);
+		return out;
+	}
 @)
 
 cl_object

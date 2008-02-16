@@ -200,6 +200,14 @@ EXPORTS
 	; interpreter.c
 
 	si_interpreter_stack
+	ecl_stack_frame_reserve
+	ecl_stack_frame_push
+	ecl_stack_frame_push_va_list
+	ecl_stack_frame_close
+	ecl_stack_frame_pop_values
+	ecl_stack_frame_elt
+	ecl_stack_frame_elt_set
+	ecl_apply_from_stack_frame
 
 	cl_stack_push
 	cl_stack_pop
@@ -371,7 +379,7 @@ EXPORTS
 	;si_set_funcallable
 	si_generic_function_p
 
-	_ecl_compute_method
+	_ecl_standard_dispatch
 
 
 	; hash.c

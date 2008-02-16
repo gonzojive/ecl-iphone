@@ -98,223 +98,84 @@
 	      ,@(and class-declarations `((declare ,@class-declarations)))
 	      ,@real-body))
 	   
-	   (original-args ())
-	   (applyp nil)		; flag indicating whether or not the
-				; method takes &mumble arguments. If
-				; it does, it means call-next-method
-				; without arguments must be APPLY'd
-				; to original-args.  If this gets set
-				; true, save-original-args is set so
-				; as well
 	   (aux-bindings ())	; Suffice to say that &aux is one of
 				; damndest things to have put in a
 				; language.
 	   (plist ()))
-      (multiple-value-bind (walked-lambda call-next-method-p
-					  save-original-args next-method-p-p)
+      (multiple-value-bind (call-next-method-p next-method-p-p in-closure-p)
 	  (walk-method-lambda method-lambda required-parameters env)
 
-	;; Scan the lambda list to determine whether this method
-	;; takes &mumble arguments.  If it does, we set applyp and
-	;; save-original-args true.
-	;;
-	;; This is also the place where we construct the original
-	;; arguments lambda list if there has to be one.
-	(dolist (p lambda-list)
-	  (if (member p '(&OPTIONAL &REST &KEY &ALLOW-OTHER-KEYS &AUX)
-		      :test #'eq)	; cant use lambda-list-keywords
-	      (if (eq p '&aux)
-		  (progn
-		    (setq aux-bindings (cdr (member '&AUX lambda-list
-						    :test #'eq)))
-		    (return nil))
-		  (progn
-		    (setq applyp t
-			  save-original-args t)
-		    (push '&REST original-args)
-		    (push (make-symbol "AMPERSAND-ARGS") original-args)
-		    (return nil)))
-	      (push (make-symbol (symbol-name p)) original-args)))
-	(setq original-args (when save-original-args
-			      (nreverse original-args)))
+	(when (or call-next-method-p next-method-p-p)
+	  (setf plist '(:needs-next-method-p t)))
 
-	(multiple-value-bind (walked-declarations walked-lambda-body)
-	    (sys::find-declarations (cdddr walked-lambda) t)
-	  (declare (ignore ignore))
+	(when in-closure-p
+	  (setf plist '(:needs-next-method-p FUNCTION))
+	  (setf real-body
+		`((let* ((.combined-method-args.
+			  (if (listp .combined-method-args.)
+			      .combined-method-args.
+			      (apply #'list .combined-method-args.)))
+			 (.next-methods. *next-methods*))
+		    (flet ((call-next-method (&rest args)
+			     (unless .next-methods.
+			       (error "No next method"))
+			     (funcall (car .next-methods.)
+				      (or args .combined-method-args.)
+				      (rest .next-methods.)))
+			   (next-method-p ()
+			     .next-methods.))
+		      ,@real-body)))))
+	(values
+	 `(ext::lambda-block ,generic-function-name
+	      ,lambda-list
+	      ,@(and class-declarations `((declare ,@class-declarations)))
+	      ,@real-body)
+	 documentation
+	 plist)))))
 
-	  (when (or next-method-p-p call-next-method-p)
-	    (setq plist (list* :needs-next-methods-p 'T plist)))
-
-	  (values
-	   (let ((walked-lambda `(ext::lambda-block ,(second walked-lambda)
-				  ,lambda-list
-				  ,@walked-declarations
-				  ,.walked-lambda-body)))
-	     (if (or call-next-method-p next-method-p-p)
-		 `(function ,(add-lexical-functions-to-method-lambda
-			      walked-declarations
-			      walked-lambda-body
-			      generic-function-name
-			      walked-lambda
-			      original-args
-			      lambda-list
-			      save-original-args
-			      applyp
-			      aux-bindings
-			      call-next-method-p
-			      next-method-p-p))
-		 `(function ,walked-lambda)))
-	   documentation
-	   plist))))))
+(defun environment-contains-closure (env)
+  ;;
+  ;; As explained in compiler.d (make_lambda()), we use a symbol with name
+  ;; "FUNCTION" to mark the beginning of a function. If we find that symbol
+  ;; twice, it is quite likely that this form will end up in a closure.
+  ;;
+  (flet ((function-boundary (s)
+	   (and (consp s)
+		(symbolp (setf s (first s)))
+		(null (symbol-package s))
+		(equal (symbol-name s) "FUNCTION"))))
+    (> (count-if #'function-boundary (car env)) 1)))
 
 (defun walk-method-lambda (method-lambda required-parameters env)
   (declare (si::c-local))
   (let ((call-next-method-p nil)
 	(next-method-p-p nil)
-	(save-original-args-p nil))
+	(in-closure-p nil))
     (flet ((code-walker (form env)
 	     (unless (atom form)
 	       (let ((name (first form)))
 		 (case name
 		   (CALL-NEXT-METHOD
 		    (setf call-next-method-p
-			  (or call-next-method-p T))
-		    (unless (rest form)
-		      (setf save-original-args-p t)))
+			  (or call-next-method-p T)
+			  in-closure-p
+			  (or in-closure-p (environment-contains-closure env))))
 		   (NEXT-METHOD-P
-		    (setf next-method-p-p t))
+		    (setf next-method-p-p t
+			  in-closure-p (or in-closure-p (environment-contains-closure env))))
 		   (FUNCTION
 		    (when (eq (second form) 'CALL-NEXT-METHOD)
-		      (setf save-original-args-p t
+		      (setf in-closure-p t
 			    call-next-method-p 'FUNCTION))
 		    (when (eq (second form) 'NEXT-METHOD-P)
-		      (setf next-method-p-p 'FUNCTION))))))
+		      (setf next-method-p-p 'FUNCTION
+			    in-closure-p t))))))
 	     form))
       (let ((si::*code-walker* #'code-walker))
 	(coerce method-lambda 'function)))
-    (values method-lambda call-next-method-p
-	    save-original-args-p
-	    next-method-p-p)))
-
-(defun add-lexical-functions-to-method-lambda (walked-declarations
-					       walked-lambda-body
-					       generic-function-name
-					       walked-lambda
-					       original-args
-					       lambda-list
-					       save-original-args
-					       applyp
-					       aux-bindings
-					       call-next-method-p
-					       next-method-p-p)
-  (declare (si::c-local))
-  ;;
-  ;; WARNING: these &rest/apply combinations produce useless garbage. Beppe
-  ;;
-  (cond ((and (null save-original-args)
-	      (null applyp))
-	 ;;
-	 ;; We don't have to save the original arguments.  In addition,
-	 ;; this method doesn't take any &mumble arguments (this means
-	 ;; that there is no way the lexical functions can be used inside
-	 ;; of the default value form for an &mumble argument).
-	 ;;
-	 ;; We can expand this into a simple lambda expression with an
-	 ;; FLET to define the lexical functions.
-	 ;;
-	 `(ext::lambda-block ,generic-function-name ,lambda-list
-	    ,@walked-declarations
-	   (declare (special *next-methods*))
-	    (let* ((.next-method. (car *next-methods*))
-		   (*next-methods* (cdr *next-methods*)))
-	      (declare (special *next-methods*))
-	      (flet (,@(and call-next-method-p
-			    '((CALL-NEXT-METHOD (&REST CNM-ARGS)
-				;; (declare (static-extent cnm-args))
-				(IF .NEXT-METHOD.
-				    (APPLY .NEXT-METHOD. CNM-ARGS)
-				    (ERROR "No next method.")))))
-		     ,@(and next-method-p-p
-			    '((NEXT-METHOD-P ()
-				(NOT (NULL .NEXT-METHOD.))))))
-		,@walked-lambda-body)))
-	 ;; Assuming that we can determine statically which is the next method,
-	 ;; we could use this solution. Compute-effective-method can set
-	 ;; the value of .next-method. within each closure at the appropriate
-	 ;; value. Same thing for next case. 	Beppe
-	 ;;	 `(let (.next-method.)
-	 ;;	    (lambda ,lambda-list
-	 ;;	      ,@walked-declarations
-	 ;;	      (flet (,@(and call-next-method-p
-	 ;;			    '((CALL-NEXT-METHOD (&REST CNM-ARGS)
-	 ;;				;; (declare (static-extent cnm-args))
-	 ;;				(IF .NEXT-METHOD.
-	 ;;				    (APPLY .NEXT-METHOD. CNM-ARGS)
-	 ;;				    (ERROR "No next method.")))))
-	 ;;		     ,@(and next-method-p-p
-	 ;;			    '((NEXT-METHOD-P ()
-	 ;;				(NOT (NULL .NEXT-METHOD.))))))
-	 ;;		,@walked-lambda-body)))
-	 )
-	((null applyp)
-	 ;;
-	 ;; This method doesn't accept any &mumble arguments.  But we
-	 ;; do have to save the original arguments (this is because
-	 ;; call-next-method is being called with no arguments).
-	 ;; Have to be careful though, there may be multiple calls to
-	 ;; call-next-method, all we know is that at least one of them
-	 ;; is with no arguments.
-	 ;;
-	 `(ext::lambda-block ,generic-function-name ,original-args
-	    (declare (special *next-methods*))
-	    (let* ((.next-method. (car *next-methods*))
-		   (*next-methods* (cdr *next-methods*)))
-	      (declare (special *next-methods*))
-	      (flet (,@(and call-next-method-p
-                            `((call-next-method (&rest cnm-args)
-				;; (declare (static-extent cnm-args))
-				(if .next-method.
-				    (if cnm-args
-					(apply .next-method. cnm-args)
-					(funcall .next-method. ,@original-args))
-				    (error "No next method.")))))
-		     ,@(and next-method-p-p
-			    '((NEXT-METHOD-P ()
-				(NOT (NULL .NEXT-METHOD.))))))
-		(let* (,@(mapcar #'list
-				 (subseq lambda-list 0
-					 (position '&AUX lambda-list))
-				 original-args)
-		       ,@aux-bindings)
-		  ,@walked-declarations
-		  ,@walked-lambda-body)))))
-	(t
-	 ;;
-	 ;; This is the fully general case.
-	 ;; We must allow for the lexical functions being used inside
-	 ;; the default value forms of &mumble arguments, and if must
-	 ;; allow for call-next-method being called with no arguments.
-	 ;;
-	 `(lambda ,original-args
-	    (declare (special *next-methods*))
-	    (let* ((.next-method. (car *next-methods*))
-		   (*next-methods* (cdr *next-methods*)))
-	      (declare (special *next-methods*))
-	      (flet (,@(and call-next-method-p
-			    `((call-next-method (&rest cnm-args)
-				;; (declare (static-extent cnm-args))
-				(if .next-method.
-				    (if cnm-args
-					(apply .next-method. cnm-args)
-					(apply .next-method.
-					       ,@(remove '&REST original-args)))
-				    (error "No next method.")))))
-		     ,@(and next-method-p-p
-			    '((NEXT-METHOD-P ()
-				(NOT (NULL .NEXT-METHOD.))))))
-		(apply (function ,walked-lambda)
-		       ,@(remove '&REST original-args))))))))
-
+    (values call-next-method-p
+	    next-method-p-p
+	    in-closure-p)))
 
 ;;; ----------------------------------------------------------------------
 ;;;                                                                parsing

@@ -24,6 +24,10 @@ struct cl_test {
 	cl_object test_function;
 	cl_object item_compared;
 	cl_object key_function;
+	cl_object frame_key;
+	struct ecl_stack_frame frame_key_aux;
+	cl_object frame_test;
+	struct ecl_stack_frame frame_test_aux;
 };
 
 static cl_object subst(struct cl_test *t, cl_object new_obj, cl_object tree);
@@ -36,17 +40,19 @@ static void nsublis(struct cl_test *t, cl_object alist, cl_object *treep);
 static bool
 test_compare(struct cl_test *t, cl_object x)
 {
-	cl_object outcome = funcall(3, t->test_function, t->item_compared,
-				    (t->key_c_function)(t, x));
-	return (outcome != Cnil);
+	ecl_stack_frame_elt_set(t->frame_test, 0, t->item_compared);
+	x = (t->key_c_function)(t, x);
+	ecl_stack_frame_elt_set(t->frame_test, 1, x);
+	return ecl_apply_from_stack_frame(t->frame_test, t->test_function) != Cnil;
 }
 
 static bool
 test_compare_not(struct cl_test *t, cl_object x)
 {
-	cl_object outcome = funcall(3, t->test_function, t->item_compared,
-				    (t->key_c_function)(t, x));
-	return (outcome == Cnil);
+	ecl_stack_frame_elt_set(t->frame_test, 0, t->item_compared);
+	x = (t->key_c_function)(t, x);
+	ecl_stack_frame_elt_set(t->frame_test, 1, x);
+	return ecl_apply_from_stack_frame(t->frame_test, t->test_function) == Cnil;
 }
 
 static bool
@@ -76,7 +82,8 @@ test_equalp(struct cl_test *t, cl_object x)
 static cl_object
 key_function(struct cl_test *t, cl_object x)
 {
-	return funcall(2, t->key_function, x);
+	ecl_stack_frame_elt_set(t->frame_key, 0, x);
+	return ecl_apply_from_stack_frame(t->frame_key, t->key_function);
 }
 
 static cl_object
@@ -86,10 +93,11 @@ key_identity(struct cl_test *t, cl_object x)
 }
 
 static void
-setupTEST(struct cl_test *t, cl_object item, cl_object test,
-	  cl_object test_not, cl_object key)
+setup_test(struct cl_test *t, cl_object item, cl_object test,
+	   cl_object test_not, cl_object key)
 {
 	t->item_compared = item;
+	t->test_function = t->key_function =Cnil;
 	if (test != Cnil) {
 		if (test_not != Cnil)
 		    FEerror("Both :TEST and :TEST-NOT are specified.", 0);
@@ -116,6 +124,31 @@ setupTEST(struct cl_test *t, cl_object item, cl_object test,
 		t->key_c_function = key_function;
 	} else {
 		t->key_c_function = key_identity;
+	}
+	if (t->test_function != Cnil) {
+		t->frame_test = (cl_object)&(t->frame_test_aux);
+		t->frame_test_aux.t = t_frame;
+		t->frame_test_aux.narg = 0;
+		t->frame_test_aux.sp = 0;
+		ecl_stack_frame_reserve(t->frame_test, 2);
+		ecl_stack_frame_elt_set(t->frame_test, 0, item);
+	}
+	if (t->key_function != Cnil) {
+		t->frame_key = (cl_object)&(t->frame_key_aux);
+		t->frame_key_aux.t = t_frame;
+		t->frame_key_aux.narg = 0;
+		t->frame_key_aux.sp = 0;
+		ecl_stack_frame_reserve(t->frame_key, 1);
+	}
+}
+
+static void close_test(struct cl_test *t)
+{
+	if (t->key_function != Cnil) {
+		ecl_stack_frame_close(t->frame_key);
+	}
+	if (t->test_function != Cnil) {
+		ecl_stack_frame_close(t->frame_test);
 	}
 }
 
@@ -290,9 +323,12 @@ BEGIN:
 
 @(defun tree_equal (x y &key test test_not)
 	struct cl_test t;
+	cl_object output;
 @
-	setupTEST(&t, Cnil, test, test_not, Cnil);
-	@(return (tree_equal(&t, x, y)? Ct : Cnil))
+	setup_test(&t, Cnil, test, test_not, Cnil);
+	output = tree_equal(&t, x, y)? Ct : Cnil;
+	close_test(&t);
+	@(return output)
 @)
 
 cl_object
@@ -581,9 +617,12 @@ cl_rplacd(cl_object x, cl_object v)
 
 @(defun subst (new_obj old_obj tree &key test test_not key)
 	struct cl_test t;
+	cl_object output;
 @
-	setupTEST(&t, old_obj, test, test_not, key);
-	@(return subst(&t, new_obj, tree))
+	setup_test(&t, old_obj, test, test_not, key);
+	output = subst(&t, new_obj, tree);
+	close_test(&t);
+	@(return output)
 @)
 
 
@@ -607,8 +646,9 @@ subst(struct cl_test *t, cl_object new_obj, cl_object tree)
 @(defun nsubst (new_obj old_obj tree &key test test_not key)
 	struct cl_test t;
 @
-	setupTEST(&t, old_obj, test, test_not, key);
+	setup_test(&t, old_obj, test, test_not, key);
 	nsubst(&t, new_obj, &tree);
+	close_test(&t);
 	@(return tree)
 @)
 
@@ -631,8 +671,9 @@ nsubst(struct cl_test *t, cl_object new_obj, cl_object *treep)
 @(defun sublis (alist tree &key test test_not key)
 	struct cl_test t;
 @
-	setupTEST(&t, Cnil, test, test_not, key);
+	setup_test(&t, Cnil, test, test_not, key);
 	tree = sublis(&t, alist, tree);
+	close_test(&t);
 	@(return tree)
 @)
 
@@ -664,8 +705,9 @@ sublis(struct cl_test *t, cl_object alist, cl_object tree)
 @(defun nsublis (alist tree &key test test_not key)
 	struct cl_test t;
 @
-	setupTEST(&t, Cnil, test, test_not, key);
+	setup_test(&t, Cnil, test, test_not, key);
 	nsublis(&t, alist, &tree);
+	close_test(&t);
 	@(return tree)
 @)
 
@@ -697,11 +739,12 @@ nsublis(struct cl_test *t, cl_object alist, cl_object *treep)
 @(defun member (item list &key test test_not key)
 	struct cl_test t;
 @
-	setupTEST(&t, item, test, test_not, key);
+	setup_test(&t, item, test, test_not, key);
 	loop_for_in(list) {
 		if (TEST(&t, CAR(list)))
 			break;
 	} end_loop_for_in;
+	close_test(&t);
 	@(return list)
 @)
 
@@ -754,11 +797,12 @@ si_member1(cl_object item, cl_object list, cl_object test, cl_object test_not, c
 
 	if (key != Cnil)
 		item = funcall(2, key, item);
-	setupTEST(&t, item, test, test_not, key);
+	setup_test(&t, item, test, test_not, key);
 	loop_for_in(list) {
 		if (TEST(&t, CAR(list)))
 			break;
 	} end_loop_for_in;
+	close_test(&t);
 	@(return list)
 }
 
@@ -818,7 +862,7 @@ error:	    FEerror("The keys ~S and the data ~S are not of the same length",
 @(defun assoc (item a_list &key test test_not key)
 	struct cl_test t;
 @
-	setupTEST(&t, item, test, test_not, key);
+	setup_test(&t, item, test, test_not, key);
 	loop_for_in(a_list) {
 		cl_object pair = CAR(a_list);
 		if (Null(pair)) {
@@ -830,13 +874,14 @@ error:	    FEerror("The keys ~S and the data ~S are not of the same length",
 			break;
 		}
 	} end_loop_for_in;
+	close_test(&t);
 	@(return a_list)
 @)
 
 @(defun rassoc (item a_list &key test test_not key)
 	struct cl_test t;
 @
-	setupTEST(&t, item, test, test_not, key);
+	setup_test(&t, item, test, test_not, key);
 	loop_for_in(a_list) {
 		cl_object pair = CAR(a_list);
 		if (Null(pair)) {
@@ -848,6 +893,7 @@ error:	    FEerror("The keys ~S and the data ~S are not of the same length",
 				break;
 			}
 	} end_loop_for_in;
+	close_test(&t);
 	@(return a_list)
 @)
 

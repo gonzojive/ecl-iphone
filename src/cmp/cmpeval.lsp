@@ -87,9 +87,10 @@
       (let ((l (length args)))
 	(when (> l si::c-arguments-limit)
 	  (return-from c1call-local
-	    (c1expr `(with-stack
-		      ,@(loop for i in args collect `(stack-push ,i))
-		      (apply-from-stack ,l #',fname))))))
+	    (let ((frame (gensym)))
+	      (c1expr `(with-stack ,frame
+			 ,@(loop for i in args collect `(stack-push ,i))
+			 (si::apply-from-stack-frame ,frame #',fname)))))))
       (let* ((forms (c1args* args))
 	     (lambda-form (fun-lambda fun))
 	     (return-type (or (get-local-return-type fun) 'T))
@@ -111,9 +112,10 @@
 (defun c1call-global (fname args)
   (let ((l (length args)))
     (if (> l si::c-arguments-limit)
-	(c1expr `(with-stack
-		  ,@(loop for i in args collect `(stack-push ,i))
-		  (apply-from-stack ,l #',fname)))
+	(c1expr (let ((frame (gensym)))
+		  `(with-stack ,frame
+		     ,@(loop for i in args collect `(stack-push ,frame ,i))
+		     (si::apply-from-stack-frame ,frame #',fname))))
 	(let* ((forms (c1args* args))
 	       (return-type (propagate-types fname forms args)))
 	  (make-c1form* 'CALL-GLOBAL

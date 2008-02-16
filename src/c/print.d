@@ -922,7 +922,7 @@ write_array(bool vector, cl_object x, cl_object stream)
 	if (readably) {
 		write_ch('A', stream);
 		write_ch('(', stream);
-		si_write_object_recursive(ecl_elttype_to_symbol(x->array.elttype), stream);
+		si_write_object_recursive(ecl_elttype_to_symbol(ecl_array_elttype(x)), stream);
 		write_ch(INDENT, stream);
 		if (n > 0) {
 			write_ch('(', stream);
@@ -1409,8 +1409,14 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		break;
 
 	case t_random:
-		write_str("#$", stream);
-		write_array(1, x->random.value, stream);
+		if (ecl_print_readably()) {
+			write_str("#$", stream);
+			write_array(1, x->random.value, stream);
+		} else {
+			write_str("#<random-state ", stream);
+			write_addr(x->random.value, stream);
+			write_str("#>", stream);
+		}
 		break;
 
 #ifndef CLOS
@@ -1518,6 +1524,14 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		si_write_ugly_object(x->foreign.tag, stream);
 		write_ch(' ', stream);
 		write_addr((cl_object)x->foreign.data, stream);
+		write_ch('>', stream);
+		break;
+	case t_frame:
+		if (ecl_print_readably()) FEprint_not_readable(x);
+		write_str("#<frame ", stream);
+		write_decimal(x->frame.narg, stream);
+		write_ch(' ', stream);
+		write_decimal(x->frame.sp, stream);
 		write_ch('>', stream);
 		break;
 #ifdef ECL_THREADS

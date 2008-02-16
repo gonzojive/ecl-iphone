@@ -68,6 +68,10 @@ struct cl_compiler_env {
 #define cl_stack_ref(n) cl_env.stack[n]
 #define cl_stack_index() (cl_env.stack_top-cl_env.stack)
 
+#define ECL_BUILD_STACK_FRAME(name) \
+	struct ecl_stack_frame name##_aux;\
+	cl_object name=(name##_aux.t=t_frame,name##_aux.narg=name##_aux.sp=0,(cl_object)&(name##_aux));
+
 /* ffi.d */
 
 #define ECL_FFICALL_LIMIT 256

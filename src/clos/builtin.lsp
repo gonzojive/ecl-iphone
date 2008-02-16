@@ -89,6 +89,7 @@
 	    (readtable)
             (si::code-block)
 	    (si::foreign-data)
+	    (si::frame)
 	    #+threads (mp::process)
 	    #+threads (mp::lock)))
 

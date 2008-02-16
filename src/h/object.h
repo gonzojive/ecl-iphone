@@ -487,6 +487,12 @@ struct ecl_foreign {		/*  user defined datatype  */
 	char *data;		/*  the data itself  */
 };
 
+struct ecl_stack_frame {
+	HEADER;
+	cl_index narg;		/*  Size */
+	cl_index sp;		/*  Stack pointer start */
+};
+
 /*
 	dummy type
 */
@@ -582,7 +588,8 @@ union cl_lispunion {
         struct ecl_condition_variable condition_variable; /*  condition-variable */
 #endif
 	struct ecl_codeblock	cblock;		/*  codeblock  */
-	struct ecl_foreign	foreign; 	/* user defined data type */
+	struct ecl_foreign	foreign; 	/*  user defined data type */
+	struct ecl_stack_frame	frame;		/*  stack frame  */
 };
 
 /*
@@ -635,6 +642,7 @@ typedef enum {
 #endif
 	t_codeblock,
 	t_foreign,
+	t_frame,
 	t_end,
 	t_other,
 	t_contiguous,		/*  contiguous block  */

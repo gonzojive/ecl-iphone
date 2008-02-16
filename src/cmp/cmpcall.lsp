@@ -25,9 +25,10 @@
   (let ((l (length arguments)))
     (if (<= l si::c-arguments-limit)
 	(make-c1form* 'FUNCALL :args (c1expr fun) (c1args* arguments))
-	(c1expr `(with-stack
+	(let ((frame (gensym)))
+	  (c1expr `(with-stack ,frame
 		     ,@(loop for i in arguments collect `(stack-push ,i))
-		   (apply-from-stack ,l ,fim))))))
+		     (si::apply-from-stack-frame ,frame ,fim)))))))
 
 (defun c1funcall (args)
   (check-args-number 'FUNCALL args 1)

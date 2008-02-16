@@ -1678,6 +1678,9 @@ cl_symbols[] = {
 {SYS_ "CLEAR-GFUN-HASH","si_clear_gfun_hash"},
 #endif
 
+{SYS_ "FRAME",NULL},
+{SYS_ "APPLY-FROM-STACK-FRAME","si_apply_from_stack_frame"},
+
 /* Tag for end of list */
 {NULL,NULL}};
 

@@ -110,6 +110,8 @@ ecl_dynamic_callback_execute(cl_object cbk_info, char *arg_buffer)
 	union ecl_ffi_values output;
 	enum ecl_ffi_tag tag;
 
+	ECL_BUILD_STACK_FRAME(frame);
+
 	fun = CAR(cbk_info);
 	rtype = CADR(cbk_info);
 	argtypes = CADDR(cbk_info);
@@ -119,7 +121,7 @@ ecl_dynamic_callback_execute(cl_object cbk_info, char *arg_buffer)
 		tag = ecl_foreign_type_code(CAR(argtypes));
 		size = fix(si_size_of_foreign_elt_type(CAR(argtypes)));
 		result = ecl_foreign_data_ref_elt(arg_buffer, tag);
-		cl_stack_push(result);
+		ecl_stack_frame_push(frame,result);
 		{
 			int mask = 3;
 			int sp = (size + mask) & ~mask;
@@ -127,8 +129,8 @@ ecl_dynamic_callback_execute(cl_object cbk_info, char *arg_buffer)
 		}
 	}
 
-	result = cl_apply_from_stack(i, fun);
-	cl_stack_pop_n(i);
+	result = ecl_apply_from_stack_frame(frame, fun);
+	ecl_stack_frame_close(frame);
 
 	tag = ecl_foreign_type_code(rtype);
 	memset(&output, 0, sizeof(output));

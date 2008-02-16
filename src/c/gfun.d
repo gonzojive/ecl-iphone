@@ -279,8 +279,10 @@ search_method_hash(cl_object keys, cl_object table)
 }
 
 static cl_object
-get_spec_vector(cl_narg narg, cl_object gf, cl_object *args)
+get_spec_vector(cl_object frame, cl_object gf)
 {
+	cl_object *args = cl_env.stack + frame->frame.sp;
+	cl_index narg = frame->frame.narg;
 	cl_object spec_how_list = GFUN_SPEC(gf);
 	cl_object vector = cl_env.method_spec_vector;
 	cl_object *argtype = vector->vector.self.t;
@@ -307,18 +309,18 @@ get_spec_vector(cl_narg narg, cl_object gf, cl_object *args)
 }
 
 static cl_object
-compute_applicable_method(cl_narg narg, cl_object gf, cl_object *args)
+compute_applicable_method(cl_object frame, cl_object gf)
 {
 	/* method not cached */
 	cl_object methods, arglist, func;
 	int i;
-	for (i = narg, arglist = Cnil; i-- > 0; ) {
-		arglist = CONS(args[i], arglist);
+	for (i = frame->frame.narg, arglist = Cnil; i; ) {
+		arglist = CONS(ecl_stack_frame_elt(frame, --i), arglist);
 	}
 	methods = funcall(3, @'compute-applicable-methods', gf, arglist);
 	if (methods == Cnil) {
 		func = funcall(3, @'no-applicable-method', gf, arglist);
-		args[0] = 0;
+		ecl_stack_frame_elt_set(frame, 0, OBJNULL);
 		return func;
 	} else {
 		return funcall(4, @'clos::compute-effective-method', gf,
@@ -326,10 +328,10 @@ compute_applicable_method(cl_narg narg, cl_object gf, cl_object *args)
 	}
 }
 
-static cl_object
-standard_dispatch(cl_narg narg, cl_object gf, cl_object *args)
+cl_object
+_ecl_standard_dispatch(cl_object frame, cl_object gf)
 {
-	cl_object vector;
+	cl_object func, vector;
 #ifdef ECL_THREADS
 	/* See whether we have to clear the hash from some generic functions right now. */
 	if (cl_env.method_hash_clear_list != Cnil) {
@@ -343,17 +345,17 @@ standard_dispatch(cl_narg narg, cl_object gf, cl_object *args)
 		THREAD_OP_UNLOCK();
 	}
 #endif
-	vector = get_spec_vector(narg, gf, args);
+	vector = get_spec_vector(frame, gf);
 	if (vector == OBJNULL) {
-		return compute_applicable_method(narg, gf, args);
+		func = compute_applicable_method(frame, gf);
 	} else {
 		cl_object table = cl_env.method_hash;
 		cl_object *e = search_method_hash(vector, table);
 		if (RECORD_KEY(e) != OBJNULL) {
-			return RECORD_VALUE(e);
+			func = RECORD_VALUE(e);
 		} else {
 			cl_object keys = cl_copy_seq(vector);
-			cl_object func = compute_applicable_method(narg, gf, args);
+			func = compute_applicable_method(frame, gf);
 			if (RECORD_KEY(e) != OBJNULL) {
 				/* The cache might have changed while we
 				 * computed applicable methods */
@@ -361,20 +363,13 @@ standard_dispatch(cl_narg narg, cl_object gf, cl_object *args)
 			}
 			RECORD_KEY(e) = keys;
 			RECORD_VALUE(e) = func;
-			return func;
 		}
 	}
-}
-
-cl_object
-_ecl_compute_method(cl_narg narg, cl_object gf, cl_object *args)
-{
-	switch (gf->instance.isgf) {
-	case ECL_STANDARD_DISPATCH:
-		return standard_dispatch(narg, gf, args);
-	case ECL_USER_DISPATCH:
-		return gf->instance.slots[gf->instance.length - 1];
-	default:
-		FEinvalid_function(gf);
+	{
+		ECL_BUILD_STACK_FRAME(frame1);
+		ecl_stack_frame_push(frame1, frame);
+		func = ecl_apply_from_stack_frame(frame1, func);
+		ecl_stack_frame_close(frame1);
+		return func;
 	}
 }

@@ -36,9 +36,6 @@
     `(progn ,@body))
 )
 
-(ffi:clines "
-")
-
 (defconstant +wrap+ (ffi:c-inline () () :object "ecl_make_unsigned_integer(~((size_t)0))"
 			     :one-liner t))
 
@@ -390,7 +387,7 @@ Lisp process."
               "~%These functions were not called:~%~{~<~%~:; ~S~>~}~%"
               (sort no-call-name-list #'string<
                     :key (lambda (name)
-                           (symbol-name (fun-name-block-name name))))))
+                           (symbol-name name)))))
 
     (values)))
 

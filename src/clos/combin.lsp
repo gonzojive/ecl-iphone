@@ -47,26 +47,33 @@
 ;;;  5) Ordinary forms are turned into lambda forms, much like
 ;;;	what happens with the content of MAKE-METHOD.
 ;;;
-(defun effective-method-function (form)
-  (if (atom form)
-      (cond ((method-p form)
-	     (method-function form))
-	    ((functionp form)
-	     form)
-	    (t
-	     (error "Malformed effective method form:~%~A" form)))
-      (case (first form)
-	(CALL-METHOD
+(defun effective-method-function (form &optional top-level)
+  (cond ((functionp form)
+	 form)
+	((method-p form)
+	 (wrapped-method-function (method-function form)))
+	((atom form)
+	 (error "Malformed effective method form:~%~A" form))
+	((and (not top-level) (eq (first form) 'MAKE-METHOD))
+	 (coerce `(lambda (.combined-method-args. *next-methods*)
+		    (declare (special .combined-method-args. *next-methods*))
+		    ,(second form))
+		 'function))
+	((and top-level (eq (first form) 'CALL-METHOD))
 	 (combine-method-functions
 	  (effective-method-function (second form))
 	  (mapcar #'effective-method-function (third form))))
-	(MAKE-METHOD
-	 (setq form (second form))
-	 (coerce `(lambda (&rest .combined-method-args.) ,form)
+	(top-level
+	 (coerce `(lambda (.combined-method-args.)
+		    ,form)
 		 'function))
 	(t
-	 (coerce `(lambda (&rest .combined-method-args.) ,form)
-		 'function)))))
+	 (error "Malformed effective method form:~%~A" form))))
+
+(defun wrapped-method-function (method-function)
+  #'(lambda (.combined-method-args. *next-methods*)
+      (declare (special .combined-method-args. *next-methods*))
+      (apply method-function .combined-method-args.)))
 
 ;;;
 ;;; This function is a combinator of effective methods. It creates a
@@ -76,17 +83,30 @@
 ;;;
 (defun combine-method-functions (method rest-methods)
   (declare (si::c-local))
-  #'(lambda (&rest .combined-method-args.)
-      (let ((*next-methods* rest-methods))
-	(declare (special *next-methods*))
-	(apply method .combined-method-args.))))
+  #'(lambda (.combined-method-args.)
+      (funcall method .combined-method-args. rest-methods)))
 
 (defmacro call-method (method rest-methods)
-  (setq method (effective-method-function method)
-	rest-methods (mapcar #'effective-method-function rest-methods))
-  `(let ((*next-methods* ,rest-methods))
-     (declare (special *next-methods*))
-     (apply ,method .combined-method-args.)))
+  `(funcall ,(effective-method-function method)
+	    .combined-method-args.
+	    ',(mapcar #'effective-method-function rest-methods)))
+
+(defun call-next-method (&rest args)
+  (unless *next-methods*
+    (error "No next method."))
+  (funcall (car *next-methods*) (or args .combined-method-args.) (rest *next-methods*)))
+
+(defun next-method-p ()
+  *next-methods*)
+
+(define-compiler-macro call-next-method (&rest args)
+  (print 'call-next-method)
+  `(if *next-methods*
+       (funcall (car *next-methods*) ,(if args `(list ,@args) '.combined-method-args.)
+		(rest *next-methods*))
+       (error "No next method.")))
+
+(define-compiler-macro next-method-p () clos::*next-methods*)
 
 (defun error-qualifier (m qualifier)
   (declare (si::c-local))
@@ -97,19 +117,15 @@
 
 (defun standard-main-effective-method (before primary after)
   (declare (si::c-local))
-  #'(lambda (&rest .combined-method-args.)
-      (let ((*next-methods* nil))
-	(declare (special *next-methods*))
-	(dolist (i before)
-	  (apply i .combined-method-args.))
-	(setf *next-methods* (rest primary))
-	(if after
-	    (multiple-value-prog1
-		(apply (first primary) .combined-method-args.)
-	      (setf *next-methods* nil)
-	      (dolist (i after)
-		(apply i .combined-method-args.)))
-	    (apply (first primary) .combined-method-args.)))))
+  #'(lambda (.combined-method-args.)
+      (dolist (i before)
+	(funcall i .combined-method-args. nil))
+      (if after
+	  (multiple-value-prog1
+	   (funcall (first primary) .combined-method-args. (rest primary))
+	   (dolist (i after)
+	     (funcall i .combined-method-args. nil)))
+	(funcall (first primary) .combined-method-args. (rest primary)))))
 
 (defun standard-compute-effective-method (gf methods)
   (declare (si::c-local))
@@ -119,7 +135,7 @@
 	 (around ()))
     (dolist (m methods)
       (let* ((qualifiers (method-qualifiers m))
-	     (f (method-function m)))
+	     (f (wrapped-method-function (method-function m))))
 	(cond ((null qualifiers) (push f primary))
 	      ((rest qualifiers) (error-qualifier m qualifiers))
 	      ((eq (setq qualifiers (first qualifiers)) :BEFORE)
@@ -256,7 +272,7 @@
 			     "Method qualifiers ~S are not allowed in the method~
 			      combination ~S." .method-qualifiers. ,name)))))
 	      ,@group-after
-	      (effective-method-function ,@body))))
+	      (effective-method-function ,@body t))))
       )))
 
 (defmacro define-method-combination (name &body body)

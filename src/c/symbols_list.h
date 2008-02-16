@@ -1678,6 +1678,9 @@ cl_symbols[] = {
 {SYS_ "CLEAR-GFUN-HASH", SI_ORDINARY, si_clear_gfun_hash, 1, OBJNULL},
 #endif
 
+{SYS_ "FRAME", SI_ORDINARY, NULL, -1, OBJNULL},
+{SYS_ "APPLY-FROM-STACK-FRAME", SI_ORDINARY, si_apply_from_stack_frame, 2, OBJNULL},
+
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};
 
