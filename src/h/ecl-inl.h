@@ -13,7 +13,9 @@
     }
 #else
 #define loop_for_in(list) { \
-  for (; !ecl_endp(list); list = CDR(list)) {
+  const cl_object l0 = list; \
+  for (; list != Cnil; list = CDR(list)) { \
+    if (!CONSP(list)) FEtype_error_proper_list(l0);
 #endif
 #define end_loop_for_in }}
 

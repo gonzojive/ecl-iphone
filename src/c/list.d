@@ -916,5 +916,44 @@ ecl_remove_eq(cl_object x, cl_object l)
 }
 
 /* Added for use by the compiler, instead of open coding them. Beppe */
-cl_objectecl_assq(cl_object x, cl_object l0){	register cl_object l, record, nil = Cnil;	for (l = l0; l != nil; ) {		if (!CONSP(l))			goto ERROR;		record = CAR(l);		l = CDR(l);		if (record == nil)			continue;		if (!CONSP(record))			goto ERROR;		if (x == CAR(record))			return record;	}	return l; ERROR:	FEtype_error_alist(l0);}cl_objectecl_assql(cl_object x, cl_object l0){	register cl_object l, record, nil = Cnil;	for (l = l0; l != nil; ) {		if (!CONSP(l))			goto ERROR;		record = CAR(l);		l = CDR(l);		if (record == nil)			continue;		if (!CONSP(record))			goto ERROR;		if (ecl_eql(x, CAR(record)))			return record;	}	return l; ERROR:	FEtype_error_alist(l0);}cl_objectecl_assoc(cl_object x, cl_object l0){	register cl_object l, record, nil = Cnil;	for (l = l0; l != nil; ) {		if (!CONSP(l))			goto ERROR;		record = CAR(l);		l = CDR(l);		if (record == nil)			continue;		if (!CONSP(record))			goto ERROR;		if (ecl_equal(x, CAR(record)))			return record;	}	return l; ERROR:	FEtype_error_alist(l0);}cl_objectecl_assqlp(cl_object x, cl_object l0){	register cl_object l, record, nil = Cnil;	for (l = l0; l != nil; ) {		if (!CONSP(l))			goto ERROR;		record = CAR(l);		l = CDR(l);		if (record == nil)			continue;		if (!CONSP(record))			goto ERROR;		if (ecl_equalp(x, CAR(record)))			return record;	}	return l; ERROR:	FEtype_error_alist(l0);}
+/* Added for use by the compiler, instead of open coding them. Beppe */
+cl_object
+ecl_assq(cl_object x, cl_object l)
+{
+	loop_for_in(l) {
+		if (x == CAAR(l))
+			return(CAR(l));
+	} end_loop_for_in;
+	return(Cnil);
+}
+
+cl_object
+ecl_assql(cl_object x, cl_object l)
+{
+	loop_for_in(l) {
+		if (ecl_eql(x, CAAR(l)))
+			return(CAR(l));
+	} end_loop_for_in;
+	return(Cnil);
+}
+
+cl_object
+ecl_assoc(cl_object x, cl_object l)
+{
+	loop_for_in(l) {
+		if (ecl_equal(x, CAAR(l)))
+			return(CAR(l));
+	} end_loop_for_in;
+	return(Cnil);
+}
+
+cl_object
+ecl_assqlp(cl_object x, cl_object l)
+{
+	loop_for_in(l) {
+		if (ecl_equalp(x, CAR(CAR(l))))
+			return(CAR(l));
+	} end_loop_for_in;
+	return(Cnil);
+}
 /* End of addition. Beppe */
