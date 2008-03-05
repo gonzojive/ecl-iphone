@@ -109,7 +109,7 @@
 
 (define-c-constants
   +af-inet+ "AF_INET"
-  +af-local+ "AF_LOCAL"
+  +af-local+ #-sun4sol2 "AF_LOCAL" #+sun4sol2 "AF_UNIX"
   +eagain+ "EAGAIN"
   +eintr+ "EINTR")
 
@@ -1389,7 +1389,7 @@ GET-NAME-SERVICE-ERRNO")
 (define-sockopt socket-dont-route "SO_DONTROUTE" bool)
 (define-sockopt socket-linger "SO_LINGER" bool)
 
-#-(or :linux :wsock :cygwin)
+#-(or :sun4sol2 :linux :wsock :cygwin)
 (define-sockopt sockopt-reuse-port "SO_REUSEPORT" bool)
 
 ;; Add sockopts here as you need them...
