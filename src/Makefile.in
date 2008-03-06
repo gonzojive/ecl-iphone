@@ -148,7 +148,7 @@ install-base:
 	   $(INSTALL_PROGRAM) $$i $(DESTDIR)$(libdir); \
 	  fi \
 	done
-	for i in c/dpp* ecl_min* `cat MODULES`; do \
+	for i in c/dpp$(EXE) ecl_min$(EXE) `cat MODULES`; do \
 	  $(INSTALL_PROGRAM) $$i $(DESTDIR)$(ecldir); \
 	done
 flatinstall: BUILD-STAMP
@@ -177,30 +177,27 @@ clean_lisp:
 	$(RM) help.doc
 distclean: clean
 realclean: distclean
-test1:
-	cd c; $(MAKE)
-	$(MAKE) ecl_min
-	$(MAKE) ecl
-	cd tests; $(MAKE)
-	diff tests tests2
-test2:
-	$(MAKE) clean_lisp
-	cd c; $(MAKE)
-	$(MAKE) ecl_min
-	$(RM) ecl
-	$(MAKE) ecl
+#
+# Rebuild ECL using recent changes and compare
+#
+test_changes:
+	test -d old || mkdir old
+	cp -rf lsp clos cmp old/
+	$(MAKE) clean_lisp; $(MAKE) -C c clean; $(RM) -f bin/ecl$(EXE)
+	$(MAKE)
 	for i in lsp clos cmp; do diff --exclude=\*.o $$i old/$$i; done
-test3:
+#
+# Rebuild ECL using its own image and compare. Does not work
+# right now.
+#
+selfbuild:
+	exit 2
 	test -d stage2 || mkdir stage2
 	cp -rf lsp clos cmp stage2
 	-for i in lsp cmp clos clx tk; do test -f lib$$i.a && mv lib$$i.a stage2; done
 	$(MAKE) clean_lisp
 	./ecl compile
 	-for i in lsp clos cmp clx tk; do test -d $$i && diff --exclude=\*.o $$i stage2/$$i; done | less
-test:
-	$(MAKE) -C tests
-	$(MAKE) -C ansi-tests > ansi-tests/log
-	#-(diff tests ~/src/tests; diff --exclude log ansi-tests ~/src/ansi-tests) | less
 
 TAGS:
 	etags -R --langmap=c:+.d
