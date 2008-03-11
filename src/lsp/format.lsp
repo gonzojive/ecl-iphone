@@ -1996,8 +1996,8 @@
 							:downcase)))))
 	    ,@(expand-directive-list before))
 	 #+ecl
-	 `(let ((string (make-array 10 :element-type 'character :fill-pointer 0
-								:adjustable t)))
+	 `(let ((string (make-array 10 :element-type 'base-char
+				       :fill-pointer 0 :adjustable t)))
 	    (unwind-protect
 		 (with-output-to-string (stream string)
 		   ,@(expand-directive-list before))
@@ -2033,8 +2033,8 @@
 	     (before (subseq directives 0 posn))
 	     (jumped t)
 	     (after (nthcdr (1+ posn) directives))
-	     (string (make-array 10 :element-type 'character :adjustable t
-				 :fill-pointer 0)))
+	     (string (make-array 10 :element-type 'base-char
+				    :adjustable t :fill-pointer 0)))
 	(unwind-protect
 	     (with-output-to-string (stream string)
 	       (setf args (interpret-directive-list stream before orig-args args)))
