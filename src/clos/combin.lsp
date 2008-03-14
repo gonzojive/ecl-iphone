@@ -47,24 +47,25 @@
 ;;;  5) Ordinary forms are turned into lambda forms, much like
 ;;;	what happens with the content of MAKE-METHOD.
 ;;;
-(defun effective-method-function (form &optional top-level)
+(defun effective-method-function (form)
   (cond ((functionp form)
 	 form)
 	((method-p form)
 	 (wrapped-method-function (method-function form)))
 	((atom form)
 	 (error "Malformed effective method form:~%~A" form))
-	((and (not top-level) (eq (first form) 'MAKE-METHOD))
+	((eq (first form) 'MAKE-METHOD)
 	 (coerce `(lambda (.combined-method-args. *next-methods*)
 		    (declare (special .combined-method-args. *next-methods*))
 		    ,(second form))
 		 'function))
-	((and top-level (eq (first form) 'CALL-METHOD))
+	((eq (first form) 'CALL-METHOD)
 	 (combine-method-functions
 	  (effective-method-function (second form))
 	  (mapcar #'effective-method-function (third form))))
 	(top-level
-	 (coerce `(lambda (.combined-method-args.)
+	 (coerce `(lambda (.combined-method-args. no-next-methods)
+		    (declare (ignorable no-next-methods))
 		    ,form)
 		 'function))
 	(t
@@ -83,7 +84,8 @@
 ;;;
 (defun combine-method-functions (method rest-methods)
   (declare (si::c-local))
-  #'(lambda (.combined-method-args.)
+  #'(lambda (.combined-method-args. no-next-methods)
+      (declare (ignorable no-next-methods))
       (funcall method .combined-method-args. rest-methods)))
 
 (defmacro call-method (method rest-methods)
@@ -100,9 +102,9 @@
   *next-methods*)
 
 (define-compiler-macro call-next-method (&rest args)
-  (print 'call-next-method)
   `(if *next-methods*
-       (funcall (car *next-methods*) ,(if args `(list ,@args) '.combined-method-args.)
+       (funcall (car *next-methods*)
+		,(if args `(list ,@args) '.combined-method-args.)
 		(rest *next-methods*))
        (error "No next method.")))
 
@@ -117,7 +119,8 @@
 
 (defun standard-main-effective-method (before primary after)
   (declare (si::c-local))
-  #'(lambda (.combined-method-args.)
+  #'(lambda (.combined-method-args. no-next-method)
+      (declare (ignorable no-next-method))
       (dolist (i before)
 	(funcall i .combined-method-args. nil))
       (if after
@@ -272,7 +275,7 @@
 			     "Method qualifiers ~S are not allowed in the method~
 			      combination ~S." .method-qualifiers. ,name)))))
 	      ,@group-after
-	      (effective-method-function ,@body t))))
+	      (effective-method-function ,@body))))
       )))
 
 (defmacro define-method-combination (name &body body)
