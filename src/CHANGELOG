@@ -78,7 +78,7 @@ ECL 0.9k:
  - The reader function for #\ was not suitable for being invoked by the
    user on an arbitrary stream.
 
- - ECL tried to use intel-64bits assembler on 64 bits processors, even though
+ - ECL tried to use intel-64bits assembler on 64 bits processors, even when
    compiler and the operating system work with 32bits.
 
  - The compiler now inlines and optimizes (FUNCALL (X ..) ... ) where X is a
