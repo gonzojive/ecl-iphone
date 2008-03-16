@@ -51,9 +51,6 @@ main(int narg, char **argv) {
       if (strstr(buffer, "-CUT-")) {
 	exit(0);
       }
-    } else if (strstr(buffer, "declspec(dllimport)")) {
-      /* This is used to removed the declspec(dllimport) from external.h */
-      continue;
     }
     puts(buffer);
   }

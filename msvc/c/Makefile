@@ -16,7 +16,7 @@ THREADS_FLAGS=
 #
 TRUE_CC = cl
 CC	= cl
-CFLAGS	= -c $(ECL_CFLAGS) -I./ -I../ -I$(srcdir) -I$(top_srcdir)/gc/include  -I$(top_srcdir)/gc/include/private
+CFLAGS	= -c $(ECL_CFLAGS) -DECL_API="__declspec(dllexport)" -I./ -I../ -I$(srcdir) -I$(top_srcdir)/gc/include  -I$(top_srcdir)/gc/include/private
 DEFS    = $(THREADS_FLAGS)
 
 SHELL	= /bin/sh
@@ -58,7 +58,7 @@ OBJS	= main.obj symbol.obj package.obj list.obj\
 	structure.obj load.obj unixfsys.obj unixsys.obj \
 	ffi.obj alloc_2.obj tcp.obj $(THREADS_OBJ) ffi_x86.obj
 
-all:	$(DPP) ecl\external.h ..\eclmin.lib ..\cinit.obj
+all:	$(DPP) ..\eclmin.lib ..\cinit.obj
 
 .SUFFIXES: .obj .c .d
 
@@ -75,15 +75,6 @@ all:	$(DPP) ecl\external.h ..\eclmin.lib ..\cinit.obj
 
 .PHONY:	all
 
-#
-# When compiling the library itself, we have to remove the dllimport
-# declarations, because the variables that they mark are in the
-# in the library and can be referenced without indirection.
-#
-ecl\external.h: $(top_srcdir)/h/external.h Makefile
-	if not exist ecl mkdir ecl
-	cut.exe removedecl < $(top_srcdir)/h/external.h > $@
-
 cut.exe: $(top_srcdir)/util/cut.c
 	$(CC) $(LDFLAGS) /Fecut.exe $(top_srcdir)/util/cut.c
 
@@ -95,14 +86,14 @@ clean:
 	-for %f in ($(OBJS:.obj=.c) all_symbols.c) do $(RM) %f
 	-for %f in ($(OBJS) all_symbols.obj all_symbols2.obj) do $(RM) %f
 	-$(RM) *.pdb
-	-for %f in (..\ecl\config.h dpp dpp.obj $(DPP) ecl\external.h \
+	-for %f in (..\ecl\config.h dpp dpp.obj $(DPP)
 	            ..\eclmin.lib ..\cinit.obj cinit.c symbols_list2.h) \
 	     do $(RM) %f
 	-for %f in (..\ecl\*.h) do $(RM) %f
 
 # Build rules
 
-$(DPP): $(srcdir)/dpp.c $(srcdir)/symbols_list2.h ../ecl/config.h ecl\external.h
+$(DPP): $(srcdir)/dpp.c $(srcdir)/symbols_list2.h ../ecl/config.h
 	$(TRUE_CC) -I.. -I./ $(DEFS) $(srcdir)/dpp.c  -o $@
 ../ecl/config.h: ../ecl/config.h.msvc6 Makefile
 	for %i in ($(HFILES)) do $(CP) %i ..\ecl

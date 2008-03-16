@@ -524,7 +524,7 @@
     (wt-comment "... shares definition with " (fun-name (fun-shares-with fun)))
     (return-from t3local-fun))
   (cond ((fun-exported fun)
-	 (wt-nl-h #+(and msvc (not ecl-min)) "__declspec(dllexport) " "cl_object " cfun "(")
+	 (wt-nl-h #+msvc "__declspec(dllexport) " "cl_object " cfun "(")
 	 (wt-nl1 "cl_object " cfun "("))
 	(t
 	 (wt-nl-h "static cl_object " cfun "(")

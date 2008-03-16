@@ -366,7 +366,7 @@ _ecl_standard_dispatch(cl_object frame, cl_object gf)
 		}
 	}
 	{
-		ECL_BUILD_STACK_FRAME(frame1);
+		ECL_BUILD_STACK_FRAME(frame1, aux);
 		ecl_stack_frame_push(frame1, frame);
 		ecl_stack_frame_push(frame1, Cnil);
 		func = ecl_apply_from_stack_frame(frame1, func);

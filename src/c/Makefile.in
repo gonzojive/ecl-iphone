@@ -9,7 +9,7 @@ VPATH	= @srcdir@
 #
 TRUE_CC = @CC@
 CC	= @CC@
-CFLAGS	= -c -I. -I@true_builddir@ -I$(srcdir) -I../ecl/gc @CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@ \
+CFLAGS	= -c DECL_API -I. -I@true_builddir@ -I$(srcdir) -I../ecl/gc @CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@ \
 #	  -Wall -W -Wfloat-equal -Wundef -Wendif-labels -Wpointer-arith -Wcast-align \
 #	  -Wwrite-strings -Wconversion -Wsign-compare -Wmissing-prototypes -Wredundant-decls \
 #	  -Wunreachable-code -Winline

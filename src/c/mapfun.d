@@ -36,8 +36,8 @@ prepare_map(cl_va_list lists, cl_object cdrs_frame, cl_object cars_frame)
 	cl_object res, *val = &res;
 	cl_index i;
 @ {
-	ECL_BUILD_STACK_FRAME(cars_frame);
-	ECL_BUILD_STACK_FRAME(cdrs_frame);
+	ECL_BUILD_STACK_FRAME(cars_frame,frame1);
+	ECL_BUILD_STACK_FRAME(cdrs_frame,frame2);
 	prepare_map(lists, cdrs_frame, cars_frame);
 	res = Cnil;
 	while (TRUE) {
@@ -60,8 +60,8 @@ prepare_map(cl_va_list lists, cl_object cdrs_frame, cl_object cars_frame)
 @(defun maplist (fun &rest lists)
 	cl_object res, *val = &res;
 @ {
-	ECL_BUILD_STACK_FRAME(cars_frame);
-	ECL_BUILD_STACK_FRAME(cdrs_frame);
+	ECL_BUILD_STACK_FRAME(cars_frame,frame1);
+	ECL_BUILD_STACK_FRAME(cdrs_frame,frame2);
 	prepare_map(lists, cdrs_frame, cars_frame);
 	res = Cnil;
 	while (TRUE) {
@@ -84,8 +84,8 @@ prepare_map(cl_va_list lists, cl_object cdrs_frame, cl_object cars_frame)
 @(defun mapc (fun &rest lists)
 	cl_object onelist;
 @ {
-	ECL_BUILD_STACK_FRAME(cars_frame);
-	ECL_BUILD_STACK_FRAME(cdrs_frame);
+	ECL_BUILD_STACK_FRAME(cars_frame,frame1);
+	ECL_BUILD_STACK_FRAME(cdrs_frame,frame2);
 	prepare_map(lists, cdrs_frame, cars_frame);
 	onelist = ecl_stack_frame_elt(cdrs_frame, 0);
 	while (TRUE) {
@@ -107,8 +107,8 @@ prepare_map(cl_va_list lists, cl_object cdrs_frame, cl_object cars_frame)
 @(defun mapl (fun &rest lists)
 	cl_object onelist;
 @ {
-	ECL_BUILD_STACK_FRAME(cars_frame);
-	ECL_BUILD_STACK_FRAME(cdrs_frame);
+	ECL_BUILD_STACK_FRAME(cars_frame,frame1);
+	ECL_BUILD_STACK_FRAME(cdrs_frame,frame2);
 	prepare_map(lists, cdrs_frame, cars_frame);
 	onelist = ecl_stack_frame_elt(cdrs_frame, 0);
 	while (TRUE) {
@@ -130,8 +130,8 @@ prepare_map(cl_va_list lists, cl_object cdrs_frame, cl_object cars_frame)
 @(defun mapcan (fun &rest lists)
 	cl_object res, *val = &res;
 @ {
-	ECL_BUILD_STACK_FRAME(cars_frame);
-	ECL_BUILD_STACK_FRAME(cdrs_frame);
+	ECL_BUILD_STACK_FRAME(cars_frame,frame1);
+	ECL_BUILD_STACK_FRAME(cdrs_frame,frame2);
 	prepare_map(lists, cdrs_frame, cars_frame);
 	res = Cnil;
 	while (TRUE) {
@@ -155,8 +155,8 @@ prepare_map(cl_va_list lists, cl_object cdrs_frame, cl_object cars_frame)
 @(defun mapcon (fun &rest lists)
 	cl_object res, *val = &res;
 @ {
-	ECL_BUILD_STACK_FRAME(cars_frame);
-	ECL_BUILD_STACK_FRAME(cdrs_frame);
+	ECL_BUILD_STACK_FRAME(cars_frame,frame1);
+	ECL_BUILD_STACK_FRAME(cdrs_frame,frame2);
 	prepare_map(lists, cdrs_frame, cars_frame);
 	res = Cnil;
 	while (TRUE) {

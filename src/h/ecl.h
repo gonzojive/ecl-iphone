@@ -57,6 +57,28 @@ typedef unsigned short uint16_t;
 # define end_critical_section()
 #endif
 
+/*
+ * If ECL_API has been predefined, that means we are building the core
+ * library and, under windows, we must tell the compiler to export
+ * extern functions from the shared library.
+ * If ECL_API is not defined, we are simply building an application that
+ * uses ECL and, under windows, we must tell the compiler that certain
+ * will be imported from a DLL.
+ */
+#if defined(mingw32) || defined(_MSC_VER) || defined(cygwin)
+# ifdef ECL_API
+#  undef ECL_API
+#  define ECL_API __declspec(dllexport)
+# else
+#  define ECL_API __declspec(dllimport)
+# endif
+#else
+# ifdef ECL_API
+#  undef ECL_API
+# endif
+# define ECL_API
+#endif
+
 #include <ecl/object.h>
 #include <ecl/stacks.h>
 #include <ecl/external.h>

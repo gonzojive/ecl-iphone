@@ -165,7 +165,7 @@ ecl_dynamic_callback_execute(long i1, long i2, long i3, long i4, long i5, long i
 	long i_reg[MAX_INT_REGISTERS];
 	double f_reg[MAX_FP_REGISTERS];
 
-	ECL_BUILD_STACK_FRAME(frame);
+	ECL_BUILD_STACK_FRAME(frame, aux);
 
 	fun = CAR(cbk_info);
 	rtype = CADR(cbk_info);

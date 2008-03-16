@@ -71,7 +71,7 @@
 ;;;
 (setq si::*keep-documentation* nil)
 (proclaim '(optimize (safety 2) (space 3)))
-(let* ((c::*cc-flags* (concatenate 'string "-I\"@true_builddir@/c\" " c::*cc-flags*))
+(let* ((c::*cc-flags* (concatenate 'string "-DECL_API -I\"@true_builddir@/c\" " c::*cc-flags*))
        (lsp-objects (compile-if-old "build:lsp;" +lisp-module-files+
 				    :system-p t :c-file t :data-file t :h-file t
 				    ;;:shared-data-file "build:ecl.sdat"
@@ -103,8 +103,8 @@
 ;;; We do not need the -rpath flag for the library, nor -lecl.
 ;;;
 (let ((c::*ld-shared-flags* #-msvc "@SHARED_LDFLAGS@ @LDFLAGS@ @CORE_LIBS@ @LIBS@ @FASL_LIBS@"
-			    #+msvc "@SHARED_LDFLAGS@ @LDFLAGS@ @STATICLIBS@ @CLIBS@ /DEF:@DEF@")
-      (c::*cc-flags* (concatenate 'string "-I@true_builddir@/c " c::*cc-flags*)))
+			    #+msvc "@SHARED_LDFLAGS@ @LDFLAGS@ @STATICLIBS@ @CLIBS@")
+      (c::*cc-flags* (concatenate 'string "-DECL_API -I@true_builddir@/c " c::*cc-flags*)))
   (c::shared-cc (compile-file-pathname "ecl" :type :dll)
 		"c/main.@OBJEXT@"
 		"c/all_symbols2.@OBJEXT@"

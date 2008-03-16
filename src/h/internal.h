@@ -68,9 +68,9 @@ struct cl_compiler_env {
 #define cl_stack_ref(n) cl_env.stack[n]
 #define cl_stack_index() (cl_env.stack_top-cl_env.stack)
 
-#define ECL_BUILD_STACK_FRAME(name) \
-	struct ecl_stack_frame name##_aux;\
-	cl_object name=(name##_aux.t=t_frame,name##_aux.narg=name##_aux.sp=0,(cl_object)&(name##_aux));
+#define ECL_BUILD_STACK_FRAME(name,frame)	\
+	struct ecl_stack_frame frame;\
+	cl_object name=(frame.t=t_frame,frame.narg=frame.sp=0,(cl_object)(&frame))
 
 /* ffi.d */
 
@@ -128,20 +128,20 @@ struct ecl_fficall {
 	cl_object cstring;
 };
 
-enum ecl_ffi_tag ecl_foreign_type_code(cl_object type);
-enum ecl_ffi_calling_convention ecl_foreign_cc_code(cl_object cc_type);
-void ecl_fficall_prepare(cl_object return_type, cl_object arg_types, cl_object cc_type);
-void ecl_fficall_push_bytes(void *data, size_t bytes);
-void ecl_fficall_push_int(int word);
-void ecl_fficall_align(int data);
-cl_object ecl_foreign_data_ref_elt(void *p, enum ecl_ffi_tag type);
-void ecl_foreign_data_set_elt(void *p, enum ecl_ffi_tag type, cl_object value);
+extern enum ecl_ffi_tag ecl_foreign_type_code(cl_object type);
+extern enum ecl_ffi_calling_convention ecl_foreign_cc_code(cl_object cc_type);
+extern void ecl_fficall_prepare(cl_object return_type, cl_object arg_types, cl_object cc_type);
+extern void ecl_fficall_push_bytes(void *data, size_t bytes);
+extern void ecl_fficall_push_int(int word);
+extern void ecl_fficall_align(int data);
+extern cl_object ecl_foreign_data_ref_elt(void *p, enum ecl_ffi_tag type);
+extern void ecl_foreign_data_set_elt(void *p, enum ecl_ffi_tag type, cl_object value);
 
-struct ecl_fficall_reg *ecl_fficall_prepare_extra(struct ecl_fficall_reg *registers);
-void ecl_fficall_push_arg(union ecl_ffi_values *data, enum ecl_ffi_tag type);
-void ecl_fficall_execute(void *f_ptr, struct ecl_fficall *fficall, enum ecl_ffi_tag return_type);
-void ecl_dynamic_callback_call(cl_object callback_info, char* buffer);
-void* ecl_dynamic_callback_make(cl_object data, enum ecl_ffi_calling_convention cc_type);
+extern struct ecl_fficall_reg *ecl_fficall_prepare_extra(struct ecl_fficall_reg *registers);
+extern void ecl_fficall_push_arg(union ecl_ffi_values *data, enum ecl_ffi_tag type);
+extern void ecl_fficall_execute(void *f_ptr, struct ecl_fficall *fficall, enum ecl_ffi_tag return_type);
+extern void ecl_dynamic_callback_call(cl_object callback_info, char* buffer);
+extern void* ecl_dynamic_callback_make(cl_object data, enum ecl_ffi_calling_convention cc_type);
 
 /* file.d */
 
@@ -255,12 +255,6 @@ typedef int fenv_t;
 # define fedisableexcept(bits) { int cw = _controlfp(0,0); cw |= (bits); _controlfp(cw,MCW_EM); }
 # define feholdexcept(bits) { *(bits) = _controlfp(0,0); _controlfp(0xffffffff, MCW_EM); }
 # define fesetenv(bits) _controlfp(*(bits), MCW_EM)
-#endif
-
-/* unixfsys.d */
-
-#if defined(_MSC_VER) || defined(mingw32)
-extern cl_object si_get_library_pathname(void);
 #endif
 
 /*

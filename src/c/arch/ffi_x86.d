@@ -110,7 +110,7 @@ ecl_dynamic_callback_execute(cl_object cbk_info, char *arg_buffer)
 	union ecl_ffi_values output;
 	enum ecl_ffi_tag tag;
 
-	ECL_BUILD_STACK_FRAME(frame);
+	ECL_BUILD_STACK_FRAME(frame, aux);
 
 	fun = CAR(cbk_info);
 	rtype = CADR(cbk_info);

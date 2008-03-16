@@ -32,17 +32,17 @@ typedef struct bds_bd {
 		bds_overflow()
 
 #ifdef ECL_THREADS
-extern void bds_bind(cl_object symbol, cl_object value);
-extern void bds_push(cl_object symbol);
-extern void bds_unwind1();
-extern void bds_unwind_n(int n);
-extern cl_object *ecl_symbol_slot(cl_object s);
+extern ECL_API void bds_bind(cl_object symbol, cl_object value);
+extern ECL_API void bds_push(cl_object symbol);
+extern ECL_API void bds_unwind1();
+extern ECL_API void bds_unwind_n(int n);
+extern ECL_API cl_object *ecl_symbol_slot(cl_object s);
 #define SYM_VAL(s) (*ecl_symbol_slot(s))
 #if 0
 #define ECL_SET(s,v) ((s)->symbol.value=(v))
 #define ECL_SETQ(s,v) (*ecl_symbol_slot(s)=(v))
 #else
-extern cl_object ecl_set_symbol(cl_object s, cl_object v);
+extern ECL_API cl_object ecl_set_symbol(cl_object s, cl_object v);
 #define ECL_SET(s,v) (ecl_set_symbol(s,v))
 #define ECL_SETQ(s,v) (ecl_set_symbol(s,v))
 #endif
@@ -88,7 +88,7 @@ typedef struct ihs_frame {
 	cl_env.ihs_top = cl_env.ihs_top->next; \
 } while(0)
 
-extern cl_object ihs_top_function_name(void);
+extern ECL_API cl_object ihs_top_function_name(void);
 
 /***************
  * FRAME STACK
@@ -122,7 +122,7 @@ typedef struct ecl_frame {
 	cl_index	frs_sp;
 } *ecl_frame_ptr;
 
-extern ecl_frame_ptr _frs_push(register cl_object val);
+extern ECL_API ecl_frame_ptr _frs_push(register cl_object val);
 #define frs_push(val)  ecl_setjmp(_frs_push(val)->frs_jmpbuf)
 #define frs_pop() (cl_env.frs_top--)
 
