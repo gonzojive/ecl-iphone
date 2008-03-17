@@ -134,27 +134,15 @@
 # define GC_DLL
 #endif
 
-#if defined(__MINGW32__) && defined(GC_DLL)
-# ifdef GC_BUILD
-#   define GC_API __declspec(dllexport)
+#if (defined(__WATCOMC__) || defined(__MINGW32__) || defined(__DMC__) || defined(_MSC_VER)) /* && defined(GC_DLL) */
+# ifdef ECL_API
+#  define GC_API extern ECL_API
 # else
-#   define GC_API __declspec(dllimport)
-# endif
-#endif
-
-#if (defined(__DMC__) || defined(_MSC_VER)) && defined(GC_DLL)
-# ifdef GC_BUILD
-#   define GC_API extern __declspec(dllexport)
-# else
-#   define GC_API __declspec(dllimport)
-# endif
-#endif
-
-#if defined(__WATCOMC__) && defined(GC_DLL)
-# ifdef GC_BUILD
-#   define GC_API extern __declspec(dllexport)
-# else
-#   define GC_API extern __declspec(dllimport)
+#  ifdef GC_BUILD
+#    define GC_API extern __declspec(dllexport)
+#  else
+#    define GC_API extern __declspec(dllimport)
+#  endif
 # endif
 #endif
 

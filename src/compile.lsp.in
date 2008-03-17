@@ -102,16 +102,30 @@
 ;;;
 ;;; We do not need the -rpath flag for the library, nor -lecl.
 ;;;
-(let ((c::*ld-shared-flags* #-msvc "@SHARED_LDFLAGS@ @LDFLAGS@ @CORE_LIBS@ @LIBS@ @FASL_LIBS@"
-			    #+msvc "@SHARED_LDFLAGS@ @LDFLAGS@ @STATICLIBS@ @CLIBS@")
-      (c::*cc-flags* (concatenate 'string "-DECL_API -I@true_builddir@/c " c::*cc-flags*)))
-  (c::shared-cc (compile-file-pathname "ecl" :type :dll)
-		"c/main.@OBJEXT@"
-		"c/all_symbols2.@OBJEXT@"
-		"@LIBPREFIX@lsp.@LIBEXT@"
-		"@LIBPREFIX@eclmin.@LIBEXT@"
-		#+darwin
-		"-Wl,-install_name,@libdir\@/@SHAREDPREFIX@ecl.@SHAREDEXT@"))
+(let* ((c::*ld-shared-flags* #-msvc "@SHARED_LDFLAGS@ @LDFLAGS@ @CORE_LIBS@ @LIBS@ @FASL_LIBS@"
+			     #+msvc "@SHARED_LDFLAGS@ @LDFLAGS@ @STATICLIBS@ @CLIBS@")
+       (c::*cc-flags* (concatenate 'string "-DECL_API -I@true_builddir@/c " c::*cc-flags*))
+       (extra-args nil))
+  #+darwin
+  (push "-Wl,-install_name,@libdir\@/@SHAREDPREFIX@ecl.@SHAREDEXT@"
+	extra-args)
+  #+(or mingw32 cygwin)
+  (progn
+    ;; We need these two to force dllwrap to export the symbols
+    ;; in these libraries. Otherwise it will not be possible to
+    ;; call functions from GMP or GC in code that embeds ECL.
+    (when (probe-file "@LIBPREFIX@eclgc.@LIBEXT@")
+      (push "@LIBPREFIX@eclgc.@LIBEXT@" extra-args))
+    (when (probe-file "@LIBPREFIX@eclgmp.@LIBEXT@")
+      (push "@LIBPREFIX@eclgmp.@LIBEXT@" extra-args)))
+  (print extra-args)
+  (apply #'c::shared-cc
+	 (compile-file-pathname "ecl" :type :dll)
+	 "c/main.@OBJEXT@"
+	 "c/all_symbols2.@OBJEXT@"
+	 "@LIBPREFIX@lsp.@LIBEXT@"
+	 "@LIBPREFIX@eclmin.@LIBEXT@"
+	 extra-args))
 
 ;;;
 ;;; * Compile and link Common-Lisp to C compiler

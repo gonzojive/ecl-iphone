@@ -46,6 +46,8 @@ ECL_SOCKETS =
 ECL_RT      =
 # Defsystem support
 ECL_DEFSYS  =
+# Profiling
+ECL_PROFILE =
 
 # <END> (ECL configuration)
 # =============================================================
@@ -147,6 +149,10 @@ ECL_FEATURES = (cons :wants-rt $(ECL_FEATURES))
 !ifdef ECL_DEFSYS
 ECL_MODULES  = $(ECL_MODULES) defsystem
 ECL_FEATURES = (cons :wants-defsystem $(ECL_FEATURES))
+!endif
+!ifdef ECL_PROFILE
+ECL_MODULES  = $(ECL_MODULES) profile
+ECL_FEATURES = (cons :wants-profile $(ECL_FEATURES))
 !endif
 
 !MESSAGE $(ECL_MODULES)

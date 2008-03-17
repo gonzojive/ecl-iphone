@@ -99,7 +99,7 @@
   (let ((lib-file (compile-file-pathname o-pathname :type :lib)))
     (safe-system
      (format nil
-	     "dllwrap --export-all-symbols -o ~S -L~S ~{~S ~} ~@?"
+	     "dllwrap -o ~S -L~S ~{~S ~} ~@?"
 	     (si::coerce-to-filename o-pathname)
 	     (fix-for-mingw (ecl-library-directory))
 	     options

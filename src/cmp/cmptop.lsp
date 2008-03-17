@@ -123,7 +123,7 @@
     (wt-nl1 "#ifdef __cplusplus")
     (wt-nl1 "extern \"C\"")
     (wt-nl1 "#endif")
-    (wt-nl1 "void " name "(cl_object flag)")
+    (wt-nl1 "ECL_DLLEXPORT void " name "(cl_object flag)")
     (wt-nl1 "{ VT" *reservation-cmacro* " VLEX" *reservation-cmacro*
             " CLSR" *reservation-cmacro*)
     (wt-nl "cl_object value0;")
@@ -524,7 +524,7 @@
     (wt-comment "... shares definition with " (fun-name (fun-shares-with fun)))
     (return-from t3local-fun))
   (cond ((fun-exported fun)
-	 (wt-nl-h #+msvc "__declspec(dllexport) " "cl_object " cfun "(")
+	 (wt-nl-h "ECL_DLLEXPORT cl_object " cfun "(")
 	 (wt-nl1 "cl_object " cfun "("))
 	(t
 	 (wt-nl-h "static cl_object " cfun "(")

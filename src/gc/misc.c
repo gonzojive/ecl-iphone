@@ -465,7 +465,7 @@ size_t GC_get_bytes_since_gc GC_PROTO(())
     return ((size_t) WORDS_TO_BYTES(GC_words_allocd));
 }
 
-size_t GC_get_total_bytes GC_PROTO(())
+GC_API size_t GC_get_total_bytes GC_PROTO(())
 {
     return ((size_t) WORDS_TO_BYTES(GC_words_allocd+GC_words_allocd_before_gc));
 }
