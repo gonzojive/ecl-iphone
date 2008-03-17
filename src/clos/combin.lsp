@@ -47,7 +47,7 @@
 ;;;  5) Ordinary forms are turned into lambda forms, much like
 ;;;	what happens with the content of MAKE-METHOD.
 ;;;
-(defun effective-method-function (form)
+(defun effective-method-function (form &optional top-level)
   (cond ((functionp form)
 	 form)
 	((method-p form)
@@ -275,7 +275,7 @@
 			     "Method qualifiers ~S are not allowed in the method~
 			      combination ~S." .method-qualifiers. ,name)))))
 	      ,@group-after
-	      (effective-method-function ,@body))))
+	      (effective-method-function ,@body t))))
       )))
 
 (defmacro define-method-combination (name &body body)
