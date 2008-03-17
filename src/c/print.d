@@ -1846,7 +1846,7 @@ potential_number_p(cl_object strng, int base)
 	strm = stream_or_default_output(strm);
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) != t_stream)
-		funcall(5, @'ext::stream-write-string', strm, strng, start, end);
+		funcall(5, @'gray::stream-write-string', strm, strng, start, end);
 	else
 #endif
 		si_do_write_sequence(strng, strm, start, end);
@@ -1874,7 +1874,7 @@ potential_number_p(cl_object strng, int base)
  	strm = stream_or_default_output(strm);
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) != t_stream) {
-		return funcall(2, @'ext::stream-fresh-line', strm);
+		return funcall(2, @'gray::stream-fresh-line', strm);
 	}
 #endif
 	if (ecl_file_column(strm) == 0)
@@ -1889,7 +1889,7 @@ potential_number_p(cl_object strng, int base)
  	strm = stream_or_default_output(strm);
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) != t_stream) {
-		return funcall(2, @'ext::stream-finish-output', strm);
+		return funcall(2, @'gray::stream-finish-output', strm);
 	}
 #endif
 	ecl_force_output(strm);
@@ -1921,7 +1921,7 @@ cl_write_byte(cl_object integer, cl_object binary_output_stream)
 @
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(stream) != t_stream)
-		return funcall(5, @'ext::stream-write-sequence', stream, sequence, start, end);
+		return funcall(5, @'gray::stream-write-sequence', stream, sequence, start, end);
 	else
 #endif
 		return si_do_write_sequence(sequence, stream, start, end);
@@ -1965,7 +1965,7 @@ ecl_terpri(cl_object strm)
 	strm = stream_or_default_output(strm);
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) != t_stream) {
-		return funcall(2, @'ext::stream-terpri', strm);
+		return funcall(2, @'gray::stream-terpri', strm);
 	}
 #endif
 	ecl_write_char('\n', strm);

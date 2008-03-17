@@ -87,7 +87,7 @@ ecl_input_stream_p(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
-		return !Null(funcall(2, @'ext::stream-input-p', strm));
+		return !Null(funcall(2, @'gray::input-stream-p', strm));
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
@@ -135,7 +135,7 @@ ecl_output_stream_p(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
-		return !Null(funcall(2, @'ext::stream-output-p', strm));
+		return !Null(funcall(2, @'gray::output-stream-p', strm));
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);
@@ -185,7 +185,7 @@ cl_stream_element_type(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance)
-		return funcall(2, @'ext::stream-elt-type', strm);
+		return funcall(2, @'gray::stream-element-type', strm);
 #endif
 	if (type_of(strm) != t_stream)
 		FEtype_error_stream(strm);
@@ -516,7 +516,7 @@ static void flush_output_stream_binary(cl_object strm);
 @
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		return funcall(2, @'ext::stream-close', strm);
+		return funcall(2, @'gray::close', strm);
 	}
 #endif
 	if (type_of(strm) != t_stream) 
@@ -675,7 +675,7 @@ ecl_write_byte(cl_object c, cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		funcall(3, @'ext::stream-write-byte', strm, c);
+		funcall(3, @'gray::stream-write-byte', strm, c);
 		return;
 	}
 #endif
@@ -922,7 +922,7 @@ ecl_read_byte(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		return funcall(2, @'ext::stream-read-byte', strm);
+		return funcall(2, @'gray::stream-read-byte', strm);
 	}
 #endif
 	if (type_of(strm) != t_stream) 
@@ -1060,7 +1060,7 @@ ecl_read_char(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		cl_object c = funcall(2, @'ext::stream-read-char', strm);
+		cl_object c = funcall(2, @'gray::stream-read-char', strm);
 		return CHARACTERP(c)? CHAR_CODE(c) : EOF;
 	}
 #endif
@@ -1176,7 +1176,7 @@ ecl_peek_char(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		cl_object c = funcall(2, @'ext::stream-peek-char', strm);
+		cl_object c = funcall(2, @'gray::stream-peek-char', strm);
 		return CHARACTERP(c)? CHAR_CODE(c) : EOF;
 	}
 #endif
@@ -1285,7 +1285,7 @@ ecl_unread_char(int c, cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		funcall(3, @'ext::stream-unread-char', strm, CODE_CHAR(c));
+		funcall(3, @'gray::stream-unread-char', strm, CODE_CHAR(c));
 		return;
 	}
 #endif
@@ -1369,7 +1369,7 @@ ecl_write_char(int c, cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		funcall(3, @'ext::stream-write-char', strm, CODE_CHAR(c));
+		funcall(3, @'gray::stream-write-char', strm, CODE_CHAR(c));
 		return c;
 	}
 #endif
@@ -1650,7 +1650,7 @@ ecl_force_output(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		funcall(2, @'ext::stream-force-output', strm);
+		funcall(2, @'gray::stream-force-output', strm);
 		return;
 	}
 #endif
@@ -1717,7 +1717,7 @@ ecl_clear_input(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		funcall(2, @'ext::stream-clear-input', strm);
+		funcall(2, @'gray::stream-clear-input', strm);
 		return;
 	}
 #endif
@@ -1791,7 +1791,7 @@ ecl_clear_output(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		funcall(2, @'ext::stream-clear-output',strm);
+		funcall(2, @'gray::stream-clear-output',strm);
 		return;
 	}
 #endif
@@ -1954,7 +1954,7 @@ ecl_listen_stream(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		cl_object flag = funcall(2, @'ext::stream-listen', strm);
+		cl_object flag = funcall(2, @'gray::stream-listen', strm);
 		return !(flag == Cnil);
 	}
 #endif
@@ -2310,7 +2310,7 @@ ecl_file_column(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		cl_object col = funcall(2, @'ext::stream-line-column', strm);
+		cl_object col = funcall(2, @'gray::stream-line-column', strm);
 		/* FIXME! The Gray streams specifies NIL is a valid
 		 * value but means "unknown". Should we make it
 		 * zero? */
@@ -2565,10 +2565,7 @@ cl_streamp(cl_object strm)
 {
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) == t_instance) {
-		cl_object this_class = CLASS_OF(strm);
-		cl_object stream_class = cl_find_class(1, @'stream');
-		cl_object test = funcall(3, @'si::subclassp', this_class, stream_class);
-		@(return (Null(test)? Cnil : Ct))
+		return funcall(2, @'gray::streamp', strm);
 	}
 #endif
 	@(return ((type_of(strm) == t_stream) ? Ct : Cnil))
@@ -2787,7 +2784,7 @@ cl_interactive_stream_p(cl_object strm)
 	t = type_of(strm);
 #ifdef ECL_CLOS_STREAMS
 	if (t == t_instance)
-		return funcall(2, @'ext::stream-interactive-p', strm);
+		return funcall(2, @'gray::stream-interactive-p', strm);
 #endif
 	if (t != t_stream)
 		FEtype_error_stream(strm);

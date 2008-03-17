@@ -143,6 +143,9 @@ struct cl_core_struct {
 #ifdef CLOS
 	cl_object clos_package;
 #endif
+#ifdef ECL_CLOS_STREAMS
+	cl_object gray_package;
+#endif
 #ifdef ECL_THREADS
 	cl_object mp_package;
 #endif

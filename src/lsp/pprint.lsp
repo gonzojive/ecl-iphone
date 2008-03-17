@@ -30,7 +30,7 @@
 
 (defconstant default-line-length 80)
 
-(defclass pretty-stream (fundamental-character-output-stream) (
+(defclass pretty-stream (gray:fundamental-character-output-stream) (
   ;;
   ;; Where the output is going to finally go.
   ;;
@@ -128,14 +128,14 @@
 
 ;;;; Stream interface routines.
 
-(defmethod ext::stream-write-char ((stream pretty-stream) char)
+(defmethod gray::stream-write-char ((stream pretty-stream) char)
   (pretty-out stream char))
 
-(defmethod ext::stream-force-output ((stream pretty-stream))
+(defmethod gray::stream-force-output ((stream pretty-stream))
   ;(force-pretty-output stream)
 )
 
-(defmethod ext::stream-clear-output ((stream pretty-stream))
+(defmethod gray::stream-clear-output ((stream pretty-stream))
   (clear-output (pretty-stream-target stream)))
 
 (defun pretty-out (stream char)

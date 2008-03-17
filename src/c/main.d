@@ -268,6 +268,11 @@ cl_boot(int argc, char **argv)
 					  CONS(make_constant_base_string("MULTIPROCESSING"), Cnil),
 					  CONS(cl_core.lisp_package, Cnil));
 #endif
+#ifdef ECL_CLOS_STREAMS
+	cl_core.gray_package = ecl_make_package(make_constant_base_string("GRAY"),
+						Cnil,
+						CONS(cl_core.lisp_package, Cnil));
+#endif
 
 	Cnil->symbol.hpack = cl_core.lisp_package;
 	cl_import2(Cnil, cl_core.lisp_package);

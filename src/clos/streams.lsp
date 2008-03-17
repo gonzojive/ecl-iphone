@@ -10,7 +10,7 @@
 ;;;;    See file '../Copyright' for full details.
 ;;;;        The CLOS IO library.
 
-(in-package "SI")
+(in-package "GRAY")
 
 ;;;
 ;;; This is the generic function interface for CLOS streams.
@@ -41,13 +41,13 @@
    "This is like CL:CLEAR-OUTPUT, but for Gray streams: clear the given
   output STREAM. The default method does nothing."))
 
-(defgeneric stream-close (stream &key abort)
+(defgeneric close (stream &key abort)
   (:documentation
    "Close the given STREAM. No more I/O may be performed, but
   inquiries may still be made. If :ABORT is true, an attempt is made
   to clean up the side effects of having created the stream."))
 
-(defgeneric stream-elt-type (stream)
+(defgeneric stream-element-type (stream)
   (:documentation
    "Return a type specifier for the kind of object returned by the
   STREAM. The class FUNDAMENTAL-CHARACTER-STREAM provides a default method
@@ -71,8 +71,11 @@
   otherwise. Used by FRESH-LINE. The default method uses
   STREAM-START-LINE-P and STREAM-TERPRI."))
 
-(defgeneric stream-input-p (stream)
+(defgeneric input-stream-p (stream)
   (:documentation "Can STREAM perform input operations?"))
+
+(defgeneric stream-p (stream)
+  (:documentation "Is this object a STREAM?"))
 
 (defgeneric stream-interactive-p (stream)
   (:documentation "Is stream interactive (For instance, a tty)?"))
@@ -95,13 +98,13 @@
   define their own method since it will usually be trivial and will
   always be more efficient than the default method."))
 
-(defgeneric stream-open-p (stream)
+(defgeneric open-stream-p (stream)
   (:documentation
    "Return true if STREAM is not closed. A default method is provided
   by class FUNDAMENTAL-STREAM which returns true if CLOSE has not been
   called on the stream."))
 
-(defgeneric stream-output-p (stream)
+(defgeneric output-stream-p (stream)
   (:documentation "Can STREAM perform output operations?"))
 
 (defgeneric stream-peek-char (stream)
@@ -211,7 +214,7 @@
 ;;;
 
 (defclass fundamental-stream (standard-object stream)
-  ((open-p :initform t :accessor stream-open-p))
+  ((open-p :initform t :accessor open-stream-p))
   (:documentation "the base class for all CLOS streams"))
 
 (defclass fundamental-input-stream (fundamental-stream) nil)
@@ -277,21 +280,30 @@
 
 ;; CLOSE
 
-(defmethod stream-close ((stream fundamental-stream) &key abort)
+(defmethod close ((stream fundamental-stream) &key abort)
   (declare (ignore abort))
-  (setf (stream-open-p stream) nil)
+  (setf (open-stream-p stream) nil)
   t)
 
+(defmethod close ((stream stream) &key abort)
+  (cl:close stream :abort abort))
+
+(defmethod close ((non-stream t) &key abort)
+  (declare (ignore abort))
+  (error 'type-error :datum non-stream :expected-type 'stream))
 
 ;; STREAM-ELEMENT-TYPE
 
-(defmethod stream-elt-type ((stream fundamental-character-stream))
+(defmethod stream-element-type ((stream fundamental-character-stream))
   'character)
 
-(defmethod stream-elt-type ((stream stream))
-  (bug-or-error stream 'stream-elt-type))
+(defmethod stream-element-type ((stream fundamental-stream))
+  (bug-or-error stream 'stream-element-type))
 
-(defmethod stream-elt-type ((non-stream t))
+(defmethod stream-element-type ((stream stream))
+  (cl:stream-element-type stream))
+
+(defmethod stream-element-type ((non-stream t))
   (error 'type-error :datum non-stream :expected-type 'stream))
 
 
@@ -325,16 +337,16 @@
 
 ;; INPUT-STREAM-P
 
-(defmethod stream-input-p ((stream fundamental-stream))
+(defmethod input-stream-p ((stream fundamental-stream))
   nil)
 
-(defmethod stream-input-p ((stream fundamental-input-stream))
+(defmethod input-stream-p ((stream fundamental-input-stream))
   t)
 
-(defmethod stream-input-p ((stream stream))
-  (bug-or-error stream 'stream-input-p))
+(defmethod input-stream-p ((stream stream))
+  (cl:input-stream-p stream))
 
-(defmethod stream-input-p ((non-stream t))
+(defmethod input-stream-p ((non-stream t))
   (error 'type-error :datum non-stream :expected-type 'stream))
 
 
@@ -363,28 +375,25 @@
 
 ;; OPEN-STREAM-P
 
-(defmethod stream-open-p ((stream fundamental-stream))
-  (stream-open-p stream))
+(defmethod open-stream-p ((stream stream))
+  (cl:open-stream-p stream))
 
-(defmethod stream-open-p ((stream stream))
-  (bug-or-error stream 'open-stream-p))
-
-(defmethod stream-open-p ((non-stream t))
+(defmethod open-stream-p ((non-stream t))
   (error 'type-error :datum non-stream :expected-type 'stream))
 
 
 ;; OUTPUT-STREAM-P
 
-(defmethod stream-output-p ((stream fundamental-stream))
+(defmethod output-stream-p ((stream fundamental-stream))
   nil)
 
-(defmethod stream-output-p ((stream fundamental-output-stream))
+(defmethod output-stream-p ((stream fundamental-output-stream))
   t)
 
-(defmethod stream-output-p ((stream stream))
-  (bug-or-error stream 'stream-output-p))
+(defmethod output-stream-p ((stream stream))
+  (cl:output-stream-p stream))
 
-(defmethod stream-output-p ((non-stream t))
+(defmethod output-stream-p ((non-stream t))
   (error 'type-error :datum non-stream :expected-type 'stream))
 
 
@@ -451,6 +460,14 @@
 (defmethod stream-start-line-p ((stream fundamental-character-output-stream))
   (eql (stream-line-column stream) 0))
 
+
+;; STREAM-P
+
+(defmethod streamp ((stream stream))
+  t)
+
+(defmethod streamp ((no-stream t))
+  nil)
 
 ;; WRITE-BYTE
 

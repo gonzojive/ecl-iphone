@@ -55,6 +55,19 @@ ECL 0.9k:
 
  - Ported CMUCL's profiler as a contributed package.
 
+ - Gray streams are now implemented in a separate package, called GRAY, which
+   exports symbols such as FUNDAMENTAL-STREAM or STREAM-READ-CHAR.
+
+ - The functions CLOSE, {OPEN,INPUT,OUTPUT}-STREAM-P, STREAM-P and
+   STREAM-ELEMENT-TYPE are now offered in two flavors. The versions exported by
+   the COMMON-LISP package are ordinary functions, the versions in the GRAY
+   package are generic functions that can be specialized to new classes. The
+   ordinary functions will invoke the generic version when passed a generic
+   stream. Note that, for instance, CL:CLOSE and GRAY:CLOSE are not the same
+   symbol. This means you might need to shadow-import the symbols associated to
+   generic versions in the packages where methods on these functions are
+   defined.
+
 * CLOS:
 
  - When caching generic function calls, ECL now uses a thread-local hash table

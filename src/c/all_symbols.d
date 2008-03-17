@@ -7,6 +7,7 @@
 #define CL_PACKAGE 0
 #define SI_PACKAGE 4
 #define EXT_PACKAGE SI_PACKAGE
+#define GRAY_PACKAGE 32
 #define KEYWORD_PACKAGE 8
 #define MP_PACKAGE 12
 #define CLOS_PACKAGE 16
@@ -32,6 +33,7 @@
 #define CLOS_ORDINARY	CLOS_PACKAGE | ORDINARY_SYMBOL
 #define CLOS_SPECIAL	CLOS_PACKAGE | SPECIAL_SYMBOL
 #define KEYWORD		KEYWORD_PACKAGE | CONSTANT_SYMBOL
+#define GRAY_ORDINARY	GRAY_PACKAGE | ORDINARY_SYMBOL
 
 #include "symbols_list.h"
 
@@ -176,7 +178,7 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 	case CONSTANT_SYMBOL: stp = stp_constant; break;
 	case FORM_SYMBOL: form = 1; stp = stp_ordinary;
 	}
-	switch (code & 28) {
+	switch (code & ~(int)3) {
 	case CL_PACKAGE: package = cl_core.lisp_package; break;
 	case SI_PACKAGE: package = cl_core.system_package; break;
 	case KEYWORD_PACKAGE: package = cl_core.keyword_package; break;
@@ -185,6 +187,9 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 #endif
 #ifdef CLOS
 	case CLOS_PACKAGE: package = cl_core.clos_package; break;
+#endif
+#ifdef ECL_CLOS_STREAMS
+	case GRAY_PACKAGE: package = cl_core.gray_package; break;
 #endif
 	}
 	s->symbol.t = t_symbol;
@@ -203,8 +208,14 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 		ecl_sethash(s->symbol.name, package->pack.external, s);
 		ECL_SET(s, s);
 	} else {
+		int intern_flag;
 		ECL_SET(s, value);
-		cl_import2(s, package);
+		if (ecl_find_symbol(s->symbol.name, package, &intern_flag) != Cnil
+		    && intern_flag == INHERITED) {
+			ecl_shadowing_import(s, package);
+		} else {
+			cl_import2(s, package);
+		}
 		cl_export2(s, package);
 	}
 	if (!(s->symbol.isform = form) && fun) {

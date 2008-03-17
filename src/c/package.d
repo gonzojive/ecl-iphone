@@ -652,6 +652,8 @@ ecl_shadowing_import(cl_object s, cl_object p)
 	}
 	p->pack.shadowings = CONS(s, p->pack.shadowings);
 	ecl_sethash(s->symbol.name, p->pack.internal, s);
+	if (Null(s->symbol.hpack))
+		s->symbol.hpack = p;
  OUTPUT:
 	PACKAGE_UNLOCK(p);
 }
