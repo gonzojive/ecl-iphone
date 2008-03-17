@@ -124,7 +124,7 @@ extern __thread struct cl_env_struct * cl_env_p;
 #define cl_env (*cl_env_p)
 # else
 #define cl_env (*ecl_process_env())
-extern struct cl_env_struct *ecl_process_env(void) __attribute__((const));
+extern ECL_API struct cl_env_struct *ecl_process_env(void) __attribute__((const));
 # endif
 #else
 extern ECL_API struct cl_env_struct cl_env;
