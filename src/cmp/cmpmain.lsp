@@ -82,7 +82,7 @@
 	   (si::coerce-to-filename o-pathname)
 	   (fix-for-mingw (ecl-library-directory))
 	   options
-	   *ld-flags* (fix-for-mingw (ecl-library-directory)))))
+	   *ld-flags*)))
 
 #+dlopen
 (defun shared-cc (o-pathname &rest options)
@@ -94,7 +94,7 @@
 	   (si::coerce-to-filename o-pathname)
 	   (fix-for-mingw (ecl-library-directory))
 	   options
-	   *ld-shared-flags* (fix-for-mingw (ecl-library-directory))))
+	   *ld-shared-flags*))
   #+(or mingw32)
   (let ((lib-file (compile-file-pathname o-pathname :type :lib)))
     (safe-system
@@ -103,8 +103,7 @@
 	     (si::coerce-to-filename o-pathname)
 	     (fix-for-mingw (ecl-library-directory))
 	     options
-	     *ld-shared-flags*
-	     (fix-for-mingw (ecl-library-directory))))))
+	     *ld-shared-flags*))))
 
 #+dlopen
 (defun bundle-cc (o-pathname init-name &rest options)
@@ -118,8 +117,7 @@
 	   options
 	   #-msvc *ld-bundle-flags*
 	   #+msvc (concatenate 'string *ld-bundle-flags* " /EXPORT:"
-			       init-name)
-	   (ecl-library-directory)))
+			       init-name)))
   #+(or mingw32)
   (safe-system
    (format nil
@@ -127,8 +125,7 @@
 	   (si::coerce-to-filename o-pathname)
 	   (fix-for-mingw (ecl-library-directory))
 	   options
-	   *ld-bundle-flags*
-	   (fix-for-mingw (ecl-library-directory)))))
+	   *ld-bundle-flags*)))
 
 (defconstant +lisp-program-header+ "
 #include <ecl/ecl.h>
