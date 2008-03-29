@@ -75,6 +75,9 @@ ECL 0.9k:
 
 * Bugs fixed:
 
+ - ASDF:MAKE-BUILD now handles better the case of a monolithic FASL that
+   has to include a number of other subsystems.
+
  - The bignums produced by RANDOM did not have enough random bits.
 
  - ECL formerly accepted spaces between the comma and the @ and . characters

@@ -12,85 +12,81 @@
 
 (in-package :asdf)
 
-(defclass load-record-op (operation) ())
+;;;
+;;; COMPILE-OP / LOAD-OP
+;;;
+;;; We change these operations to produce both system and FASL files.
+;;;
 
-(defmethod operation-done-p ((o load-record-op) (c component))
-  nil)
+(defmethod initialize-instance :after ((instance compile-op) &key &allow-other-keys)
+  (setf (slot-value instance 'system-p) t))
 
-(defmethod component-depends-on ((o load-record-op) (c component))
-  (let ((deps (component-original-depends-on c))
-	(c-deps (call-next-method)))
-    (when (and deps (not (typep c 'system)))
-      (push `(load-record-op ,@deps) c-deps))
-    c-deps))
-
-(defun load-file-list (component)
-  (let* ((op (make-instance 'load-record-op))
-	 (steps (traverse op component)))
-    (loop for (o . c) in steps
-	  when (typep c 'cl-source-file)
-	  collect c)))
-
-(defclass build-op (compile-op)
-  ((type :initarg :type :initform :fasl :accessor build-op-type)
-   (monolithic :initarg :monolithic :initform t :accessor build-op-monolithic)
-   (args :initarg :args :initform nil :accessor build-op-args)))
-
-(defmethod initialize-instance :after ((instance build-op) &rest initargs &key &allow-other-keys)
-  (setf (slot-value instance 'system-p) t)
-  (let ((args (remove-keys '(type) (slot-value instance 'original-initargs)))
-	(sub-type (build-op-type instance)))
-    (case sub-type
-      ((:fasl :dll :shared-library) (when (build-op-monolithic instance) (setf sub-type :lib)))
-      (:program (setf sub-type :lib))
-      (t))
-    (setf (slot-value instance 'original-initargs)
-	  (append `(:type ,sub-type)
-		  args))))
-
-(defmethod component-depends-on ((o build-op) (c component))
-  (let ((deps (component-original-depends-on c))
-	(c-deps (call-next-method)))
-    (when deps
-      (push `(build-op ,@deps) c-deps))
-    c-deps))
-
-(defmethod output-files ((o build-op) (c cl-source-file))
+(defmethod output-files ((o compile-op) (c cl-source-file))
   (list (compile-file-pathname (component-pathname c) :type :object)))
 
-(defun get-object-files (component)
-  (loop for c in (load-file-list component)
-	collect (car (output-files (make-instance 'build-op) c))))
+(defmethod perform ((o load-op) (c cl-source-file))
+  (loop for i in (input-files o c)
+	collect (let ((output (compile-file-pathname i)))
+		  (c:build-fasl output :lisp-files (list i))
+		  (load output))))
 
-(defmethod output-files ((o build-op) (c system))
-  (list (merge-pathnames (component-pathname c)
-			 (compile-file-pathname (component-name c) :type (build-op-type o)))))
+(defmethod output-files ((o load-op) (c cl-source-file))
+  (loop for i in (input-files o c)
+	collect (compile-file-pathname i :type :fasl)))
 
-(defmethod input-files ((o build-op) (c system))
-  (append (get-object-files c)
-	  (and (component-original-depends-on c)
-	       (build-op-monolithic o)
-	       (loop for d in (component-original-depends-on c)
-		     collect (car (output-files (make-instance 'build-op :type :lib) (find-system d)))))))
+;;;
+;;; BUNDLE-OP
+;;;
 
-(defmethod perform ((o build-op) (c system))
-  (let ((obj-files (get-object-files c))
-	(out-file (car (output-files o c)))
-	(deps (component-original-depends-on c)))
-    (when (and deps (build-op-monolithic o))
-      (setq obj-files
-	    (append (loop for d in deps
-			  collect (if (symbolp d) d (make-symbol d)))
-		    obj-files)))
-    (apply #'c::builder (build-op-type o) out-file :lisp-files obj-files (build-op-args o))))
+(defclass bundle-op (operation)
+  ((type :initarg :type :initform :fasl :accessor bundle-op-type)
+   (monolithic :initarg :monolithic :initform nil :accessor bundle-op-monolithic)
+   (build-args :initarg :args :initform nil :accessor bundle-op-build-args)))
 
-(defmethod traverse ((o build-op) (c system))
-  (let* ((load-tree (traverse (make-instance 'load-source-op :parent o) c))
+(defmethod initialize-instance :after ((instance bundle-op) &rest initargs &key &allow-other-keys)
+  (setf (bundle-op-build-args instance)
+	(remove-keys '(type monolithic) (slot-value instance 'original-initargs))))
+
+(defun bundle-components (bundle system)
+  ;; Using LOAD-OP we gather all the components that are to be compiled
+  ;; and loaded, as well as the right ordering. Out of these components
+  ;; we can select the ones we want.
+  (let* ((op-list (traverse (make-instance 'load-op :force t) system)))
+    (loop for (op . component) in op-list
+	  when (and (typep op 'load-op)
+		    (or (bundle-op-monolithic bundle)
+			(eq (component-system component) system)))
+	  collect component)))
+
+(defmethod input-files ((o bundle-op) (c system))
+  (loop for i in (bundle-components o c)
+	with aux-op = (make-instance 'compile-op)
+	nconc (output-files aux-op i)))
+
+(defmethod output-files ((o bundle-op) (c system))
+  (let ((name (component-name c)))
+    (when (bundle-op-monolithic o)
+      (setf name (concatenate 'base-string name "-mono")))
+    (list
+     (merge-pathnames (compile-file-pathname name :type (bundle-op-type o))
+		      (component-relative-pathname c)))))
+
+(defmethod perform ((o bundle-op) (c t))
+  nil)
+
+(defmethod perform ((o bundle-op) (c system))
+  (let* ((object-files (input-files o c))
+	 (output (first (output-files o c))))
+    (apply #'c::builder (bundle-op-type o) output :lisp-files object-files
+	   (bundle-op-build-args o))))
+
+(defmethod traverse ((o bundle-op) (c system))
+  (let* ((load-tree (traverse (make-instance 'compile-op :parent o) c))
 	 (tree (call-next-method)))
     (append load-tree tree)))
 
 (defun make-build (&rest args)
-  (apply #'operate 'build-op args))
+  (apply #'operate 'bundle-op args))
 
-(dolist (sym '(build-op make-build))
-  (export sym))
+(export 'make-build)
+(export 'build-op)
