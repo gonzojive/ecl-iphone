@@ -509,3 +509,9 @@
 (defmethod stream-terpri ((stream fundamental-character-output-stream))
   (stream-write-char stream #\Newline))
 
+(let ((p (find-package "GRAY")))
+  (do-external-symbols (s (find-package "COMMON-LISP"))
+    (unless (member s '(cl:close cl:stream-element-type cl:input-stream-p
+			cl:open-stream-p cl:output-stream-p cl:streamp))
+      (export s p))))
+

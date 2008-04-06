@@ -64,9 +64,11 @@ ECL 0.9k:
    package are generic functions that can be specialized to new classes. The
    ordinary functions will invoke the generic version when passed a generic
    stream. Note that, for instance, CL:CLOSE and GRAY:CLOSE are not the same
-   symbol. This means you might need to shadow-import the symbols associated to
-   generic versions in the packages where methods on these functions are
-   defined.
+   symbol. This means, if you want to specialize CLOSE, STREAM-ELEMENT-TYPE,
+   etc, you might have to use the package "GRAY", as in
+	(defpackage "FOO" (:use "GRAY"))
+   or shadow import the symbols associated to generic versions in the packages
+   where methods on these functions are defined.
 
 * CLOS:
 
