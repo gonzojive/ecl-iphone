@@ -100,7 +100,7 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
  * The character type
  */
 #ifdef ECL_UNICODE
-#define	CHAR_CODE_LIMIT	1114111	/*  unicode character code limit  */
+#define	CHAR_CODE_LIMIT	1114112	/*  unicode character code limit  */
 #else
 #define	CHAR_CODE_LIMIT	256	/*  unicode character code limit  */
 #endif
