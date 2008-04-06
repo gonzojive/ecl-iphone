@@ -687,6 +687,14 @@ dir_files(cl_object basedir, cl_object pathname)
 		char *text = new->base_string.self;
 		if (file_kind(text, TRUE) == @':directory')
 			continue;
+		if (ecl_member_char(':', new)) {
+			/* File names are allowed to have ':', but ECL
+			 * interprets colons as separators for device names
+			 * By prepending the name with a ':', we set the device
+			 * to NIL and parse the file name properly */
+			new = si_base_string_concatenate(2, make_constant_base_string(":"),
+							 new);
+		}
 		new = cl_pathname(new);
 		if (Null(cl_pathname_match_p(new, mask)))
 			continue;
