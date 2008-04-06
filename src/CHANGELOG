@@ -110,6 +110,15 @@ ECL 0.9k:
    ECL now assumes a standard Unix filesystem structure, this should pose no
    problem. For nonstandard locations, you will have to define LD_LIBRARY_PATH
 
+ - ECL now allows directory components and pathname names and types to have
+   colon in their strings. A leading colon disambiguates in the namestring
+   will be use to disambiguate.
+	":foo:bar"		NAME="foo:bar"
+	"foo:bar"		DEVICE="foo", NAME="bar" (physical pathname)
+	"foo:bar"		HOST="foo", NAME="bar" (logical pathname)
+	"/e/foo:bar"		DIR=(:ABSOLUTE "e"), NAME="foo:bar"
+	"/e/foo:bar/txt"	DIR=(:ABSOLUTE "e" "foo:bar"), NAME="txt"
+
 * System design:
 
  - We introduce a new kind of lisp objects, the stack frames. These are objects

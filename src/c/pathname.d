@@ -218,6 +218,8 @@ tilde_expand(cl_object pathname)
 #define WORD_LOGICAL 8
 #define WORD_SEARCH_LAST_DOT 16
 #define WORD_ALLOW_LEADING_DOT 32
+#define WORD_DISALLOW_SLASH 64
+#define WORD_DISALLOW_SEMICOLON 128
 
 static cl_object
 make_one(cl_object s, cl_index start, cl_index end)
@@ -338,13 +340,13 @@ parse_word(cl_object s, delim_fn delim, int flags, cl_index start,
 				wild_inferiors = (i > start && ecl_char(s, i-1) == '*');
 				valid_char = TRUE; /* single "*" */
 			}
-		}
-#if 0
-		else if (flags & WORD_LOGICAL)
-			valid_char = is_upper(c) || is_digit(c) || c == '-';
-#endif
-		else
+		} else if (c == ';' && (flags & WORD_DISALLOW_SEMICOLON)) {
+			valid_char = 0;
+		} else if (c == '/' && (flags & WORD_DISALLOW_SLASH)) {
+			valid_char = 0;
+		} else {
 			valid_char = c != 0;
+		}
 		if (!valid_char) {
 			*end_of_word = start;
 			return @':error';
@@ -480,8 +482,8 @@ ecl_parse_namestring(cl_object s, cl_index start, cl_index end, cl_index *ep,
 	 * there is no supplied *logical* host name. All other failures
 	 * result in Cnil as output.
 	 */
-	host = parse_word(s, is_colon, WORD_LOGICAL | WORD_INCLUDE_DELIM,
-			  start, end, ep);
+	host = parse_word(s, is_colon, WORD_LOGICAL | WORD_INCLUDE_DELIM |
+			  WORD_DISALLOW_SEMICOLON, start, end, ep);
 	if (default_host != Cnil) {
 		if (host == Cnil || host == @':error')
 			host = default_host;
@@ -539,8 +541,8 @@ ecl_parse_namestring(cl_object s, cl_index start, cl_index end, cl_index *ep,
 	 *	[[device:[//hostname]]/][directory-component/]*[pathname-name][.pathname-type]
 	 */
 	logical = FALSE;
-	device = parse_word(s, is_colon, WORD_INCLUDE_DELIM|WORD_EMPTY_IS_NIL,
-			    start, end, ep);
+	device = parse_word(s, is_colon, WORD_INCLUDE_DELIM | WORD_EMPTY_IS_NIL |
+			    WORD_DISALLOW_SLASH, start, end, ep);
 	if (device == @':error' || device == Cnil) {
 		/* We only parse a hostname when the device was present. */
 		device = Cnil;
@@ -568,6 +570,8 @@ ecl_parse_namestring(cl_object s, cl_index start, cl_index end, cl_index *ep,
 					*ep = start;
 			}
 		}
+		if (ecl_length(device) == 0)
+			device = Cnil;
 	}
  done_device_and_host:
 	path = parse_directories(s, 0, *ep, end, ep);
@@ -922,6 +926,11 @@ ecl_namestring(cl_object x, int truncate_if_unreadable)
 		ecl_write_char(logical? ';' : DIR_SEPARATOR, buffer);
 	}
 NO_DIRECTORY:
+	if (ecl_file_position(buffer) == MAKE_FIXNUM(0)) {
+		if (ecl_member_char(':', x->pathname.name) ||
+		    ecl_member_char(':', x->pathname.type))
+			writestr_stream(":", buffer);
+	}
 	y = x->pathname.name;
 	if (y != Cnil) {
 		if (y == @':wild') {
