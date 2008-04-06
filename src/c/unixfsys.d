@@ -687,7 +687,7 @@ dir_files(cl_object basedir, cl_object pathname)
 		char *text = new->base_string.self;
 		if (file_kind(text, TRUE) == @':directory')
 			continue;
-		if (ecl_member_char(':', new)) {
+		if (ecl_stringp(new) && ecl_member_char(':', new)) {
 			/* File names are allowed to have ':', but ECL
 			 * interprets colons as separators for device names
 			 * By prepending the name with a ':', we set the device

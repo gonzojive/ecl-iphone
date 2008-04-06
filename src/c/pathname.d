@@ -927,8 +927,10 @@ ecl_namestring(cl_object x, int truncate_if_unreadable)
 	}
 NO_DIRECTORY:
 	if (ecl_file_position(buffer) == MAKE_FIXNUM(0)) {
-		if (ecl_member_char(':', x->pathname.name) ||
-		    ecl_member_char(':', x->pathname.type))
+		if ((ecl_stringp(x->pathname.name) &&
+		     ecl_member_char(':', x->pathname.name)) ||
+		    (ecl_stringp(x->pathname.type) &&
+		     ecl_member_char(':', x->pathname.type)))
 			writestr_stream(":", buffer);
 	}
 	y = x->pathname.name;
