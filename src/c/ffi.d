@@ -496,6 +496,7 @@ ecl_fficall_prepare(cl_object return_type, cl_object arg_type, cl_object cc_type
 	fficall->buffer_size = 0;
 	fficall->cstring = Cnil;
 	fficall->cc = ecl_foreign_cc_code(cc_type);
+        fficall->registers = ecl_fficall_prepare_extra(fficall->registers);
 }
 
 void

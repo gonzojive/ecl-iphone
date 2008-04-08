@@ -17,6 +17,13 @@
 #include <string.h>
 #include <ecl/internal.h>
 
+struct ecl_fficall_reg *
+ecl_fficall_prepare_extra(struct ecl_fficall_reg *registers)
+{
+	/* No need to prepare registers */
+	return 0;
+}
+
 void
 ecl_fficall_push_arg(union ecl_ffi_values *data, enum ecl_ffi_tag type)
 {

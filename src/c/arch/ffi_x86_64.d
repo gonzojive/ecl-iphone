@@ -35,6 +35,7 @@ ecl_fficall_prepare_extra(struct ecl_fficall_reg *registers)
 	}
 	registers->int_registers_size = 0;
 	registers->fp_registers_size = 0;
+        return registers;
 }
 
 void
