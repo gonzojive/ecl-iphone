@@ -29,6 +29,45 @@
 # endif
 #endif
 
+#ifndef HAVE_LOG1P
+double
+log1p(double x)
+{
+	double u = 1.0 + x;
+	if (u == 1) {
+		return 0.0;
+	} else {
+		return (log(u) * x)/(u - 1.0);
+	}
+}
+#endif
+
+#ifndef HAVE_LOG1PF
+float
+log1pf(float x)
+{
+	float u = 1.0f0 + x;
+	if (u == 1) {
+		return 0.0f0;
+	} else {
+		return (logf(u) * x)/(u - 1.0f0);
+	}
+}
+#endif
+
+#ifndef HAVE_LOG1PL
+long double
+log1pl(long double x)
+{
+	long double u = (long double)1.0 + x;
+	if (u == 1) {
+		return (long double)1;
+	} else {
+		return (logl(u) * x)/(u - (long double)1);
+	}
+}
+#endif
+
 #ifdef mingw32
 /*
  * Mingw32 does not implement asinh, acosh and atanh.
@@ -48,9 +87,41 @@ acosh(double x)
 double
 atanh(double x)
 {
-	return (log(x+1) - log(x-1))/2;
+	return log1p(2*x/(1-x))/2;
 }
 #endif /* mingw32 */
+
+cl_object
+ecl_abs(cl_object x)
+{
+	if (type_of(x) != t_complex) {
+		if (ecl_minusp(x)) {
+			x = ecl_negate(x);
+		}
+	} else {
+		/* Compute sqrt(r*r + i*i) carefully to prevent overflow.
+		 * Assume |i| >= |r|. Then sqrt(i*i + r*r) = |i|*sqrt(1 +(r/i)^2).
+		 */
+		cl_object r = x->complex.real;
+		cl_object i = x->complex.imag;
+		if (ecl_minusp(r)) r = ecl_negate(x);
+		if (ecl_minusp(i)) i = ecl_negate(i);
+		if (ecl_number_compare(r, i) > 0) {
+			cl_object aux = i;
+			i = r; r = i;
+		}
+		r = ecl_divide(r, i);
+		r = ecl_plus(MAKE_FIXNUM(1), ecl_times(r, r));
+		x = ecl_times(cl_sqrt(r), i);
+	}
+	return x;
+}
+
+cl_object
+cl_abs(cl_object x)
+{
+	@(return ecl_abs(x))
+}
 
 cl_fixnum
 ecl_fixnum_expt(cl_fixnum x, cl_fixnum y)
@@ -176,11 +247,18 @@ cl_expt(cl_object x, cl_object y)
 static cl_object
 ecl_log1_complex(cl_object r, cl_object i)
 {
-	cl_object a = ecl_times(r, r);
-	cl_object p = ecl_times(i, i);
-	a = ecl_plus(a, p);
-	a = ecl_log1(a);
-	a = ecl_divide(a, MAKE_FIXNUM(2));
+	cl_object a = ecl_abs(r);
+	cl_object p = ecl_abs(i);
+	if (ecl_number_compare(a, p) > 0) {
+		cl_object aux = p;
+		p = a; a = aux;
+	}
+	/* For the real part of the output we use the formula
+	 *	log(sqrt(p^2 + a^2)) = log(sqrt(p^2*(1 + (a/p)^2)))
+	 *			     = log(p) + log(1 + (a/p)^2)/2; */
+	a = ecl_divide(a, p);
+	a = ecl_plus(ecl_divide(ecl_log1p(ecl_times(a,a)), MAKE_FIXNUM(2)),
+		     ecl_log1(p));
 	p = ecl_atan2(i, r);
 	return ecl_make_complex(a, p);
 }
@@ -230,6 +308,50 @@ ecl_log2(cl_object x, cl_object y)
 	if (ecl_zerop(y))
 		FEerror("Zero is the logarithmic singularity.", 0);
 	return ecl_divide(ecl_log1(y), ecl_log1(x));
+}
+
+cl_object
+ecl_log1p(cl_object x)
+{
+	cl_type tx;
+ AGAIN:
+	tx = type_of(x);
+	if (!ECL_NUMBER_TYPE_P(tx)) {
+		x = ecl_type_error(@'log',"argument",x,@'number');
+		goto AGAIN;
+	}
+	if (tx == t_complex) {
+		return ecl_log1(ecl_plus(MAKE_FIXNUM(1), x));
+	} else if (ecl_number_compare(x, MAKE_FIXNUM(-1)) < 0) {
+		return ecl_log1p(ecl_make_complex(x, MAKE_FIXNUM(0)));
+	}
+	switch (tx) {
+	case t_fixnum:
+	case t_bignum:
+	case t_ratio:
+		return ecl_make_singlefloat(log1pf(number_to_float(x)));
+#ifdef ECL_SHORT_FLOAT
+	case t_shortfloat:
+		return make_shortfloat(log1pf(ecl_short_float(x)));
+#endif
+	case t_singlefloat:
+		return ecl_make_singlefloat(log1pf(sf(x)));
+	case t_doublefloat:
+		return ecl_make_doublefloat(log1p(df(x)));
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+		return make_longfloat(log1pl(ecl_long_float(x)));
+#endif
+	default:
+		/* We do not reach here */
+		(void)0;
+	}
+}
+
+cl_object
+si_log1p(cl_object x)
+{
+	@(return ecl_log1p(x));
 }
 
 cl_object

@@ -1394,7 +1394,7 @@ type_of(#0)==t_bitvector")
     ;; module.lsp
     provide require
     ;; numlib.lsp
-    isqrt abs phase signum cis
+    isqrt phase signum cis
     asin acos asinh acosh atanh ffloor fceiling ftruncate fround
     logtest byte byte-size byte-position ldb ldb-test mask-field dpb
     deposit-field

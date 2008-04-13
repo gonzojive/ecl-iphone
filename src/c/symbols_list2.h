@@ -116,7 +116,7 @@ cl_symbols[] = {
 {">","cl_G"},
 {">=","cl_GE"},
 {"ABORT",NULL},
-{"ABS","ECL_NAME(cl_abs)"},
+{"ABS","cl_abs"},
 {"ACONS","cl_acons"},
 {"ACOS","ECL_NAME(cl_acos)"},
 {"ACOSH","ECL_NAME(cl_acosh)"},
@@ -1685,6 +1685,8 @@ cl_symbols[] = {
 {GRAY_ "FUNDAMENTAL-BINARY-INPUT-STREAM",NULL},
 {GRAY_ "FUNDAMENTAL-BINARY-OUTPUT-STREAM",NULL},
 #endif
+
+{"LOG1P","si_log1p"},
 
 /* Tag for end of list */
 {NULL,NULL}};

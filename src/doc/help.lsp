@@ -306,6 +306,9 @@ Returns T if the args are in decreasing order; NIL otherwise.")
 (docfun >= function (number &rest more-numbers) "
 Returns T if the args are in non-increasing order; NIL otherwise.")
 
+(docfun abs function (number) "
+Returns the absolute value of NUMBER.")
+
 (docfun acons function (key datum alist) "
 Equivalent to (CONS (CONS KEY DATUM) ALIST).")
 

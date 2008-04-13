@@ -1027,6 +1027,7 @@ extern ECL_API cl_object ecl_make_random_state(cl_object rs);
 /* num_sfun.c */
 
 extern ECL_API cl_fixnum ecl_fixnum_expt(cl_fixnum x, cl_fixnum y);
+extern ECL_API cl_object cl_abs(cl_object x);
 extern ECL_API cl_object cl_exp(cl_object x);
 extern ECL_API cl_object cl_expt(cl_object x, cl_object y);
 extern ECL_API cl_object cl_sqrt(cl_object x);
@@ -1038,7 +1039,9 @@ extern ECL_API cl_object cl_cosh(cl_object x);
 extern ECL_API cl_object cl_tanh(cl_object x);
 extern ECL_API cl_object cl_atan _ARGS((cl_narg narg, cl_object x, ...));
 extern ECL_API cl_object cl_log _ARGS((cl_narg narg, cl_object x, ...));
+extern ECL_API cl_object si_log1p(cl_object x);
 
+extern ECL_API cl_object ecl_log1p(cl_object x);
 extern ECL_API cl_object ecl_log1(cl_object x);
 extern ECL_API cl_object ecl_log2(cl_object x, cl_object y);
 extern ECL_API cl_object ecl_atan2(cl_object y, cl_object x);
@@ -1619,7 +1622,6 @@ extern ECL_API cl_object cl_require _ARGS((cl_narg narg, cl_object V1, ...));
 /* numlib.lsp */
 
 extern ECL_API cl_object cl_isqrt _ARGS((cl_narg narg, cl_object V1, ...));
-extern ECL_API cl_object cl_abs _ARGS((cl_narg narg, cl_object V1, ...));
 extern ECL_API cl_object cl_phase _ARGS((cl_narg narg, cl_object V1, ...));
 extern ECL_API cl_object cl_signum _ARGS((cl_narg narg, cl_object V1, ...));
 extern ECL_API cl_object cl_cis _ARGS((cl_narg narg, cl_object V1, ...));

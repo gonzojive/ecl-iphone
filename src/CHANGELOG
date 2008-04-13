@@ -127,6 +127,9 @@ ECL 0.9k:
    In particular MACHINE-INSTANCE returns the host name if the environment
    variable HOSTNAME is set (in Unix) and COMPUTERNAME if set (in Windows).
 
+ - LOG lost accuracy when applied to a complex number where the either the
+   real or the imaginary part was much larger than the other one.
+
 * System design:
 
  - We introduce a new kind of lisp objects, the stack frames. These are objects

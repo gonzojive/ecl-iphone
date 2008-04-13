@@ -69,25 +69,6 @@ Returns the integer square root of INTEGER."
                           (return x))
                     (setq x (floor (+ x y) 2))))))
 
-(defun abs (z)
-  "Args: (number)
-Returns the absolute value of NUMBER."
-  (if (complexp z)
-      ;; Compute sqrt(x*x + y*y) carefully to prevent overflow.
-      ;; Assume |x| >= |y|. Then sqrt(x*x + y*y) = |x|*sqrt(1 +(y/x)^2).
-      (let* ((x (abs (realpart z)))
-	     (y (abs (imagpart z))))
-	;; Swap x and y so that |x| >= |y|.
-	(if (< x y)
-	    (rotatef x y))
-	(if (zerop x)
-	    x
-	    (let ((r (/ y x)))
-	      (* x (sqrt (+ 1 (* r r)))))))
-      (if (minusp z)
-	  (- z)
-	  z)))
-
 (defun phase (x)
   "Args: (number)
 Returns the angle part (in radians) of the polar representation of NUMBER.
