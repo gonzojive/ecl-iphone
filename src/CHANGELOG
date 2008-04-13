@@ -124,8 +124,9 @@ ECL 0.9k:
 
  - MACHINE-TYPE, MACHINE-INSTANCE, SOFTWARE-VERSION and similar functions are
    now compliant and output NIL when they cannot guess the right information.
-   In particular MACHINE-INSTANCE returns the host name if the environment
-   variable HOSTNAME is set (in Unix) and COMPUTERNAME if set (in Windows).
+   This information is gathered from the environment variables HOSTNAME
+   and HOSTTYPE (Unix), COMPUTERNAME, PROCESSOR_ARCHITECTURE, PROCESSOR_LEVEL
+   (Windows) and the output of the system function uname(), if available.
 
  - LOG lost accuracy when applied to a complex number where the either the
    real or the imaginary part was much larger than the other one.

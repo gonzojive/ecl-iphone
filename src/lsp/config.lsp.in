@@ -3,6 +3,28 @@
 ;; Configuration file for ECL
 ;;
 (in-package "LISP")
+
+#+(and (not ecl-min) uname)
+(ffi:clines "
+#include <sys/utsname.h>
+")
+
+#+(and (not ecl-min) uname)
+(defun uname ()
+ (ffi:c-inline () () :object "{
+	cl_object output;
+	struct utsname aux;
+	if (uname(&aux) < 0)
+		output = Cnil;
+	else
+		output = cl_list(5, make_base_string_copy(aux.sysname),
+			    make_base_string_copy(aux.nodename),
+			    make_base_string_copy(aux.release),
+			    make_base_string_copy(aux.version),
+			    make_base_string_copy(aux.machine));
+	@(return) = output;
+}" :one-liner nil))
+
 ;;
 ;; * Short and long site names
 ;;
@@ -24,7 +46,7 @@ Returns, as a string, the location of the machine on which ECL runs."
 (defun lisp-implementation-version ()
   "Args:()
 Returns the version of your ECL as a string."
-  "@PACKAGE_VERSION@ (CVS 2008-04-13 20:34)")
+  "@PACKAGE_VERSION@ (CVS 2008-04-13 22:17)")
 
 (defun machine-type ()
   "Args: ()
@@ -32,6 +54,8 @@ Returns, as a string, the type of the machine on which ECL runs."
   (or (ext:getenv "HOSTTYPE")
       #+(or :mingw32 :msvc :cygwin)
       (ext:getenv "PROCESSOR_ARCHITECTURE")
+      #+uname
+      (fifth (uname))
       "@ARCHITECTURE@"))
 
 (defun machine-instance ()
@@ -39,7 +63,10 @@ Returns, as a string, the type of the machine on which ECL runs."
 Returns, as a string, the identifier of the machine on which ECL runs."
   (or (ext:getenv "HOSTNAME")
       #+(or :mingw32 :msvc :cygwin)
-      (ext:getenv "COMPUTERNAME")))
+      (ext:getenv "COMPUTERNAME")
+      #+uname
+      (second (uname))
+      ))
 
 (defun machine-version ()
   "Args: ()
@@ -53,15 +80,17 @@ uname(2) where available."
 (defun software-type ()
   "Args: ()
 Returns, as a string, the type of the software under which ECL runs."
-  "@SOFTWARE_TYPE@")
+  (or #+uname (first (uname))
+      "@SOFTWARE_TYPE@"))
 
 (defun software-version ()
   "Args: ()
 Returns, as a string, the version of the software under which ECL runs."
-  #.(let ((aux "@SOFTWARE_VERSION@"))
-      (if (plusp (length aux))
-	  aux
-	  nil)))
+  (or #+uname (third (uname))
+      #.(let ((aux "@SOFTWARE_VERSION@"))
+	  (if (plusp (length aux))
+	      aux
+	      nil))))
 
 ;;
 ;; * Set up some room

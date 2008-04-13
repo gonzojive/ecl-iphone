@@ -94,7 +94,7 @@ static cl_object si_simple_toplevel ()
 int
 main(int argc, char **args)
 {
-	cl_object top_level;
+	cl_object top_level, features;
 
 	/* This should be always the first call */
 	cl_boot(argc, args);
@@ -106,7 +106,13 @@ main(int argc, char **args)
 	SYM_VAL(@'*load-verbose*') = Cnil;
 #endif
 	SYM_VAL(@'*package*') = cl_core.system_package;
-	SYM_VAL(@'*features*') = CONS(ecl_make_keyword("ECL-MIN"), SYM_VAL(@'*features*'));
+
+	features = SYM_VAL(@'*features*');
+	features = CONS(ecl_make_keyword("ECL-MIN"), features);
+#ifdef HAVE_UNAME
+	features = CONS(ecl_make_keyword("UNAME"), features);
+#endif
+	SYM_VAL(@'*features*') = features;
 	top_level = _ecl_intern("TOP-LEVEL", cl_core.system_package);
 	cl_def_c_function(top_level, si_simple_toplevel, 0);
 	funcall(1, top_level);
