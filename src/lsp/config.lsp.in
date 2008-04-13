@@ -11,12 +11,12 @@
 (defun short-site-name ()
   "Args: ()
 Returns, as a string, the location of the machine on which ECL runs."
-  "@SHORT_SITE_NAME@")
+  nil)
 
 (defun long-site-name () 
   "Args: ()
 Returns, as a string, the location of the machine on which ECL runs."
-  "@LONG_SITE_NAME@")
+  nil)
 
 ;;
 ;; * ECL version, architecture, etc
@@ -24,25 +24,29 @@ Returns, as a string, the location of the machine on which ECL runs."
 (defun lisp-implementation-version ()
   "Args:()
 Returns the version of your ECL as a string."
-  "@PACKAGE_VERSION@ (CVS 2008-04-13 10:52)")
+  "@PACKAGE_VERSION@ (CVS 2008-04-13 15:12)")
 
 (defun machine-type ()
   "Args: ()
 Returns, as a string, the type of the machine on which ECL runs."
-  "@ARCHITECTURE@")
+  (or (ext:getenv "HOSTTYPE")
+      #+(or :mingw32 :msvc :cygwin)
+      (ext:getenv "PROCESSOR_ARCHITECTURE")
+      "@ARCHITECTURE@"))
 
-;; obtained from uname(2) where available
 (defun machine-instance ()
   "Args: ()
-Returns, as a string, the identifier of the machine on which ECL runs. Obtained
-from uname(2) where available."
-  "@MACHINE_INSTANCE@")
+Returns, as a string, the identifier of the machine on which ECL runs."
+  (or (ext:getenv "HOSTNAME")
+      #+(or :mingw32 :msvc :cygwin)
+      (ext:getenv "COMPUTERNAME")))
 
 (defun machine-version ()
   "Args: ()
 Returns, as a string, the version of the machine on which ECL runs. Obtained from
 uname(2) where available."
-  "@MACHINE_VERSION@")
+  (or #+(or :mingw32 :msvc :cygwin)
+      (ext:getenv "PROCESSOR_LEVEL")))
 
 (push :@thehost@ *features*)
 
@@ -54,7 +58,10 @@ Returns, as a string, the type of the software under which ECL runs."
 (defun software-version ()
   "Args: ()
 Returns, as a string, the version of the software under which ECL runs."
-  "@SOFTWARE_VERSION@")
+  #.(let ((aux "@SOFTWARE_VERSION@"))
+      (if (plusp (length aux))
+	  aux
+	  nil)))
 
 ;;
 ;; * Set up some room

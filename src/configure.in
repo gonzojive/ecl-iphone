@@ -217,8 +217,6 @@ AC_SUBST(CORE_LIBS, [])         dnl Locally compiled libs to link into
                                 dnl ecl/ecl_min/libecl.so and nowhere else.
 AC_SUBST(SHARED_LDFLAGS)        dnl Flags for shared libraries linker
 AC_SUBST(BUNDLE_LDFLAGS)        dnl Flags for FASL files linker
-AC_SUBST(SHORT_SITE_NAME)       dnl Short name for the machine we built this on
-AC_SUBST(LONG_SITE_NAME)        dnl Long name for the machine we built this on
 AC_SUBST(EXTRA_OBJS)            dnl Extra *.o files to be compiled into libecl.a
 AC_SUBST(TARGETS, ['bin/ecl$(EXE)'])dnl Versions of ECL to be built 
 AC_SUBST(SUBDIRS, [c])          dnl Subdirectories that make should process

@@ -12,8 +12,6 @@ SHORT_SITE_NAME   =
 LONG_SITE_NAME    =
 ECL_VERSION       = 0.9i
 ARCHITECTURE      = PENTIUM4
-MACHINE_INSTANCE  = localhost
-MACHINE           =
 SOFTWARE_TYPE     = NT
 SOFTWARE_VERSION  = 5.0
 THEHOST           = win32
@@ -195,8 +193,6 @@ lsp/config.lsp: $(srcdir)/lsp/config.lsp.in Makefile c\cut$(EXE)
 	    "@LONG_SITE_NAME@" "$(LONG_SITE_NAME)" \
 	    "@PACKAGE_VERSION@" "$(ECL_VERSION)" \
 	    "@ARCHITECTURE@" "$(ARCHITECTURE)" \
-	    "@MACHINE_INSTANCE@" "$(MACHINE_INSTANCE)" \
-	    "@MACHINE_VERSION@" "$(MACHINE)" \
 	    "@SOFTWARE_TYPE@" "$(SOFTWARE_TYPE)" \
 	    "@SOFTWARE_VERSION@" "$(SOFTWARE_VERSION)" \
 	    "@thehost@" "$(THEHOST)" \
