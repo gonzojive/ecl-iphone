@@ -448,7 +448,7 @@
   (check-args-number 'LOAD-TIME-VALUE args 1 2)
   (let ((form (first args))
 	loc)
-    (cond ((listp form)
+    (cond ((typep form '(or list symbol))
 	   (setf loc (data-empty-loc))
 	   (push (make-c1form* 'LOAD-TIME-VALUE :args loc (c1expr form))
 		 *load-time-values*))
