@@ -64,7 +64,7 @@ AC_ARG_WITH(system-boehm,
 
 AC_ARG_WITH(gmp,
   AS_HELP_STRING( [--with-gmp=args],
-                  [supply arguments for configuring GMP library])
+                  [supply arguments for configuring GMP library]),
   [], [with_gmp=""])
 
 AC_ARG_WITH(system-gmp,

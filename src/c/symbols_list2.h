@@ -1633,7 +1633,9 @@ cl_symbols[] = {
 
 {SYS_ "WRONG-TYPE-ARGUMENT",NULL},
 
+#ifdef GBC_BOEHM
 {SYS_ "GC-STATS","si_gc_stats"},
+#endif
 
 {SYS_ "*CURRENT-FORM*",NULL},
 

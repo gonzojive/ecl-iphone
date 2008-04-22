@@ -98,7 +98,8 @@ si_generic_function_p(cl_object x)
 
 #define RECORD_KEY(e) ((e)[0])
 #define RECORD_VALUE(e) ((e)[1])
-#define RECORD_GEN(e) (((cl_fixnum*)(e+2))[0])
+#define RECORD_GEN(e) fix((e+2)[0])
+#define RECORD_GEN_SET(e,v) ((e+2)[0]=MAKE_FIXNUM(v))
 
 static cl_object
 do_clear_method_hash(struct cl_env_struct *env, cl_object target)
@@ -260,7 +261,8 @@ search_method_hash(cl_object keys, cl_object table)
 	 * generation number does not become too large and we can
 	 * expire some elements.
 	 */
-	RECORD_GEN(min_e) = gen = cl_env.method_generation;
+	gen = cl_env.method_generation;
+	RECORD_GEN_SET(min_e, gen);
 	if (gen >= total_size/2) {
 		cl_object *e = table->vector.self.t;
 		gen = 0.5*gen;
@@ -272,7 +274,7 @@ search_method_hash(cl_object keys, cl_object table)
 				RECORD_VALUE(e) = Cnil;
 				g = 0;
 			}
-			RECORD_GEN(e) = g;
+			RECORD_GEN_SET(e, g);
 		}
 	}
 	return min_e;

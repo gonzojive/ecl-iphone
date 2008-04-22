@@ -258,8 +258,10 @@ ONCE_MORE:
 	 */
 	switch (t) {
 	case t_bignum:
+#ifdef WITH_GMP
 	  obj->big.big_dim = obj->big.big_size = 0;
 	  obj->big.big_limbs = NULL;
+#endif
 	  break;
 	case t_ratio:
 	  obj->ratio.num = OBJNULL;

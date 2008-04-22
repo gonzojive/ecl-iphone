@@ -347,10 +347,15 @@ si_gc_stats(cl_object enable)
 	cl_object old_status = cl_core.gc_stats? Ct : Cnil;
 	cl_core.gc_stats = (enable != Cnil);
 	if (cl_core.bytes_consed == Cnil) {
+#ifndef WITH_GMP
+		cl_core.bytes_consed = MAKE_FIXNUM(0);
+		cl_core.gc_counter = MAKE_FIXNUM(0);
+#else
 		cl_core.bytes_consed = cl_alloc_object(t_bignum);
 		mpz_init2(cl_core.bytes_consed->big.big_num, 128);
 		cl_core.gc_counter = cl_alloc_object(t_bignum);
 		mpz_init2(cl_core.gc_counter->big.big_num, 128);
+#endif
 	}
 	@(return
 	  big_register_normalize(cl_core.bytes_consed)
@@ -369,6 +374,8 @@ finalize_queued()
 {
 	cl_object l = cl_core.to_be_finalized;
 	if (cl_core.gc_stats) {
+#ifdef WITH_GMP
+		/* Sorry, no gc stats if you do not use bignums */
 #if GBC_BOEHM == 0
 		mpz_add_ui(cl_core.bytes_consed->big.big_num,
 			   cl_core.bytes_consed->big.big_num,
@@ -395,6 +402,7 @@ finalize_queued()
 		mpz_add_ui(cl_core.gc_counter->big.big_num,
 			   cl_core.gc_counter->big.big_num,
 			   1);
+#endif
 	}
 	if (l != Cnil) {
 		cl_core.to_be_finalized = Cnil;

@@ -61,30 +61,30 @@ big_register_normalize(cl_object x)
 static cl_object
 big_alloc(int size)
 {
-  volatile cl_object x = cl_alloc_object(t_bignum);
-  if (size <= 0)
-    ecl_internal_error("negative or zero size for bignum in big_alloc");
-  x->big.big_num = 0ll;
-  return x;
+	volatile cl_object x = cl_alloc_object(t_bignum);
+	if (size <= 0)
+		ecl_internal_error("negative or zero size for bignum in big_alloc");
+	x->big.big_num = 0ll;
+	return x;
 }
 
 
 cl_object
 bignum1(cl_fixnum val)
 {
-  volatile cl_object z = cl_alloc_object(t_bignum);
-  z->big.big_num = val;
-  return(z);
+	volatile cl_object z = cl_alloc_object(t_bignum);
+	z->big.big_num = val;
+	return(z);
 }
 
 cl_object
 bignum2(cl_fixnum hi, cl_fixnum lo)
 {
-  cl_object z;
+	cl_object z;
 
-  z = big_alloc(2);
-  z->big.big_num = hi<<32 + lo;
-  return(z);
+	z = big_alloc(2);
+	z->big.big_num = hi<<32 + lo;
+	return(z);
 }
 
 cl_object
@@ -117,16 +117,16 @@ big_plus(cl_object x, cl_object y)
 cl_object
 big_normalize(cl_object x)
 {
-  if (x->big.big_num == 0ll)
-    return(MAKE_FIXNUM(0));
-  if (x->big.big_num <= MOST_POSITIVE_FIXNUM && x->big.big_num >= MOST_NEGATIVE_FIXNUM)
-    return(MAKE_FIXNUM(x->big.big_num));
-  return(x);
+	if (x->big.big_num == 0ll)
+		return(MAKE_FIXNUM(0));
+	if (x->big.big_num <= MOST_POSITIVE_FIXNUM && x->big.big_num >= MOST_NEGATIVE_FIXNUM)
+		return(MAKE_FIXNUM(x->big.big_num));
+	return(x);
 }
 
 int big_num_t_sgn(big_num_t x)
 {
-     return ( x == (big_num_t)0 ) ? 0 : (x < (big_num_t)0) ? -1 : 1;
+	return ( x == (big_num_t)0 ) ? 0 : (x < (big_num_t)0) ? -1 : 1;
 }
 
 

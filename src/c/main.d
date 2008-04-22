@@ -30,6 +30,7 @@
 #   include <unistd.h>
 # endif
 #endif
+#include <stdio.h>
 #include <stdlib.h>
 #include <ecl/internal.h>
 extern int GC_dont_gc;
@@ -95,6 +96,9 @@ ecl_init_env(struct cl_env_struct *env)
 #endif
 
 #ifdef CLOS
+	env->method_hash = Cnil;
+	env->method_spec_vector = Cnil;
+	env->method_generation = 0;
 	_ecl_set_method_hash_size(env, 4096);
 #ifdef ECL_THREADS
 	env->method_hash_clear_list = Cnil;

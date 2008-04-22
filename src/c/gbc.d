@@ -120,11 +120,16 @@ BEGIN:
 	if (x == OBJNULL)
 		return;
 #endif
+	/* We need this, because sometimes we arrive to data structures
+	 * which have been created in the C stack (t_frame in gfun.d,
+	 * for instance) */
+	if (!VALID_DATA_ADDRESS(x))
+		return;
 	if (x->d.m) {
-	  if (x->d.m == FREE)
-	    ecl_internal_error("mark_object: pointer to free object.");
-	  else
-	    return;
+		if (x->d.m == FREE)
+			ecl_internal_error("mark_object: pointer to free object.");
+		else
+			return;
 	}
 	x->d.m = TRUE;
 
@@ -424,45 +429,49 @@ BEGIN:
 static void
 mark_stack_conservative(cl_ptr bottom, cl_ptr top)
 {
-  int p, m;
-  cl_object x;
-  struct typemanager *tm;
-  cl_ptr j;
+	int p, m;
+	cl_object x;
+	struct typemanager *tm;
+	cl_ptr j;
 
-  if (debug) { printf("Traversing C stack .."); fflush(stdout); }
+	if (debug) { printf("Traversing C stack .."); fflush(stdout); }
 
-  /* On machines which align local pointers on multiple of 2 rather
-     than 4 we need to mark twice
+	/* On machines which align local pointers on multiple of 2 rather
+	   than 4 we need to mark twice
 
-  if (offset) mark_stack_conservative(bottom, ((char *) top) + offset, 0);
-     */
-  for (j = bottom ; j < top ; j+=sizeof(cl_ptr)) {
-    cl_ptr aux = *((cl_ptr*)j);
-    /* improved Beppe: */
-    if (VALID_DATA_ADDRESS(aux) && type_map[p = page(aux)] < (char)t_end) {
-      tm = tm_of((cl_type)type_map[p]);
-      x = (cl_object)(aux - (aux - pagetochar(p)) % tm->tm_size);
-      m = x->d.m;
-      if (m != FREE && m != TRUE) {
-	if (m) {
-	  fprintf(stderr,
-		  "** bad value %d of d.m in gc page %d skipping mark **",
-		  m, p); fflush(stderr);
-	} else
-	  mark_object(x);
-      }
-    }}
-  if (debug) {printf(". done.\n"); fflush(stdout); }
+	   if (offset) mark_stack_conservative(bottom, ((char *) top) + offset, 0);
+	*/
+	for (j = bottom ; j < top ; j+=sizeof(cl_ptr)) {
+		cl_ptr aux = *((cl_ptr*)j);
+		/* improved Beppe: */
+		if (VALID_DATA_ADDRESS(aux) && type_map[p = page(aux)] < (char)t_end) {
+			tm = tm_of((cl_type)type_map[p]);
+			x = (cl_object)(aux - (aux - pagetochar(p)) % tm->tm_size);
+			m = x->d.m;
+			if (m != FREE && m != TRUE) {
+				if (m) {
+					fprintf(stderr,
+						"** bad value %d of d.m in gc page %d skipping mark **",
+						m, p); fflush(stderr);
+				} else {
+					mark_object(x);
+				}
+			}
+		}
+	}
+	if (debug) {
+		printf(". done.\n"); fflush(stdout);
+	}
 }
 
 static void
 mark_cl_env(struct cl_env_struct *env)
 {
-	int i;
-	cl_object where;
-	bds_ptr bdp;
-	ecl_frame_ptr frp;
-	struct ihs_frame *ihs;
+	int i = 0;
+	cl_object where = 0;
+	bds_ptr bdp = 0;
+	ecl_frame_ptr frp = 0;
+	struct ihs_frame *ihs = 0;
 
 	mark_contblock(env, sizeof(*env));
 
@@ -511,6 +520,14 @@ mark_cl_env(struct cl_env_struct *env)
 	mark_object(env->big_register[0]);
 	mark_object(env->big_register[1]);
 	mark_object(env->big_register[2]);
+
+#ifdef CLOS
+#ifdef ECL_THREADS
+	mark_object(env->method_hash_clear_list);
+#endif
+	mark_object(env->method_hash);
+	mark_object(env->method_spec_vector);
+#endif
 
 #ifdef ECL_THREADS
 /* We should mark the stacks of the threads somehow!!! */
@@ -948,6 +965,18 @@ _mark_contblock(void *x, cl_index s)
 @
 	@(return MAKE_FIXNUM(gc_time))
 @)
+
+cl_object
+si_get_finalizer(cl_object o)
+{
+	@(return Cnil)
+}
+
+cl_object
+si_set_finalizer(cl_object o, cl_object finalizer)
+{
+	@(return)
+}
 
 void
 init_GC(void)
