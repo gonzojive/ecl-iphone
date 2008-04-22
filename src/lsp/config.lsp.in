@@ -46,7 +46,7 @@ Returns, as a string, the location of the machine on which ECL runs."
 (defun lisp-implementation-version ()
   "Args:()
 Returns the version of your ECL as a string."
-  "@PACKAGE_VERSION@ (CVS 2008-04-13 22:17)")
+  "@PACKAGE_VERSION@ (CVS 2008-04-22 11:17)")
 
 (defun machine-type ()
   "Args: ()
@@ -98,7 +98,7 @@ Returns, as a string, the version of the software under which ECL runs."
 #-boehm-gc
 (progn
   (sys::allocate 'CONS 200)
-  (sys::allocate 'STRING 40))
+  (sys::allocate 'BASE-STRING 40))
 
 ;;
 ;; * Set configuration pathnames. Notice the trailing slash!

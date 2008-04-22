@@ -104,11 +104,11 @@ ecl_abs(cl_object x)
 		 */
 		cl_object r = x->complex.real;
 		cl_object i = x->complex.imag;
-		if (ecl_minusp(r)) r = ecl_negate(x);
+		if (ecl_minusp(r)) r = ecl_negate(r);
 		if (ecl_minusp(i)) i = ecl_negate(i);
 		if (ecl_number_compare(r, i) > 0) {
 			cl_object aux = i;
-			i = r; r = i;
+			i = r; r = aux;
 		}
 		r = ecl_divide(r, i);
 		r = ecl_plus(MAKE_FIXNUM(1), ecl_times(r, r));
