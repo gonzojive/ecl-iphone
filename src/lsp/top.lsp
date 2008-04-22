@@ -684,13 +684,19 @@ under certain conditions; see file 'Copyright' for details.")
   (format *debug-io* "    FRS[~d]: ---> IHS[~d],BDS[~d]~%"
 	  i (frs-ihs i) (frs-bds i)))
 
-(defun break-where (&aux (fname (ihs-fname *ihs-current*)))
+(defun break-where ()
   (if (<= *tpl-level* 0)
     (format t "Top level.~%")
-    (format t "Broken at ~:@(~S~).~%" (ihs-fname *ihs-current*))))
+    (tpl-print-current)))
 
 (defun tpl-print-current ()
-  (format t "Broken at ~:@(~S~)." (ihs-fname *ihs-current*))
+  (let ((name (ihs-fname *ihs-current*)))
+    (format t "Broken at ~:@(~S~)." name)
+    (when (fboundp name)
+      (multiple-value-bind (file position)
+	  (si::bc-file (fdefinition name))
+	(when file
+	  (format t " File: ~S (Form #~D)" file position)))))  
   (values))
 
 (defun tpl-hide (fname)

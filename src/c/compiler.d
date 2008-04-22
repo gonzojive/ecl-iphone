@@ -144,7 +144,7 @@ asm_end(cl_index beginning) {
 	cl_object bytecodes;
 	cl_index code_size, data_size, i;
 	cl_opcode *code;
-	cl_object file = SYM_VAL(@'*load-pathname*');
+	cl_object file = SYM_VAL(@'*load-truename*');
 	cl_object position = SYM_VAL(@'ext::*load-position*');
 
 	/* Save bytecodes from this session in a new vector */
