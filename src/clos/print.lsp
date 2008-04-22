@@ -64,6 +64,9 @@ printer and we should rather use MAKE-LOAD-FORM."
 		      ((consp object)
 		       (recursive-test (car object))
 		       (setf object (rest object)))
+		      ((and (compiled-function-p object)
+			    (nth-value 2 (si::bc-split object)))
+		       (return nil))
 		      (t
 		       (throw 'need-to-make-load-form t))))))
       (catch 'need-to-make-load-form
