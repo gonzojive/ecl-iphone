@@ -1690,6 +1690,9 @@ cl_symbols[] = {
 
 {"LOG1P","si_log1p"},
 
+{EXT_ "*LOAD-POSITION*",NULL},
+{EXT_ "BC-FILE","si_bc_file"},
+
 /* Tag for end of list */
 {NULL,NULL}};
 

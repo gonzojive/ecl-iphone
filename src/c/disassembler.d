@@ -671,3 +671,13 @@ si_bc_split(cl_object b)
 	data->vector.self.t = b->bytecodes.data;
 	@(return b->bytecodes.lex vector data)
 }
+
+cl_object
+si_bc_file(cl_object b)
+{
+	if (type_of(b) != t_bytecodes) {
+		@(return Cnil Cnil);
+	} else {
+		@(return b->bytecodes.file b->bytecodes.file_position);
+	}
+}

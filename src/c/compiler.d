@@ -144,6 +144,8 @@ asm_end(cl_index beginning) {
 	cl_object bytecodes;
 	cl_index code_size, data_size, i;
 	cl_opcode *code;
+	cl_object file = SYM_VAL(@'*load-pathname*');
+	cl_object position = SYM_VAL(@'ext::*load-position*');
 
 	/* Save bytecodes from this session in a new vector */
 	code_size = current_pc() - beginning;
@@ -154,6 +156,8 @@ asm_end(cl_index beginning) {
 	bytecodes->bytecodes.code = cl_alloc_atomic(code_size * sizeof(cl_opcode));
 	bytecodes->bytecodes.data = (cl_object*)cl_alloc(data_size * sizeof(cl_object));
 	bytecodes->bytecodes.lex = Cnil;
+	bytecodes->bytecodes.file = (file == OBJNULL)? Cnil : file;
+	bytecodes->bytecodes.file_position = (position == OBJNULL)? Cnil : position;
 	for (i = 0, code = (cl_opcode *)bytecodes->bytecodes.code; i < code_size; i++) {
 		code[i] =
 			(cl_fixnum)cl_env.stack[beginning+i];

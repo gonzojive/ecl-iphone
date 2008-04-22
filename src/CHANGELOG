@@ -70,6 +70,9 @@ ECL 0.9k:
    or shadow import the symbols associated to generic versions in the packages
    where methods on these functions are defined.
 
+ - Interpreted forms now remember the file in which they were defined
+   and what form number they represent.
+
 * CLOS:
 
  - When caching generic function calls, ECL now uses a thread-local hash table

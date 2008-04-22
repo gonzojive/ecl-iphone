@@ -464,6 +464,8 @@ struct ecl_bytecodes {
 	cl_index data_size;	/*  number of constants  */
 	char *code;		/*  the intermediate language  */
 	cl_object *data;	/*  non-inmediate constants used in the code  */
+	cl_object file;		/*  file where it was defined...  */
+	cl_index file_position;	/*  and where it was created  */
 };
 
 struct ecl_cfun {		/*  compiled function header  */

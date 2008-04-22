@@ -390,6 +390,8 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 			@(return Cnil)
 	}
 	CL_UNWIND_PROTECT_BEGIN {
+		cl_object form_index = MAKE_FIXNUM(0);
+		bds_bind(@'ext::*load-position*', MAKE_FIXNUM(0));
 		for (;;) {
 			x = cl_read(3, strm, Cnil, OBJNULL);
 			if (x == OBJNULL)
@@ -399,7 +401,10 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 				@write(1, x);
 				@terpri(0);
 			}
+			form_index = ecl_plus(MAKE_FIXNUM(1),form_index);
+			ECL_SETQ(@'ext::*load-position*', form_index);
 		}
+		bds_unwind1();
 	} CL_UNWIND_PROTECT_EXIT {
 		/* We do not want to come back here if close_stream fails,
 		   therefore, first we frs_pop() current jump point, then

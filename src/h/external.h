@@ -465,6 +465,7 @@ extern ECL_API void *ecl_interpret(cl_object bytecodes, void *pc);
 
 extern ECL_API cl_object si_bc_disassemble(cl_object v);
 extern ECL_API cl_object si_bc_split(cl_object v);
+extern ECL_API cl_object si_bc_file(cl_object v);
 
 /* error.c */
 
