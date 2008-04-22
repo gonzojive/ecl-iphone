@@ -108,7 +108,7 @@ ecl_abs(cl_object x)
 		if (ecl_minusp(r)) r = ecl_negate(r);
 		if (ecl_minusp(i)) i = ecl_negate(i);
 		comparison = ecl_number_compare(r, i);
-		if (comparison = 0) {
+		if (comparison == 0) {
 			r = ecl_times(r, r);
 			x = cl_sqrt(ecl_plus(r, r));
 		} else {
