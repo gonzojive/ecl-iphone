@@ -2544,6 +2544,7 @@ si_make_lambda(cl_object name, cl_object rest)
 		compile_form(form, FLAG_VALUES);
 		asm_op(OP_EXIT);
 		bytecodes = asm_end(handle);
+		bytecodes->bytecodes.name = @'eval';
 	} CL_UNWIND_PROTECT_EXIT {
 		/* Clear up */
 		ENV = old_c_env;
@@ -2553,7 +2554,7 @@ si_make_lambda(cl_object name, cl_object rest)
 	/*
 	 * Interpret using the given lexical environment.
 	 */
-	ihs_push(&ihs, @'eval');
+	ihs_push(&ihs, bytecodes);
 	cl_env.lex_env = interpreter_env;
 	VALUES(0) = Cnil;
 	NVALUES = 0;

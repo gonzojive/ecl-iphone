@@ -691,12 +691,14 @@ under certain conditions; see file 'Copyright' for details.")
 
 (defun tpl-print-current ()
   (let ((name (ihs-fname *ihs-current*)))
-    (format t "Broken at ~:@(~S~)." name)
-    (when (fboundp name)
-      (multiple-value-bind (file position)
-	  (si::bc-file (fdefinition name))
-	(when file
-	  (format t " File: ~S (Form #~D)" file position)))))  
+    (format t "Broken at ~:@(~S~)." name))
+  (let ((fun (ihs-fun *ihs-current*)))
+    (when (and (symbolp fun) (fboundp fun))
+      (setf fun (fdefinition fun)))
+    (multiple-value-bind (file position)
+	(si::bc-file fun)
+      (when file
+	(format t " File: ~S (Form #~D)" file position))))
   (values))
 
 (defun tpl-hide (fname)
