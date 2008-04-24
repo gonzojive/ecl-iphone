@@ -84,6 +84,7 @@ static int c_if(cl_object args, int flags);
 static int c_labels(cl_object args, int flags);
 static int c_let(cl_object args, int flags);
 static int c_leta(cl_object args, int flags);
+static int c_load_time_value(cl_object args, int flags);
 static int c_locally(cl_object args, int flags);
 static int c_macrolet(cl_object args, int flags);
 static int c_multiple_value_bind(cl_object args, int flags);
@@ -251,6 +252,7 @@ static compiler_record database[] = {
   {@'let', c_let, 1},
   {@'let*', c_leta, 1},
   {@'locally', c_locally, 0},
+  {@'load-time-value', c_load_time_value, 1},
   {@'macrolet', c_macrolet, 0},
   {@'multiple-value-bind', c_multiple_value_bind, 1},
   {@'multiple-value-call', c_multiple_value_call, 1},
@@ -1337,6 +1339,14 @@ c_let(cl_object args, int flags) {
 static int
 c_leta(cl_object args, int flags) {
 	return c_let_leta(OP_BIND, args, flags);
+}
+
+static int
+c_load_time_value(cl_object args, int flags)
+{
+	if (cl_rest(args) != Cnil)
+		FEprogram_error("LOAD-TIME-VALUE: Too many arguments.", 0);
+	return c_values(args, flags);
 }
 
 static int

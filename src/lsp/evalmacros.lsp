@@ -332,9 +332,6 @@ SECOND-FORM."
 (defmacro nth-value (n expr)
   `(nth ,n (multiple-value-list ,expr)))
 
-(defmacro load-time-value (form &optional read-only-p)
-  `(quote ,(eval form)))
-
 (defun maybe-unquote (form)
   (if (and (consp form) (eq (car form) 'quote))
       (second form)
