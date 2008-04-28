@@ -170,8 +170,8 @@
 ;;; ----------------------------------------------------------------------
 ;;; Methods
 
-(defun install-method (name qualifiers specializers lambda-list doc plist
-			    fun &rest options)
+(defun install-method (name qualifiers specializers lambda-list doc plist fun
+		       &optional method-class &rest options)
   (declare (ignore doc)
 	   (notinline ensure-generic-function))
 ;  (record-definition 'method `(method ,name ,@qualifiers ,specializers))
@@ -182,9 +182,10 @@
 					 ((si::instancep x) x)
 					 (t (find-class x))))
 			       specializers))
-	 (method (make-method qualifiers specializers lambda-list
-			      fun plist options gf
-			      (generic-function-method-class gf))))
+	 (method (make-method (or method-class
+				  (generic-function-method-class gf))
+			      qualifiers specializers lambda-list
+			      fun plist options)))
     (add-method gf method)
     method))
 
@@ -205,7 +206,8 @@
 	      (generic-function-lambda-list gfun) lambda-list
 	      (generic-function-method-combination gfun) '(standard)
 	      (generic-function-methods gfun) nil
-	      (generic-function-spec-list gfun) nil)
+	      (generic-function-spec-list gfun) nil
+	      (generic-function-method-class gfun) 'standard-method)
 	(when l-l-p
 	  (setf (generic-function-argument-precedence-order gfun)
 		(rest (si::process-lambda-list lambda-list t))))

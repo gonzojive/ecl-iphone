@@ -78,6 +78,10 @@ ECL 0.9k:
  - When caching generic function calls, ECL now uses a thread-local hash table
    instead of one hash table per generic function.
 
+ - The classes STANDARD-ACCESSOR-METHOD, STANDARD-READER-METHOD and
+   STANDARD-WRITER-METHOD have been implemented. These methods are created
+   to access the slots of a standard class.
+
 * Bugs fixed:
 
  - ASDF:MAKE-BUILD now handles better the case of a monolithic FASL that

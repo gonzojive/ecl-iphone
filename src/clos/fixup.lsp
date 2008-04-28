@@ -65,6 +65,16 @@
   (make-instances-obsolete (find-class 't))
   (convert-one-class (find-class 't)))
 
+(defmethod reader-method-class ((class standard-class)
+				(direct-slot direct-slot-definition)
+				&rest initargs)
+  (find-class 'standard-reader-method))
+
+(defmethod writer-method-class ((class standard-class)
+				(direct-slot direct-slot-definition)
+				&rest initargs)
+  (find-class 'standard-writer-method))
+
 ;;; ----------------------------------------------------------------------
 ;;; Fixup
 
@@ -81,7 +91,14 @@
       )
     (dolist (method (cdr method-info))
       ;; complete the method object
-      (si::instance-class-set method (find-class 'standard-method))
+      (let ((old-class (si::instance-class method)))
+	(si::instance-class-set method
+				(cond ((null old-class)
+				       (find-class 'standard-method))
+				      ((symbolp old-class)
+				       (find-class old-class))
+				      (t
+				       old-class))))
       (si::instance-sig-set gfun)
       )
     (makunbound '*EARLY-METHODS*)))
@@ -92,17 +109,18 @@
 
 (defun method-p (method) (typep method 'METHOD))
 
-(defun make-method (qualifiers specializers arglist
-			       function plist options gfun method-class)
-  (declare (ignore options))
-  (make-instance method-class
-		 :generic-function nil
-		 :qualifiers qualifiers
-		 :lambda-list arglist
-		 :specializers specializers
-		 :function function
-		 :plist plist
-		 :allow-other-keys t))
+(defun make-method (method-class qualifiers specializers arglist
+				 function plist options)
+  (apply #'make-instance
+	 method-class
+	 :generic-function nil
+	 :qualifiers qualifiers
+	 :lambda-list arglist
+	 :specializers specializers
+	 :function function
+	 :plist plist
+	 :allow-other-keys t
+	 options))
 
 (defun all-keywords (l)
   (declare (si::c-local))

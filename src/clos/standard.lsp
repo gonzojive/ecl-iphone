@@ -394,8 +394,36 @@ because it contains a reference to the undefined class~%  ~A"
 
 ;;; ----------------------------------------------------------------------
 ;;; Optional accessors
+;;;
+;;; The following does not work. We have a problem with optimized
+;;; accessors that memoize the position of a slot. The problem is that
+;;; the AMOP specifies that slot accessors are created from the direct
+;;; slots, without knowing the slot position. This semantics is
+;;; required for working standard-reader- and
+;;; standard-writer-method. OTOH if we want to have memoized slot
+;;; positions we have to work from the effective slots and we have to
+;;; create methods for all slots, not only the direct ones in this
+;;; class. Both semantics are incompatible, but we currently have no
+;;; safe way to choose one or another
+;;;
+#|
+(defun std-class-optimized-accessors (slotd)
+  (declare (si::c-local))
+  (values #'(lambda (self)
+	      (standard-instance-get self slotd))
+	  #'(lambda (value self)
+	      (standard-instance-set value self slotd))))
+|#
 
-(defun std-class-generate-accessors (standard-class)
+(defun std-class-accessors (slot-name)
+  (declare (si::c-local))
+  ;; The following are very slow. We do not optimize for the slot position.
+  (values #'(lambda (self)
+	      (slot-value self slot-name))
+	  #'(lambda (value self)
+	      (setf (slot-value self slot-name) value))))
+
+(defun std-class-generate-accessors (standard-class &aux optimizable)
   (declare (si::c-local))
   ;;
   ;; The accessors are closures, which are generated every time the
@@ -404,36 +432,35 @@ because it contains a reference to the undefined class~%  ~A"
   ;; the liberty of using SI:INSTANCE-REF because they know the class of
   ;; the instance.
   ;;
-  (dolist (slotd (class-slots standard-class))
-    (let* ((slot-name (slot-definition-name slotd))
-	   (index (slot-definition-location slotd))
-	   reader setter)
-      (declare (fixnum index))
-      (if (and (eql (slot-definition-allocation slotd) :instance)
-	       (si:fixnump index)
-	       (slot-value standard-class 'optimize-slot-access))
-	  (setf reader #'(lambda (self)
-			   (let ((value (si:instance-ref self index)))
-			     (if (si:sl-boundp value)
-				 value
-				 (values (slot-unbound (class-of self) self slot-name)))))
-		setter #'(lambda (value self)
-			   (si:instance-set self index value)))
-	  (let ((slotd slotd))
-	    ;; Note that in order to save this value in the closure we have to copy
-	    ;; the variable, because the value of SLOTD is going to change!
-	    (setf reader #'(lambda (self)
-			     (slot-value-using-class (si:instance-class self)
-						     self slotd))
-		  setter #'(lambda (value self)
-			     (setf (slot-value-using-class (si:instance-class self)
-							   self slotd) value)))))
-      (dolist (fname (slot-definition-readers slotd))
-	(install-method fname nil `(,standard-class) '(self) nil nil
-			reader))
-      (dolist (fname (slot-definition-writers slotd))
-	(install-method fname nil `(,(find-class t) ,standard-class) '(value self)
-			nil nil setter)))))
+  (dolist (slotd (class-direct-slots standard-class))
+    (multiple-value-bind (reader writer)
+	(std-class-accessors (slot-definition-name slotd))
+      (let* ((reader-args (list :function reader
+				:generic-function nil
+				:qualifiers nil
+				:lambda-list '(object)
+				:specializers `(,standard-class)
+				:slot-definition slotd))
+	     (reader-class (if (boundp '*early-methods*)
+			       'standard-reader-method
+			       (apply #'reader-method-class standard-class slotd
+				      reader-args)))
+	     (writer-args (list :function writer
+				:generic-function nil
+				:qualifiers nil
+				:lambda-list '(value object)
+				:specializers `(,(find-class t) ,standard-class)
+				:slot-definition slotd))
+	     (writer-class (if (boundp '*early-methods*)
+			       'standard-reader-method
+			     (apply #'writer-method-class standard-class slotd
+				    writer-args))))
+	(dolist (fname (slot-definition-readers slotd))
+	  (install-method fname nil `(,standard-class) '(self) nil nil
+			  reader reader-class :slot-definition slotd))
+	(dolist (fname (slot-definition-writers slotd))
+	  (install-method fname nil `(,(find-class t) ,standard-class) '(value self)
+			  nil nil writer writer-class :slot-definition slotd))))))
 
 ;;; ======================================================================
 ;;; STANDARD-OBJECT

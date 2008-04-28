@@ -271,10 +271,13 @@ have disappeared."
 ;;; ----------------------------------------------------------------------
 ;;;                                                             operations
 
-(defun make-method (qualifiers specializers lambda-list
-		    fun plist options gf method-class)
-  (let ((method (si:allocate-raw-instance nil (find-class 'standard-method nil)
-		   #.(length +standard-method-slots+))))
+(defun make-method (method-class qualifiers specializers lambda-list
+				 fun plist options)
+  (declare (ignore options))
+  (let* ((instance-size (+ #.(length +standard-method-slots+)
+			   (if (eq method-class 'standard-method)
+			       0 2)))
+	 (method (si:allocate-raw-instance nil method-class instance-size)))
     (setf (method-generic-function method) nil
 	  (method-lambda-list method) lambda-list
 	  (method-function method) fun
