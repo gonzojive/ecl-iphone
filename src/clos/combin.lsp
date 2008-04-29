@@ -89,7 +89,7 @@
 
 (defmacro call-method (method rest-methods)
   `(funcall ,(effective-method-function method)
-	    (locally (declare special) .combined-method-args.)
+	    .combined-method-args.
 	    ',(mapcar #'effective-method-function rest-methods)))
 
 (defun call-next-method (&rest args)
@@ -105,16 +105,12 @@
 (define-compiler-macro call-next-method (&rest args)
   `(if *next-methods*
        (funcall (car *next-methods*)
-		,(if args
-		     `(list ,@args)
-		     '(locally (declare (special .combined-method-args.))
-		       .combined-method-args.))
+		,(if args `(list ,@args) '.combined-method-args.)
 		(rest *next-methods*))
        (error "No next method.")))
 
 (define-compiler-macro next-method-p ()
-  '(locally (declare (special clos::*next-methods*))
-    clos::*next-methods*))
+  'clos::*next-methods*)
 
 (defun error-qualifier (m qualifier)
   (declare (si::c-local))
