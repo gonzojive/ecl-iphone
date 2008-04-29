@@ -395,9 +395,9 @@ because it contains a reference to the undefined class~%  ~A"
 ;;; ----------------------------------------------------------------------
 ;;; Optional accessors
 ;;;
-;;; The following does not work. We have a problem with optimized
-;;; accessors that memoize the position of a slot. The problem is that
-;;; the AMOP specifies that slot accessors are created from the direct
+;;; The following does get as fast as it should because we are not
+;;; allowed to memoize the position of a slot. The problem is that the
+;;; AMOP specifies that slot accessors are created from the direct
 ;;; slots, without knowing the slot position. This semantics is
 ;;; required for working standard-reader- and
 ;;; standard-writer-method. OTOH if we want to have memoized slot
@@ -406,14 +406,22 @@ because it contains a reference to the undefined class~%  ~A"
 ;;; class. Both semantics are incompatible, but we currently have no
 ;;; safe way to choose one or another
 ;;;
-#|
-(defun std-class-optimized-accessors (slotd)
+(defun std-class-optimized-accessors (slot-name)
   (declare (si::c-local))
   (values #'(lambda (self)
-	      (standard-instance-get self slotd))
+	      (let* ((class (si:instance-class self))
+		     (table (slot-table class))
+		     (slotd (gethash slot-name table))
+		     (index (slot-definition-location slotd)))
+		(declare (fixnum index))
+		(si:instance-ref self index)))
 	  #'(lambda (value self)
-	      (standard-instance-set value self slotd))))
-|#
+	      (let* ((class (si:instance-class self))
+		     (table (slot-table class))
+		     (slotd (gethash slot-name table))
+		     (index (slot-definition-location slotd)))
+		(declare (fixnum index))
+		(si:instance-set self index value)))))
 
 (defun std-class-accessors (slot-name)
   (declare (si::c-local))
@@ -434,7 +442,11 @@ because it contains a reference to the undefined class~%  ~A"
   ;;
   (dolist (slotd (class-direct-slots standard-class))
     (multiple-value-bind (reader writer)
-	(std-class-accessors (slot-definition-name slotd))
+	(let ((name (slot-definition-name slotd)))
+	  (if (and (slot-value standard-class 'optimize-slot-access)
+		   (eq (slot-definition-allocation slotd) :instance))
+	      (std-class-optimized-accessors name)
+	      (std-class-accessors name)))
       (let* ((reader-args (list :function reader
 				:generic-function nil
 				:qualifiers nil

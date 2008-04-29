@@ -112,9 +112,10 @@
 	  (setf plist '(:needs-next-method-p FUNCTION))
 	  (setf real-body
 		`((let* ((.combined-method-args.
-			  (if (listp .combined-method-args.)
-			      .combined-method-args.
-			      (apply #'list .combined-method-args.)))
+			  (locally (declare (special .combined-method-args.))
+			    (if (listp .combined-method-args.)
+				.combined-method-args.
+				(apply #'list .combined-method-args.))))
 			 (.next-methods. *next-methods*))
 		    (flet ((call-next-method (&rest args)
 			     (unless .next-methods.
