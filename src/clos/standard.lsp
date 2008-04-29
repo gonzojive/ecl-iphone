@@ -395,7 +395,7 @@ because it contains a reference to the undefined class~%  ~A"
 ;;; ----------------------------------------------------------------------
 ;;; Optional accessors
 ;;;
-;;; The following does get as fast as it should because we are not
+;;; The following does not get as fast as it should because we are not
 ;;; allowed to memoize the position of a slot. The problem is that the
 ;;; AMOP specifies that slot accessors are created from the direct
 ;;; slots, without knowing the slot position. This semantics is
@@ -412,9 +412,12 @@ because it contains a reference to the undefined class~%  ~A"
 	      (let* ((class (si:instance-class self))
 		     (table (slot-table class))
 		     (slotd (gethash slot-name table))
-		     (index (slot-definition-location slotd)))
+		     (index (slot-definition-location slotd))
+		     (value (si:instance-ref self index)))
 		(declare (fixnum index))
-		(si:instance-ref self index)))
+		(if (si:sl-boundp value)
+		    value
+		    (values (slot-unbound (class-of self) self slot-name)))))
 	  #'(lambda (value self)
 	      (let* ((class (si:instance-class self))
 		     (table (slot-table class))
