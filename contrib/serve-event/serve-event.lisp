@@ -40,7 +40,21 @@
            "SERVE-EVENT" "SERVE-ALL-EVENTS"))
 (in-package "SERVE-EVENT")
 
-(clines "#include <sys/select.h>")
+(clines
+ "#include <errno.h>"
+ "#include <sys/select.h>")
+
+(eval-when (:compile-toplevel :load-toplevel)
+  (defmacro define-c-constants (&rest args)
+    `(progn
+       ,@(loop
+            for (lisp-name c-name) on args by #'cddr
+            collect `(defconstant ,lisp-name (c-inline () () :int ,c-name :one-liner t)))))
+  (defmacro c-constant (name)
+    `(c-inline () () :int ,name :one-liner t)))
+
+(define-c-constants
+    +eintr+ "EINTR")
 
 (defstruct (handler
             (:constructor make-handler (direction descriptor function))
@@ -141,40 +155,46 @@
             (when (> fd maxfd)
           (setf maxfd fd))))
 
-        (let ((retval
-               (if (null seconds)
-                   ;; No timeout
-                   (c-inline (rfd      wfd    (1+ maxfd))
-                             (:object :object :int) :int
-                             "{ @(return) = select(#2, (fd_set*)#0->foreign.data,
-                                                       (fd_set*)#1->foreign.data,
-                                                       NULL, NULL); }"
-                             :one-liner nil
-                             :side-effects t)
-                   (c-inline (rfd      wfd    (1+ maxfd) seconds) 
-                             (:object :object :int       :int) :int
-                             "{ struct timeval tv;
+        (multiple-value-bind (retval errno)
+	    (if (null seconds)
+		;; No timeout
+		(c-inline (rfd      wfd    (1+ maxfd))
+			  (:object :object :int) (values :int :int)
+			  "{ @(return 0) = select(#2, (fd_set*)#0->foreign.data,
+                                                      (fd_set*)#1->foreign.data,
+                                                      NULL, NULL);
+                             @(return 1) = errno; }"
+			  :one-liner nil
+			  :side-effects t)
+		(c-inline (rfd      wfd    (1+ maxfd) seconds) 
+			  (:object :object :int       :int) (values :int :int)
+			  "{ struct timeval tv;
                                 tv.tv_sec = #3;
                                 tv.tv_usec = 0;
-                                @(return) = select(#2, (fd_set*)#0->foreign.data,
-                                                       (fd_set*)#1->foreign.data,
-                                                       NULL, &tv); }"
-                             :one-liner nil
-                             :side-effects t))))
+                                @(return 0) = select(#2, (fd_set*)#0->foreign.data,
+                                                         (fd_set*)#1->foreign.data,
+                                                         NULL, &tv);
+                                @(return 1) = errno; }"
+			  :one-liner nil
+			  :side-effects t))
 
-      (cond ((zerop retval) 
-             nil)
-            ((minusp retval) 
-             (error "Error during select"))
-            ((plusp retval)  
-             (dolist (handler *descriptor-handlers*)
-               (let ((fd (handler-descriptor handler)))
-                 (if (plusp (ecase (handler-direction handler)
-                              (:input (fd-isset fd rfd))
-                              (:output (fd-isset fd wfd))))
-                     (funcall (handler-function handler) 
-                              (handler-descriptor handler)))))
-             t)))))))
+	  (cond ((zerop retval) 
+		 nil)
+		((minusp retval)
+		 (if (= errno +eintr+)
+		     ;; suppress EINTR
+		     nil
+		     ;; otherwise error
+		     (error "Error during select")))
+		((plusp retval)  
+		 (dolist (handler *descriptor-handlers*)
+		   (let ((fd (handler-descriptor handler)))
+		     (if (plusp (ecase (handler-direction handler)
+				  (:input (fd-isset fd rfd))
+				  (:output (fd-isset fd wfd))))
+			 (funcall (handler-function handler) 
+				  (handler-descriptor handler)))))
+		 t)))))))
 
 
 ;;; Wait for up to timeout seconds for an event to happen. Make sure all
