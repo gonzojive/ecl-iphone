@@ -1013,6 +1013,9 @@ cl_namestring(cl_object x)
 			defaults = cl_pathname(defaults);
 			default_host = defaults->pathname.host;
 		}
+#ifdef ECL_UNICODE
+		thing = si_coerce_to_base_string(thing);
+#endif
 		get_string_start_end(thing, start, end, &s, &e);
 		output = ecl_parse_namestring(thing, s, e, &ee, default_host);
 		start = MAKE_FIXNUM(ee);

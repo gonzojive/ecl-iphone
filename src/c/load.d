@@ -425,7 +425,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 	bool not_a_filename = 0;
 @
 	/* If source is a stream, read conventional lisp code from it */
-	if (type_of(source) != t_pathname && type_of(source) != t_base_string) {
+	if (type_of(source) != t_pathname && !ecl_stringp(source)) {
 		/* INV: if "source" is not a valid stream, file.d will complain */
 		filename = source;
 		function = Cnil;
