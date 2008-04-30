@@ -153,6 +153,9 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_DOUBLE_COMPLEX
 #undef HAVE_FLOAT_COMPLEX
 
+/* We can use small, two-words conses, without type information		*/
+#undef ECL_SMALL_CONS
+
 /* -CUT-: Everything below this mark will not be installed		*/
 /* -------------------------------------------------------------------- *
  *	BUILD OPTIONS WHICH NEED NOT BE EXPORTED			*

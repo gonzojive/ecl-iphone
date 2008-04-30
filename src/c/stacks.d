@@ -87,6 +87,8 @@ bds_unwind_n(int n)
 cl_object *
 ecl_symbol_slot(cl_object s)
 {
+	if (Null(s))
+		s = Cnil_symbol;
 	if (s->symbol.dynamic) {
 		struct ecl_hashtable_entry *h = ecl_search_hash(s, cl_env.bindings_hash);
 		if (h->key != OBJNULL)

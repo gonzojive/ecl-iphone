@@ -18,35 +18,37 @@
 
 #define CONS(a,d)	ecl_cons((a),(d))
 #define ACONS(a,b,c)	ecl_cons(ecl_cons((a),(b)),(c))
-#define CAR(x)		(x)->cons.car
-#define CDR(x)		(x)->cons.cdr
-#define CAAR(x)		(x)->cons.car->cons.car
-#define CADR(x)		(x)->cons.cdr->cons.car
-#define CDAR(x)		(x)->cons.car->cons.cdr
-#define CDDR(x)		(x)->cons.cdr->cons.cdr
-#define CAAAR(x)	(x)->cons.car->cons.car->cons.car
-#define CAADR(x)	(x)->cons.cdr->cons.car->cons.car
-#define CADAR(x)	(x)->cons.car->cons.cdr->cons.car
-#define CADDR(x)	(x)->cons.cdr->cons.cdr->cons.car
-#define CDAAR(x)	(x)->cons.car->cons.car->cons.cdr
-#define CDADR(x)	(x)->cons.cdr->cons.car->cons.cdr
-#define CDDAR(x)	(x)->cons.car->cons.cdr->cons.cdr
-#define CDDDR(x)	(x)->cons.cdr->cons.cdr->cons.cdr
-#define CAAAAR(x)	(x)->cons.car->cons.car->cons.car->cons.car
-#define CAAADR(x)	(x)->cons.cdr->cons.car->cons.car->cons.car
-#define CAADAR(x)	(x)->cons.car->cons.cdr->cons.car->cons.car
-#define CAADDR(x)	(x)->cons.cdr->cons.cdr->cons.car->cons.car
-#define CADAAR(x)	(x)->cons.car->cons.car->cons.cdr->cons.car
-#define CADADR(x)	(x)->cons.cdr->cons.car->cons.cdr->cons.car
-#define CADDAR(x)	(x)->cons.car->cons.cdr->cons.cdr->cons.car
-#define CADDDR(x)	(x)->cons.cdr->cons.cdr->cons.cdr->cons.car
-#define CDAAAR(x)	(x)->cons.car->cons.car->cons.car->cons.car
-#define CDAADR(x)	(x)->cons.cdr->cons.car->cons.car->cons.cdr
-#define CDADAR(x)	(x)->cons.car->cons.cdr->cons.car->cons.cdr
-#define CDADDR(x)	(x)->cons.cdr->cons.cdr->cons.car->cons.cdr
-#define CDDAAR(x)	(x)->cons.car->cons.car->cons.cdr->cons.cdr
-#define CDDADR(x)	(x)->cons.cdr->cons.car->cons.cdr->cons.cdr
-#define CDDDAR(x)	(x)->cons.car->cons.cdr->cons.cdr->cons.cdr
-#define CDDDDR(x)	(x)->cons.cdr->cons.cdr->cons.cdr->cons.cdr
+#define CAR(x)		(Null(x)? (x) : ECL_CONS_CAR(x))
+#define CDR(x)		(Null(x)? (x) : ECL_CONS_CDR(x))
+
+#define CAAR(x)		CAR(CAR(x))
+#define CADR(x)		CAR(CDR(x))
+#define CAAAR(x)	CAR(CAAR(x))
+#define CAADR(x)	CAR(CADR(x))
+#define CADAR(x)	CAR(CDAR(x))
+#define CADDR(x)	CAR(CDDR(x))
+#define CAAAAR(x)	CAR(CAAAR(x))
+#define CAAADR(x)	CAR(CAADR(x))
+#define CAADAR(x)	CAR(CADAR(x))
+#define CAADDR(x)	CAR(CADDR(x))
+#define CADAAR(x)	CAR(CDAAR(x))
+#define CADADR(x)	CAR(CDADR(x))
+#define CADDAR(x)	CAR(CDDAR(x))
+#define CADDDR(x)	CAR(CDDDR(x))
+
+#define CDAR(x)		CDR(CAR(x))
+#define CDDR(x)		CDR(CDR(x))
+#define CDAAR(x)	CDR(CAAR(x))
+#define CDADR(x)	CDR(CADR(x))
+#define CDDAR(x)	CDR(CDAR(x))
+#define CDDDR(x)	CDR(CDDR(x))
+#define CDAAAR(x)	CDR(CAAAR(x))
+#define CDAADR(x)	CDR(CAADR(x))
+#define CDADAR(x)	CDR(CADAR(x))
+#define CDADDR(x)	CDR(CADDR(x))
+#define CDDAAR(x)	CDR(CDAAR(x))
+#define CDDADR(x)	CDR(CDADR(x))
+#define CDDDAR(x)	CDR(CDDAR(x))
+#define CDDDDR(x)	CDR(CDDDR(x))
 
 #define Null(x)	((x)==Cnil)

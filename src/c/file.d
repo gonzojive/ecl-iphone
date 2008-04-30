@@ -1494,7 +1494,7 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		goto OUTPUT;
 	}
 	t = type_of(seq);
-	if (t == t_cons || t == t_symbol) {
+	if (t == t_list) {
 		bool ischar = cl_stream_element_type(stream) == @'base-char';
 		cl_object s = ecl_nthcdr(start, seq);
 		loop_for_in(s) {
@@ -1570,7 +1570,7 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 		goto OUTPUT;
 	}
 	t = type_of(seq);
-	if (t == t_cons || t == t_symbol) {
+	if (t == t_list) {
 		bool ischar = cl_stream_element_type(stream) == @'base-char';
 		seq = ecl_nthcdr(start, seq);
 		loop_for_in(seq) {
@@ -1586,7 +1586,7 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 					c = ecl_read_byte(stream);
 					if (c == Cnil) goto OUTPUT;
 				}
-				CAR(seq) = c;
+				ECL_RPLACA(seq, c);
 				start++;
 			}
 		} end_loop_for_in;

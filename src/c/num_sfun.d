@@ -46,11 +46,11 @@ log1p(double x)
 float
 log1pf(float x)
 {
-	float u = 1.0f0 + x;
+	float u = (float)1 + x;
 	if (u == 1) {
-		return 0.0f0;
+		return (float)0;
 	} else {
-		return (logf(u) * x)/(u - 1.0f0);
+		return (logf(u) * x)/(u - (float)1);
 	}
 }
 #endif
@@ -59,7 +59,7 @@ log1pf(float x)
 long double
 log1pl(long double x)
 {
-	long double u = (long double)1.0 + x;
+	long double u = (long double)1 + x;
 	if (u == 1) {
 		return (long double)1;
 	} else {

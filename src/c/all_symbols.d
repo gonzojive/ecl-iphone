@@ -85,12 +85,12 @@ mangle_name(cl_object output, char *source, int l)
 	cl_object maxarg = MAKE_FIXNUM(CALL_ARGUMENTS_LIMIT);
 	cl_object minarg = MAKE_FIXNUM(0);
 	bool is_symbol;
+	cl_object name;
 @
-	symbol = ecl_check_cl_type(@'si::mangle-name', symbol, t_symbol);
+	name = ecl_symbol_name(symbol);
 	is_symbol = Null(as_function);
 	if (is_symbol) {
 		cl_fixnum p;
-
 		if (symbol == Cnil)
 			@(return Ct make_constant_base_string("Cnil"))
 		else if (symbol == Ct)
@@ -100,10 +100,10 @@ mangle_name(cl_object output, char *source, int l)
 			found = Ct;
 			output = cl_format(4, Cnil,
 					   make_constant_base_string("ECL_SYM(~S,~D)"),
-					   symbol->symbol.name, MAKE_FIXNUM(p));
+					   name, MAKE_FIXNUM(p));
 			@(return found output maxarg)
 		}
-	} else {
+	} else if (!Null(symbol)) {
 		cl_object fun;
 		fun = symbol->symbol.gfdef;
 		if (fun != OBJNULL && type_of(fun) == t_cfun &&
@@ -122,8 +122,10 @@ mangle_name(cl_object output, char *source, int l)
 			}
 		}
 	}
-	package= symbol->symbol.hpack;
-	if (package == cl_core.lisp_package)
+	package = ecl_symbol_package(symbol);
+	if (Null(package))
+		;
+	else if (package == cl_core.lisp_package)
 		package = make_constant_base_string("cl");
 	else if (package == cl_core.system_package)
 		package = make_constant_base_string("si");
@@ -131,7 +133,7 @@ mangle_name(cl_object output, char *source, int l)
 		package = Cnil;
 	else
 		package = package->pack.name;
-	symbol = symbol->symbol.name;
+	symbol = ecl_symbol_name(symbol);
 	l      = symbol->base_string.fillp;
 	source = symbol->base_string.self;
 	output = cl_alloc_simple_base_string(ecl_length(package) + l + 1);
@@ -194,14 +196,11 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 	}
 	s->symbol.t = t_symbol;
 	s->symbol.dynamic = 0;
-	s->symbol.mflag = FALSE;
 	ECL_SET(s, OBJNULL);
 	SYM_FUN(s) = Cnil;
 	s->symbol.plist = Cnil;
 	s->symbol.hpack = Cnil;
 	s->symbol.stype = stp;
-	s->symbol.mflag = FALSE;
-	s->symbol.isform = FALSE;
 	s->symbol.hpack = package;
 	s->symbol.name = make_constant_base_string(name);
 	if (package == cl_core.keyword_package) {
@@ -218,7 +217,9 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 		}
 		cl_export2(s, package);
 	}
-	if (!(s->symbol.isform = form) && fun) {
+	if (form) {
+		s->symbol.stype |= stp_special_form;
+	} else if (fun) {
 		cl_object f = cl_make_cfun_va(fun, s, NULL);
 		SYM_FUN(s) = f;
 		f->cfun.narg = narg;

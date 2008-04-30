@@ -631,11 +631,10 @@ because the element types don't match.", 0);
 because the total size of the to-array is too small.", 0);
 		j = ecl_fixnum_in_range(@'adjust-array',"array displacement",offset,
 					0, to->array.dim - from->array.dim);
-		from->array.displaced = CONS(to, Cnil);
+		from->array.displaced = ecl_list1(to);
 		if (Null(to->array.displaced))
-			to->array.displaced = CONS(Cnil, Cnil);
-		CDR(to->array.displaced) =
-			CONS(from, CDR(to->array.displaced));
+			to->array.displaced = ecl_list1(Cnil);
+		ECL_RPLACD(to->array.displaced, CONS(from, CDR(to->array.displaced)));
 		if (fromtype == aet_bit) {
 			j += to->vector.offset;
 			from->vector.offset = j%CHAR_BIT;

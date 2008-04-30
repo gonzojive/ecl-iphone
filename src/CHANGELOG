@@ -1,6 +1,25 @@
 ECL 0.9k:
 =========
 
+* Implementation changes:
+
+ - NIL is now of type LIST, which is a fundamental type in ECL. This means the
+   set of symbols is made by those with the type tag t_symbol plus NIL.  This
+   is completely hidden by the high level functions SYMBOL-NAME,
+   SYMBOL-PACKAGE, ... and their C counterparts.
+
+ - Objects of type LIST are now immediately recognized by having 01 in the
+   least significant bits of the pointer to the object. Furthermore, NIL is
+   represented by the word 0x00000001, which points nowhere. Care should be
+   taken when manipulating lists and instead of accessing directly the fields
+   CAR, CDR, etc, it is recommended to use the higher level functions and
+   macros CONSP, LISTP, Null, ecl_car, ecl_cdr, ecl_rplaca, etc...
+
+ - Out of the LIST type, the CONS subtype is now implemented using only two
+   words: one for the CAR and one for the CDR. Nevertheless, the Boehm-Weiser
+   garbage collector still requires a bit more, so that it results in no memory
+   gain.
+
 * Visible changes:
 
  - The documentation is slowly disappearing form this source tree, as there
@@ -74,6 +93,9 @@ ECL 0.9k:
    and what form number they represent.
 
  - LOAD now accepts namestrings which are of type (AND STRING (NOT BASE-STRING))
+
+ - LAST, BUTLAST, NBUTLAST and COPY-LIST no longer detect circularities. Speed
+   improvements in these and other functions.
 
 * CLOS:
 
@@ -155,11 +177,16 @@ ECL 0.9k:
    for collecting the arguments of a function, in MAP, MAPCAR, APPLY, FUNCALL,
    MULTIPLE-VALUE-CALL, etc.
 
- - In some platforms (intel/32bits) there exist hand-optimized assembly
+ - On some platforms (intel/32bits) there exist hand-optimized assembly
    routines that implement APPLY in various forms (fixed # arguments, variable
    #, closures) They save about 40kb code in Mac OSX, for instance, and do not
    impact performance. This has to be activated with --enable-asmapply at
    configuration time.
+
+ - ECL now offers the possibility to use conses which do not carry type
+   information. These conses have a size of two words and lead to significantly
+   faster code, as well as less memory consumption. The feature has to be
+   activated manually using the configuration flag --enable-smallcons.
 
 ;;; Local Variables: ***
 ;;; mode:text ***

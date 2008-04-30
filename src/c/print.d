@@ -821,10 +821,18 @@ write_symbol(cl_object x, cl_object stream)
 	cl_object print_package = ecl_symbol_value(@'si::*print-package*');
 	cl_object readtable = ecl_current_readtable();
 	cl_object print_case = ecl_print_case();
-	cl_object package = x->symbol.hpack;
-	cl_object name = x->symbol.name;
+	cl_object package;
+	cl_object name;
 	int intern_flag;
 	bool print_readably = ecl_print_readably();
+
+	if (Null(x)) {
+		package = Cnil_symbol->symbol.hpack;
+		name = Cnil_symbol->symbol.name;
+	} else {
+		package = x->symbol.hpack;
+		name = x->symbol.name;
+	}
 
 	if (!print_readably && !ecl_print_escape()) {
 		write_symbol_string(name, readtable->readtable.read_case,
@@ -1180,9 +1188,13 @@ si_write_ugly_object(cl_object x, cl_object stream)
 				write_ch('0', stream);
 		break;
 
-	case t_cons: {
+	case t_list: {
 		bool circle;
 		cl_fixnum print_level, print_length;
+		if (Null(x)) {
+			write_symbol(x, stream);
+			break;
+		}
 		if (CAR(x) == @'si::#!') {
 			write_str("#!", stream);
 			x = CDR(x);
@@ -1590,8 +1602,8 @@ si_write_object_recursive(cl_object x, cl_object stream)
 	}
 #endif /* ECL_CMU_FORMAT */
 	circle = ecl_print_circle();
-	if (circle && !IMMEDIATE(x) &&
-	    ((type_of(x) != t_symbol) || (Null(x->symbol.hpack))))
+	if (circle && !Null(x) && !FIXNUMP(x) && !CHARACTERP(x) &&
+	    (LISTP(x) || (x->d.t != t_symbol) || (Null(x->symbol.hpack))))
 	{
 		cl_object circle_counter;
 		cl_fixnum code;

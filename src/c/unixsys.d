@@ -272,7 +272,7 @@ si_close_pipe(cl_object stream)
 #else /* mingw */
 {
 	int child_stdin, child_stdout, child_stderr;
-	argv = CONS(command, ecl_nconc(argv, CONS(Cnil, Cnil)));
+	argv = CONS(command, ecl_nconc(argv, ecl_list1(Cnil)));
 	argv = cl_funcall(3, @'coerce', argv, @'vector');
 	if (input == @':stream') {
 		int fd[2];

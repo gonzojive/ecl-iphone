@@ -1693,6 +1693,7 @@ cl_symbols[] = {
 {EXT_ "*LOAD-POSITION*",NULL},
 {EXT_ "BC-FILE","si_bc_file"},
 
+{SYS_ "PROPERTY-LIST",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};
-

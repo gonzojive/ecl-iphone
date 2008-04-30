@@ -306,7 +306,11 @@ BEGIN:
 	tx = type_of(x);
 	ty = type_of(y);
 	switch (tx) {
-	case t_cons:
+	case t_list:
+		if (Null(x) || Null(y)) {
+			/* If X is NIL, then X and Y must be EQ */
+			return FALSE;
+		}
 		if (tx != ty || !ecl_equal(CAR(x), CAR(y)))
 			return FALSE;
 		x = CDR(x);
@@ -452,7 +456,11 @@ BEGIN:
 	switch (tx) {
 	case t_character:
 		return ecl_char_equal(x, y);
-	case t_cons:
+	case t_list:
+		if (Null(x) || Null(y)) {
+			/* X is NIL but it is not EQ to Y */
+			return FALSE;
+		}
 		if (!ecl_equalp(CAR(x), CAR(y)))
 			return(FALSE);
 		x = CDR(x);

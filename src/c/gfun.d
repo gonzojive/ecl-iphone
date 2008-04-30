@@ -15,6 +15,7 @@
 
 #include <string.h>
 #include <ecl/ecl.h>
+#include <ecl/ecl-inl.h>
 #include <ecl/internal.h>
 #include "newhash.h"
 
@@ -164,11 +165,11 @@ si_clear_gfun_hash(cl_object what)
 	cl_object list;
 	THREAD_OP_LOCK();
 	list = cl_core.processes;
-	for (; list != Cnil; list = CDR(list)) {
-		cl_object process = CAR(list);
+	loop_for_on_unsafe(list) {
+		cl_object process = ECL_CONS_CAR(list);
 		struct cl_env_struct *env = process->process.env;
 		env->method_hash_clear_list = CONS(what, env->method_hash_clear_list);
-	}
+	} end_loop_for_on;
 	THREAD_OP_UNLOCK();
 #else
 	do_clear_method_hash(&cl_env, what);
@@ -288,13 +289,12 @@ get_spec_vector(cl_object frame, cl_object gf)
 	cl_object spec_how_list = GFUN_SPEC(gf);
 	cl_object vector = cl_env.method_spec_vector;
 	cl_object *argtype = vector->vector.self.t;
-	int spec_no;
-
+	int spec_no = 1;
 	argtype[0] = gf;
-	for (spec_no = 1; spec_how_list != Cnil;) {
-		cl_object spec_how = CAR(spec_how_list);
-		cl_object spec_type = CAR(spec_how);
-		int spec_position = fix(CDR(spec_how));
+	loop_for_on_unsafe(spec_how_list) {
+		cl_object spec_how = ECL_CONS_CAR(spec_how_list);
+		cl_object spec_type = ECL_CONS_CAR(spec_how);
+		int spec_position = fix(ECL_CONS_CDR(spec_how));
 		if (spec_position >= narg)
 			FEwrong_num_arguments(gf);
 		argtype[spec_no++] =
@@ -304,8 +304,7 @@ get_spec_vector(cl_object frame, cl_object gf)
 			args[spec_position];
 		if (spec_no > vector->vector.dim)
 			return OBJNULL;
-		spec_how_list = CDR(spec_how_list);
-	}
+	} end_loop_for_on;
 	vector->vector.fillp = spec_no;
 	return vector;
 }
@@ -340,9 +339,9 @@ _ecl_standard_dispatch(cl_object frame, cl_object gf)
 		cl_object clear_list;
 		THREAD_OP_LOCK();
 		clear_list = cl_env.method_hash_clear_list;
-		for ( ; clear_list != Cnil ; clear_list = CDR(clear_list)) {
-			do_clear_method_hash(&cl_env, CAR(clear_list));
-		}
+		loop_for_on_unsafe(clear_list) {
+			do_clear_method_hash(&cl_env, ECL_CONS_CAR(clear_list));
+		} end_loop_for_on;
 		cl_env.method_hash_clear_list = Cnil;
 		THREAD_OP_UNLOCK();
 	}

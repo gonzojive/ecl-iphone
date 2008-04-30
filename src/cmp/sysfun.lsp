@@ -586,9 +586,10 @@
 (def-inline nthcdr :unsafe (fixnum t) t "ecl_nthcdr(#0,#1)")
 
 (proclaim-function last (list) t)
+(def-inline last :always (t) t "ecl_last(#0,1)")
 (proclaim-function list (*) list :no-side-effects t)
 (def-inline list :always nil t "Cnil")
-(def-inline list :always (t) t "CONS(#0,Cnil)")
+(def-inline list :always (t) t "ecl_list1(#0)")
 
 (proclaim-function list* (t *) list :no-side-effects t)
 (def-inline list* :always (t) t "#0")
@@ -607,7 +608,9 @@
 
 (proclaim-function nreconc (list t) t)
 (proclaim-function butlast (list *) list)
+(def-inline butlast :always (t) t "ecl_butlast(#0,1)")
 (proclaim-function nbutlast (list *) list)
+(def-inline nbutlast :always (t) t "ecl_nbutlast(#0,1)")
 (proclaim-function ldiff (list t) list)
 (proclaim-function rplaca (cons t) cons)
 (proclaim-function rplacd (cons t) cons)
@@ -1229,12 +1232,11 @@ type_of(#0)==t_bitvector")
 
 (proclaim-function remprop (symbol t) t)
 (proclaim-function symbol-plist (symbol) t :predicate t :no-side-effects t)
-(def-inline symbol-plist :always (t) t "((#0)->symbol.plist)")
 
 (proclaim-function getf (t t *) t)
 (proclaim-function get-properties (t t) *)
 (proclaim-function symbol-name (symbol) string :no-side-effects t)
-(def-inline symbol-name :always (symbol) t "((#0)->symbol.name)")
+(def-inline symbol-name :always (t) string "ecl_symbol_name(#0)")
 
 (proclaim-function make-symbol (string) symbol)
 (proclaim-function copy-symbol (symbol *) symbol)

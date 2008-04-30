@@ -98,7 +98,7 @@
   (when (safe-compile)
    (wt-nl "if(ATOM(" x "))"
 	  "FEtype_error_cons(" x ");"))
-  (wt-nl "CAR(" x ") = " y ";")
+  (wt-nl "ECL_CONS_CAR(" x ") = " y ";")
   (unwind-exit x)
   (close-inline-blocks))
 
@@ -113,7 +113,7 @@
   (when (safe-compile)
    (wt-nl "if(ATOM(" x "))"
 	  "FEtype_error_cons(" x ");"))
-  (wt-nl "CDR(" x ") = " y ";")
+  (wt-nl "ECL_CONS_CDR(" x ") = " y ";")
   (unwind-exit x)
   (close-inline-blocks))
 

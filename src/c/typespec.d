@@ -146,8 +146,8 @@ ecl_type_to_symbol(cl_type t)
 		return @'symbol';
 	case t_package:
 		return @'package';
-	case t_cons:
-		return @'cons';
+	case t_list:
+		return @'list';
 	case t_hashtable:
 		return @'hash-table';
 	case t_array:
@@ -335,9 +335,7 @@ cl_type_of(cl_object x)
 	}
 
 	case t_symbol:
-		if (x == Cnil)
-			t = @'null';
-		else if (x == Ct)
+		if (x == Ct)
 			t = @'boolean';
 		else if (x->symbol.hpack == cl_core.keyword_package)
 			t = @'keyword';
@@ -413,6 +411,8 @@ cl_type_of(cl_object x)
 	case t_pathname:
 		t = x->pathname.logical? @'logical-pathname' : @'pathname';
 		break;
+	case t_list:
+		return Null(x) ? @'null' : @'cons';
 	default:
 		t = ecl_type_to_symbol(tx);
 	}

@@ -200,6 +200,7 @@ extern ECL_API struct cl_core_struct cl_core;
 extern ECL_API cl_object cl_alloc_object(cl_type t);
 extern ECL_API cl_object cl_alloc_instance(cl_index slots);
 extern ECL_API cl_object ecl_cons(cl_object a, cl_object d);
+extern ECL_API cl_object ecl_list1(cl_object a);
 extern ECL_API void cl_dealloc(void *p, cl_index s);
 #ifdef GBC_BOEHM
 extern ECL_API cl_object si_gc(cl_object area);
@@ -746,6 +747,7 @@ extern ECL_API cl_object cl_cddddr(cl_object x);
 #define cl_second cl_cadr
 #define cl_third cl_caddr
 #define cl_fourth cl_cadddr
+
 extern ECL_API cl_object cl_fifth(cl_object x);
 extern ECL_API cl_object cl_sixth(cl_object x);
 extern ECL_API cl_object cl_seventh(cl_object x);
@@ -788,6 +790,9 @@ extern ECL_API cl_object cl_pairlis _ARGS((cl_narg narg, cl_object keys, cl_obje
 extern ECL_API cl_object cl_rassoc _ARGS((cl_narg narg, cl_object item, cl_object alist, ...));
 extern ECL_API cl_object cl_assoc _ARGS((cl_narg narg, cl_object item, cl_object alist, ...));
 
+extern ECL_API cl_object ecl_last(cl_object x, cl_index n);
+extern ECL_API cl_object ecl_butlast(cl_object x, cl_index n);
+extern ECL_API cl_object ecl_nbutlast(cl_object x, cl_index n);
 extern ECL_API cl_object ecl_list_length(cl_object x);
 extern ECL_API cl_object ecl_append(cl_object x, cl_object y);
 extern ECL_API bool ecl_endp(cl_object x);
@@ -802,7 +807,6 @@ extern ECL_API cl_object ecl_assql(cl_object x, cl_object l);
 extern ECL_API cl_object ecl_assoc(cl_object x, cl_object l);
 extern ECL_API cl_object ecl_assqlp(cl_object x, cl_object l);
 extern ECL_API cl_object ecl_remove_eq(cl_object x, cl_object l);
-extern ECL_API void ecl_delete_eq(cl_object x, cl_object *l);
 
 
 /* load.c */
@@ -1392,6 +1396,10 @@ extern ECL_API void cl_defvar(cl_object s, cl_object v);
 extern ECL_API void cl_defparameter(cl_object s, cl_object v);
 extern ECL_API cl_object ecl_make_keyword(const char *s);
 extern ECL_API cl_object ecl_symbol_value(cl_object s);
+extern ECL_API cl_object ecl_symbol_name(cl_object s);
+extern ECL_API cl_object ecl_symbol_package(cl_object s);
+extern ECL_API int ecl_symbol_type(cl_object s);
+extern ECL_API void ecl_symbol_type_set(cl_object s, int t);
 extern ECL_API cl_object ecl_getf(cl_object place, cl_object indicator, cl_object deflt);
 extern ECL_API cl_object ecl_get(cl_object s, cl_object p, cl_object d);
 extern ECL_API bool ecl_keywordp(cl_object s);

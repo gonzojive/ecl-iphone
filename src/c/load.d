@@ -84,9 +84,8 @@ ecl_library_find(cl_object filename)
 	cl_object libraries = cl_core.libraries;
 	cl_index i;
 	for (i = 0; i < libraries->vector.fillp; i++) {
-		if (ecl_string_eq(libraries->vector.self.t[i]->cblock.name,
-				  filename))
-		{
+		cl_object name = libraries->vector.self.t[i]->cblock.name;
+		if (!Null(name) && ecl_string_eq(name, filename)) {
 			return libraries->vector.self.t[i];
 		}
 	}
@@ -261,11 +260,11 @@ ecl_library_close(cl_object block) {
 	cl_object libraries = cl_core.libraries;
 	int i;
 
-	if (block->cblock.name)
-		filename = block->cblock.name->base_string.self;
-	else
+	if (Null(block->cblock.name))
 		filename = "<anonymous>";
-	if (block->cblock.links) {
+	else
+		filename = block->cblock.name->base_string.self;
+	if (!Null(block->cblock.links)) {
 		cl_mapc(2, @'si::unlink-symbol', block->cblock.links);
 	}
         if (block->cblock.handle != NULL) {

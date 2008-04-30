@@ -19,10 +19,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <ecl/ecl-inl.h>
 #include <ecl/internal.h>
 #include "newhash.h"
 
 static void corrupted_hash(cl_object hashtable) /*__attribute__((noreturn))*/;
+
+#define SYMBOL_NAME(x) (Null(x)? Cnil_symbol->symbol.name : (x)->symbol.name)
 
 static void
 corrupted_hash(cl_object hashtable)
@@ -75,12 +78,15 @@ static cl_hashkey
 _hash_equal(int depth, cl_hashkey h, cl_object x)
 {
 	switch (type_of(x)) {
-	case t_cons:
+	case t_list:
+		if (Null(x)) {
+			return _hash_equal(depth, h, Cnil_symbol->symbol.name);
+		}
 		if (depth++ > 3) {
 			return 0;
 		}
-		h = _hash_equal(depth, h, CAR(x));
-		return _hash_equal(depth, h, CDR(x));
+		h = _hash_equal(depth, h, ECL_CONS_CAR(x));
+		return _hash_equal(depth, h, ECL_CONS_CDR(x));
 	case t_symbol:
 		x = x->symbol.name;
 #ifdef ECL_UNICODE
@@ -120,12 +126,15 @@ _hash_equalp(int depth, cl_hashkey h, cl_object x)
 	switch (type_of(x)) {
 	case t_character:
 		return hash_word(h, toupper(CHAR_CODE(x)));
-	case t_cons:
+	case t_list:
+		if (Null(x)) {
+			return _hash_equalp(depth, h, Cnil_symbol->symbol.name);
+		}
 		if (depth++ > 3) {
 			return 0;
 		}
-		h = _hash_equalp(depth, h, CAR(x));
-		return _hash_equalp(depth, h, CDR(x));
+		h = _hash_equalp(depth, h, ECL_CONS_CAR(x));
+		return _hash_equalp(depth, h, ECL_CONS_CDR(x));
 #ifdef ECL_UNICODE
 	case t_string:
 #endif
@@ -225,7 +234,7 @@ ecl_search_hash(cl_object key, cl_object hashtable)
 		case htt_eql:	b = ecl_eql(key, hkey); break;
 		case htt_equal: b = ecl_equal(key, hkey); break;
 		case htt_equalp:b = ecl_equalp(key, hkey); break;
-		case htt_pack:	b = (ho==hkey) && ecl_string_eq(key,e->value->symbol.name);
+		case htt_pack:	b = (ho==hkey) && ecl_string_eq(key,SYMBOL_NAME(e->value));
 				break;
 		}
 		if (b)
@@ -353,7 +362,7 @@ ecl_extend_hashtable(cl_object hashtable)
 	for (i = 0;  i < old_size;  i++)
 		if ((key = old->hash.data[i].key) != OBJNULL) {
 			if (hashtable->hash.test == htt_pack)
-				key = old->hash.data[i].value->symbol.name;
+				key = SYMBOL_NAME(old->hash.data[i].value);
 			add_new_to_hash(key, hashtable, old->hash.data[i].value);
 		}
 }
@@ -564,12 +573,12 @@ si_hash_table_iterate(cl_narg narg, cl_object env)
 		for (; ++i < ht->hash.size; ) {
 			struct ecl_hashtable_entry e = ht->hash.data[i];
 			if (e.key != OBJNULL) {
-				@(return (CAR(env) = MAKE_FIXNUM(i))
-					 e.key
-					 e.value)
+				cl_object ndx = MAKE_FIXNUM(i);
+				ECL_RPLACA(env, ndx);
+				@(return ndx e.key e.value)
 			}
 		}
-		CAR(env) = Cnil;
+		ECL_RPLACA(env, Cnil);
 	}
 	@(return Cnil)
 }

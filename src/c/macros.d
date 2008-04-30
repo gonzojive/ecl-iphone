@@ -59,8 +59,7 @@ search_symbol_macro(cl_object name, cl_object env)
 static cl_object
 search_macro_function(cl_object name, cl_object env)
 {
-	if (!SYMBOLP(name))
-		FEtype_error_symbol(name);
+	int type = ecl_symbol_type(name);
 	if (env != Cnil) {
 		/* When the environment has been produced by the
 		   compiler, there might be atoms/symbols signalling
@@ -77,7 +76,7 @@ search_macro_function(cl_object name, cl_object env)
 			}
 		}
 	}
-	if (name->symbol.mflag) {
+	if (type & stp_macro) {
 		return SYM_FUN(name);
 	} else {
 		return Cnil;

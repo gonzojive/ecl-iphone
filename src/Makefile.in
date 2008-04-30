@@ -101,7 +101,7 @@ bin/ecl-config: bin/ecl-config.pre
 	test -d ecl/gc/private || mkdir ecl/gc/private
 	if (echo $(SUBDIRS) | grep gc); then \
 	  cd gc && $(MAKE) install && cd .. && \
-	  cp -rf $(srcdir)/gc/include/gc_mark.h ecl/gc/ && \
+	  cp -rf $(srcdir)/gc/include/gc_{mark,inl,inline}.h ecl/gc/ && \
 	  cp -rf $(srcdir)/gc/include/private/*.h ecl/gc/private/ && \
 	  mv @LIBPREFIX@gc.@LIBEXT@ @LIBPREFIX@eclgc.@LIBEXT@; \
 	fi

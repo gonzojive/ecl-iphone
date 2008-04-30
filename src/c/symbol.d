@@ -16,9 +16,80 @@
 */
 
 #include <ecl/ecl.h>
+#include <ecl/ecl-inl.h>
 
 /******************************* ------- ******************************/
 /* FIXME! CURRENTLY SYMBOLS ARE RESTRICTED TO HAVE NON-UNICODE NAMES */
+
+cl_object
+ecl_symbol_package(cl_object s)
+{
+	do {
+		if (Null(s))
+			return Cnil_symbol->symbol.hpack;
+		if (type_of(s) == t_symbol)
+			return s->symbol.hpack;
+		s = ecl_type_error(@'symbol-package', "symbol", s, @'symbol');
+	} while(1);
+}
+
+int
+ecl_symbol_type(cl_object s)
+{
+	do {
+		if (Null(s))
+			return Cnil_symbol->symbol.stype;
+		if (type_of(s) == t_symbol)
+			return s->symbol.stype;
+		s = ecl_type_error(@'symbol-name', "symbol", s, @'symbol');
+	} while(1);
+}
+
+void
+ecl_symbol_type_set(cl_object s, int type)
+{
+	do {
+		if (Null(s)) {
+			Cnil_symbol->symbol.stype = type;
+			return;
+		}
+		if (type_of(s) == t_symbol) {
+			s->symbol.stype = type;
+			return;
+		}
+		s = ecl_type_error(@'symbol-name', "symbol", s, @'symbol');
+	} while(1);
+}
+
+cl_object
+ecl_symbol_name(cl_object s)
+{
+	do {
+		if (Null(s)) {
+			return Cnil_symbol->symbol.name;
+		}
+		if (type_of(s) == t_symbol) {
+			return s->symbol.name;
+		}
+		s = ecl_type_error(@'symbol-name', "symbol", s, @'symbol');
+	} while(1);
+}
+
+static cl_object *
+ecl_symbol_plist(cl_object s)
+{
+	do {
+		if (Null(s)) {
+			return &Cnil_symbol->symbol.plist;
+		}
+		if (type_of(s) == t_symbol) {
+			return &s->symbol.plist;
+		}
+		s = ecl_type_error(@'symbol-plist', "symbol", s, @'symbol');
+	} while(1);
+}
+
+/**********************************************************************/
 
 static void FEtype_error_plist(cl_object x) /*__attribute__((noreturn))*/;
 
@@ -53,8 +124,6 @@ cl_make_symbol(cl_object str)
 	x->symbol.plist = Cnil;
 	x->symbol.hpack = Cnil;
 	x->symbol.stype = stp_ordinary;
-	x->symbol.mflag = FALSE;
-	x->symbol.isform = FALSE;
 	@(return x)
 }
 
@@ -72,11 +141,15 @@ ecl_make_keyword(const char *s)
 cl_object
 ecl_symbol_value(cl_object s)
 {
-	/* FIXME: Should we check symbol type? */
-	cl_object value = SYM_VAL(s);
-	if (value == OBJNULL)
-		FEunbound_variable(s);
-	return value;
+	if (Null(s)) {
+		return s;
+	} else {
+		/* FIXME: Should we check symbol type? */
+		cl_object value = SYM_VAL(s);
+		if (value == OBJNULL)
+			FEunbound_variable(s);
+		return value;
+	}
 }
 
 static void
@@ -85,7 +158,7 @@ FEtype_error_plist(cl_object x)
 	cl_error(9, @'simple-type-error', @':format-control',
 		 make_constant_base_string("Not a valid property list ~D"),
 		 @':format-arguments', cl_list(1, x),
-		 @':expected-type', @'list',
+		 @':expected-type', @'si::property-list',
 		 @':datum', x);
 }
 
@@ -98,12 +171,12 @@ ecl_getf(cl_object place, cl_object indicator, cl_object deflt)
 	assert_type_proper_list(place);
 #endif
 	for (l = place; CONSP(l); ) {
-		cl_object cdr_l = CDR(l);
+		cl_object cdr_l = ECL_CONS_CDR(l);
 		if (!CONSP(cdr_l))
 			break;
-		if (CAR(l) == indicator)
-			return CAR(cdr_l);
-		l = CDR(cdr_l);
+		if (ECL_CONS_CAR(l) == indicator)
+			return ECL_CONS_CAR(cdr_l);
+		l = ECL_CONS_CDR(cdr_l);
 	}
 	if (l != Cnil)
 		FEtype_error_plist(place);
@@ -113,9 +186,7 @@ ecl_getf(cl_object place, cl_object indicator, cl_object deflt)
 cl_object
 ecl_get(cl_object s, cl_object p, cl_object d)
 {
-	if (!SYMBOLP(s))
-		FEtype_error_symbol(s);
-	return ecl_getf(s->symbol.plist, p, d);
+	return ecl_getf(*ecl_symbol_plist(s), p, d);
 }
 
 /*
@@ -133,14 +204,14 @@ si_put_f(cl_object place, cl_object value, cl_object indicator)
 #endif
 	/* This loop guarantees finishing for circular lists */
 	for (l = place; CONSP(l); ) {
-		cl_object cdr_l = CDR(l);
+		cl_object cdr_l = ECL_CONS_CDR(l);
 		if (!CONSP(cdr_l))
 			break;
-		if (CAR(l) == indicator) {
-			CAR(cdr_l) = value;
+		if (ECL_CONS_CAR(l) == indicator) {
+			ECL_RPLACA(cdr_l, value);
 			@(return place);
 		}
-		l = CDR(cdr_l);
+		l = ECL_CONS_CDR(cdr_l);
 	}
 	if (l != Cnil)
 		FEtype_error_plist(place);
@@ -160,50 +231,52 @@ si_put_f(cl_object place, cl_object value, cl_object indicator)
 static bool
 remf(cl_object *place, cl_object indicator)
 {
-	cl_object *l;
-
-#ifdef ECL_SAFE
-	assert_type_proper_list(*place);
-#endif
-	for (l = place; CONSP(*l); ) {
-		cl_object cdr_l = CDR(*l);
-		if (!CONSP(cdr_l))
-			break;
-		if (CAR(*l) == indicator) {
-			*l = CDR(cdr_l);
+	cl_object l = *place, tail = Cnil;
+	while (!Null(l)) {
+		cl_object ind;
+		if (!LISTP(l))
+			FEtype_error_plist(*place);
+		ind = ECL_CONS_CAR(l);
+		l = ECL_CONS_CDR(l);
+		if (!CONSP(l))
+			FEtype_error_plist(*place);
+		if (ind == indicator) {
+			l = ECL_CONS_CDR(l);
+			if (Null(tail))
+				*place = l;
+			else
+				ECL_RPLACD(tail, l);
 			return TRUE;
 		}
-		l = &CDR(cdr_l);
+		tail = l;
+		l = ECL_CONS_CDR(l);
 	}
-	if (*l != Cnil)
-		FEtype_error_plist(*place);
-	return(FALSE);
+	return FALSE;
 }
 
 bool
 ecl_keywordp(cl_object s)
 {
-	return (SYMBOLP(s) && s->symbol.hpack == cl_core.keyword_package);
+	return (type_of(s) == t_symbol) && (s->symbol.hpack == cl_core.keyword_package);
 }
 
 @(defun get (sym indicator &optional deflt)
 @
-	sym = ecl_check_cl_type(@'get', sym, t_symbol);
-	@(return ecl_getf(sym->symbol.plist, indicator, deflt))
+	cl_object *plist = ecl_symbol_plist(sym);
+	@(return ecl_getf(*plist, indicator, deflt))
 @)
 
 cl_object
 cl_remprop(cl_object sym, cl_object prop)
 {
-	sym = ecl_check_cl_type(@'remprop', sym, t_symbol);
-	@(return (remf(&sym->symbol.plist, prop)? Ct: Cnil))
+	cl_object *plist = ecl_symbol_plist(sym);
+	@(return (remf(plist, prop)? Ct: Cnil))
 }
 
 cl_object
 cl_symbol_plist(cl_object sym)
 {
-	sym = ecl_check_cl_type(@'symbol-plist', sym, t_symbol);
-	@(return sym->symbol.plist)
+	@(return *ecl_symbol_plist(sym))
 }
 
 @(defun getf (place indicator &optional deflt)
@@ -220,12 +293,12 @@ cl_get_properties(cl_object place, cl_object indicator_list)
 	assert_type_proper_list(place);
 #endif
 	for (l = place;  CONSP(l); ) {
-		cl_object cdr_l = CDR(l);
+		cl_object cdr_l = ECL_CONS_CDR(l);
 		if (!CONSP(cdr_l))
 			break;
-		if (ecl_member_eq(CAR(l), indicator_list))
-			@(return CAR(l) CADR(l) l)
-		l = CDR(cdr_l);
+		if (ecl_member_eq(ECL_CONS_CAR(l), indicator_list))
+			@(return ECL_CONS_CAR(l) ECL_CONS_CAR(cdr_l) l)
+		l = ECL_CONS_CDR(cdr_l);
 	}
 	if (l != Cnil)
 		FEtype_error_plist(place);
@@ -235,23 +308,22 @@ cl_get_properties(cl_object place, cl_object indicator_list)
 cl_object
 cl_symbol_name(cl_object x)
 {
-	x = ecl_check_cl_type(@'symbol-name', x, t_symbol);
-	@(return x->symbol.name)
+	@(return ecl_symbol_name(x))
 }
 
 @(defun copy_symbol (sym &optional cp &aux x)
 @
-	sym = ecl_check_cl_type(@'copy-symbol', sym, t_symbol);
-	x = cl_make_symbol(sym->symbol.name);
-	if (Null(cp))
-		@(return x)
-	x->symbol.stype = sym->symbol.stype;
-	x->symbol.dynamic = 0;
-	ECL_SET(x, SYM_VAL(sym));
-	x->symbol.mflag = sym->symbol.mflag;
-	SYM_FUN(x) = SYM_FUN(sym);
-	x->symbol.plist = cl_copy_list(sym->symbol.plist);
-	/* FIXME!!! We should also copy the system property list */
+	if (Null(sym))
+		sym = Cnil_symbol;
+	x = cl_make_symbol(ecl_symbol_name(sym));
+	if (!Null(cp)) {
+		x->symbol.dynamic = 0;
+		x->symbol.stype = sym->symbol.stype;
+		x->symbol.value = sym->symbol.value;
+		x->symbol.gfdef = sym->symbol.gfdef;
+		x->symbol.plist = cl_copy_list(sym->symbol.plist);
+		/* FIXME!!! We should also copy the system property list */
+	}
 	@(return x)
 @)
 
@@ -308,14 +380,13 @@ ONCE_MORE:
 cl_object
 cl_symbol_package(cl_object sym)
 {
-	sym = ecl_check_cl_type(@'symbol-package', sym, t_symbol);
-	@(return sym->symbol.hpack)
+	@(return ecl_symbol_package(sym))
 }
 
 cl_object
 cl_keywordp(cl_object sym)
 {
-	@(return ((SYMBOLP(sym) && ecl_keywordp(sym))? Ct: Cnil))
+	@(return (ecl_keywordp(sym)? Ct: Cnil))
 }
 
 /*
@@ -339,16 +410,15 @@ si_rem_f(cl_object plist, cl_object indicator)
 cl_object
 si_set_symbol_plist(cl_object sym, cl_object plist)
 {
-	sym = ecl_check_cl_type(@'si::set-symbol-plist', sym, t_symbol);
-	sym->symbol.plist = plist;
+	*ecl_symbol_plist(sym) = plist;
 	@(return plist)
 }
 
 cl_object
 si_putprop(cl_object sym, cl_object value, cl_object indicator)
 {
-	sym = ecl_check_cl_type(@'si::putprop', sym, t_symbol);
-	sym->symbol.plist = si_put_f(sym->symbol.plist, value, indicator);
+	cl_object *plist = ecl_symbol_plist(sym);
+	*plist = si_put_f(*plist, value, indicator);
 	@(return value)
 }
 
@@ -366,10 +436,10 @@ si_putprop(cl_object sym, cl_object value, cl_object indicator)
 cl_object
 @si::*make_special(cl_object sym)
 {
-	sym = ecl_check_cl_type(@'defvar', sym, t_symbol);
-	if ((enum ecl_stype)sym->symbol.stype == stp_constant)
+	int type = ecl_symbol_type(sym);
+	if (type & stp_constant)
 		FEerror("~S is a constant.", 1, sym);
-	sym->symbol.stype = (short)stp_special;
+	ecl_symbol_type_set(sym, type | stp_special);
 	cl_remprop(sym, @'si::symbol-macro');
 	@(return sym)
 }
@@ -377,12 +447,11 @@ cl_object
 cl_object
 @si::*make_constant(cl_object sym, cl_object val)
 {
-	sym = ecl_check_cl_type(@'defconstant', sym, t_symbol);
-	if ((enum ecl_stype)sym->symbol.stype == stp_special)
-		FEerror(
-		 "The argument ~S to DEFCONSTANT is a special variable.",
-		 1, sym);
-	sym->symbol.stype = (short)stp_constant;
+	int type = ecl_symbol_type(sym);
+	if (type & stp_special)
+		FEerror("The argument ~S to DEFCONSTANT is a special variable.",
+			1, sym);
+	ecl_symbol_type_set(sym, type | stp_constant);
 	ECL_SET(sym, val);
 	@(return sym)
 }

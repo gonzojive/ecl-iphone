@@ -588,7 +588,6 @@ static cl_object
 list_current_directory(const char *mask, bool only_dir)
 {
 	cl_object out = Cnil;
-	cl_object *out_cdr = &out;
 	char *text;
 
 #if defined(HAVE_DIRENT_H)
@@ -648,8 +647,7 @@ list_current_directory(const char *mask, bool only_dir)
 			continue;
 		if (mask && !string_match(text, mask))
 			continue;
-		*out_cdr = CONS(make_base_string_copy(text), Cnil);
-		out_cdr = &CDR(*out_cdr);
+		out = ecl_cons(make_base_string_copy(text), out);
 	}
 #ifdef HAVE_DIRENT_H
 	closedir(dir);
@@ -660,7 +658,7 @@ list_current_directory(const char *mask, bool only_dir)
 	fclose(fp);
 # endif /* !_MSC_VER */
 #endif /* !HAVE_DIRENT_H */
-	return out;
+	return cl_nreverse(out);
 }
 
 /*

@@ -517,7 +517,7 @@ init_threads()
 #endif
 	env->own_process = process;
 
-	cl_core.processes = CONS(process, Cnil);
+	cl_core.processes = ecl_list1(process);
 
 	main_thread = pthread_self();
 }

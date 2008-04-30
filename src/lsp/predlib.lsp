@@ -133,6 +133,9 @@ into the structure at their position.  For example,
 (deftype proper-list ()
   '(OR (CONS T PROPER-LIST) NULL))
 
+(deftype property-list ()
+  '(OR (CONS T (CONS T PROPERTY-LIST)) NULL))
+
 (deftype atom ()
   "An ATOM is an object that is not a CONS."
   '(NOT CONS))

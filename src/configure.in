@@ -200,6 +200,12 @@ AC_ARG_ENABLE(asmapply,
                   [(default=NO)]),
   [enable_asmapply=${enableval}],[enable_asmapply=no])
 
+AC_ARG_ENABLE(smallcons,
+  AS_HELP_STRING( [--enable-smallcons],
+                  [use small (2 words) cons types. Requires Boehm-Weiser gc.]
+                  [(default=NO)]),
+  [enable_smallcons=${enableval}],[enable_smallcons=no])
+
 dnl -----------------------------------------------------------------------
 dnl Installation directories
 ecldir="${libdir}/ecl"
@@ -310,6 +316,7 @@ dnl ----------------------------------------------------------------------
 dnl		Boehm-Weiser garbage collector
 if test ${enable_boehm} = "no" ; then
   EXTRA_OBJS="${EXTRA_OBJS} alloc.${OBJEXT} gbc.${OBJEXT}"
+  enable_smallcons="no"
 else
   if test ${enable_boehm} = "auto"; then
     AC_CHECK_LIB( [gc], [GC_malloc],
@@ -334,6 +341,9 @@ else
   EXTRA_OBJS="${EXTRA_OBJS} alloc_2.${OBJEXT}"
 fi
 
+if test ${enable_smallcons} = "yes" ; then
+   AC_DEFINE(ECL_SMALL_CONS)
+fi
 
 dnl ----------------------------------------------------------------------
 dnl GNU multiprecision library

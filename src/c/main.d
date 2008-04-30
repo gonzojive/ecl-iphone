@@ -158,7 +158,7 @@ cl_shutdown(void)
 		cl_object l = SYM_VAL(@'si::*exit-hooks*');
 		cl_object form = cl_list(2, @'funcall', Cnil);
 		while (CONSP(l)) {
-			CADR(form) = CAR(l);
+			ecl_elt_set(form, 1, ECL_CONS_CAR(l));
 			si_safe_eval(3, form, Cnil, OBJNULL);
 			l = CDR(l);
 			ECL_SET(@'si::*exit-hooks*', l);
@@ -212,16 +212,14 @@ cl_boot(int argc, char **argv)
 	 * 1) Initialize symbols and packages
 	 */
 
-	Cnil->symbol.t = (short)t_symbol;
-	Cnil->symbol.dynamic = 0;
-	Cnil->symbol.value = Cnil;
-	Cnil->symbol.name = make_constant_base_string("NIL");
-	Cnil->symbol.gfdef = Cnil;
-	Cnil->symbol.plist = Cnil;
-	Cnil->symbol.hpack = Cnil;
-	Cnil->symbol.stype = (short)stp_constant;
-	Cnil->symbol.mflag = FALSE;
-	Cnil->symbol.isform = FALSE;
+	Cnil_symbol->symbol.t = t_symbol;
+	Cnil_symbol->symbol.dynamic = 0;
+	Cnil_symbol->symbol.value = Cnil;
+	Cnil_symbol->symbol.name = make_constant_base_string("NIL");
+	Cnil_symbol->symbol.gfdef = Cnil;
+	Cnil_symbol->symbol.plist = Cnil;
+	Cnil_symbol->symbol.hpack = Cnil;
+	Cnil_symbol->symbol.stype = stp_constant;
 	cl_num_symbols_in_core=1;
 
 	Ct->symbol.t = (short)t_symbol;
@@ -231,9 +229,7 @@ cl_boot(int argc, char **argv)
 	Ct->symbol.gfdef = Cnil;
 	Ct->symbol.plist = Cnil;
 	Ct->symbol.hpack = Cnil;
-	Ct->symbol.stype = (short)stp_constant;
-	Ct->symbol.mflag = FALSE;
-	Ct->symbol.isform = FALSE;
+	Ct->symbol.stype = stp_constant;
 	cl_num_symbols_in_core=2;
 
 #ifdef NO_PATH_MAX
@@ -246,31 +242,35 @@ cl_boot(int argc, char **argv)
 	cl_core.packages_to_be_created = OBJNULL;
 
 	cl_core.lisp_package =
-	    ecl_make_package(make_constant_base_string("COMMON-LISP"),
-			 CONS(make_constant_base_string("CL"),
-			      CONS(make_constant_base_string("LISP"),Cnil)),
-			 Cnil);
+		ecl_make_package(make_constant_base_string("COMMON-LISP"),
+				 cl_list(2, make_constant_base_string("CL"),
+					 make_constant_base_string("LISP")),
+				 Cnil);
 	cl_core.user_package =
-	    ecl_make_package(make_constant_base_string("COMMON-LISP-USER"),
-			 CONS(make_constant_base_string("CL-USER"),
-			      CONS(make_constant_base_string("USER"),Cnil)),
-			 CONS(cl_core.lisp_package, Cnil));
-	cl_core.keyword_package = ecl_make_package(make_constant_base_string("KEYWORD"),
-					       Cnil, Cnil);
-	cl_core.system_package = ecl_make_package(make_constant_base_string("SI"),
-					      CONS(make_constant_base_string("SYSTEM"),
-						   CONS(make_constant_base_string("SYS"),
-							CONS(make_constant_base_string("EXT"),
-							     Cnil))),
-					      CONS(cl_core.lisp_package, Cnil));
+		ecl_make_package(make_constant_base_string("COMMON-LISP-USER"),
+				 cl_list(2, make_constant_base_string("CL-USER"),
+					 make_constant_base_string("USER")),
+				 ecl_list1(cl_core.lisp_package));
+	cl_core.keyword_package =
+		ecl_make_package(make_constant_base_string("KEYWORD"),
+				 Cnil, Cnil);
+	cl_core.system_package =
+		ecl_make_package(make_constant_base_string("SI"),
+				 cl_list(3,
+					 make_constant_base_string("SYSTEM"),
+					 make_constant_base_string("SYS"),
+					 make_constant_base_string("EXT")),
+				 ecl_list1(cl_core.lisp_package));
 #ifdef CLOS
-	cl_core.clos_package = ecl_make_package(make_constant_base_string("CLOS"),
-					    Cnil, CONS(cl_core.lisp_package, Cnil));
+	cl_core.clos_package =
+		ecl_make_package(make_constant_base_string("CLOS"),
+				 Cnil, ecl_list1(cl_core.lisp_package));
 #endif
 #ifdef ECL_THREADS
-	cl_core.mp_package = ecl_make_package(make_constant_base_string("MP"),
-					  CONS(make_constant_base_string("MULTIPROCESSING"), Cnil),
-					  CONS(cl_core.lisp_package, Cnil));
+	cl_core.mp_package =
+		ecl_make_package(make_constant_base_string("MP"),
+				 ecl_list1(make_constant_base_string("MULTIPROCESSING")),
+				 ecl_list1(cl_core.lisp_package));
 #endif
 #ifdef ECL_CLOS_STREAMS
 	cl_core.gray_package = ecl_make_package(make_constant_base_string("GRAY"),
@@ -278,7 +278,7 @@ cl_boot(int argc, char **argv)
 						CONS(cl_core.lisp_package, Cnil));
 #endif
 
-	Cnil->symbol.hpack = cl_core.lisp_package;
+	Cnil_symbol->symbol.hpack = cl_core.lisp_package;
 	cl_import2(Cnil, cl_core.lisp_package);
 	cl_export2(Cnil, cl_core.lisp_package);
 

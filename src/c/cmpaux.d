@@ -22,8 +22,7 @@
 cl_object
 si_specialp(cl_object sym)
 {
-	@(return ((SYMBOLP(sym) && sym->symbol.stype == stp_special) ?
-		   Ct : Cnil))
+	@(return ((ecl_symbol_type(sym) & stp_special)? Ct : Cnil))
 }
 
 cl_fixnum
@@ -203,8 +202,8 @@ cl_grab_rest_args(cl_va_list args)
 	cl_object rest = Cnil;
 	cl_object *r = &rest;
 	while (args[0].narg) {
-		*r = CONS(cl_va_arg(args), Cnil);
-		r = &CDR(*r);
+		*r = ecl_list1(cl_va_arg(args));
+		r = &ECL_CONS_CDR(*r);
 	}
 	return rest;
 }
@@ -235,8 +234,8 @@ cl_parse_key(
     if (!SYMBOLP(keyword))
       FEprogram_error("LAMBDA: Keyword expected, got ~S.", 1, keyword);
     if (rest != NULL) {
-      rest = &CDR(*rest = CONS(keyword, Cnil));
-      rest = &CDR(*rest = CONS(value, Cnil));
+      rest = &ECL_CONS_CDR(*rest = ecl_list1(keyword));
+      rest = &ECL_CONS_CDR(*rest = ecl_list1(value));
     }
     for (i = 0; i < nkey; i++) {
       if (keys[i] == keyword) {

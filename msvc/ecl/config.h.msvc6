@@ -143,6 +143,9 @@ typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;
 
+/* We can use small, two-words conses, without type information		*/
+/* #undef ECL_SMALL_CONS */
+
 /* -CUT-: Everything below this mark will not be installed		*/
 /* -------------------------------------------------------------------- *
  *	BUILD OPTIONS WHICH NEED NOT BE EXPORTED			*
@@ -185,6 +188,10 @@ typedef unsigned int uint32_t;
 
 /* We have non-portable implementation of FFI calls			*/
 #define ECL_DYNAMIC_FFI 1
+
+/* Assembler implementation of APPLY and friends			*/
+/* #undef ECL_ASM_APPLY */
+
 
 /*
  * SYSTEM FEATURES:
@@ -273,6 +280,10 @@ typedef unsigned int uint32_t;
 /* We allocate a number of strings in a pool which is used to speed up reading */
 #define ECL_MAX_STRING_POOL_SIZE	10
 #define ECL_BUFFER_STRING_SIZE		128
+
+#define HAVE_LOG1P
+#define HAVE_LOG1PF
+#define HAVE_LOG1PL
 
 /*
  * Macros that depend on these system features.

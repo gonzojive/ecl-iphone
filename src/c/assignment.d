@@ -21,29 +21,37 @@
 cl_object
 cl_set(cl_object var, cl_object val)
 {
-	if (!SYMBOLP(var))
-		FEtype_error_symbol(var);
-	if (var->symbol.stype == stp_constant)
+	if (ecl_symbol_type(var) & stp_constant)
 		FEinvalid_variable("Cannot assign to the constant ~S.", var);
 	return1(ECL_SETQ(var, val));
 }
 
 @(defun si::fset (fname def &optional macro pprint)
 	cl_object sym = si_function_block_name(fname);
+	cl_object pack;
 	bool mflag;
+	int type;
 @
 	if (Null(cl_functionp(def)))
 		FEinvalid_function(def);
-	if (sym->symbol.hpack != Cnil && sym->symbol.hpack->pack.locked) {
+	pack = ecl_symbol_package(sym);
+	if (pack != Cnil && pack->pack.locked) {
 		CEpackage_error("Attempt to redefine function ~S in locked package.",
-				"Ignore lock and proceed", fname->symbol.hpack, 1, fname);
+				"Ignore lock and proceed", pack, 1, fname);
 	}
 	mflag = !Null(macro);
-	if (sym->symbol.isform && !mflag)
+	type = ecl_symbol_type(sym);
+	if ((type & stp_special_form) && !mflag) {
 		FEerror("Given that ~S is a special form, ~S cannot be defined as a function.",
 			2, sym, fname);
+	}
 	if (SYMBOLP(fname)) {
-		sym->symbol.mflag = mflag;
+		if (mflag) {
+			type |= stp_macro;
+		} else {
+			type &= ~stp_macro;
+		}
+		ecl_symbol_type_set(sym, type);
 		SYM_FUN(sym) = def;
 		ecl_clear_compiler_properties(sym);
 #ifndef ECL_CMU_FORMAT
@@ -66,9 +74,7 @@ cl_set(cl_object var, cl_object val)
 cl_object
 cl_makunbound(cl_object sym)
 {
-	if (!SYMBOLP(sym))
-		FEtype_error_symbol(sym);
-	if ((enum ecl_stype)sym->symbol.stype == stp_constant)
+	if (ecl_symbol_type(sym) & stp_constant)
 		FEinvalid_variable("Cannot unbind the constant ~S.", sym);
 	/* FIXME! The semantics of MAKUNBOUND is not very clear with local
 	   bindings ... */
@@ -80,10 +86,10 @@ cl_object
 cl_fmakunbound(cl_object fname)
 {
 	cl_object sym = si_function_block_name(fname);
-
-	if (sym->symbol.hpack != Cnil && sym->symbol.hpack->pack.locked) {
-		CEpackage_error("Attempt to remove definition of function ~S in locked package.",
-				"Ignore lock and proceed", fname->symbol.hpack, 1, fname);
+	cl_object pack = ecl_symbol_package(sym);
+	if (pack != Cnil && pack->pack.locked) {
+		CEpackage_error("Attempt to redefine function ~S in locked package.",
+				"Ignore lock and proceed", pack, 1, fname);
 	}
 	if (SYMBOLP(fname)) {
 		ecl_clear_compiler_properties(sym);
@@ -91,7 +97,7 @@ cl_fmakunbound(cl_object fname)
 		si_rem_sysprop(fname, @'defun');
 #endif
 		SYM_FUN(sym) = Cnil;
-		sym->symbol.mflag = FALSE;
+		ecl_symbol_type_set(sym, ecl_symbol_type(sym) & ~stp_macro);
 	} else {
 		si_rem_sysprop(sym, @'si::setf-symbol');
 		si_rem_sysprop(sym, @'si::setf-lambda');

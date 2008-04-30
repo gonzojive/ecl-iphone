@@ -224,17 +224,15 @@ cl_class_of(cl_object x)
 	case t_character:
 		t = @'character'; break;
 	case t_symbol:
-		if (x == Cnil)
-			t = @'null';
-		else if (x->symbol.hpack == cl_core.keyword_package)
+		if (x->symbol.hpack == cl_core.keyword_package)
 			t = @'keyword';
 		else
 			t = @'symbol';
 		break;
 	case t_package:
 		t = @'package'; break;
-	case t_cons:
-		t = @'cons'; break;
+	case t_list:
+		t = Null(x)? @'null' : @'cons'; break;
 	case t_hashtable:
 		t = @'hash-table'; break;
 	case t_array:

@@ -574,7 +574,7 @@ ecl_fficall_align(int data)
 	cl_object data;
 	cl_object cbk;
 @
-	data = CONS(fun, CONS(rtype, CONS(argtypes, Cnil)));
+	data = cl_list(3, fun, rtype, argtypes);
 	cbk  = ecl_make_foreign_data(@':pointer-void', 0, ecl_dynamic_callback_make(data, ecl_foreign_cc_code(cctype)));
 
 	si_put_sysprop(sym, @':callback', CONS(cbk, data));

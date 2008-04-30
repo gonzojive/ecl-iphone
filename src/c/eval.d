@@ -95,7 +95,7 @@ ecl_apply_from_stack_frame(cl_object frame, cl_object x)
 		goto AGAIN;
 #endif
 	case t_symbol:
-		if (fun->symbol.mflag)
+		if (fun->symbol.stype & stp_macro)
 			FEundefined_function(x);
 		fun = SYM_FUN(fun);
 		goto AGAIN;
@@ -267,11 +267,17 @@ cl_eval(cl_object form)
 	cl_object flag;
 @
 	switch (type_of(arg)) {
-	case t_cons:
-		flag = (CAR(arg) == @'quote') ? Ct : Cnil;
+	case t_list:
+		if (Null(arg)) {
+			flag = Ct;
+		} else if (CAR(arg) == @'quote') {
+			flag = Ct;
+		} else {
+			flag = Cnil;
+		}
 		break;
 	case t_symbol:
-		flag = (arg->symbol.stype == stp_constant) ? Ct : Cnil;
+		flag = (arg->symbol.stype & stp_constant) ? Ct : Cnil;
 		break;
 	default:
 		flag = Ct;

@@ -739,7 +739,7 @@ sharp_C_reader(cl_object in, cl_object c, cl_object d)
 		FEend_of_file(in);
 	if (read_suppress)
 		@(return Cnil);
-	if (type_of(x) != t_cons || ecl_length(x) != 2)
+	if (Null(x) || type_of(x) != t_list || ecl_length(x) != 2)
 		FEreader_error("Reader macro #C should be followed by a list",
 			       in, 0);
 	real = CAR(x);
@@ -820,7 +820,7 @@ sharp_Y_reader(cl_object in, cl_object c, cl_object d)
 		FEend_of_file(in);
 	if (read_suppress)
 		@(return Cnil);
-	if (type_of(x) != t_cons || ecl_length(x) != 6)
+	if (Null(x) || type_of(x) != t_list || ecl_length(x) != 6)
 		FEreader_error("Reader macro #Y should be followed by a list",
 			       in, 0);
 
@@ -1122,12 +1122,13 @@ sharp_eq_reader(cl_object in, cl_object c, cl_object d)
 		FEreader_error("The #= readmacro requires an argument.", in, 0);
 	if (ecl_assql(d, sharp_eq_context) != Cnil)
 		FEreader_error("Duplicate definitions for #~D=.", in, 1, d);
-	pair = CONS(d, Cnil);
+	pair = ecl_list1(d);
 	ECL_SETQ(@'si::*sharp-eq-context*', CONS(pair, sharp_eq_context));
 	value = ecl_read_object(in);
 	if (value == pair)
 		FEreader_error("#~D# is defined by itself.", in, 1, d);
-	@(return (CDR(pair) = value))
+	ECL_RPLACD(pair, value);
+	@(return value)
 }
 
 static cl_object
@@ -1148,18 +1149,21 @@ static cl_object
 do_patch_sharp(cl_object x)
 {
 	switch (type_of(x)) {
-	case t_cons: {
+	case t_list: {
 	  	cl_object y = x;
 		cl_object *place = &x;
+		if (Null(x))
+			break;
 		do {
 			/* This was the result of a #d# */
 			if (CAR(y) == OBJNULL) {
 				*place = CDR(y);
 				return x;
-			} else
-				CAR(y) = do_patch_sharp(CAR(y));
-			place = &CDR(y);
-			y = CDR(y);
+			} else {
+				ECL_RPLACA(y, do_patch_sharp(CAR(y)));
+			}
+			place = &ECL_CONS_CDR(y);
+			y = ECL_CONS_CDR(y);
 		} while (CONSP(y));
 		break;
 	}
@@ -1195,18 +1199,20 @@ do_patch_sharp(cl_object x)
 static cl_object
 patch_sharp(cl_object x)
 {
-	cl_object pair, sharp_eq_context = SYM_VAL(@'si::*sharp-eq-context*');
+	cl_object pairs, sharp_eq_context = SYM_VAL(@'si::*sharp-eq-context*');
 
-	pair = sharp_eq_context;
-	loop_for_in(pair) { 
-		CAAR(pair) = OBJNULL;
+	pairs = sharp_eq_context;
+	loop_for_in(pairs) { 
+		cl_object pair = ECL_CONS_CAR(pairs);
+		ECL_RPLACA(pair, OBJNULL);
 	} end_loop_for_in;
 
 	x = do_patch_sharp(x);
 
-	pair = sharp_eq_context;
-	loop_for_in(pair) { 
-		CAAR(pair) = Cnil;
+	pairs = sharp_eq_context;
+	loop_for_in(pairs) {
+		cl_object pair = ECL_CONS_CAR(pairs);
+		ECL_RPLACA(pair, Cnil);
 	} end_loop_for_in;
 	return x;
 }
@@ -1470,8 +1476,8 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 			}
 			*p = x;
 		} else if (!suppress) {
-			*p = CONS(x, Cnil);
-			p = &(CDR(*p));
+			*p = ecl_list1(x);
+			p = &ECL_CONS_CDR(*p);
 		}
 	} while (1);
 }

@@ -215,6 +215,11 @@ si_copy_to_simple_base_string(cl_object x)
 		memcpy(y->base_string.self, x->base_string.self, length);
 		break;
 	}
+	case t_list:
+		if (Null(x)) {
+			x = Cnil_symbol->symbol.name;
+			goto AGAIN;
+		}
 	default:
 		x = ecl_type_error(@'si::copy-to-simple-base-string',"",x,@'string');
 		goto AGAIN;
@@ -254,6 +259,11 @@ cl_string(cl_object x)
 #endif
 	case t_base_string:
 		break;
+	case t_list:
+		if (Null(x)) {
+			x = Cnil_symbol->symbol.name;
+			break;
+		}
 	default:
 		x = ecl_type_error(@'string',"",x,@'string');
 		goto AGAIN;
@@ -295,6 +305,11 @@ AGAIN:
 	case t_string:
 		y = x;
 		break;
+	case t_list:
+		if (Null(x)) {
+			x = Cnil_symbol->symbol.name;
+			goto AGAIN;
+		}
 	default:
 		x = ecl_type_error(@'si::coerce-to-extended-string',"",x,@'string');
 		goto AGAIN;
@@ -696,7 +711,7 @@ ecl_member_char(int c, cl_object char_bag)
 	cl_index i, f;
  AGAIN:
 	switch (type_of(char_bag)) {
-	case t_cons:
+	case t_list:
 		loop_for_in(char_bag) {
 			cl_object other = CAR(char_bag);
 			if (CHARACTERP(other) && c == CHAR_CODE(other))
@@ -726,10 +741,6 @@ ecl_member_char(int c, cl_object char_bag)
 		return(FALSE);
 	case t_bitvector:
 		return(FALSE);
-	case t_symbol:
-		if (Null(char_bag))
-			return(FALSE);
-		/* falls through */
 	default:
 		char_bag = ecl_type_error(@'member',"",char_bag,@'sequence');
 		goto AGAIN;
