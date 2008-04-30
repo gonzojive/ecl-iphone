@@ -549,8 +549,12 @@ dnl
 AC_DEFUN([ECL_FFI],[
 AC_MSG_CHECKING([whether we can dynamically build calls to C functions])
 case "${host_cpu}" in
-   i686 |i586 | pentium* | athlon* )
+   i686 | i586 | pentium* | athlon* )
 	EXTRA_OBJS="${EXTRA_OBJS} ffi_x86.o"
+	if test "${enable_asmapply}" = "yes" ; then
+		EXTRA_OBJS="${EXTRA_OBJS} apply_x86.o"
+		AC_DEFINE(ECL_ASM_APPLY)
+	fi
 	dynamic_ffi=yes
 	;;
    x86_64 )

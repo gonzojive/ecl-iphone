@@ -194,6 +194,12 @@ AC_ARG_ENABLE(hpack,
                   [(default=YES)]),
   [enable_hpack=${enableval}], [enable_hpack=yes])
 
+AC_ARG_ENABLE(asmapply,
+  AS_HELP_STRING( [--enable-asmapply],
+                  [enable optimizations written in assembler]
+                  [(default=NO)]),
+  [enable_asmapply=${enableval}],[enable_asmapply=no])
+
 dnl -----------------------------------------------------------------------
 dnl Installation directories
 ecldir="${libdir}/ecl"

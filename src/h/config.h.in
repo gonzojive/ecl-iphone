@@ -196,6 +196,9 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /* We use hierarchical package names, like in Allegro CL                */
 #undef ECL_RELATIVE_PACKAGE_NAMES
 
+/* Assembler implementation of APPLY and friends			*/
+#undef ECL_ASM_APPLY
+
 /*
  * SYSTEM FEATURES:
  */

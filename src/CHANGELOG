@@ -155,6 +155,12 @@ ECL 0.9k:
    for collecting the arguments of a function, in MAP, MAPCAR, APPLY, FUNCALL,
    MULTIPLE-VALUE-CALL, etc.
 
+ - In some platforms (intel/32bits) there exist hand-optimized assembly
+   routines that implement APPLY in various forms (fixed # arguments, variable
+   #, closures) They save about 40kb code in Mac OSX, for instance, and do not
+   impact performance. This has to be activated with --enable-asmapply at
+   configuration time.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

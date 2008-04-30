@@ -17,6 +17,7 @@
 
 #include <ecl/ecl.h>
 
+#ifndef ECL_ASM_APPLY
 cl_object
 APPLY(cl_narg n, cl_objectfn fn, cl_object *x)
 {
@@ -664,7 +665,7 @@ APPLY_closure(cl_narg n, cl_objectfn fn, cl_object cl, cl_object *x)
 		      x[50],x[51],x[52],x[53],x[54],x[55],x[56],
 		      x[57],x[58],x[59],x[60],x[61],x[62],x[63]);
   /* Arguments above 64 have been pushed on the stack */
-  } 
+  }
 }
 
 cl_object
@@ -992,3 +993,4 @@ APPLY_fixed(cl_narg n, cl_object (*fn)(), cl_object *x)
 	  FEprogram_error("Too many arguments", 0);
   }
 }
+#endif

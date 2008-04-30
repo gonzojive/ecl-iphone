@@ -59,6 +59,8 @@ all:	$(DPP) ../libeclmin.a ../cinit.o
 	$(CC) $(CFLAGS) -o $@ $<
 .d.c: $(DPP)
 	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
+apply_x86.c: arch/apply_x86.d $(DPP) $(HFILES)
+	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
 ffi_x86.c: arch/ffi_x86.d $(DPP) $(HFILES)
 	if test -f ../CROSS-DPP ; then ../CROSS-DPP $< $@ ; else $(DPP) $< $@ ; fi
 ffi_x86_64.c: arch/ffi_x86_64.d $(DPP) $(HFILES)
