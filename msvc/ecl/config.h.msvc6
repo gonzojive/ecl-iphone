@@ -281,10 +281,6 @@ typedef unsigned int uint32_t;
 #define ECL_MAX_STRING_POOL_SIZE	10
 #define ECL_BUFFER_STRING_SIZE		128
 
-#define HAVE_LOG1P
-#define HAVE_LOG1PF
-#define HAVE_LOG1PL
-
 /*
  * Macros that depend on these system features.
  */

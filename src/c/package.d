@@ -76,6 +76,8 @@ member_string_eq(cl_object x, cl_object l)
 
 #if defined(__cplusplus) || defined(__GNUC__)
 #define INLINE inline
+#else
+#define INLINE
 #endif
 
 static INLINE
