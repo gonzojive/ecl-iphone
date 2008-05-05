@@ -257,7 +257,7 @@
     (wt-lcl lex)))
 
 ;;; reference to variable of inner closure.
-(defun wt-env (clv) (wt "CAR(CLV" clv ")"))
+(defun wt-env (clv) (wt "ECL_CONS_CAR(CLV" clv ")"))
 
 ;;; ----------------------------------------------------------------------
 
