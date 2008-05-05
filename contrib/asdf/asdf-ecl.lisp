@@ -39,29 +39,40 @@
 ;;;
 
 (defclass bundle-op (operation)
-  ((type :initarg :type :initform :fasl :accessor bundle-op-type)
-   (monolithic :initarg :monolithic :initform nil)
+  ((type :reader bundle-op-type)
+   (monolithic :initform nil :reader bundle-op-monolithic)
    (name-suffix :initarg :name-suffix :initform nil)
    (build-args :initarg :args :initform nil :accessor bundle-op-build-args)))
 
+(defclass fasl-op (bundle-op)
+  ((type :initform :fasl)))
+
 (defclass lib-op (bundle-op)
-  ((type :initarg :type :initform :lib :accessor bundle-op-type)))
+  ((type :initform :lib)))
 
 (defclass dll-op (bundle-op)
-  ((type :initarg :type :initform :dll :accessor bundle-op-type)))
+  ((type :initform :dll)))
 
-(defmethod bundle-op-monolithic ((bundle bundle-op))
-  (or (eq (bundle-op-type bundle) :program)
-      (slot-value bundle 'monolithic)))
+(defclass monolithic-bundle-op (bundle-op)
+  ((monlithic :initform t)))
+
+(defclass monolithic-fasl-op (fasl-op monolithic-bundle-op) ())
+
+(defclass monolithic-lib-op (lib-op monolithic-bundle-op)
+  ((type :initform :lib)))
+
+(defclass monolithic-dll-op (dll-op monolithic-bundle-op)
+  ((type :initform :dll)))
+
+(defclass program-op (monolithic-bundle-op)
+  ((type :initform :dll)))
 
 (defmethod initialize-instance :after ((instance bundle-op) &rest initargs
-				       &key (name-suffix nil name-suffix-p) &allow-other-keys)
+				       &key (name-suffix nil name-suffix-p)
+				       &allow-other-keys)
   (unless name-suffix-p
     (setf (slot-value instance 'name-suffix)
-	  (if (and (slot-value instance 'monolithic)
-		   (not (eq (slot-value instance 'type) :program)))
-	      "-mono"
-	      "")))
+	  (if (bundle-op-monolithic instance) "-mono" "")))
   (setf (bundle-op-build-args instance)
 	(remove-keys '(type monolithic name-suffix)
 		     (slot-value instance 'original-initargs))))
@@ -81,39 +92,63 @@
 		  (cons operation component)))
      (and include-self (list (cons operation system))))))
 
-(defun bundle-sub-operations (o c)
-  ;; Builds a list of pairs (operation . component) which contains all the
-  ;; dependencies of this bundle. This list is used by TRAVERSE and also
-  ;; by INPUT-FILES. The dependencies depend on the strategy, as explained
-  ;; below.
-  (if (bundle-op-monolithic o)
-      ;; First we handle monolithic bundles. These are standalone systems
-      ;; which contain everything, including other ASDF systems required
-      ;; by the current one. A PROGRAM is always monolithic.
-      (ecase (bundle-op-type o)
-	((:dll :shared-library :program :fasl)
-	 ;; Gather the static libraries of all components.
-	 ;; They will be linked together into the resulting target.
-	 ;; Incude own system.
-	 (gather-components 'lib-op c :gather-all t :include-self t))
-	((:lib :static-library)
-	 ;; Gather the object files of all systems and subsystems.
-	 (gather-components 'compile-op c :gather-all t)))
-      ;; Here we analyze non-monolithic versions. They are not standalone
-      ;; but we do not care about the dependencies, except in the case of
-      ;; shared libraries, that must be linked against the shared libraries
-      ;; they depend on.
-      (ecase (bundle-op-type o)
-	((:dll :shared-library)
-	 ;; Gather the dynamically linked libraries of all components.
-	 ;; They will be linked into this new shared library, together
-	 ;; with the object files of this module.
-	 (append (gather-components 'dll-op c :gather-all t)
-		 (gather-components 'compile-op c :gather-all nil)))
-	((:fasl :lib :static-library)
-	 ;; We do not care about other modules, but just provide our
-	 ;; own compiled files.
-	 (gather-components 'compile-op c :gather-all nil)))))
+;; BUNDLE-SUB-OPERATIONS
+;;
+;; Builds a list of pairs (operation . component) which contains all the
+;; dependencies of this bundle. This list is used by TRAVERSE and also
+;; by INPUT-FILES. The dependencies depend on the strategy, as explained
+;; below.
+;;
+(defgeneric bundle-sub-operations (operation component))
+;;
+;; First we handle monolithic bundles. These are standalone systems
+;; which contain everything, including other ASDF systems required
+;; by the current one. A PROGRAM is always monolithic.
+;;
+;; MONOLITHIC SHARED LIBRARIES, PROGRAMS, FASL
+;;
+;; Gather the static libraries of all components.
+;; They will be linked together into the resulting target.
+;; Incude own system.
+;;
+(defmethod bundle-sub-operations ((o monolithic-bundle-op) c)
+  (gather-components 'lib-op c :gather-all t :include-self t))
+;;
+;; MONOLITHICH STATIC LIBRARIES
+;;
+;; Gather the object files of all systems and subsystems.
+;;
+(defmethod bundle-sub-operations ((o monolithic-lib-op) c)
+  (gather-components 'compile-op c :gather-all t))
+;;
+;; Now we analyze non-monolithic versions. They are not standalone
+;; but we do not care about the dependencies, except in the case of
+;; shared libraries, that must be linked against the shared libraries
+;; they depend on.
+;;
+;; SHARED LIBRARIES
+;;
+;; Gather the dynamically linked libraries of all components.
+;; They will be linked into this new shared library, together
+;; with the object files of this module.
+;;
+(defmethod bundle-sub-operations ((o dll-op) c)
+  (append (gather-components 'dll-op c :gather-all t)
+	  (gather-components 'compile-op c :gather-all nil)))
+;;
+;; STATIC LIBRARIES AND OTHERS
+;;
+;; We do not care about other modules, but just provide our
+;; own compiled files.
+;;
+(defmethod bundle-sub-operations ((o bundle-op) c)
+  (gather-components 'compile-op c :gather-all nil))
+
+(defmethod component-depends-on ((o bundle-op) (c system))
+  (loop for (op . dep) in (bundle-sub-operations o c)
+     when (typep dep 'system)
+     collect (list (class-name (class-of op))
+		   (component-name dep))))
 
 (defmethod input-files ((o bundle-op) (c system))
   (loop for (sub-op . sub-c) in (bundle-sub-operations o c)
@@ -126,7 +161,10 @@
 			   (component-relative-pathname c)))))
 
 (defmethod perform ((o bundle-op) (c t))
-  nil)
+  t)
+
+(defmethod operation-done-p ((o bundle-op) (c source-file))
+  t)
 
 (defmethod perform ((o bundle-op) (c system))
   (let* ((object-files (input-files o c))
@@ -134,19 +172,40 @@
     (apply #'c::builder (bundle-op-type o) output :lisp-files object-files
 	   (bundle-op-build-args o))))
 
-(defmethod traverse ((o bundle-op) (c system))
-  (let ((tree (call-next-method)))
-    ;; We run over our sub operations in reverse order (from most generic
-    ;; to most specific), appending the resulting trees. For some unknown
-    ;; reason, we still get PRUNE-OPs which we have to remove from the tree.
-    (append (nreverse (delete 'pruned-op
-			      (loop for (sub-op . sub-c) in (reverse (bundle-sub-operations o c))
-				 nconc (reverse (traverse sub-op sub-c)))
-			      :key #'car))
-	    tree)))
+(defun select-operation (monolithic type)
+  (ecase type
+    ((:dll :shared-library)
+     (if monolithic 'monolithic-dll-op 'dll-op))
+    ((:lib :static-library)
+     (if monolithic 'monolithic-lib-op 'lib-op))
+    ((:fasl)
+     (if monolithic 'monolithic-fasl-op 'fasl-op))
+    ((:program)
+     'program-op)))
+    
 
-(defun make-build (&rest args)
-  (apply #'operate 'bundle-op args))
+(defun make-build (system &rest args &key (monolithic nil) (type :fasl) &allow-other-keys)
+  (apply #'operate (select-operation monolithic type)
+	 system
+	 (remove-keys '(monolithic type) args)))
 
-(export 'make-build)
-(export 'build-op)
+;;
+;; LOAD-FASL-OP
+;;
+;; This is like ASDF's LOAD-OP, but using monolithic fasl files.
+;;
+
+(defclass load-fasl-op (load-op) ())
+
+(defmethod component-depends-on ((o load-fasl-op) (c system))
+  (subst 'load-fasl-op 'load-op
+	 (subst 'fasl-op 'compile-op
+		(component-depends-on (make-instance 'load-op) c))))
+
+(defmethod input-files ((o load-fasl-op) (c system))
+  (output-files (make-instance 'fasl-op) c))
+
+(defmethod perform ((o load-fasl-op) (c system))
+  (load (first (input-files o c))))
+
+(export '(make-build load-fasl-op))

@@ -692,7 +692,7 @@ system."))
 	  (error 'circular-dependency :components (list c)))
       (setf (visiting-component operation c) t)
       (loop for (required-op . deps) in (component-depends-on operation c)
-	    do (do-dep required-op deps))
+	 do (do-dep required-op deps))
       ;; constituent bits
       (let ((module-ops
 	     (when (typep c 'module)
