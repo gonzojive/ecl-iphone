@@ -261,8 +261,8 @@ ecl_keywordp(cl_object s)
 }
 
 @(defun get (sym indicator &optional deflt)
-@
 	cl_object *plist = ecl_symbol_plist(sym);
+@
 	@(return ecl_getf(*plist, indicator, deflt))
 @)
 
