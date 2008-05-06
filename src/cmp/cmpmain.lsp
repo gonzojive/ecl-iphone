@@ -116,8 +116,9 @@
 	   (fix-for-mingw (ecl-library-directory))
 	   options
 	   #-msvc *ld-bundle-flags*
-	   #+msvc (concatenate 'string *ld-bundle-flags* " /EXPORT:"
-			       init-name)))
+	   #+msvc (concatenate 'string *ld-bundle-flags*
+			       " /EXPORT:" init-name
+			       " /LIBPATH:" (ecl-library-directory))))
   #+(or mingw32)
   (safe-system
    (format nil

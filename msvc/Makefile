@@ -242,7 +242,7 @@ cmp/cmpdefs.lsp: $(srcdir)/cmp/cmpdefs.lsp Makefile
 	    "@ECL_CFLAGS@" "" \
 	    "@CPPFLAGS@" "" \
 	    "@LDRPATH@" "" \
-	    "@LDFLAGS@" "$(LDFLAGS) /LIBPATH:~S" \
+	    "@LDFLAGS@" "$(LDFLAGS)" \
 	    "@SHARED_LDFLAGS@" "$(SHARED_LDFLAGS)" \
 	    "@BUNDLE_LDFLAGS@" "$(SHARED_LDFLAGS)" \
 	    "@CLIBS@" "user32.lib ws2_32.lib shell32.lib" \
