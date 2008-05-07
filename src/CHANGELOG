@@ -89,6 +89,9 @@ ECL 0.9k:
    or shadow import the symbols associated to generic versions in the packages
    where methods on these functions are defined.
 
+ - By user request, ECL provides a function (GRAY:REDEFINE-CL-FUNCTIONS) which
+   will make the above mentioned functions generic.
+
  - Interpreted forms now remember the file in which they were defined
    and what form number they represent.
 

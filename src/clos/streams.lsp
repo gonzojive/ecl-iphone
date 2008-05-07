@@ -12,6 +12,8 @@
 
 (in-package "GRAY")
 
+(import 'clos::ansi-stream)
+
 ;;;
 ;;; This is the generic function interface for CLOS streams.
 ;;;
@@ -262,20 +264,16 @@
 
 (defmethod stream-clear-input ((stream fundamental-character-input-stream))
   nil)
-(defmethod stream-clear-input ((stream stream))
-  (bug-or-error stream 'stream-clear-input))
-(defmethod stream-clear-input ((non-stream t))
-  (error 'type-error :datum non-stream :expected-type 'stream))
+(defmethod stream-clear-input ((stream ansi-stream))
+  (cl:clear-input stream))
 
 
 ;; CLEAR-OUTPUT
 
 (defmethod stream-clear-output ((stream fundamental-output-stream))
   nil)
-(defmethod stream-clear-output ((stream stream))
-  (bug-or-error stream 'stream-clear-output))
-(defmethod stream-clear-output ((non-stream t))
-  (error 'type-error :datum non-stream :expected-type 'stream))
+(defmethod stream-clear-output ((stream ansi-stream))
+  (cl:clear-output stream))
 
 
 ;; CLOSE
@@ -285,46 +283,32 @@
   (setf (open-stream-p stream) nil)
   t)
 
-(defmethod close ((stream stream) &key abort)
+(defmethod close ((stream ansi-stream) &key abort)
   (cl:close stream :abort abort))
-
-(defmethod close ((non-stream t) &key abort)
-  (declare (ignore abort))
-  (error 'type-error :datum non-stream :expected-type 'stream))
 
 ;; STREAM-ELEMENT-TYPE
 
 (defmethod stream-element-type ((stream fundamental-character-stream))
   'character)
 
-(defmethod stream-element-type ((stream fundamental-stream))
-  (bug-or-error stream 'stream-element-type))
-
-(defmethod stream-element-type ((stream stream))
+(defmethod stream-element-type ((stream ansi-stream))
   (cl:stream-element-type stream))
-
-(defmethod stream-element-type ((non-stream t))
-  (error 'type-error :datum non-stream :expected-type 'stream))
 
 
 ;; FINISH-OUTPUT
 
 (defmethod stream-finish-output ((stream fundamental-output-stream))
   nil)
-(defmethod stream-finish-output ((stream stream))
-  (bug-or-error stream 'stream-finish-output))
-(defmethod stream-finish-output ((non-stream t))
-  (error 'type-error :datum non-stream :expected-type 'stream))
+(defmethod stream-finish-output ((stream ansi-stream))
+  (cl:finish-output stream))
 
 
 ;; FORCE-OUTPUT
 
 (defmethod stream-force-output ((stream fundamental-output-stream))
   nil)
-(defmethod stream-force-output ((stream stream))
-  (bug-or-error stream 'stream-force-output))
-(defmethod stream-force-output ((non-stream t))
-  (error 'type-error :datum non-stream :expected-type 'stream))
+(defmethod stream-force-output ((stream ansi-stream))
+  (cl:force-output stream))
 
 
 ;; FRESH-LINE
@@ -333,6 +317,9 @@
   (unless (stream-start-line-p stream)
     (stream-terpri stream)
     t))
+
+(defmethod stream-fresh-line ((stream ansi-stream))
+  (cl:fresh-line ansi-stream))
 
 
 ;; INPUT-STREAM-P
@@ -343,20 +330,15 @@
 (defmethod input-stream-p ((stream fundamental-input-stream))
   t)
 
-(defmethod input-stream-p ((stream stream))
+(defmethod input-stream-p ((stream ansi-stream))
   (cl:input-stream-p stream))
-
-(defmethod input-stream-p ((non-stream t))
-  (error 'type-error :datum non-stream :expected-type 'stream))
 
 
 ;; INTERACTIVE-STREAM-P
 
-(defmethod stream-interactive-p ((stream stream))
-  (bug-or-error stream 'stream-interactive-p))
+(defmethod stream-interactive-p ((stream ansi-stream))
+  (cl:interactive-stream-p stream))
 
-(defmethod stream-interactive-p ((non-stream t))
-  (error 'type-error :datum non-stream :expected-type 'stream))
 
 ;; LINE-COLUMN
 
@@ -372,14 +354,14 @@
       (stream-unread-char stream char)
       t)))
 
+(defmethod stream-listen ((stream ansi-stream))
+  (cl:listen stream))
+
 
 ;; OPEN-STREAM-P
 
-(defmethod open-stream-p ((stream stream))
+(defmethod open-stream-p ((stream ansi-stream))
   (cl:open-stream-p stream))
-
-(defmethod open-stream-p ((non-stream t))
-  (error 'type-error :datum non-stream :expected-type 'stream))
 
 
 ;; OUTPUT-STREAM-P
@@ -390,11 +372,8 @@
 (defmethod output-stream-p ((stream fundamental-output-stream))
   t)
 
-(defmethod output-stream-p ((stream stream))
+(defmethod output-stream-p ((stream ansi-stream))
   (cl:output-stream-p stream))
-
-(defmethod output-stream-p ((non-stream t))
-  (error 'type-error :datum non-stream :expected-type 'stream))
 
 
 ;; PEEK-CHAR
@@ -405,19 +384,35 @@
       (stream-unread-char stream char))
     char))
 
+(defmethod stream-peek-char ((stream ansi-stream))
+  (cl:peek-char stream))
+
 
 ;; READ-BYTE
 
-(defmethod stream-read-byte ((stream stream))
-  (bug-or-error stream 'stream-read-byte))
-(defmethod stream-read-byte ((non-stream t))
-  (error 'type-error :datum non-stream :expected-type 'stream))
+(defmethod stream-read-byte ((stream ansi-stream))
+  (cl:read-byte stream))
+
+
+;; READ-CHAR
+
+(defmethod stream-read-char ((stream ansi-stream))
+  (cl:read-char stream))
+
+
+;; UNREAD-CHAR
+
+(defmethod stream-unread-char ((stream ansi-stream) (c character))
+  (cl:unread-char stream c))
 
 
 ;; READ-CHAR-NO-HANG
 
 (defmethod stream-read-char-no-hang ((stream fundamental-character-input-stream))
   (stream-read-char stream))
+
+(defmethod stream-read-char-no-hang ((stream ansi-stream))
+  (cl:read-char-no-hang stream))
 
 
 ;; READ-LINE
@@ -441,6 +436,9 @@
 	      (setf (schar res index) ch)
 	      (incf index)))))))
 
+(defmethod stream-read-line ((stream ansi-stream))
+  (cl:read-line stream))
+
 
 ;; READ-SEQUENCE
 
@@ -453,6 +451,10 @@
                                  (seq sequence)
                                  &optional (start 0) (end nil))
   (si::do-read-sequence seq stream start end))
+
+(defmethod stream-read-sequence ((stream ansi-stream) (seq sequence)
+				 &optional (start 0) (end nil))
+  (si:do-read-sequence stream seq start end))
 
 
 ;; START-LINE-P
@@ -469,25 +471,35 @@
 (defmethod streamp ((no-stream t))
   nil)
 
+
 ;; WRITE-BYTE
 
-(defmethod stream-write-byte ((stream stream) integer)
-  (bug-or-error stream 'stream-write-byte))
-(defmethod stream-write-byte ((non-stream t) integer)
-  (error 'type-error :datum non-stream :expected-type 'stream))
+(defmethod stream-write-byte ((stream ansi-stream) integer)
+  (cl:write-byte stream integer))
+
+
+;; WRITE-CHAR
+
+(defmethod stream-write-char ((stream ansi-stream) (c character))
+  (cl:write-char stream))
 
 
 ;; WRITE-SEQUENCE
 
 (defmethod stream-write-sequence ((stream fundamental-character-output-stream)
                                   (seq sequence)
-                                  &optional (start 0) (end nil))
+                                  &optional (start 0) end)
   (si::do-write-sequence seq stream start end))
 
 (defmethod stream-write-sequence ((stream fundamental-binary-output-stream)
                                   (seq sequence)
-                                  &optional (start 0) (end nil))
+                                  &optional (start 0) end)
   (si::do-write-sequence seq stream start end))
+
+(defmethod stream-write-sequence ((stream ansi-stream) (seq sequence)
+                                  &optional (start 0) end)
+  (si::do-write-sequence seq stream start end))
+
 
 ;; WRITE-STRING
 
@@ -503,15 +515,36 @@
       (stream-write-char stream (aref string pos))))
   string)
 
+(defmethod stream-write-string ((stream ansi-stream) string &optional (start 0) end)
+  (cl:write-string stream))
+
 
 ;; TERPRI
 
 (defmethod stream-terpri ((stream fundamental-character-output-stream))
   (stream-write-char stream #\Newline))
 
+(defmethod stream-terpri ((stream ansi-stream))
+  (cl:terpri stream))
+
+(eval-when (:compile-toplevel :execute)
+  (defconstant +conflicting-symbols+ '(cl:close cl:stream-element-type cl:input-stream-p
+				       cl:open-stream-p cl:output-stream-p cl:streamp)))
+
 (let ((p (find-package "GRAY")))
   (do-external-symbols (s (find-package "COMMON-LISP"))
-    (unless (member s '(cl:close cl:stream-element-type cl:input-stream-p
-			cl:open-stream-p cl:output-stream-p cl:streamp))
+    (unless (member s '#.+conflicting-symbols+)
       (export s p))))
 
+(defun redefine-cl-functions ()
+  "Some functions in CL package are expected to be generic. We make them so."
+  (let ((x (si::package-lock "COMMON-LISP" nil)))
+    (loop for cl-symbol in '#.+conflicting-symbols+
+       with gray-package = (find-package "GRAY")
+       do (let ((gray-symbol (find-symbol (symbol-name cl-symbol) gray-package)))
+	    (setf (fdefinition cl-symbol) (fdefinition gray-symbol))
+	    (unintern gray-symbol gray-package)
+	    (import cl-symbol gray-package)
+	    (export cl-symbol gray-package)))
+    (si::package-lock "COMMON-LISP" x)
+    nil))
