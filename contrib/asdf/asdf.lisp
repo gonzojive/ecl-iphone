@@ -1317,12 +1317,13 @@ output to *VERBOSE-OUT*.  Returns the shell's exit code."
 #+ecl
 (progn
   (require 'cmp)
+  (defvar *require-asdf-operator* 'load-op)
   (defun module-provide-asdf (name)
     (handler-bind ((style-warning #'muffle-warning))
       (let* ((*verbose-out* (make-broadcast-stream))
 	     (system (asdf:find-system name nil)))
 	(when system
-	  (asdf:operate 'asdf:load-op name)
+	  (asdf:operate *require-asdf-operator* name)
 	  t))))
   #+win32 (push '("asd" . si::load-source) si::*load-hooks*)
   (pushnew 'module-provide-asdf ext:*module-provider-functions*))

@@ -195,7 +195,7 @@
 ;; This is like ASDF's LOAD-OP, but using monolithic fasl files.
 ;;
 
-(defclass load-fasl-op (load-op) ())
+(defclass load-fasl-op (operation) ())
 
 (defmethod component-depends-on ((o load-fasl-op) (c system))
   (subst 'load-fasl-op 'load-op
@@ -204,6 +204,9 @@
 
 (defmethod input-files ((o load-fasl-op) (c system))
   (output-files (make-instance 'fasl-op) c))
+
+(defmethod perform ((o load-fasl-op) (c t))
+  nil)
 
 (defmethod perform ((o load-fasl-op) (c system))
   (load (first (input-files o c))))
