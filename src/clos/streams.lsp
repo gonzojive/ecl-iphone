@@ -516,7 +516,7 @@
   string)
 
 (defmethod stream-write-string ((stream ansi-stream) string &optional (start 0) end)
-  (cl:write-string stream))
+  (cl:write-string stream string start end))
 
 
 ;; TERPRI
