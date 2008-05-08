@@ -65,7 +65,7 @@
   ((type :initform :dll)))
 
 (defclass program-op (monolithic-bundle-op)
-  ((type :initform :dll)))
+  ((type :initform :program)))
 
 (defmethod initialize-instance :after ((instance bundle-op) &rest initargs
 				       &key (name-suffix nil name-suffix-p)
