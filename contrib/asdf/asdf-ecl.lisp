@@ -86,7 +86,8 @@
      (loop for (op . component) in (traverse (make-instance 'load-op :force t) system)
 	when (and (typep op 'load-op)
 		  (or gather-all (eq (component-system component) system))
-		  (or (eq op-type 'compile-op) (typep component 'system)))
+		  (or (eq op-type 'compile-op) (typep component 'system))
+		  (or include-self (not (eq system component))))
 	collect (progn
 		  (when (eq component system) (setf include-self nil))
 		  (cons operation component)))
