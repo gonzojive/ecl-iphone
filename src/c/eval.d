@@ -154,13 +154,15 @@ _ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_v
 	case t_instance:
 		switch (fun->instance.isgf) {
 		case ECL_STANDARD_DISPATCH:
-			return _ecl_standard_dispatch(frame, fun);
+			out = _ecl_standard_dispatch(frame, fun);
+			break;
 		case ECL_USER_DISPATCH:
 			fun = fun->instance.slots[fun->instance.length - 1];
+			goto AGAIN;
 		default:
 			FEinvalid_function(fun);
 		}
-		goto AGAIN;
+		break;
 #endif /* CLOS */
 	case t_cclosure:
 		out = APPLY_closure(narg, fun->cclosure.entry,
