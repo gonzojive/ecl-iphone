@@ -40,7 +40,7 @@
 
 (defclass bundle-op (operation)
   ((type :reader bundle-op-type)
-   (monolithic :initform nil :reader bundle-op-monolithic)
+   (monolithic :initform nil :reader bundle-op-monolithic-p)
    (name-suffix :initarg :name-suffix :initform nil)
    (build-args :initarg :args :initform nil :accessor bundle-op-build-args)))
 
@@ -72,12 +72,12 @@
 				       &allow-other-keys)
   (unless name-suffix-p
     (setf (slot-value instance 'name-suffix)
-	  (if (bundle-op-monolithic instance) "-mono" "")))
+	  (if (bundle-op-monolithic-p instance) "-mono" "")))
   (setf (bundle-op-build-args instance)
 	(remove-keys '(type monolithic name-suffix)
 		     (slot-value instance 'original-initargs))))
 
-(defun gather-components (op-type system &key gather-all include-self)
+(defun gather-components (op-type system &key filter-system filter-type include-self)
   ;; This function creates a list of components, matched together with an
   ;; operation. This list may be restricted to sub-components of SYSTEM if
   ;; GATHER-ALL = NIL (default), and it may include the system itself.
@@ -85,8 +85,8 @@
     (append
      (loop for (op . component) in (traverse (make-instance 'load-op :force t) system)
 	when (and (typep op 'load-op)
-		  (or gather-all (eq (component-system component) system))
-		  (or (eq op-type 'compile-op) (typep component 'system)))
+		  (typep component filter-type)
+		  (or (not filter-system) (eq (component-system component) filter-systeme)))
 	collect (progn
 		  (when (eq component system) (setf include-self nil))
 		  (cons operation component)))
@@ -108,48 +108,48 @@
 ;; MONOLITHIC SHARED LIBRARIES, PROGRAMS, FASL
 ;;
 ;; Gather the static libraries of all components.
-;; They will be linked together into the resulting target.
-;; Incude own system.
 ;;
 (defmethod bundle-sub-operations ((o monolithic-bundle-op) c)
-  (gather-components 'lib-op c :gather-all t :include-self t))
+  (gather-components 'lib-op c :filter-type 'system :include-self t))
 ;;
-;; MONOLITHICH STATIC LIBRARIES
+;; STATIC LIBRARIES
 ;;
-;; Gather the object files of all systems and subsystems.
+;; Gather the object files of all components and, if monolithic, also
+;; of systems and subsystems.
 ;;
-(defmethod bundle-sub-operations ((o monolithic-lib-op) c)
-  (gather-components 'compile-op c :gather-all t))
-;;
-;; Now we analyze non-monolithic versions. They are not standalone
-;; but we do not care about the dependencies, except in the case of
-;; shared libraries, that must be linked against the shared libraries
-;; they depend on.
+(defmethod bundle-sub-operations ((o lib-op) c)
+  (gather-components 'compile-op c
+		     :filter-system (and (bundle-op-monolithic-p o) c)
+		     :filter-type '(not system)))
 ;;
 ;; SHARED LIBRARIES
 ;;
 ;; Gather the dynamically linked libraries of all components.
 ;; They will be linked into this new shared library, together
-;; with the object files of this module.
+;; with the static library of this module.
 ;;
 (defmethod bundle-sub-operations ((o dll-op) c)
-  (let* ((all-dlls (gather-components 'dll-op c :gather-all t))
-	 (all-but-us (delete c all-dlls :key #'cdr)))
-    (append all-but-as (gather-components 'compile-op c :gather-all nil))))
+  (append (gather-components 'dll-op c :filter-type 'system)
+	  (list (cons (make-instance 'lib-op) c))))	 
 ;;
-;; STATIC LIBRARIES AND OTHERS
+;; FASL FILES
 ;;
-;; We do not care about other modules, but just provide our
-;; own compiled files.
+;; Gather the statically linked library of this component.
 ;;
-(defmethod bundle-sub-operations ((o bundle-op) c)
-  (gather-components 'compile-op c :gather-all nil))
+(defmethod bundle-sub-operations ((o fasl-op) c)
+  (list (cons (make-instance 'lib-op) c)))
 
 (defmethod component-depends-on ((o bundle-op) (c system))
   (loop for (op . dep) in (bundle-sub-operations o c)
      when (typep dep 'system)
      collect (list (class-name (class-of op))
 		   (component-name dep))))
+
+(defmethod component-depends-on ((o lib-op) (c system))
+  (list (list 'compile-op (component-name c))))
+
+(defmethod component-depends-on ((o bundle-op) c)
+  nil)
 
 (defmethod input-files ((o bundle-op) (c system))
   (loop for (sub-op . sub-c) in (bundle-sub-operations o c)
@@ -174,6 +174,7 @@
 (defmethod perform ((o bundle-op) (c system))
   (let* ((object-files (input-files o c))
 	 (output (first (output-files o c))))
+    (ensure-directories-exist output)
     (apply #'c::builder (bundle-op-type o) output :lisp-files object-files
 	   (bundle-op-build-args o))))
 
@@ -214,7 +215,9 @@
   nil)
 
 (defmethod perform ((o load-fasl-op) (c system))
-  (load (first (input-files o c))))
+  (load (first (input-files o c)))
+  (loop for i in (module-components c)
+     do (setf (gethash 'load-op (component-operation-times i)) (get-universal-time))))
 
 (export '(make-build load-fasl-op))
 (push '("fasb" . si::load-binary) si::*load-hooks*)
