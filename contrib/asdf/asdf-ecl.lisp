@@ -86,8 +86,7 @@
      (loop for (op . component) in (traverse (make-instance 'load-op :force t) system)
 	when (and (typep op 'load-op)
 		  (or gather-all (eq (component-system component) system))
-		  (or (eq op-type 'compile-op) (typep component 'system))
-		  (or include-self (not (eq system component))))
+		  (or (eq op-type 'compile-op) (typep component 'system)))
 	collect (progn
 		  (when (eq component system) (setf include-self nil))
 		  (cons operation component)))
@@ -134,8 +133,9 @@
 ;; with the object files of this module.
 ;;
 (defmethod bundle-sub-operations ((o dll-op) c)
-  (append (gather-components 'dll-op c :gather-all t)
-	  (gather-components 'compile-op c :gather-all nil)))
+  (let* ((all-dlls (gather-components 'dll-op c :gather-all t))
+	 (all-but-us (delete c all-dlls :key #'cdr)))
+    (append all-but-as (gather-components 'compile-op c :gather-all nil))))
 ;;
 ;; STATIC LIBRARIES AND OTHERS
 ;;
@@ -160,6 +160,10 @@
 			   (slot-value o 'name-suffix))))
     (list (merge-pathnames (compile-file-pathname name :type (bundle-op-type o))
 			   (component-relative-pathname c)))))
+
+(defmethod output-files ((o fasl-op) (c system))
+  (loop for file in (call-next-method)
+     collect (make-pathname :type "fasb" :defaults file)))
 
 (defmethod perform ((o bundle-op) (c t))
   t)
@@ -213,3 +217,4 @@
   (load (first (input-files o c))))
 
 (export '(make-build load-fasl-op))
+(push '("fasb" . si::load-binary) si::*load-hooks*)
