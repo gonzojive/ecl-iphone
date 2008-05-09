@@ -296,7 +296,10 @@ filesystem or in the database of ASDF modules."
 		(init-name nil)
 		(prologue-code "")
 		(epilogue-code (when (eq target :program) '(SI::TOP-LEVEL)))
-		#+:win32 (system :console))
+		#+:win32 (system :console)
+		&aux
+		(*suppress-compiler-notes* (or *suppress-compiler-notes* (not *compile-verbose*)))
+		(*suppress-compiler-warnings* (or *suppress-compiler-warnings* (not *compile-verbose*))))
   ;;
   ;; The epilogue-code can be either a string made of C code, or a
   ;; lisp form.  In the latter case we add some additional C code to
