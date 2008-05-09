@@ -437,6 +437,13 @@ system."))
 
 (defclass source-file (component) ())
 
+(defmethod print-object ((c source-file) stream)
+  (print-unreadable-object (c stream :type t :identity t)
+    (ignore-errors
+      (prin1 (component-name c) stream)
+      (princ #\Space stream)
+      (prin1 (component-name (component-system c)) stream))))
+
 (defclass cl-source-file (source-file) ())
 (defclass c-source-file (source-file) ())
 (defclass java-source-file (source-file) ())
