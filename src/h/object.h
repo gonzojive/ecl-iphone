@@ -701,7 +701,7 @@ union cl_lispunion {
 /*
 	Type_of.
 */
-#if defined(__cplusplus) || defined(__GNUC__)
+#if defined(__cplusplus) || (defined(__GNUC__) && !defined(__STRICT_ANSI__))
 static inline cl_type type_of(cl_object o) {
 	int i = IMMEDIATE(o);
 	return (i? (cl_type)i : (cl_type)(o->d.t));
