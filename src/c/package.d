@@ -74,7 +74,7 @@ member_string_eq(cl_object x, cl_object l)
 	return FALSE;
 }
 
-#if defined(__cplusplus) || defined(__GNUC__)
+#if defined(__cplusplus) || (defined(__GNUC__) && !defined(__STRICT_ANSI__))
 #define INLINE inline
 #else
 #define INLINE
