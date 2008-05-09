@@ -66,9 +66,11 @@
     (setf (slot-definition-location slotd)
 	  (slot-definition-location (gethash (slot-definition-name slotd) hash-table))))
   (setf (class-slots               the-class) (copy-list class-slots)
+	(class-size                the-class) (length class-slots)
 	(slot-table                the-class) hash-table
 	(class-direct-slots        the-class) class-slots
 	(class-slots               standard-class) standard-slots
+	(class-size                standard-class) (length standard-slots)
 	(slot-table                standard-class) hash-table
 	(class-direct-slots        standard-class) (set-difference standard-slots class-slots))
 

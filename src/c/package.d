@@ -80,7 +80,7 @@ member_string_eq(cl_object x, cl_object l)
 #define INLINE
 #endif
 
-static INLINE
+static INLINE void
 symbol_remove_package(cl_object s, cl_object p)
 {
 	if (Null(s))
@@ -89,7 +89,7 @@ symbol_remove_package(cl_object s, cl_object p)
 		s->symbol.hpack = Cnil;
 }
 
-static INLINE
+static INLINE void
 symbol_add_package(cl_object s, cl_object p)
 {
 	if (Null(s))
@@ -226,7 +226,7 @@ ecl_rename_package(cl_object x, cl_object name, cl_object nicknames)
 	PACKAGE_OP_LOCK();
 	y = ecl_find_package_nolock(name);
 	if ((y != Cnil) && (y != x)) {
-	ERROR:	PACKAGE_OP_UNLOCK();
+		PACKAGE_OP_UNLOCK();
 		FEpackage_error("A package with name ~S already exists.", x,
 				1, name);
 	}

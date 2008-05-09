@@ -136,6 +136,7 @@ int naux;
 char *result[MAXRES];
 int nres;
 
+void
 put_lineno(void)
 {
 	static int flag = 0;
@@ -147,12 +148,14 @@ put_lineno(void)
 	}
 }
 
+void
 error(char *s)
 {
 	printf("Error in line %d: %s.\n", lineno, s);
 	exit(1);
 }
 
+void
 error_symbol(char *s)
 {
 	printf("Error in line %d: illegal symbol %s.\n", lineno, s);
@@ -278,7 +281,6 @@ char *
 read_symbol()
 {
 	char c, *name = poolp;
-	int i;
 
 	c = readc();
 	while (c != '\'') {
@@ -317,7 +319,6 @@ char *
 read_function()
 {
 	char c, *name = poolp;
-	int i;
 
 	c = readc();
 	if (c == '"') {
@@ -694,7 +695,7 @@ put_declaration(void)
     fprintf(out, ") FEwrong_num_arguments(%s);\n", function_symbol);
     for (i = 0;  i < nopt;  i++) {
       put_lineno();
-      fprintf(out, "\tif (narg > %d) {\n", nreq+i, optional[i].o_var);
+      fprintf(out, "\tif (narg > %d) {\n", nreq+i);
       put_lineno();
       fprintf(out, simple_varargs?
 	      "\t\t%s = va_arg(%s,cl_object);\n":
@@ -855,7 +856,6 @@ LOOP:
 int
 main(int argc, char **argv)
 {
-	char *p, *q;
 	char outfile[BUFSIZ];
 
 	if (argc < 2 || !strcmp(argv[1],"-")) {

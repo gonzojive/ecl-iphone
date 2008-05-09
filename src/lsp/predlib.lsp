@@ -251,12 +251,14 @@ has no fill-pointer, and is not adjustable."
   (put-sysprop (car l) 'TYPE-PREDICATE (cdr l)))
 
 (defconstant +upgraded-array-element-types+
-  '(NIL BASE-CHAR CHARACTER BIT EXT::BYTE8 EXT::INTEGER8 EXT::CL-FIXNUM EXT::CL-INDEX SINGLE-FLOAT DOUBLE-FLOAT T))
+  '(NIL BASE-CHAR #+unicode CHARACTER BIT EXT::BYTE8 EXT::INTEGER8 EXT::CL-FIXNUM EXT::CL-INDEX SINGLE-FLOAT DOUBLE-FLOAT T))
 
 (defun upgraded-array-element-type (element-type &optional env)
-  (dolist (v +upgraded-array-element-types+ 'T)
-    (when (subtypep element-type v)
-      (return v))))
+  (if (member element-type +upgraded-array-element-types+ :test #'eq)
+      element-type
+      (dolist (v +upgraded-array-element-types+ 'T)
+	(when (subtypep element-type v)
+	  (return v)))))
 
 (defun upgraded-complex-part-type (real-type &optional env)
   ;; ECL does not have specialized complex types. If we had them, the
@@ -426,13 +428,32 @@ Returns T if X belongs to TYPE; NIL otherwise."
 	    (error-type-specifier type))))))
 
 #+clos
-(defun si::subclassp (low high)
+(defun subclassp (low high)
   (or (eq low high)
-      (member high (sys:instance-ref low 4))) ; (class-precedence-list low)
+      (member high (sys:instance-ref low 4) :test #'eq)) ; (class-precedence-list low)
   #+(or)
   (or (eq low high)
       (dolist (class (sys:instance-ref low 1)) ; (class-superiors low)
 	(when (si::subclassp class high) (return t)))))
+
+#+clos
+(defun of-class-p (object class)
+  (declare (optimize (speed 3) (safety 0)))
+  (macrolet ((class-precedence-list (x)
+	       `(instance-ref ,x 4))
+	     (class-name (x)
+	       `(instance-ref ,x 0)))
+    (let* ((x-class (class-of object)))
+      (declare (class x-class))
+      (if (eq x-class class)
+	  t
+	  (let ((x-cpl (class-precedence-list x-class)))
+	    (if (instancep class)
+		(member class x-cpl :test #'eq)
+		(dolist (c x-cpl nil)
+		  (declare (class c))
+		  (when (eq (class-name c) class)
+		    (return t)))))))))
 
 #+(and clos ecl-min)
 (defun clos::classp (foo)
@@ -762,11 +783,13 @@ if not possible."
 ;;
 (defun fast-upgraded-array-element-type (type)
   (declare (si::c-local))
-  (if (eql type '*)
-      '*
-      (dolist (other-type +upgraded-array-element-types+ 'T)
-	(when (fast-subtypep type other-type)
-	  (return other-type)))))
+  (cond ((eql type '*) '*)
+	((member type +upgraded-array-element-types+ :test #'eq)
+	 type)
+	(t
+	 (dolist (other-type +upgraded-array-element-types+ 'T)
+	   (when (fast-subtypep type other-type)
+	     (return other-type))))))
 
 ;;
 ;; This canonicalizes the array type into the form

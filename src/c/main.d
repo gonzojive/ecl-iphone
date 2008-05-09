@@ -553,11 +553,12 @@ si_argc()
 cl_object
 si_argv(cl_object index)
 {
-	cl_fixnum i;
-
-	if (!FIXNUMP(index) || (i = fix(index)) < 0 || i >= ARGC)
-		FEerror("Illegal argument index: ~S.", 1, index);
-	@(return make_base_string_copy(ARGV[i]))
+	if (FIXNUMP(index)) {
+		cl_fixnum i = fix(index);
+		if (i >= 0 && i < ARGC)
+			@(return make_base_string_copy(ARGV[i]));
+	}
+	FEerror("Illegal argument index: ~S.", 1, index);
 }
 
 cl_object

@@ -424,9 +424,7 @@
   (when *compile-time-too* (cmp-eval form))
   (let ((*compile-toplevel* nil)
 	(*compile-time-too* nil))
-    (setq form (c1expr form))
-    (add-load-time-values)
-    (make-c1form* 'ORDINARY :args form)))
+    (add-load-time-values (make-c1form* 'ORDINARY :args (c1expr form)))))
 
 (defun t2ordinary (form)
   (let* ((*exit* (next-label))
@@ -435,20 +433,26 @@
     (c2expr form)
     (wt-label *exit*)))
 
-(defun add-load-time-values ()
-  (when (listp *load-time-values*)
-    (setq *top-level-forms* (nconc *load-time-values* *top-level-forms*))
-    (setq *load-time-values* nil))
-  (when (listp *make-forms*)
-    (setq *top-level-forms*
-	  (nconc (nreverse *make-forms*) *top-level-forms*))
-    (setq *make-forms* nil)))
+(defun add-load-time-values (form)
+  (let ((previous (append (and (consp *load-time-values*)
+			       (nreverse *load-time-values*))
+			  *make-forms*)))
+    (when previous
+      (setf *load-time-values* nil
+	    *make-forms* nil)
+      (setf form (make-c1form* 'PROGN :args (nconc previous (list form))))))
+  form)
 
 (defun c1load-time-value (args)
   (check-args-number 'LOAD-TIME-VALUE args 1 2)
   (let ((form (first args))
 	loc)
-    (cond ((typep form '(or list symbol))
+    (cond ((not (listp *load-time-values*))
+	   ;; When using COMPILE, we set *load-time-values* to 'VALUES and
+	   ;; thus signal that we do not want to compile these forms, but
+	   ;; just to retain their value.
+	   (return-from c1load-time-value (c1constant-value (cmp-eval form) :always t)))
+          ((typep form '(or list symbol))
 	   (setf loc (data-empty-loc))
 	   (push (make-c1form* 'LOAD-TIME-VALUE :args loc (c1expr form))
 		 *load-time-values*))

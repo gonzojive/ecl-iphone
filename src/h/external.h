@@ -1662,6 +1662,8 @@ extern ECL_API cl_object si_find_relative_package _ARGS((cl_narg narg, cl_object
 
 /* predlib.lsp */
 
+extern ECL_API cl_object si_subclassp _ARGS((cl_narg narg, cl_object V1, cl_object V2, ...));
+extern ECL_API cl_object si_of_class_p _ARGS((cl_narg narg, cl_object V1, cl_object V2, ...));
 extern ECL_API cl_object si_do_deftype _ARGS((cl_narg narg, cl_object V1, cl_object V2, cl_object V3, ...));
 extern ECL_API cl_object cl_upgraded_array_element_type _ARGS((cl_narg narg, cl_object V1, ...));
 extern ECL_API cl_object cl_upgraded_complex_part_type _ARGS((cl_narg narg, cl_object V1, ...));

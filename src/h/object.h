@@ -637,6 +637,7 @@ struct ecl_condition_variable {
 #define CLASS_INFERIORS(x)	(x)->instance.slots[2]
 #define CLASS_SLOTS(x)		(x)->instance.slots[3]
 #define CLASS_CPL(x)		(x)->instance.slots[4]
+#define ECL_INSTANCEP(x)	((IMMEDIATE(x)==0) && ((x)->d.t==t_instance))
 #define ECL_NOT_FUNCALLABLE	0
 #define ECL_STANDARD_DISPATCH	1
 #define ECL_USER_DISPATCH	2

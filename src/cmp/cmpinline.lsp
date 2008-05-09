@@ -118,7 +118,8 @@
 				 (first (coerce-locs
 					  (inline-args (list (c1form-arg 0 form)))))
 				 (c1form-arg 1 form)
-				 (c1form-arg 2 form)))
+				 (c1form-arg 2 form)
+				 (c1form-arg 3 form)))
 		     locs))))
 	#+clos
 	(SYS:INSTANCE-REF

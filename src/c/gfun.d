@@ -36,7 +36,7 @@ reshape_instance(cl_object x, int delta)
 cl_object
 si_set_raw_funcallable(cl_object instance, cl_object function)
 {
-	if (type_of(instance) != t_instance)
+	if (!ECL_INSTANCEP(instance))
 		FEwrong_type_argument(@'ext::instance', instance);
         if (Null(function)) {
 		if (instance->instance.isgf == 2) {
@@ -65,7 +65,7 @@ si_set_raw_funcallable(cl_object instance, cl_object function)
 cl_object
 clos_set_funcallable_instance_function(cl_object x, cl_object function_or_t)
 {
-	if (type_of(x) != t_instance)
+	if (!ECL_INSTANCEP(x))
 		FEwrong_type_argument(@'ext::instance', x);
 	if (x->instance.isgf == ECL_USER_DISPATCH) {
 		reshape_instance(x, -1);
@@ -89,8 +89,7 @@ clos_set_funcallable_instance_function(cl_object x, cl_object function_or_t)
 cl_object
 si_generic_function_p(cl_object x)
 {
-	@(return (((type_of(x) != t_instance) &&
-		   (x->instance.isgf))? Ct : Cnil))
+	@(return ((ECL_INSTANCEP(x) && (x->instance.isgf))? Ct : Cnil))
 }
 
 /**********************************************************************

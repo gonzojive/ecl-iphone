@@ -32,6 +32,9 @@
   "src:cmp;cmpct.lsp"
   "src:cmp;cmpnum.lsp"
   "src:cmp;cmpname.lsp"
+  "src:cmp;cmpopt.lsp"
+  "src:cmp;cmpclos.lsp"
+  "src:cmp;cmpstructures.lsp"
   "src:cmp;cmpmain.lsp"))
 
 (let ((si::*keep-documentation* nil))

@@ -493,7 +493,9 @@ retrieved by (DOCUMENTATION 'SYMBOL 'FUNCTION)."
 	 (IF (SYMBOLP GETTER)
 	     (SUBST (LIST* (QUOTE ,function) GETTER (MAPCAR #'CAR ALL-VARS))
                     (CAR STORES)
-                    `(LET* ,ALL-VARS ,SETTER))
+                    `(LET* ,ALL-VARS
+		       (DECLARE (:READ-ONLY ,@(mapcar #'first all-vars)))
+		       ,SETTER))
 	     (DO ((D VARS (CDR D))
 		  (V VALS (CDR V))
 		  (LET-LIST NIL (CONS (LIST (CAR D) (CAR V)) LET-LIST)))
@@ -507,7 +509,11 @@ retrieved by (DOCUMENTATION 'SYMBOL 'FUNCTION)."
 			      (LIST* (QUOTE ,function) GETTER ,@varlist ,restvar))
 			(LIST* (QUOTE ,function) GETTER (MAPCAR #'CAR ALL-VARS))))
 		   LET-LIST)
-		  `(LET* ,(NREVERSE LET-LIST) ,SETTER)))))))))
+		  `(LET* ,(NREVERSE LET-LIST)
+		     (DECLARE (:READ-ONLY ,@(mapcar #'first all-vars)
+					  ,@vars))
+		     ,SETTER)))))))))
+
 #|
 (defmacro define-modify-macro (name lambda-list function &optional doc-string)
   (let ((update-form

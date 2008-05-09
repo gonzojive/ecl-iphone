@@ -53,7 +53,7 @@
 (defmethod change-class ((instance standard-object) (new-class standard-class)
 			 &rest initargs)
   (let* ((old-instance (si::copy-instance instance))
-	 (new-size (count-instance-slots new-class))
+	 (new-size (class-size new-class))
 	 (instance (si::allocate-raw-instance instance new-class new-size)))
     (si::instance-sig-set instance)
     ;; "The values of local slots specified by both the class Cto and
@@ -132,8 +132,7 @@
 	 (added-slots '())
 	 (property-list '()))
     (unless (equal old-slotds new-slotds)
-      (setf instance (si::allocate-raw-instance instance class
-						(count-instance-slots class)))
+      (setf instance (si::allocate-raw-instance instance class (class-size class)))
       (si::instance-sig-set instance)
       (let* ((new-i 0)
 	     (old-local-slotds (remove :instance old-slotds :test-not #'eq
@@ -168,9 +167,8 @@
 (defmethod reinitialize-instance ((class class) &rest initargs
 				  &key direct-superclasses (direct-slots nil direct-slots-p))
   (let ((name (class-name class)))
-    (if (member name '(CLASS BUILT-IN-CLASS) :test #'eq)
-	(error "The kernel CLOS class ~S cannot be changed." name)
-	(warn "Redefining class ~S" name)))
+    (when (member name '(CLASS BUILT-IN-CLASS) :test #'eq)
+      (error "The kernel CLOS class ~S cannot be changed." name)))
 
   ;; remove previous defined accessor methods
   (when (class-finalized-p class)
@@ -201,6 +199,8 @@
   class)
 
 (defun remove-optional-slot-accessors (class)
+  (declare (si::c-local)
+	   (class class))
   (let ((class-name (class-name class)))
     (dolist (slotd (class-slots class))
       ;; remove previous defined reader methods

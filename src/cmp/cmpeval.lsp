@@ -66,19 +66,6 @@
 	 (c1expr fd))
 	((setq fd (macro-function fname))
 	 (c1expr (cmp-expand-macro fd (list* fname args))))
-	((and (setq fd (get-sysprop fname 'SYS::STRUCTURE-ACCESS))
-	      (inline-possible fname)
-	      ;;; Structure hack.
-	      (consp fd)
-	      (sys::fixnump (cdr fd))
-	      (not (endp args))
-	      (endp (cdr args)))
-	 (case (car fd)
-	   (VECTOR (c1expr `(svref ,(car args) ,(cdr fd)))) ; Beppe3
-	   (LIST (c1expr `(elt ,(car args) ,(cdr fd))))
-	   (t (c1structure-ref1 (car args) (car fd) (cdr fd)))
-	   )
-	 )
 	(t (c1call-global fname args))))
 
 (defun c1call-local (fname args)
@@ -110,18 +97,23 @@
 		      :args fun forms)))))
 
 (defun c1call-global (fname args)
-  (let ((l (length args)))
-    (if (> l si::c-arguments-limit)
-	(c1expr (let ((frame (gensym)))
-		  `(with-stack ,frame
-		     ,@(loop for i in args collect `(stack-push ,frame ,i))
-		     (si::apply-from-stack-frame ,frame #',fname))))
-	(let* ((forms (c1args* args))
-	       (return-type (propagate-types fname forms args)))
-	  (make-c1form* 'CALL-GLOBAL
-			:sp-change (function-may-change-sp fname)
-			:type return-type
-			:args fname forms)))))
+  (let ((l (length args))
+	forms)
+    (cond ((> l si::c-arguments-limit)
+	   (c1expr (let ((frame (gensym)))
+		     `(with-stack ,frame
+			,@(loop for i in args collect `(stack-push ,frame ,i))
+			(si::apply-from-stack-frame ,frame #',fname)))))
+	  ((maybe-optimize-structure-access fname args))
+	  #+clos
+	  ((maybe-optimize-generic-function fname args))
+	  (t
+	   (let* ((forms (c1args* args))
+		  (return-type (propagate-types fname forms args)))
+	     (make-c1form* 'CALL-GLOBAL
+			   :sp-change (function-may-change-sp fname)
+			   :type return-type
+			   :args fname forms))))))
 
 (defun c2expr (form &aux (name (c1form-name form)) (args (c1form-args form)))
   (if (eq name 'CALL-GLOBAL)
@@ -164,96 +156,6 @@
 (defun c1args* (forms)
   (mapcar #'(lambda (form) (c1expr form)) forms))
 
-;;; Structures
-
-(defun c1structure-ref (args)
-  (if (and (not (safe-compile))         ; Beppe
-	   (not (endp args))
-	   (not (endp (cdr args)))
-	   (consp (second args))
-	   (eq (caadr args) 'QUOTE)
-	   (not (endp (cdadr args)))
-	   (symbolp (cadadr args))
-	   (endp (cddadr args))
-	   (not (endp (cddr args)))
-	   (sys::fixnump (third args))
-	   (endp (cdddr args)))
-      (c1structure-ref1 (car args) (cadadr args) (third args))
-      (c1call-global 'SYS:STRUCTURE-REF args)))
-
-(defun c1structure-ref1 (form name index)
-  ;;; Explicitly called from c1expr and c1structure-ref.
-  (make-c1form* 'SYS:STRUCTURE-REF :type (get-slot-type name index)
-		:args (c1expr form) (add-symbol name) index))
-
-(defun get-slot-type (name index)
-  ;; default is t
-  (type-filter
-   (or (third (nth index (get-sysprop name 'SYS::STRUCTURE-SLOT-DESCRIPTIONS))) 'T)))
-
-(defun c2structure-ref (form name-vv index
-			     &aux (*inline-blocks* 0))
-  (let ((loc (first (coerce-locs (inline-args (list form))))))
-       (unwind-exit (list 'SYS:STRUCTURE-REF loc name-vv index)))
-  (close-inline-blocks)
-  )
-
-(defun wt-structure-ref (loc name-vv index)
-  (if (safe-compile)
-      (wt "ecl_structure_ref(" loc "," name-vv "," `(COERCE-LOC :fixnum ,index) ")")
-      #+clos
-      (wt "(" loc ")->instance.slots[" `(COERCE-LOC :fixnum ,index) "]")
-      #-clos
-      (wt "(" loc ")->str.self[" `(COERCE-LOC :fixnum ,index) "]")))
-
-(defun c1structure-set (args)
-  (if (and (not (safe-compile))         ; Beppe
-	   (not (endp args))
-	   (not (endp (cdr args)))
-	   (consp (second args))
-	   (eq (caadr args) 'QUOTE)
-	   (not (endp (cdadr args)))
-	   (symbolp (cadadr args))
-	   (endp (cddadr args))
-	   (not (endp (cddr args)))
-	   (sys::fixnump (third args))
-	   (not (endp (cdddr args)))
-	   (endp (cddddr args)))
-      (let ((x (c1expr (car args)))
-	    (y (c1expr (fourth args)))
-	    (name (cadadr args)))       ; remove QUOTE.
-	;; Beppe. Type check added:
-	(let* ((slot-type (get-slot-type name (third args)))
-	       (new-type (type-and slot-type (c1form-primary-type y))))
-	  (if (null new-type)
-	      (cmpwarn "The type of the form ~s is not ~s."
-		       (fourth args) slot-type)
-	      (progn
-		(when (eq 'VAR (c1form-name y))
-		  ;; it's a variable, propagate type
-		  (setf (var-type (c1form-arg 0 y)) new-type))
-		(setf (c1form-type y) new-type))))
-	(make-c1form* 'SYS:STRUCTURE-SET :type (c1form-primary-type y)
-		      :args x (add-symbol name) (third args) y))
-      (c1call-global 'SYS:STRUCTURE-SET args)))
-
-(defun c2structure-set (x name-vv index y
-			  &aux locs (*inline-blocks* 0))
-  ;; the third argument here *c1t* is just a hack to ensure that
-  ;; a variable is introduced for y if it is an expression with side effects
-  (setq locs (inline-args (list x y *c1t*)))
-  (setq x (second (first locs)))
-  (setq y `(coerce-loc :object ,(second (second locs))))
-  (if (safe-compile)
-      (wt-nl "ecl_structure_set(" x "," name-vv "," index "," y ");")
-      #+clos
-      (wt-nl "(" x ")->instance.slots[" index "]= " y ";")
-      #-clos
-      (wt-nl "(" x ")->str.self[" index "]= " y ";"))
-  (unwind-exit y)
-  (close-inline-blocks)
-  )
-
 ;;; ----------------------------------------------------------------------
 
 (defvar *compiler-temps*
@@ -281,9 +183,3 @@
 
 (put-sysprop 'PROGN 'C1SPECIAL 'c1progn)
 (put-sysprop 'PROGN 'C2 'c2progn)
-
-(put-sysprop 'SYS:STRUCTURE-REF 'C1 'c1structure-ref)
-(put-sysprop 'SYS:STRUCTURE-REF 'C2 'c2structure-ref)
-(put-sysprop 'SYS:STRUCTURE-REF 'WT-LOC 'wt-structure-ref)
-(put-sysprop 'SYS:STRUCTURE-SET 'C1 'c1structure-set)
-(put-sysprop 'SYS:STRUCTURE-SET 'C2 'c2structure-set)

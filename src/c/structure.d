@@ -177,8 +177,7 @@ cl_object
 si_structurep(cl_object s)
 {
 #ifdef CLOS
-	if (type_of(s) == t_instance &&
-	    structure_subtypep(CLASS_OF(s), @'structure-object'))
+	if (ECL_INSTANCEP(s) && structure_subtypep(CLASS_OF(s), @'structure-object'))
 		return Ct;
 #else
 	if (type_of(s) == t_structure)

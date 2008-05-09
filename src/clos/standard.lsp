@@ -83,14 +83,22 @@
 ;;; CLASSES INITIALIZATION AND REINITIALIZATION
 ;;;
 
-(defun count-instance-slots (class)
-  (count :instance (class-slots class) :key #'slot-definition-allocation))
+(defun compute-instance-size (slots)
+  (loop for slotd in slots
+     with last-location = 0
+     with num-slots = 0
+     when (eq (slot-definition-allocation slotd) :instance)
+     do (let ((new-loc (safe-slot-definition-location slotd)))
+	  (incf num-slots)
+	  (when (and new-loc (> new-loc last-location))
+	    (setf last-location new-loc)))
+     finally (return (max num-slots (1+ last-location)))))
 
 (defmethod allocate-instance ((class class) &key)
   ;; FIXME! Inefficient! We should keep a list of dependent classes.
   (unless (class-finalized-p class)
     (finalize-inheritance class))
-  (let ((x (si::allocate-raw-instance nil class (count-instance-slots class))))
+  (let ((x (si::allocate-raw-instance nil class (class-size class))))
     (si::instance-sig-set x)
     x))
 
@@ -134,7 +142,7 @@
   (find-class 'standard-effective-slot-definition nil))
 
 (defmethod initialize-instance ((class class) &rest initargs
-				&key direct-superclasses direct-slots)
+				&key sealedp direct-superclasses direct-slots)
 
   ;; this sets up all the slots of the class
   (call-next-method)
@@ -154,8 +162,10 @@
 )
 
 (defmethod shared-initialize :after ((class standard-class) slot-names &rest initargs &key
-			      (optimize-slot-access (list *optimize-slot-access*)))
-  (setf (slot-value class 'optimize-slot-access) (first optimize-slot-access)))
+				     (optimize-slot-access (list *optimize-slot-access*))
+				     sealedp)
+  (setf (slot-value class 'optimize-slot-access) (first optimize-slot-access)
+	(slot-value class 'sealedp) (and sealedp t)))
 
 (defmethod add-direct-subclass ((parent class) child)
   (pushnew child (class-direct-subclasses parent)))
@@ -185,6 +195,12 @@ argument was supplied for metaclass ~S." (class-of class))))))))
   (let ((y (find-class 'FORWARD-REFERENCED-CLASS nil)))
     (and y (si::subclassp (class-of x) y))))
 
+(defun find-slot-definition (class slot-name)
+  (declare (si::c-local))
+  (if (eq (si:instance-class class) +the-standard-class+)
+      (gethash (class-slot-table class) slot-name nil)
+      (find slot-name (class-slots class) :key #'slot-definition-name)))
+
 (defmethod finalize-inheritance ((class class))
   ;; FINALIZE-INHERITANCE computes the guts of what defines a class: the
   ;; slots, the list of parent class, etc. It is called when either the
@@ -210,10 +226,49 @@ because it contains a reference to the undefined class~%  ~A"
       (unless (or (null x) (eq x class))
 	(return-from finalize-inheritance
 	  (finalize-inheritance x))))
-    (setf (class-precedence-list class) cpl
-	  (class-slots class) (compute-slots class)
-	  (class-default-initargs class) (compute-default-initargs class)
-	  (class-finalized-p class) t)
+    (setf (class-precedence-list class) cpl)
+    (let ((slots (compute-slots class)))
+      (setf (class-slots class) slots
+	    (class-size class) (compute-instance-size slots)
+	    (class-default-initargs class) (compute-default-initargs class)
+	    (class-finalized-p class) t))
+    ;;
+    ;; When a class is sealed we rewrite the list of direct slots to fix
+    ;; their locations. This may imply adding _new_ direct slots.
+    ;;
+    (when (class-sealedp class)
+      (let* ((free-slots (delete-duplicates (mapcar #'slot-definition-name (class-slots class)))))
+	;;
+	;; We first search all slots that belonged to unsealed classes and which
+	;; therefore have no fixed position.
+	;;
+	(loop for c in cpl
+	   do (loop for slotd in (class-direct-slots c)
+		 when (safe-slot-definition-location slotd)
+		 do (setf free-slots (delete (slot-definition-name slotd) free-slots))))
+	;;
+	;; We now copy the locations of the effective slots in this class to
+	;; the class direct slots.
+	;;
+	(loop for slotd in (class-direct-slots class)
+	   do (let ((name (slot-definition-name slotd)))
+		(setf (slot-definition-location slotd)
+		      (slot-definition-location (find-slot-definition class name))
+		      free-slots (delete name free-slots))))
+	;;
+	;; And finally we add one direct slot for each inherited slot that did
+	;; not have a fixed location.
+	;;
+	(loop for name in free-slots
+	   with direct-slots = (class-direct-slots class)
+	   do (let* ((effective-slotd (find-slot-definition class name))
+		     (def (loop for (name . rest) in +slot-definition-slots+
+			     nconc (list (getf rest :initarg)
+					 (funcall (getf rest :accessor) effective-slotd)))))
+		(push (apply #'make-instance (direct-slot-definition-class class def)
+			     def)
+		      direct-slots))
+	   finally (setf (class-direct-slots class) direct-slots))))
     ;;
     ;; This is not really needed, because when we modify the list of slots
     ;; all instances automatically become obsolete (See change.lsp)
@@ -275,6 +330,11 @@ because it contains a reference to the undefined class~%  ~A"
 	:documentation (slot-definition-documentation slotd)
 	:location (slot-definition-location slotd)))
 
+(defun safe-slot-definition-location (slotd &optional default)
+  (if (or (listp slotd) (slot-boundp slotd 'location))
+      (slot-definition-location slotd)
+      default))
+
 (defmethod compute-effective-slot-definition ((class class) name direct-slots)
   (flet ((direct-to-effective (old-slot)
 	   (if (consp old-slot)
@@ -285,7 +345,20 @@ because it contains a reference to the undefined class~%  ~A"
 			initargs))))
 	 (combine-slotds (new-slotd old-slotd)
 	   (let* ((new-type (slot-definition-type new-slotd))
-		  (old-type (slot-definition-type old-slotd)))
+		  (old-type (slot-definition-type old-slotd))
+		  (loc1 (safe-slot-definition-location new-slotd))
+		  (loc2 (safe-slot-definition-location old-slotd)))
+	     (when loc2
+	       (if loc1
+		   (unless (eql loc1 loc2)
+		     (error 'simple-error
+			    :format-control "You have specified two conflicting slot locations:~%~D and ~F~%for slot ~A"
+			    :format-args (list loc1 loc2 name)))
+		   (progn
+		     #+(or)
+		     (format t "~%Assigning a default location ~D for ~A in ~A."
+			     loc2 name (class-name class))
+		     (setf (slot-definition-location new-slotd) loc2))))
 	     (setf (slot-definition-initargs new-slotd)
 		   (union (slot-definition-initargs new-slotd)
 			  (slot-definition-initargs old-slotd)))
@@ -357,11 +430,30 @@ because it contains a reference to the undefined class~%  ~A"
 ;;;
 
 (defun class-compute-slots (class slots)
-  (let ((local-index -1))
-    (declare (fixnum local-index))
-    (dolist (slotd slots)
-      (when (eq (slot-definition-allocation slotd) :instance)
-	(setf (slot-definition-location slotd) (incf local-index))))
+  ;; This an ECL extension. We are allowed to specify the location of
+  ;; a direct slot. Consequently we have to first sort the ones which
+  ;; have been predefined and then assign locations _after_ the last
+  ;; assigned slot. Note the generalized comparison, which pushes all
+  ;; slots without a defined location to the end of the list.
+  (let* ((size (compute-instance-size slots))
+	 (instance-slots (remove :instance slots :key #'slot-definition-allocation
+						 :test-not #'eq))
+	 (numbered-slots (remove-if-not #'safe-slot-definition-location instance-slots))
+	 (other-slots (remove-if #'safe-slot-definition-location instance-slots))
+	 (aux (make-array size :element-type 't :adjustable nil :initial-element nil)))
+    (loop for i in numbered-slots
+       do (let ((loc (slot-definition-location i)))
+	    (when (aref aux loc)
+	      (error 'simple-error
+		     :format-control "Slots ~A and ~A are said to have the same location in class ~A."
+		     :format-ars (list (aref aux loc) i class)))
+	    (setf (aref aux loc) i)))
+    (loop for i in other-slots
+       with index = 0
+       do (loop while (aref aux index)
+	       do (incf index)
+	       finally (setf (aref aux index) i
+			     (slot-definition-location i) index)))
     slots))
 
 (defmethod compute-slots :around ((class class))
@@ -395,6 +487,16 @@ because it contains a reference to the undefined class~%  ~A"
 ;;; ----------------------------------------------------------------------
 ;;; Optional accessors
 ;;;
+
+(defun safe-instance-ref (object index)
+  (declare (fixnum index))
+  (let ((value (si:instance-ref object index)))
+    (if (si:sl-boundp value)
+	value
+	(let ((class (class-of object))
+	      (slotd (find index (class-slots class) :key #'slot-definition-location)))
+	  (values (slotd-unbound class object (slot-definition-name slotd)))))))
+
 ;;; The following does not get as fast as it should because we are not
 ;;; allowed to memoize the position of a slot. The problem is that the
 ;;; AMOP specifies that slot accessors are created from the direct
@@ -408,23 +510,37 @@ because it contains a reference to the undefined class~%  ~A"
 ;;;
 (defun std-class-optimized-accessors (slot-name)
   (declare (si::c-local))
+  (macrolet ((slot-table (class)
+	       `(si::instance-ref ,class #.(position 'slot-table +standard-class-slots+
+						     :key #'first)))
+	     (slot-definition-location (slotd)
+	       `(si::instance-ref ,slotd #.(position 'location +slot-definition-slots+
+						     :key #'first))))
+    (values #'(lambda (self)
+		(let* ((class (si:instance-class self))
+		       (table (slot-table class))
+		       (slotd (gethash slot-name table))
+		       (index (slot-definition-location slotd))
+		       (value (si:instance-ref self index)))
+		  (declare (fixnum index))
+		  (if (si:sl-boundp value)
+		      value
+		      (values (slot-unbound (class-of self) self slot-name)))))
+	    #'(lambda (value self)
+		(let* ((class (si:instance-class self))
+		       (table (slot-table class))
+		       (slotd (gethash slot-name table))
+		       (index (slot-definition-location slotd)))
+		  (declare (fixnum index))
+		  (si:instance-set self index value))))))
+
+(defun std-class-sealed-accessors (index)
+  (declare (si::c-local)
+	   (fixnum slot-index))
   (values #'(lambda (self)
-	      (let* ((class (si:instance-class self))
-		     (table (slot-table class))
-		     (slotd (gethash slot-name table))
-		     (index (slot-definition-location slotd))
-		     (value (si:instance-ref self index)))
-		(declare (fixnum index))
-		(if (si:sl-boundp value)
-		    value
-		    (values (slot-unbound (class-of self) self slot-name)))))
+	      (safe-instance-ref self index))
 	  #'(lambda (value self)
-	      (let* ((class (si:instance-class self))
-		     (table (slot-table class))
-		     (slotd (gethash slot-name table))
-		     (index (slot-definition-location slotd)))
-		(declare (fixnum index))
-		(si:instance-set self index value)))))
+	      (si:instance-set self index value))))
 
 (defun std-class-accessors (slot-name)
   (declare (si::c-local))
@@ -444,12 +560,19 @@ because it contains a reference to the undefined class~%  ~A"
   ;; the instance.
   ;;
   (dolist (slotd (class-direct-slots standard-class))
+    #+(or)
+    (print (slot-definition-name slotd))
     (multiple-value-bind (reader writer)
-	(let ((name (slot-definition-name slotd)))
-	  (if (and (slot-value standard-class 'optimize-slot-access)
-		   (eq (slot-definition-allocation slotd) :instance))
-	      (std-class-optimized-accessors name)
-	      (std-class-accessors name)))
+	(let ((name (slot-definition-name slotd))
+	      (allocation (slot-definition-allocation slotd))
+	      (location (safe-slot-definition-location slotd)))
+	  (cond ((and (eq allocation :instance) (typep location 'fixnum))
+		 (std-class-sealed-accessors (slot-definition-location slotd)))
+		((and (eq allocation :instance)
+		      (slot-value standard-class 'optimize-slot-access))
+		 (std-class-optimized-accessors name))
+		(t
+		 (std-class-accessors name))))
       (let* ((reader-args (list :function reader
 				:generic-function nil
 				:qualifiers nil

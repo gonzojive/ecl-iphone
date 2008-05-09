@@ -12,6 +12,8 @@
 
 (in-package "SI")
 
+(declaim (optimize (safety 1)))
+
 ;;;; Pretty streams
 
 ;;; There are three different units for measuring character positions:
@@ -95,7 +97,9 @@
   ;;
   ;; Block-start queue entries in effect at the queue head.
   (pending-blocks :initform nil :type list :accessor pretty-stream-pending-blocks)
-  ))
+  )
+  (:sealedp t)
+)
 
 (defun pretty-stream-p (stream)
   (typep stream 'pretty-stream))
@@ -136,6 +140,7 @@
 )
 
 (defmethod gray::stream-clear-output ((stream pretty-stream))
+  (declare (type pretty-stream stream))
   (clear-output (pretty-stream-target stream)))
 
 (defun pretty-out (stream char)
@@ -207,7 +212,8 @@
   (section-start-line 0 :type index))
 
 (defun really-start-logical-block (stream column prefix suffix)
-  (declare (si::c-local))
+  (declare (si::c-local)
+	   (type pretty-stream stream))
   (let* ((blocks (pretty-stream-blocks stream))
 	 (prev-block (car blocks))
 	 (per-line-end (logical-block-per-line-prefix-end prev-block))
@@ -249,7 +255,8 @@
   nil)
 
 (defun set-indentation (stream column)
-  (declare (si::c-local))
+  (declare (si::c-local)
+	   (type pretty-stream stream))
   (let* ((prefix (pretty-stream-prefix stream))
 	 (prefix-len (length prefix))
 	 (block (car (pretty-stream-blocks stream)))
@@ -270,7 +277,8 @@
     (setf (logical-block-prefix-length block) column)))
 
 (defun really-end-logical-block (stream)
-  (declare (si::c-local))
+  (declare (si::c-local)
+	   (type pretty-stream stream))
   (let* ((old (pop (pretty-stream-blocks stream)))
 	 (old-indent (logical-block-prefix-length old))
 	 (new (car (pretty-stream-blocks stream)))
@@ -295,16 +303,16 @@
 		(entry `(,constructor :posn
 				      (index-posn
 				       (pretty-stream-buffer-fill-pointer
-					,stream)
+					(the pretty-stream ,stream))
 				       ,stream)
 				      ,@args))
 		(op `(list ,entry))
-		(head `(pretty-stream-queue-head ,stream)))
+		(head `(pretty-stream-queue-head (the pretty-stream ,stream))))
       `(progn
 	 (if ,head
 	     (setf (cdr ,head) ,op)
-	     (setf (pretty-stream-queue-tail ,stream) ,op))
-	 (setf (pretty-stream-queue-head ,stream) ,op)
+	     (setf (pretty-stream-queue-tail (the pretty-stream ,stream)) ,op))
+	 (setf (pretty-stream-queue-head (the pretty-stream ,stream)) ,op)
 	 ,entry))))
 )
 
@@ -319,7 +327,8 @@
 	:type (member :linear :fill :miser :literal :mandatory)))
 
 (defun enqueue-newline (stream kind)
-  (declare (si::c-local))
+  (declare (si::c-local)
+	   (type pretty-stream stream))
   (let* ((depth (length (pretty-stream-pending-blocks stream)))
 	 (newline (enqueue stream newline :kind kind :depth depth)))
     (dolist (entry (pretty-stream-queue-tail stream))
@@ -347,21 +356,12 @@
 
 (defun start-logical-block (stream prefix per-line-p suffix)
   (declare (si::c-local)
-	   (type string prefix))
+	   (type string prefix)
+	   (type pretty-stream stream))
   #+ecl
-  (unless (stringp prefix)
-    (error 'simple-type-error
-	   :format-control "Not a valid PPRINT-LOGICAL-BLOCK prefix: ~A"
-	   :format-arguments (list prefix)
-	   :datum prefix
-	   :expected-type 'string))
-  #+ecl
-  (unless (stringp suffix)
-    (error 'simple-type-error
-	   :format-control "Not a valid PPRINT-LOGICAL-BLOCK suffix: ~A"
-	   :format-arguments (list suffix)
-	   :datum suffix
-	   :expected-type 'string))
+  (progn
+    (check-type prefix string)
+    (check-type suffix string))
   (let ((prefix-len (length prefix)))
     (when (plusp prefix-len)
       (pretty-sout stream prefix 0 prefix-len))
@@ -378,7 +378,8 @@
   (suffix nil :type (or null string)))
 
 (defun end-logical-block (stream)
-  (declare (si::c-local))
+  (declare (si::c-local)
+	   (type pretty-stream stream))
   (let* ((start (pop (pretty-stream-pending-blocks stream)))
 	 (suffix (block-start-suffix start))
 	 (end (enqueue stream block-end :suffix suffix)))
@@ -431,7 +432,8 @@
 	   0))))
 
 (defun index-column (index stream)
-  (declare (si::c-local))
+  (declare (si::c-local)
+	   (type pretty-stream stream))
   (let ((column (pretty-stream-buffer-start-column stream))
 	(section-start (logical-block-section-column
 			(first (pretty-stream-blocks stream))))
@@ -454,7 +456,8 @@
     (+ column index)))
 
 (defun expand-tabs (stream through)
-  (declare (si::c-local))
+  (declare (si::c-local)
+	   (type pretty-stream stream))
   (let ((insertions nil)
 	(additional 0)
 	(column (pretty-stream-buffer-start-column stream))
@@ -602,7 +605,8 @@
 	   *print-miser-width*)))
 
 (defun fits-on-line-p (stream until force-newlines-p)
-  (declare (si::c-local))
+  (declare (si::c-local)
+	   (type pretty-stream stream))
   (let ((available (pretty-stream-line-length stream)))
     (when (and (not *print-readably*) *print-lines*
 	       (= *print-lines* (pretty-stream-line-number stream)))
@@ -683,7 +687,8 @@
 	  (setf (logical-block-section-start-line block) line-number))))))
 
 (defun output-partial-line (stream)
-  (declare (si::c-local))
+  (declare (si::c-local)
+	   (type pretty-stream stream))
   (let* ((fill-ptr (pretty-stream-buffer-fill-pointer stream))
 	 (tail (pretty-stream-queue-tail stream))
 	 (count
@@ -702,7 +707,8 @@
     (incf (pretty-stream-buffer-offset stream) count)))
 
 (defun force-pretty-output (stream)
-  (declare (si::c-local))
+  (declare (si::c-local)
+	   (type pretty-stream stream))
   (maybe-output stream nil)
   (expand-tabs stream nil)
   (write-string (pretty-stream-buffer stream)
@@ -927,12 +933,9 @@
 	   (type (or stream (member t nil)) stream)
 	   (values null))
   #+ecl
-  (unless (member kind '(:linear :miser :fill :mandatory))
-    (error 'simple-type-error
-	   :format-control "~A is not a valid argument to PPRINT-NEWLINE"
-	   :format-arguments (list kind)
-	   :datum kind
-	   :expected-type '(member :linear :miser :fill :mandatory)))
+  (progn
+    (check-type kind (member :linear :miser :fill :mandatory))
+    (check-type stream (or stream (member t nil))))
   (let ((stream (case stream
 		  ((t) *terminal-io*)
 		  ((nil) *standard-output*)
@@ -956,12 +959,10 @@
 	   (type (or stream (member t nil)) stream)
 	   (values null))
   #+ecl
-  (unless (member relative-to '(:block :current))
-    (error 'simple-type-error
-	   :format-control "~A is not a valid argument to PPRINT-INDENT"
-	   :format-arguments (list kind)
-	   :datum kind
-	   :expected-type '(member :block :current)))
+  (progn
+    (check-type relative-to (member :block :current))
+    (check-type n real)
+    (check-type stream (or stream (member t nil))))
   (let ((stream (case stream
 		  ((t) *terminal-io*)
 		  ((nil) *standard-output*)
@@ -987,12 +988,11 @@
 	   (type (or stream (member t nil)) stream)
 	   (values null))
   #+ecl
-  (unless (member kind '(:line :section :line-relative :section-relative))
-    (error 'simple-type-error
-	   :format-control "~A is not a valid argument to PPRINT-TAB"
-	   :format-arguments (list kind)
-	   :datum kind
-	   :expected-type '(member :line :section :line-relative :section-relative)))
+  (progn
+    (check-type kind (member :line :section :line-relative
+			     :section-relative))
+    (check-type colinc unsigned-byte)
+    (check-type colnum unsigned-byte))
   (let ((stream (case stream
 		  ((t) *terminal-io*)
 		  ((nil) *standard-output*)
@@ -1126,14 +1126,15 @@
 
 (defun copy-pprint-dispatch (&optional (table *print-pprint-dispatch*))
   (declare (type (or pprint-dispatch-table null) table))
-  (let* ((orig (or table *initial-pprint-dispatch*))
-	 (new (make-pprint-dispatch-table
-	       :entries (copy-list (pprint-dispatch-table-entries orig))))
-	 (new-cons-entries (pprint-dispatch-table-cons-entries new)))
-    (maphash #'(lambda (key value)
-		 (setf (gethash key new-cons-entries) value))
-	     (pprint-dispatch-table-cons-entries orig))
-    new))
+  (let* ((orig (or table *initial-pprint-dispatch*)))
+    (check-type orig pprint-dispatch-table)
+    (let* ((new (make-pprint-dispatch-table
+		 :entries (copy-list (pprint-dispatch-table-entries orig))))
+	   (new-cons-entries (pprint-dispatch-table-cons-entries new)))
+      (maphash #'(lambda (key value)
+		   (setf (gethash key new-cons-entries) value))
+	       (pprint-dispatch-table-cons-entries orig))
+      new)))
 
 (defun default-pprint-dispatch (stream object)
   (write-ugly-object object stream))

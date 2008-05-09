@@ -36,7 +36,7 @@
     (cond ((consp type)
 	   (setq name (first type) args (cdr type)))
 	  ((si::instancep type)
-	   (setf name (class-name type) args nil))
+	   (setf name (class-name (the class type)) args nil))
 	  (t
 	   (setq name type args nil)))
     (case name

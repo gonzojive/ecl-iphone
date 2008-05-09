@@ -272,6 +272,7 @@ q (or Q):             quits the inspection.~%~
   (let* ((class (si:instance-class instance))
 	 (local-slotds (slot-value class 'CLOS::SLOTS))
 	 (class-slotds (slot-value class 'CLOS::CLASS-CLASS-SLOTS)))
+    (declare (type class class))
     (loop
       (format t "~S - clos object:" instance)
       (incf si::*inspect-level*)
@@ -323,6 +324,7 @@ q (or Q):             quits the inspection.~%~
   (decf si::*inspect-level*)
   (let* ((class (si:instance-class instance))
 	 (local-slotds (slot-value class 'CLOS::SLOTS)))
+    (declare (type class class))
     (loop
       (format t "~S - clos object:" instance)
       (incf si::*inspect-level*)
@@ -373,6 +375,7 @@ q (or Q):             quits the inspection.~%~
   (decf si::*inspect-level*)
   (let* ((class (si:instance-class instance))
 	 (local-slotds (slot-value class 'CLOS::SLOTS)))
+    (declare (type class))
     (loop
       (format t "~S - clos object:" instance)
       (incf si::*inspect-level*)

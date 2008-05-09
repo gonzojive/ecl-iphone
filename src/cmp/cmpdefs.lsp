@@ -399,6 +399,7 @@ object at the end.")
 ;;; Do we debug the compiler? Then we need files not to be deleted.
 
 (defvar *debug-compiler* nil)
+(defvar *delete-files* t)
 (defvar *files-to-be-deleted* '())
 
 ;;; This is copied into each .h file generated, EXCEPT for system-p calls.

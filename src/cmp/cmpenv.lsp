@@ -328,7 +328,8 @@
 	      (OBJECT
 	       (declare-variables 'OBJECT decl-args))
 	      ;; read-only variable treatment. obsolete!
-	      (:READ-ONLY)
+	      (:READ-ONLY
+	       (push decl others))
 	      ((OPTIMIZE FTYPE INLINE NOTINLINE DECLARATION SI::C-LOCAL SI::C-GLOBAL
 		DYNAMIC-EXTENT IGNORABLE VALUES)
 	       (push decl others))
@@ -407,6 +408,7 @@
       ((DYNAMIC-EXTENT IGNORABLE)
        ;; FIXME! SOME ARE IGNORED!
        )
+      (:READ-ONLY)
       (otherwise
        (unless (member (car decl) si:*alien-declarations*)
 	 (cmpwarn "The declaration specifier ~s is unknown." (car decl)))))))
@@ -572,3 +574,17 @@
 			(cmp-env-variables old-env))
 	when (and (consp i) (var-p (fourth i)))
 	collect (fourth i)))
+
+(defmacro cmp-env-optimization (property &optional env)
+  (case (eval property)
+    (speed '*speed*)
+    (safety '*safety*)
+    (space '*space*)
+    (debug '*debug*)))
+
+(defmacro policy-inline-slot-access-p (&optional env)
+  `(or (< (cmp-env-optimization 'safety env) 2)
+       (<= (cmp-env-optimization 'safety env) (cmp-env-optimization 'speed env))))
+
+(defmacro policy-check-all-arguments-p (&optional env)
+  `(> (cmp-env-optimization 'safety env) 1))

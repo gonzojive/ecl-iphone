@@ -41,31 +41,29 @@ type.  Before continuing, receives a new value of PLACE from the user and
 checks the type again.  Repeats this process until the value of PLACE becomes
 of the specified type.  STRING-FORM, if given, is evaluated only once and the
 value is used to indicate the expected type in the error message."
-  (let* ((tag1 (gensym))
-	 (tag2 (gensym)))
-    `(block ,tag1
-       (tagbody ,tag2
-	 (if (typep ,place ',type) (return-from ,tag1 nil))
-	 (restart-case ,(if type-string
-			    `(error 'SIMPLE-TYPE-ERROR
-			      :FORMAT-CONTROL "The value of ~S is ~S, ~
-				     which is not ~A."
-			      :FORMAT-ARGUMENTS (list ',place ,place, type-string)
-			      :DATUM ,place
-			      :EXPECTED-TYPE ',type)
-			    `(error 'SIMPLE-TYPE-ERROR
-			      :FORMAT-CONTROL "The value of ~S is ~S, ~
-				     which is not of type ~S."
-			      :FORMAT-ARGUMENTS (list ',place ,place ',type)
-			      :DATUM ,place
-			      :EXPECTED-TYPE ',type))
-	   (store-value (value)
-	       :REPORT (lambda (stream)
-			 (format stream "Supply a new value of ~S."
-				 ',place))
-	       :INTERACTIVE read-evaluated-form
-	     (setf ,place value)
-	     (go ,tag2)))))))
+  (let ((aux (gensym)))
+    `(let ((,aux ,place))
+       (declare (:read-only ,aux))
+       (unless (typep ,aux ',type)
+	 (setf ,place (do-check-type ,aux ',type ',type-string ',place)))
+       nil)))
+
+(defun do-check-type (value type type-string place)
+  (tagbody again
+     (unless (typep value type)
+       (restart-case
+	   (error 'simple-type-error
+		  :datum value
+		  :expected-type type
+		  :format-control "The value of ~S is ~S, which is not ~:[of type ~S~;~:*~A~]."
+		  :format-arguments (list place value type-string type))
+	 (store-value (new-value)
+	   :report (lambda (stream)
+		     (format stream "Supply a new value of ~S" place))
+	   :interactive read-evaluated-form
+	   (setf value new-value)
+	   (go again)))))
+  value)
 
 (defun assert-report (names stream)
   (format stream "Retry assertion")

@@ -1525,7 +1525,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		break;
 #ifdef CLOS
 	case t_instance:
-		if (type_of(CLASS_OF(x)) != t_instance)
+		if (!ECL_INSTANCEP(CLASS_OF(x)))
 			FEwrong_type_argument(@'ext::instance', CLASS_OF(x));
 		call_print_object(x, stream);
 		break;

@@ -1337,9 +1337,9 @@ type_of(#0)==t_bitvector")
 
 (proclaim-function si:instance-class (t) t :no-side-effects t)
 (def-inline si:instance-class :always (standard-object) t "CLASS_OF(#0)")
-
 (proclaim-function si:instance-class-set (t t) t)
 (proclaim-function si:instancep (t) t :predicate t)
+(def-inline si::instancep :always (t) :bool "@0;ECL_INSTANCEP(#0)")
 (proclaim-function si:unbound (*) t :predicate t :no-side-effects t)
 (def-inline si:unbound :always nil t "ECL_UNBOUND")
 
@@ -1427,12 +1427,13 @@ type_of(#0)==t_bitvector")
      invalid-method-error
      #-(or) standard-instance-access ; this function is a synonym for si:instance-ref
      #-(or) funcallable-standard-instance-access ; same for this one
+     subclassp of-class-p
      )
 ))
 
 (proclaim
   `(si::c-export-fname #+ecl-min ,@c::*in-all-symbols-functions*
-    si::ecase-error si::etypecase-error
+    si::ecase-error si::etypecase-error si::do-check-type
     ccase-error typecase-error-string find-documentation find-declarations
     si::check-keyword si::check-arg-length si::dm-too-few-arguments si::dm-bad-key
     remove-documentation si::get-documentation
@@ -1440,7 +1441,7 @@ type_of(#0)==t_bitvector")
     si::closest-vector-type si::packages-iterator
     si::pprint-logical-block-helper si::pprint-pop-helper
     si::make-seq-iterator si::seq-iterator-ref si::seq-iterator-set si::seq-iterator-next
-    si::assert-slot-type si::define-structure
+    si::structure-type-error si::define-structure
     #+formatter
     ,@'(
     format-princ format-prin1 format-print-named-character
@@ -1462,6 +1463,7 @@ type_of(#0)==t_bitvector")
      ;; combin.lsp
      clos::simple-code-walker
      ;; standard.lsp
+     clos::safe-instance-ref
      clos::standard-instance-set
      ;; kernel.lsp
      clos::install-method

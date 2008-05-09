@@ -21,6 +21,8 @@ APPLY(cl_narg n, cl_objectfn fn, cl_object *x)
 {
 	cl_object output;
 	asm volatile (
+	"movl	4(%%ebp),%%edx\n\t"	/* Create a fake frame for debugger */
+	"pushl	%%edx\n\t"
 	"pushl	%%ebp\n\t"
 	"movl	%%ecx, %%edx\n\t"	/* Here we compute the new address of the stack pointer */
 	"movl	%%esp, %%ebp\n\t"	/* using the formula ESP = (ESP - ECX*4 - 4) & -16 */
@@ -34,6 +36,7 @@ APPLY(cl_narg n, cl_objectfn fn, cl_object *x)
 	"call	*%%eax\n\t"		/* At this point the stack must be aligned */
 	"movl	%%ebp, %%esp\n\t"
 	"popl	%%ebp\n\t"
+	"popl	%%edx\n\t"
         : "=a" (output) : "c" (n), "a" (fn), "S" (x) : "%edx", "%edi");
 	return output;
 }
@@ -43,6 +46,8 @@ APPLY_fixed(cl_narg n, cl_object (*fn)(), cl_object *x)
 {
 	cl_object output;
 	asm volatile (
+	"movl	4(%%ebp),%%edx\n\t"	/* Create a fake frame for debugger */
+	"pushl	%%edx\n\t"
 	"pushl	%%ebp\n\t"
 	"movl	%%ecx, %%edx\n\t"	/* Here we compute the new address of the stack pointer */
 	"movl	%%esp, %%ebp\n\t"	/* using the formula ESP = (ESP - ECX*4) & -16 */
@@ -55,6 +60,7 @@ APPLY_fixed(cl_narg n, cl_object (*fn)(), cl_object *x)
 	"call	*%%eax\n\t"		/* At this point the stack must be aligned */
 	"movl	%%ebp, %%esp\n\t"
 	"popl	%%ebp\n\t"
+	"popl	%%edx\n\t"
         : "=a" (output) : "c" (n), "a" (fn), "S" (x) : "%edx", "%edi");
 	return output;
 }
@@ -64,6 +70,8 @@ APPLY_closure(cl_narg n, cl_objectfn fn, cl_object cl, cl_object *x)
 {
 	cl_object output;
 	asm volatile (
+	"movl	4(%%ebp),%%edx\n\t"	/* Create a fake frame for debugger */
+	"pushl	%%edx\n\t"
 	"pushl	%%ebp\n\t"
 	"movl	%%ecx, %%edx\n\t"	/* Here we compute the new address of the stack pointer */
 	"movl	%%esp, %%ebp\n\t"	/* using the formula ESP = (ESP - ECX*4 - 8) & -16 */
@@ -78,6 +86,7 @@ APPLY_closure(cl_narg n, cl_objectfn fn, cl_object cl, cl_object *x)
 	"call	*%%eax\n\t"		/* At this point the stack must be aligned */
 	"movl	%%ebp, %%esp\n\t"
 	"popl	%%ebp\n\t"
+	"popl	%%edx\n\t"
         : "=a" (output) : "c" (n), "a" (fn), "S" (x), "D" (cl) : "%edx");
 	return output;
 }

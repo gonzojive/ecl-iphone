@@ -35,22 +35,13 @@
 
 (si:instance-class-set (find-class 't) (find-class 'built-in-class))
 
-(defun create-built-in-class (options)
-  (let* ((name (first options))
-	 (direct-superclasses (mapcar #'find-class (or (rest options)
-						       '(t)))))
-    (setf (find-class name)
-	  (make-instance (find-class 'built-in-class)
-			 :name name
-			 :direct-superclasses direct-superclasses
-			 :direct-slots nil))))
-
 (defmethod make-instance ((class built-in-class) &rest initargs)
   (declare (ignore initargs))
   (error "The built-in class (~A) cannot be instantiated" class))
 
-(mapcar #'create-built-in-class
-	  '(;(t object)
+(eval-when (:compile-toplevel :execute)
+  (defconstant +builtin-classes+
+	 '(;(t object)
 	    (sequence)
 	      (list sequence)
 	        (cons list)
@@ -92,7 +83,21 @@
 	    (si::foreign-data)
 	    (si::frame)
 	    #+threads (mp::process)
-	    #+threads (mp::lock)))
+	    #+threads (mp::lock)
+	    #+threads (mp::condition-variable))))
+
+(loop for (name . rest) in '#.+builtin-classes+
+   with index = 1
+   with built-in-class = (find-class 'built-in-class)
+   with array = (setf *builtin-classes* (make-array #.(1+ (length +builtin-classes+))
+						    :initial-element (find-class 't)))
+   do (let* ((direct-superclasses (mapcar #'find-class (or rest '(t))))
+	     (class (make-instance built-in-class :name name
+				   :direct-superclasses direct-superclasses
+				   :direct-slots nil)))
+	(setf (find-class name) class
+	      (aref array index) class
+	      index (1+ index))))
 
 (defmethod ensure-class-using-class ((class null) name &rest rest)
   (multiple-value-bind (metaclass direct-superclasses options)
@@ -129,8 +134,14 @@
 ;;;
 
 (defclass structure-class (class)
-  (slot-descriptions initial-offset defstruct-form constructors documentation
-		     copier predicate print-function))
+  (slot-descriptions
+   initial-offset
+   defstruct-form
+   constructors
+   documentation
+   copier
+   predicate
+   print-function))
 
 ;;; structure-classes cannot be instantiated
 (defmethod make-instance ((class structure-class) &rest initargs)
@@ -146,9 +157,7 @@
 ;;; ----------------------------------------------------------------------
 ;;; Structure-object
 ;;;
-
 ;;; Structure-object has no slots and inherits only from t:
-;;; (defclass structure-object (t) ())
 
 (defclass structure-object (t) ()
   (:metaclass structure-class))
@@ -159,6 +168,7 @@
 (defmethod print-object ((obj structure-object) stream)
   (let* ((class (si:instance-class obj))
 	 (slotds (class-slots class)))
+    (declare (:read-only class))
     (when (and slotds
 	       *print-level*
 	       ;; *p-readably* effectively disables *p-level*

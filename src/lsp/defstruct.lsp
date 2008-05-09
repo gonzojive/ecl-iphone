@@ -13,14 +13,12 @@
 
 (in-package "SYSTEM")
 
-(defun si::assert-slot-type (value slot-type struct-name slot-name)
-  (unless (or (eq slot-type 'T)
-	      (typep value slot-type))
-    (error 'simple-type-error
-	   :format-control "Slot ~A in structure ~A only admits values of type ~A."
-	   :format-arguments (list slot-name struct-name slot-type)
-	   :datum value
-	   :expected-type slot-type)))
+(defun si::structure-type-error (value slot-type struct-name slot-name)
+  (error 'simple-type-error
+	 :format-control "Slot ~A in structure ~A only admits values of type ~A."
+	 :format-arguments (list slot-name struct-name slot-type)
+	 :datum value
+	 :expected-type slot-type))
 
 (defun make-access-function (name conc-name type named slot-descr)
   (declare (ignore named)
@@ -86,7 +84,7 @@
 	       (setf (first i)
 		     (list slot (second (assoc slot slot-descriptions)))))
 	     (when aux
-	       (setf assertions (delete slot assertions :key 'second))))
+	       (setf assertions (delete slot assertions :key 'cadadr))))
 	    (t
 	     (let ((slot-name (first slot)))
 	       (when (consp slot-name)
@@ -97,7 +95,7 @@
 		   (setf (rest slot)
 			 (list (second (assoc slot-name slot-descriptions)))))
 		 (when aux
-		   (setf assertions (delete slot assertions :key 'second))))))))
+		   (setf assertions (delete slot assertions :key 'cadadr))))))))
     ;; For all slots not mentioned above, add the default values from
     ;; the DEFSTRUCT slot description.
     (let ((other-slots (nset-difference
@@ -149,7 +147,8 @@
 		;; case of BOA lists we remove some of these checks for
 		;; uninitialized slots.
 		(unless (eq 'T slot-type)
-		  (push `(si::assert-slot-type ,var-name ',slot-type ',name ',slot-name)
+		  (push `(unless (typep ,var-name ',slot-type)
+			   (structure-type-error ,var-name ',slot-type ',name ',slot-name))
 			assertions))
 		var-name)))
        slot-names))
@@ -163,7 +162,8 @@
 	      #-CLOS
               (sys:make-structure ',name ,@slot-names)
 	      #+CLOS
-	      (sys:make-structure (find-class ',name) ,@slot-names)))
+	      ;; the class is defined by an enclosing LET form
+	      (sys:make-structure .structure-constructor-class. ,@slot-names)))
 	  ((subtypep type '(VECTOR T))
 	   `(defun ,constructor-name ,keys
 	     (vector ,@slot-names)))
@@ -319,7 +319,10 @@
 	 (not (eql (car x) 'TYPED-STRUCTURE-NAME))
 	 (funcall #'make-access-function name conc-name type named x)))
   (when copier
-    (fset copier #'copy-structure)))
+    (fset copier #'copy-structure))
+  #+clos
+  (unless type
+    (find-class name)))
 
 ;;; The DEFSTRUCT macro.
 
@@ -483,13 +486,28 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
     (when (and print-function type)
       (error "An print function is supplied to a typed structure."))
 
-    `(eval-when (:compile-toplevel :load-toplevel :execute)
-       (define-structure ',name ',conc-name ',type ',named ',slots
-	 ',slot-descriptions ',copier ',include
-	 ',print-function ',print-object ',constructors ',offset ',name-offset
-	 ',documentation ',predicate)
-       ,@(mapcar #'(lambda (constructor)
-		     (make-constructor name constructor type named
-				       slot-descriptions))
-		 constructors)
-       ',name)))
+    ;;
+    ;; The constructors rely on knowing the structure class. For toplevel
+    ;; forms we can use LOAD-TIME-VALUE. For non-toplevel forms, we can not
+    ;; as the class might be defined _after_ the system decides to evaluate
+    ;; LOAD-TIME-VALUE.
+    ;;
+    (let ((core `(define-structure ',name ',conc-name ',type ',named ',slots
+				',slot-descriptions ',copier ',include
+				',print-function ',print-object ',constructors
+				',offset ',name-offset
+				',documentation ',predicate))
+	  (constructors (mapcar #'(lambda (constructor)
+				    (make-constructor name constructor type named
+						      slot-descriptions))
+				constructors)))
+      `(eval-when (:compile-toplevel :load-toplevel :execute)
+	 (eval-when (:compile-toplevel :load-toplevel)
+	   ,core
+	   ,@(subst `(load-time-value (find-class ',name))
+		    '.structure-constructor-class.
+		    constructors))
+	 (eval-when (:execute)
+	   (let ((.structure-constructor-class. ,core))
+	     ,@constructors))
+	 ',name))))

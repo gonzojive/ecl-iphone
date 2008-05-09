@@ -1219,7 +1219,8 @@ cl_symbols[] = {
 {SYS_ "INSTANCEP","si_instancep"},
 {SYS_ "SL-BOUNDP","si_sl_boundp"},
 {SYS_ "SL-MAKUNBOUND","si_sl_makunbound"},
-{SYS_ "SUBCLASSP",NULL},
+{SYS_ "SUBCLASSP","ECL_NAME(si_subclassp)"},
+{SYS_ "OF-CLASS-P","ECL_NAME(si_of_class_p)"},
 /*{SYS_ "UNBOUND","si_unbound"}, */
 #endif
 
@@ -1502,6 +1503,7 @@ cl_symbols[] = {
 {SYS_ "*EXIT-HOOKS*",NULL},
 
 #ifdef CLOS
+{CLOS_ "*BUILTIN-CLASSES*",NULL},
 {CLOS_ "*OPTIMIZE-SLOT-ACCESS*",NULL},
 {CLOS_ "ACCESSOR-METHOD-SLOT-DEFINITION",NULL},
 {CLOS_ "ADD-DEPENDENT",NULL},

@@ -40,8 +40,8 @@
 					   :unsafe
 					   "In LET bindings"))))
 	       ;; :read-only variable handling. Beppe
-;	       (when (read-only-variable-p vname ts)
-;		     (setf (var-type v) (c1form-primary-type form)))
+	       (when (read-only-variable-p vname other-decls)
+	         (setf (var-type v) (c1form-primary-type form)))
 	       (push vname vnames)
 	       (push v vars)
 	       (push form forms)))))
@@ -129,7 +129,11 @@
 	(t
 	 (update-var-type var type (c1form-args x)))))
 
-;(defun read-only-variable-p (v l) (eq 'READ-ONLY (cdr (assoc v l))))
+(defun read-only-variable-p (v other-decls)
+  (dolist (i other-decls nil)
+    (when (and (eq (car i) :READ-ONLY)
+	       (member v (rest i)))
+      (return t))))
 
 (defun c2let (vars forms body
                    &aux (block-p nil) (bindings nil)
@@ -268,8 +272,8 @@
 					     :unsafe
 					     "In LET* bindings"))))
 	       ;; :read-only variable handling.
-;	       (when (read-only-variable-p (car x) ts)
-;		     (setf (var-type v) (c1form-primary-type form)))
+	       (when (read-only-variable-p (car x) other-decls)
+		 (setf (var-type v) (c1form-primary-type form)))
 	       (push (car x) vnames)
 	       (push form forms)
 	       (push v vars)

@@ -56,11 +56,12 @@
 	       (cmp-delete-file the-pathname)))))
 
 (defun cmp-delete-file (file)
-  (if *debug-compiler*
-      (progn
-	(format t "~%Postponing deletion of ~A" file)
-	(push file *files-to-be-deleted*))
-      (delete-file file)))
+  (cond ((null *delete-files*))
+	(*debug-compiler*
+	 (format t "~%Postponing deletion of ~A" file)
+	 (push file *files-to-be-deleted*))
+	(t
+	 (delete-file file))))
 
 (push #'(lambda () (mapc #'delete-file *files-to-be-deleted*))
       si::*exit-hooks*)

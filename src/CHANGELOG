@@ -100,6 +100,9 @@ ECL 0.9k:
  - LAST, BUTLAST, NBUTLAST and COPY-LIST no longer detect circularities. Speed
    improvements in these and other functions.
 
+ - The compiler now optimizes calls to TYPE when the type name is constant and
+   has a simple way to be checked.
+
 * CLOS:
 
  - When caching generic function calls, ECL now uses a thread-local hash table
@@ -108,6 +111,22 @@ ECL 0.9k:
  - The classes STANDARD-ACCESSOR-METHOD, STANDARD-READER-METHOD and
    STANDARD-WRITER-METHOD have been implemented. These methods are created
    to access the slots of a standard class.
+
+ - ECL now permits direct slots with an allocation of type :INSTANCE to have an
+   explicit location index. These are called SEALED SLOTS. This location is
+   enforced by COMPUTE-SLOTS and it is inherited by other subclasses. Conflicts
+   are detected and the slot index is used to optimize the slot accessor
+   methods.
+
+ - ECL now adds another MOP extension, which is an option :SEALEDP that applies
+   to classes and which seals all its slots, creating additional direct slot
+   definitions for slots that were not sealed in parent classes.
+
+ - The compiler now recognizes access to sealed slots when the associated classes
+   have already been defined and the type of arguments to the accessors is known
+   (either by some explicit declaration or by induction). For low safety or large
+   speed settings, this leads to inline access to such slots using the precomputed
+   location.
 
 * Bugs fixed:
 
@@ -177,6 +196,10 @@ ECL 0.9k:
    LOAD-TIME-VALUE. LOAD-TIME-VALUE is now implemented as a special operator
    and not as a macro.
 
+* Optimization and performance:
+
+ - TYPEP now can be optimized if the type argument is a constant.
+
 * System design:
 
  - We introduce a new kind of lisp objects, the stack frames. These are objects
@@ -188,7 +211,7 @@ ECL 0.9k:
    routines that implement APPLY in various forms (fixed # arguments, variable
    #, closures) They save about 40kb code in Mac OSX, for instance, and do not
    impact performance. This has to be activated with --enable-asmapply at
-   configuration time.
+   configuration time (Still experimental)
 
  - ECL now offers the possibility to use conses which do not carry type
    information. These conses have a size of two words and lead to significantly

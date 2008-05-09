@@ -65,6 +65,8 @@
       (default-initargs :accessor class-default-initargs)
       (finalized :initform nil :accessor class-finalized-p)
       (documentation :initarg :documentation :initform nil)
+      (size :accessor class-size)
+      (sealedp :initarg :sealedp :initform nil :accessor class-sealedp)
       (prototype))))
 
 #.(create-accessors +class-slots+ 'class)
@@ -219,7 +221,11 @@
 ;;; ----------------------------------------------------------------------
 ;;; COMPUTE-APPLICABLE-METHODS
 ;;;
-
+;;; FIXME! This should be split int an internal function, like
+;;; raw-compute-... and a higher level interface, because the current
+;;; version does not check _any_ of the arguments but it is
+;;; nevertheless exported by the ANSI specification!
+;;;
 (defun compute-applicable-methods (gf args)
   (declare (optimize (safety 0) (speed 3)))
   (let* ((methods (generic-function-methods gf))
@@ -239,10 +245,12 @@
 	  ((null scan-args) (push method applicable-list))
 	(setq arg (first scan-args)
 	      spec (first scan-specializers))
-	(unless (or (null spec)
-		    (and (consp spec) (eql arg (second spec)))
-		    (typep arg spec))
-	  (return))))
+	(cond ((null spec))
+	      ((listp spec)
+	       (unless (eql arg (second spec))
+		 (return)))
+	      ((not (si::of-class-p arg spec))
+	       (return)))))
     (dolist (arg args)
       (push (class-of arg) args-specializers))
     (setq args-specializers (nreverse args-specializers))
@@ -295,14 +303,29 @@
 	      (car args-specializers)))))
   )
 
+(defun fast-subtypep (spec1 spec2)
+  (declare (si::c-local))
+  ;; Specialized version of subtypep which uses the fact that spec1
+  ;; and spec2 are either classes or of the form (EQL x)
+  (if (atom spec1)
+      (if (atom spec2)
+	  (si::subclassp spec1 spec2)
+	  ;; There is only one class with a single element, which
+	  ;; is NIL = (MEMBER NIL).
+	  (and (null (second spec2))
+	       (eq (class-name (first spec1)) 'nil)))
+      (if (atom spec2)
+	  (si::of-class-p (second spec1) spec2)
+	  (eql (second spec1) (second spec2)))))
+
 (defun compare-specializers (spec-1 spec-2 arg-class)
   (declare (si::c-local))
   (let* ((cpl (class-precedence-list arg-class)))
     (cond ((equal spec-1 spec-2) '=)
 	  ((null spec-1) '2)
 	  ((null spec-2) '1)
-	  ((subtypep spec-1 spec-2) '1)
-	  ((subtypep spec-2 spec-1) '2)
+	  ((fast-subtypep spec-1 spec-2) '1)
+	  ((fast-subtypep spec-2 spec-1) '2)
 	  ((and (listp spec-1) (eq (car spec-1) 'eql)) '1) ; is this engough?
 	  ((and (listp spec-2) (eq (car spec-2) 'eql)) '2) ; Beppe
 	  ((member spec-1 (member spec-2 cpl)) '2)
