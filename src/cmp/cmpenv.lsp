@@ -575,7 +575,7 @@
 	when (and (consp i) (var-p (fourth i)))
 	collect (fourth i)))
 
-(defun cmp-env-optimization (property &optional env)
+(defmacro cmp-env-optimization (property &optional env)
   (case (eval property)
     (speed '*speed*)
     (safety '*safety*)
