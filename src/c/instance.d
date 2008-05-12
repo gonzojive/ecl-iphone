@@ -354,22 +354,7 @@ cl_class_of(cl_object x)
 	default:
 		ecl_internal_error("not a lisp data object");
 	}
-	if (0) {
-		cl_object y = old_cl_class_of(x);
-		cl_object output;
-		x = SYM_VAL(@'clos::*builtin-classes*');
-		/* We have to be careful because *builtin-classes* might be empty! */
-		if (Null(x)) {
-			output = cl_find_class(1,@'t');
-		} else {
-			output = ecl_aref(x, index);
-		}
-		if (output != y) {
-			cl_print(1,CLASS_NAME(output));
-			ecl_internal_error("BOO");
-		}
-		@(return output)
-	} else {
+	{
 		cl_object output;
 		x = SYM_VAL(@'clos::*builtin-classes*');
 		/* We have to be careful because *builtin-classes* might be empty! */
