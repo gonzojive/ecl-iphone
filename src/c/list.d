@@ -137,8 +137,8 @@ setup_test(struct cl_test *t, cl_object item, cl_object test,
 	if (t->key_function != Cnil) {
 		t->frame_key = (cl_object)&(t->frame_key_aux);
 		t->frame_key_aux.t = t_frame;
-		t->frame_key_aux.bottom = t->frame_args;
-		t->frame_key_aux.top = t->frame_args + 1;
+		t->frame_key_aux.bottom = t->frame_args + 2;
+		t->frame_key_aux.top = t->frame_args + 3;
 		t->frame_key_aux.stack = 0;
 	}
 }
