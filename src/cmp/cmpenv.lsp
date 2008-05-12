@@ -575,16 +575,22 @@
 	when (and (consp i) (var-p (fourth i)))
 	collect (fourth i)))
 
-(defmacro cmp-env-optimization (property &optional env)
+(defun cmp-env-optimization (property &optional env)
   (case (eval property)
     (speed '*speed*)
     (safety '*safety*)
     (space '*space*)
     (debug '*debug*)))
 
-(defmacro policy-inline-slot-access-p (&optional env)
-  `(or (< (cmp-env-optimization 'safety env) 2)
+(defun policy-inline-slot-access-p (&optional env)
+  "Do we inline access to structures and sealed classes?"
+  (or (< (cmp-env-optimization 'safety env) 2)
        (<= (cmp-env-optimization 'safety env) (cmp-env-optimization 'speed env))))
 
-(defmacro policy-check-all-arguments-p (&optional env)
-  `(> (cmp-env-optimization 'safety env) 1))
+(defun policy-check-all-arguments-p (&optional env)
+  "Do we assume that arguments are the right type?"
+  (> (cmp-env-optimization 'safety env) 1))
+
+(defun policy-automatic-type-checks-p (&optional env)
+  "Do we generate CHECK-TYPE forms for function arguments with type declarations?"
+  (>= (cmp-env-optimization 'safety env) 1))

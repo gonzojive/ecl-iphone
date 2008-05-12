@@ -130,3 +130,28 @@
 
 (define-compiler-macro typep (&whole form object type &environment env)
   (expand-typep form object type env))
+
+;;;
+;;; DOLIST
+;;;
+;;; We overwrite the original macros introducing type declarations and
+;;; other possible type checks.
+;;;
+
+(defmacro dolist ((var expression &optional output-form) &body body &environment env)
+  (multiple-value-bind (declarations body)
+      (si:process-declarations body nil)
+    (let* ((list-var (gensym))
+	   (typed-var (if (policy-check-all-arguments-p env)
+			  list-var
+			  `(the cons ,list-var))))
+      `(block nil
+	 (let* ((,list-var ,expression)
+		,var)
+	   (declare ,@declarations)
+	   (si::while ,list-var
+	      (setq ,var (first ,typed-var))
+	      ,@body
+	      (setq ,list-var (rest ,typed-var)))
+	   ,(when output-form `(setq ,var nil))
+	   ,output-form)))))

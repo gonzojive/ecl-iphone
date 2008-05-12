@@ -554,7 +554,7 @@
 (def-inline nth :unsafe (fixnum t) t "ecl_nth(#0,#1)")
 
 (proclaim-function first (list) t :no-side-effects t)
-(def-inline first :always (cons) t "CAR(#0)")
+(def-inline first :always (cons) t "ECL_CONS_CAR(#0)")
 (def-inline first :unsafe (t) t "CAR(#0)")
 
 (proclaim-function second (list) t :no-side-effects t)
@@ -576,7 +576,7 @@
 (proclaim-function ninth (list) t)
 (proclaim-function tenth (list) t)
 (proclaim-function rest (list) t :no-side-effects t)
-(def-inline rest :always (cons) t "CDR(#0)")
+(def-inline rest :always (cons) t "ECL_CONS_CDR(#0)")
 (def-inline rest :unsafe (t) t "CDR(#0)")
 
 (proclaim-function nthcdr (fixnum list) t :no-side-effects t)
