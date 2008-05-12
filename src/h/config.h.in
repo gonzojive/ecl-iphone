@@ -209,7 +209,7 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /* Stack grows downwards						*/
 #undef DOWN_STACK
 /* Argument list can be access as an array				*/
-#define ECL_USE_VARARG_AS_POINTER
+#undef ECL_USE_VARARG_AS_POINTER
 /* Most significant byte first						*/
 #undef WORDS_BIGENDIAN
 /* Has <sys/resource.h>							*/
