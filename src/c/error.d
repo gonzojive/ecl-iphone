@@ -174,6 +174,9 @@ FEundefined_function(cl_object fname)
 void
 FEwrong_num_arguments(cl_object fun)
 {
+	if (FIXNUMP(fun)) {
+		fun = (cl_object)(cl_symbols + fix(fun));
+	}
 	FEprogram_error("Wrong number of arguments passed to function ~S.",
 			1, fun);
 }
