@@ -199,8 +199,9 @@
   class)
 
 (defun remove-optional-slot-accessors (class)
-  (declare (si::c-local)
-	   (class class))
+  (declare (class class)
+	   (optimize (safety 0))
+	   (si::c-local))
   (let ((class-name (class-name class)))
     (dolist (slotd (class-slots class))
       ;; remove previous defined reader methods

@@ -79,11 +79,11 @@
 			'(&allow-other-keys)
 			(and x (subseq lambda-list x))))))
     (let* ((class-declarations
-	    (nconc (mapcan #'(lambda (p s) (and (symbolp s) s
-						(not (eq s 't))
-						`((type ,s ,p))))
-			   required-parameters
-			   specializers)
+	    (nconc (loop for name in required-parameters
+		      for type in specializers
+		      when (and (not (eq type t)) (symbolp type))
+		      nconc `((type ,name ,type)
+			      (si::no-check-type ,name)))
 		   (cdar declarations)))
 	   (method-lambda
 	    ;; Remove the documentation string and insert the

@@ -558,6 +558,7 @@ evaluates to NIL.  See STABLE-SORT."
 
 
 (defun list-merge-sort (l predicate key)
+  (declare (si::c-local))
   (unless key (setq key #'identity))
   (labels
    ((sort (l)
@@ -613,7 +614,9 @@ evaluates to NIL.  See STABLE-SORT."
 
 
 (defun quick-sort (seq start end pred key)
-  (declare (fixnum start end))
+  (declare (fixnum start end)
+	   (optimize (safety 0))
+	   (si::c-local))
   (unless key (setq key #'identity))
   (if (<= end (the fixnum (1+ start)))
       seq

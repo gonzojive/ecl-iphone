@@ -331,7 +331,7 @@
 	      (:READ-ONLY
 	       (push decl others))
 	      ((OPTIMIZE FTYPE INLINE NOTINLINE DECLARATION SI::C-LOCAL SI::C-GLOBAL
-		DYNAMIC-EXTENT IGNORABLE VALUES)
+		DYNAMIC-EXTENT IGNORABLE VALUES SI::NO-CHECK-TYPE)
 	       (push decl others))
 	      (otherwise
 	       (if (member decl-name si::*alien-declarations*)
@@ -404,7 +404,7 @@
 	   (cmperr "Not a valid function name ~s in declaration ~s" fun decl))))
       (DECLARATION
        (do-declaration (rest decl) #'cmperr))
-      ((SI::C-LOCAL SI::C-GLOBAL))
+      ((SI::C-LOCAL SI::C-GLOBAL SI::NO-CHECK-TYPE))
       ((DYNAMIC-EXTENT IGNORABLE)
        ;; FIXME! SOME ARE IGNORED!
        )
@@ -591,6 +591,7 @@
   "Do we assume that arguments are the right type?"
   (> (cmp-env-optimization 'safety env) 1))
 
-(defun policy-automatic-type-checks-p (&optional env)
+(defun policy-automatic-check-type-p (&optional env)
   "Do we generate CHECK-TYPE forms for function arguments with type declarations?"
-  (>= (cmp-env-optimization 'safety env) 1))
+  (and *automatic-check-type-in-lambda*
+       (>= (cmp-env-optimization 'safety env) 1)))

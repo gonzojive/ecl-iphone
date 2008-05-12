@@ -149,6 +149,7 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
                       &aux doc body ss is ts
                            other-decls
 		           new-variables
+		           (type-checks '())
 			   (*permanent-data* t)
 			   (old-env *cmp-env*)
                            (*cmp-env* (cmp-env-copy)))
@@ -168,8 +169,11 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
 
     (do ((specs (setq requireds (cdr requireds)) (cdr specs)))
 	((endp specs))
-      (let* ((name (first specs)))
-	(push-vars (setf (first specs) (c1make-var name ss is ts)))))
+      (let* ((name (first specs))
+	     (var (c1make-var name ss is ts)))
+	(push var type-checks)
+	(setf (first specs) var)
+	(push-vars var)))
 
     (do ((specs (setq optionals (cdr optionals)) (cdddr specs)))
 	((endp specs))
@@ -181,6 +185,7 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
 		       (and-form-type (var-type var) (c1expr init) init
 				      :safe "In (LAMBDA ~a...)" block-name)
 		       (default-init var)))
+	(push var type-checks)
 	(push-vars var)
 	(when flag
 	  (push-vars (setq flag (c1make-var flag ss is ts))))
@@ -202,6 +207,7 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
 		       (and-form-type (var-type var) (c1expr init) init
 				      :safe "In (LAMBDA ~a...)" block-name)
 		       (default-init var)))
+	(push var type-checks)
 	(push-vars var)
 	(when flag
 	  (push-vars (setq flag (c1make-var flag ss is ts))))
@@ -224,6 +230,24 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
       (loop for (var . type) in ts
 	    unless (member var new-variable-names)
 	    do (push `(type ,type ,var) declarations))
+      ;; We generate automatic type checks for function arguments that
+      ;; are declared These checks can be deactivated by appropriate
+      ;; safety settings which are checked by OPTIONAL-CHECK-TYPE
+      ;;
+      (let* ((type-checks (loop for var in type-checks
+			     unless (or (eq (var-type var) t)
+					(loop for decl in other-decls
+					   when (and (consp decl)
+						     (eq (first decl) 'si::no-check-type)
+						     (member (var-name var) (rest decl)))
+					   do (return t)))
+			     collect var)))
+	(when (and type-checks (policy-automatic-check-type-p))
+	  (cmpnote "In ~:[an anonymous function~;function ~:*~A~], checking types of argument~@[s~]~{ ~A~}."
+		   block-name
+		   (mapcar #'var-name type-checks))
+	  (loop for var in (nreverse type-checks)
+	     do (push `(optional-check-type ,(var-name var) ,(var-type var)) body))))
       (setq body
 	    (cond (aux-vars
 		   (let ((let nil))

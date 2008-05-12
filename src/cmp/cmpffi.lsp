@@ -152,7 +152,10 @@
 	    (wt "((" (rep-type-name dest-rep-type) ")" loc ")"))
 	   ((:object)
 	    (ensure-valid-object-type dest-type)
-	    (wt (if (subtypep (loc-type loc) 'fixnum) "fix(" "ecl_to_fixnum(")
+	    (wt (if (or (subtypep (loc-type loc) 'fixnum)
+			(not (policy-check-all-arguments-p)))
+		    "fix("
+		    "ecl_to_fixnum(")
 		loc ")"))
 	   (otherwise
 	    (coercion-error))))
@@ -163,7 +166,10 @@
 	    (wt "((" (rep-type-name dest-rep-type) ")" loc ")"))
 	   ((:object)
 	    (ensure-valid-object-type dest-type)
-	    (wt (if (subtypep (loc-type loc) 'fixnum) "fix(" "ecl_to_unsigned_integer(")
+	    (wt (if (or (subtypep (loc-type loc) 'fixnum)
+			(not (policy-check-all-arguments-p)))
+		    "fix("
+		    "ecl_to_unsigned_integer(")
 		loc ")"))
 	   (otherwise
 	    (coercion-error))))

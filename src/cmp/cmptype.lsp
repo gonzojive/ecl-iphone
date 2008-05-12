@@ -407,3 +407,16 @@
   `(put-sysprop ',fname 'C1TYPE-PROPAGATOR
     #'(ext:lambda-block ,fname ,lambda-list ,body)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; TYPE CHECKING
+;;
+
+(defmacro optional-check-type (&whole whole var-name type &environment env)
+  "Generates a type check that is only activated for the appropriate
+safety settings and when the type is not trivial."
+  (unless (policy-automatic-check-type-p env)
+    (cmpnote "Unable to emit check for variable ~A" whole))
+  (when (policy-automatic-check-type-p env)
+    (unless (subtypep 't type)
+      `(check-type ,var-name ,type))))

@@ -71,7 +71,8 @@ contiguous block."
   (declare (si::c-local))
   (labels ((iterate-over-contents (array contents dims written)
 	     (declare (fixnum written)
-		      (array array))
+		      (array array)
+		      (optimize (safety 0)))
 	     (when (/= (length contents) (first dims))
 	       (error "In MAKE-ARRAY: the elements in :INITIAL-CONTENTS do not match the array dimensions"))
 	     (if (= (length dims) 1)
@@ -285,7 +286,8 @@ pointer is 0 already."
     (aref vector (the fixnum (1- fp)))))
 
 (defun copy-array-contents (dest orig)
-  (declare (si::c-local))
+  (declare (si::c-local)
+	   (optimize (safety 0)))
   (labels
       ((do-copy (dest orig dims1 dims2 start1 start2)
 	 (declare (array dest orig)

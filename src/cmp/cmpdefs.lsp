@@ -297,6 +297,9 @@ The default value is NIL.")
 (defvar *space* 0)
 (defvar *debug* 0)
 
+;;; Emit automatic CHECK-TYPE forms for function arguments in lambda forms.
+(defvar *automatic-check-type-in-lambda* t)
+
 ;;;
 ;;; Compiled code uses the following kinds of variables:
 ;;; 1. Vi, declared explicitely, either unboxed or not (*lcl*, next-lcl)

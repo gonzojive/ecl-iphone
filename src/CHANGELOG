@@ -22,6 +22,10 @@ ECL 0.9k:
 
 * Visible changes:
 
+ - When (>= SAFETY 1), for each compiled function, the compiler will
+   automatically generate CHECK-TYPE forms to ensure that the arguments have
+   the values that the user declared.
+
  - The documentation is slowly disappearing form this source tree, as there
    is a different tree (ecl-doc) which contains the XML sources for a more
    complete manual.

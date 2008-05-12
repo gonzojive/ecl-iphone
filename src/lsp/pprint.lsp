@@ -358,10 +358,6 @@
   (declare (si::c-local)
 	   (type string prefix)
 	   (type pretty-stream stream))
-  #+ecl
-  (progn
-    (check-type prefix string)
-    (check-type suffix string))
   (let ((prefix-len (length prefix)))
     (when (plusp prefix-len)
       (pretty-sout stream prefix 0 prefix-len))
@@ -932,10 +928,6 @@
   (declare (type (member :linear :miser :fill :mandatory) kind)
 	   (type (or stream (member t nil)) stream)
 	   (values null))
-  #+ecl
-  (progn
-    (check-type kind (member :linear :miser :fill :mandatory))
-    (check-type stream (or stream (member t nil))))
   (let ((stream (case stream
 		  ((t) *terminal-io*)
 		  ((nil) *standard-output*)
@@ -958,11 +950,6 @@
 	   (type real n)
 	   (type (or stream (member t nil)) stream)
 	   (values null))
-  #+ecl
-  (progn
-    (check-type relative-to (member :block :current))
-    (check-type n real)
-    (check-type stream (or stream (member t nil))))
   (let ((stream (case stream
 		  ((t) *terminal-io*)
 		  ((nil) *standard-output*)
@@ -987,12 +974,6 @@
 	   (type unsigned-byte colnum colinc)
 	   (type (or stream (member t nil)) stream)
 	   (values null))
-  #+ecl
-  (progn
-    (check-type kind (member :line :section :line-relative
-			     :section-relative))
-    (check-type colinc unsigned-byte)
-    (check-type colnum unsigned-byte))
   (let ((stream (case stream
 		  ((t) *terminal-io*)
 		  ((nil) *standard-output*)

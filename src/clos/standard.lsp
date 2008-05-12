@@ -491,6 +491,7 @@ because it contains a reference to the undefined class~%  ~A"
 (defun unbound-slot-error (object index)
   (declare (type standard-object object)
 	   (type fixnum index)
+	   (optimize (safety 0))
 	   (si::c-local))
   (let* ((class (class-of object))
 	 (slotd (find index (class-slots class) :key #'slot-definition-location)))
