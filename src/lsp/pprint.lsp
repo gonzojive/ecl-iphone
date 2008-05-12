@@ -158,7 +158,7 @@
 
 (defun pretty-sout (stream string start end)
   (declare (type pretty-stream stream)
-	   (type simple-string string)
+	   (type string string)
 	   (type index start)
 	   (type (or index null) end)
 	   (si::c-local))
@@ -356,7 +356,7 @@
 
 (defun start-logical-block (stream prefix per-line-p suffix)
   (declare (si::c-local)
-	   (type string prefix)
+	   (type string prefix suffix)
 	   (type pretty-stream stream))
   (let ((prefix-len (length prefix)))
     (when (plusp prefix-len)
@@ -1140,7 +1140,7 @@
 
 (defun set-pprint-dispatch (type function &optional
 			    (priority 0) (table *print-pprint-dispatch*))
-  (declare (type (or null function) function)
+  (declare (type (or null function symbol) function)
 	   (type real priority)
 	   (type pprint-dispatch-table table))
   ;; FIXME! This check should be automatically generated when compiling
