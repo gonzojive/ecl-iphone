@@ -73,6 +73,11 @@ ecl_init_env(struct cl_env_struct *env)
 	env->stack_size = 0;
 	cl_stack_set_size(16*LISP_PAGESIZE);
 
+	env->funcall_frame.t = t_frame;
+	env->funcall_frame.stack = 0;
+	env->funcall_frame.bottom =
+	env->funcall_frame.top = env->funcall_frame_bottom;
+
 #if !defined(ECL_CMU_FORMAT)
 	env->print_pretty = FALSE;
 	env->queue = cl_alloc_atomic(ECL_PPRINT_QUEUE_SIZE * sizeof(short));

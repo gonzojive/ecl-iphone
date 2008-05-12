@@ -35,7 +35,7 @@
   (let* ((new-destination (tmp-destination *destination*))
 	 (*temp* *temp*))
     (wt-nl "{ struct ecl_stack_frame _ecl_inner_frame_aux;")
-    (wt-nl *volatile* "cl_object _ecl_inner_frame = (_ecl_inner_frame_aux.narg=0,_ecl_inner_frame_aux.sp=0,_ecl_inner_frame_aux.t=t_frame,(cl_object)&_ecl_inner_frame_aux);")
+    (wt-nl *volatile* "cl_object _ecl_inner_frame = ecl_stack_frame_open((cl_object)&_ecl_inner_frame_aux,0);")
     (let* ((*destination* new-destination)
 	   (*unwind-exit* `((STACK ,+ecl-stack-frame-variable+) ,@*unwind-exit*)))
       (c2expr* body))

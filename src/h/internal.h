@@ -70,7 +70,7 @@ struct cl_compiler_env {
 
 #define ECL_BUILD_STACK_FRAME(name,frame)	\
 	struct ecl_stack_frame frame;\
-	cl_object name=(frame.t=t_frame,frame.narg=frame.sp=0,(cl_object)(&frame))
+	cl_object name = ecl_stack_frame_open((cl_object)&frame, 0);
 
 /* ffi.d */
 

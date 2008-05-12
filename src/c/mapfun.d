@@ -18,31 +18,27 @@
 #include <ecl/ecl.h>
 #include <ecl/internal.h>
 
-static void
-prepare_map(cl_va_list lists, cl_object cdrs_frame, cl_object cars_frame)
-{
-	cl_index i;
-	ecl_stack_frame_push_va_list(cdrs_frame, lists);
-	if (cdrs_frame->frame.narg == 0) {
-		FEprogram_error("MAP*: Too few arguments.", 0);
+#define PREPARE_MAP(list, cdrs_frame, cars_frame, nargs) \
+	struct ecl_stack_frame cdrs_frame_aux, cars_frame_aux; \
+	cl_object cdrs_frame, cars_frame; \
+	cl_index nargs; \
+	cdrs_frame = ecl_stack_frame_from_va_list((cl_object)&cdrs_frame_aux, list); \
+	cars_frame = ecl_stack_frame_copy((cl_object)&cars_frame_aux, cdrs_frame); \
+	nargs = ECL_STACK_FRAME_SIZE(cars_frame); \
+	if (nargs == 0) { \
+		FEprogram_error("MAP*: Too few arguments", 0); \
 	}
-	ecl_stack_frame_reserve(cars_frame, cdrs_frame->frame.narg);
-	for (i = 0; i < cars_frame->frame.narg; i++) {
-		ecl_stack_frame_elt_set(cars_frame, i, Cnil);
-	}
-}
+
 
 @(defun mapcar (fun &rest lists)
 	cl_object res, *val = &res;
 	cl_index i;
 @ {
-	ECL_BUILD_STACK_FRAME(cars_frame,frame1);
-	ECL_BUILD_STACK_FRAME(cdrs_frame,frame2);
-	prepare_map(lists, cdrs_frame, cars_frame);
+	PREPARE_MAP(lists, cdrs_frame, cars_frame, nargs);
 	res = Cnil;
 	while (TRUE) {
 		cl_index i;
-		for (i = 0;  i < cdrs_frame->frame.narg;  i++) {
+		for (i = 0;  i < nargs;  i++) {
 			cl_object cdr = ecl_stack_frame_elt(cdrs_frame, i);
 			if (ecl_endp(cdr)) {
 				ecl_stack_frame_close(cars_frame);
@@ -60,13 +56,11 @@ prepare_map(cl_va_list lists, cl_object cdrs_frame, cl_object cars_frame)
 @(defun maplist (fun &rest lists)
 	cl_object res, *val = &res;
 @ {
-	ECL_BUILD_STACK_FRAME(cars_frame,frame1);
-	ECL_BUILD_STACK_FRAME(cdrs_frame,frame2);
-	prepare_map(lists, cdrs_frame, cars_frame);
+	PREPARE_MAP(lists, cdrs_frame, cars_frame, nargs);
 	res = Cnil;
 	while (TRUE) {
 		cl_index i;
-		for (i = 0;  i < cdrs_frame->frame.narg;  i++) {
+		for (i = 0;  i < nargs;  i++) {
 			cl_object cdr = ecl_stack_frame_elt(cdrs_frame, i);
 			if (ecl_endp(cdr)) {
 				ecl_stack_frame_close(cars_frame);
@@ -84,13 +78,11 @@ prepare_map(cl_va_list lists, cl_object cdrs_frame, cl_object cars_frame)
 @(defun mapc (fun &rest lists)
 	cl_object onelist;
 @ {
-	ECL_BUILD_STACK_FRAME(cars_frame,frame1);
-	ECL_BUILD_STACK_FRAME(cdrs_frame,frame2);
-	prepare_map(lists, cdrs_frame, cars_frame);
+	PREPARE_MAP(lists, cdrs_frame, cars_frame, nargs);
 	onelist = ecl_stack_frame_elt(cdrs_frame, 0);
 	while (TRUE) {
 		cl_index i;
-		for (i = 0;  i < cdrs_frame->frame.narg;  i++) {
+		for (i = 0;  i < nargs;  i++) {
 			cl_object cdr = ecl_stack_frame_elt(cdrs_frame, i);
 			if (ecl_endp(cdr)) {
 				ecl_stack_frame_close(cars_frame);
@@ -107,13 +99,11 @@ prepare_map(cl_va_list lists, cl_object cdrs_frame, cl_object cars_frame)
 @(defun mapl (fun &rest lists)
 	cl_object onelist;
 @ {
-	ECL_BUILD_STACK_FRAME(cars_frame,frame1);
-	ECL_BUILD_STACK_FRAME(cdrs_frame,frame2);
-	prepare_map(lists, cdrs_frame, cars_frame);
+	PREPARE_MAP(lists, cdrs_frame, cars_frame, nargs);
 	onelist = ecl_stack_frame_elt(cdrs_frame, 0);
 	while (TRUE) {
 		cl_index i;
-		for (i = 0;  i < cdrs_frame->frame.narg;  i++) {
+		for (i = 0;  i < nargs;  i++) {
 			cl_object cdr = ecl_stack_frame_elt(cdrs_frame, i);
 			if (ecl_endp(cdr)) {
 				ecl_stack_frame_close(cars_frame);
@@ -130,13 +120,11 @@ prepare_map(cl_va_list lists, cl_object cdrs_frame, cl_object cars_frame)
 @(defun mapcan (fun &rest lists)
 	cl_object res, *val = &res;
 @ {
-	ECL_BUILD_STACK_FRAME(cars_frame,frame1);
-	ECL_BUILD_STACK_FRAME(cdrs_frame,frame2);
-	prepare_map(lists, cdrs_frame, cars_frame);
+	PREPARE_MAP(lists, cdrs_frame, cars_frame, nargs);
 	res = Cnil;
 	while (TRUE) {
 		cl_index i;
-		for (i = 0;  i < cdrs_frame->frame.narg;  i++) {
+		for (i = 0;  i < nargs;  i++) {
 			cl_object cdr = ecl_stack_frame_elt(cdrs_frame, i);
 			if (ecl_endp(cdr)) {
 				ecl_stack_frame_close(cars_frame);
@@ -155,13 +143,11 @@ prepare_map(cl_va_list lists, cl_object cdrs_frame, cl_object cars_frame)
 @(defun mapcon (fun &rest lists)
 	cl_object res, *val = &res;
 @ {
-	ECL_BUILD_STACK_FRAME(cars_frame,frame1);
-	ECL_BUILD_STACK_FRAME(cdrs_frame,frame2);
-	prepare_map(lists, cdrs_frame, cars_frame);
+	PREPARE_MAP(lists, cdrs_frame, cars_frame, nargs);
 	res = Cnil;
 	while (TRUE) {
 		cl_index i;
-		for (i = 0;  i < cdrs_frame->frame.narg;  i++) {
+		for (i = 0;  i < nargs;  i++) {
 			cl_object cdr = ecl_stack_frame_elt(cdrs_frame, i);
 			if (ecl_endp(cdr)) {
 				ecl_stack_frame_close(cars_frame);

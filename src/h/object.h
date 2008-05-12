@@ -593,8 +593,9 @@ struct ecl_foreign {		/*  user defined datatype  */
 
 struct ecl_stack_frame {
 	HEADER;
-	cl_index narg;		/*  Size */
-	cl_index sp;		/*  Stack pointer start */
+	cl_object *bottom;	/*  Bottom part  */
+	cl_object *top;		/*  Top part  */
+	cl_object *stack;	/*  Is this relative to the lisp stack?  */
 };
 
 /*

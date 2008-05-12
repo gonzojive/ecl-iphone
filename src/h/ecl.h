@@ -66,6 +66,12 @@ typedef unsigned short uint16_t;
 #include <ecl/unify.h>
 #endif
 
+#if defined(__cplusplus) || (defined(__GNUC__) && !defined(__STRICT_ANSI__))
+#define ECL_INLINE inline
+#else
+#define ECL_INLINE
+#endif
+
 typedef void (*ecl_init_function_t)(cl_object block);
 
 #endif /* ECL_H */

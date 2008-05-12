@@ -69,6 +69,9 @@ struct cl_env_struct {
 	cl_index nvalues;
 	cl_object values[ECL_MULTIPLE_VALUES_LIMIT];
 
+	/* Stack frame used by cl_funcall() */
+	struct ecl_stack_frame funcall_frame;
+
 	/* Private variables used by different parts of ECL: */
 	/* ... the reader ... */
 	cl_object string_pool;
@@ -435,15 +438,18 @@ extern ECL_API cl_object si_eval_with_env _ARGS((cl_narg narg, cl_object form, .
 /* interpreter.c */
 
 extern ECL_API cl_object si_interpreter_stack _ARGS((cl_narg narg));
-extern ECL_API void ecl_stack_frame_reserve(cl_object f, cl_index size);
+extern ECL_API cl_object ecl_stack_frame_open(cl_object f, cl_index size);
+extern ECL_API void ecl_stack_frame_enlarge(cl_object f, cl_index size);
 extern ECL_API void ecl_stack_frame_push(cl_object f, cl_object o);
 extern ECL_API void ecl_stack_frame_push_values(cl_object f);
-extern ECL_API void ecl_stack_frame_push_va_list(cl_object f, cl_va_list args);
-extern ECL_API void ecl_stack_frame_close(cl_object f);
+extern ECL_API cl_object ecl_stack_frame_from_va_list(cl_object f, cl_va_list args);
 extern ECL_API cl_object ecl_stack_frame_pop_values(cl_object f);
 extern ECL_API cl_object ecl_stack_frame_elt(cl_object f, cl_index n);
 extern ECL_API void ecl_stack_frame_elt_set(cl_object f, cl_index n, cl_object o);
+extern ECL_API cl_object ecl_stack_frame_copy(cl_object f, cl_object size);
+extern ECL_API void ecl_stack_frame_close(cl_object f);
 extern ECL_API cl_object ecl_apply_from_stack_frame(cl_object f, cl_object o);
+#define ECL_STACK_FRAME_SIZE(f) ((f)->frame.top - (f)->frame.bottom)
 #define si_apply_from_stack_frame ecl_apply_from_stack_frame
 
 extern ECL_API void cl_stack_push(cl_object o);
@@ -454,7 +460,6 @@ extern ECL_API void cl_stack_set_index(cl_index sp);
 extern ECL_API void cl_stack_pop_n(cl_index n);
 extern ECL_API void cl_stack_insert(cl_index where, cl_index n);
 extern ECL_API cl_index cl_stack_push_list(cl_object list);
-extern ECL_API cl_index cl_stack_push_va_list(cl_va_list args);
 extern ECL_API void cl_stack_push_n(cl_index n, cl_object *args);
 extern ECL_API cl_index cl_stack_push_values(void);
 extern ECL_API void cl_stack_pop_values(cl_index n);

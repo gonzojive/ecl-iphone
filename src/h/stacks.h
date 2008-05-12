@@ -127,8 +127,28 @@ extern ECL_API ecl_frame_ptr _frs_push(register cl_object val);
 #define frs_pop() (cl_env.frs_top--)
 
 /*******************
- * C CONTROL STACK
- *******************/
+ * ARGUMENTS STACK
+ *******************
+ * Here we define how we handle the incoming arguments for a
+ * function. Our calling conventions specify that at most
+ * C_ARGUMENTS_LIMIT ar pushed onto the C stack. If the function
+ * receives more than this number of arguments it will keep a copy of
+ * _all_ those arguments _plus_ the remaining ones in the lisp
+ * stack. The caller is responsible for storing and removing such
+ * values.
+ *
+ * Given this structure, we need our own object for handling variable
+ * argument list, cl_va_list. This object joins the C data type for
+ * handling vararg lists and a pointer to the lisp stack, in case the
+ * arguments were passed there.
+ *
+ * Note that keeping a direct reference to the lisp stack effectively
+ * locks it in memory, preventing the block from being garbage
+ * collected if the stack grows -- at least until all references are
+ * eliminated --. This is something we have to live with and which
+ * is somehow unavoidable, given that function arguments have to be
+ * stored somewhere.
+ */
 
 #define cl_va_start(a,p,n,k) { \
 	a[0].narg = (n)-(k);	\

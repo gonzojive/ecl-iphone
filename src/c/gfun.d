@@ -283,8 +283,8 @@ search_method_hash(cl_object keys, cl_object table)
 static cl_object
 get_spec_vector(cl_object frame, cl_object gf)
 {
-	cl_object *args = cl_env.stack + frame->frame.sp;
-	cl_index narg = frame->frame.narg;
+	cl_object *args = frame->frame.bottom;
+	cl_index narg = frame->frame.top - args;
 	cl_object spec_how_list = GFUN_SPEC(gf);
 	cl_object vector = cl_env.method_spec_vector;
 	cl_object *argtype = vector->vector.self.t;
@@ -313,14 +313,14 @@ compute_applicable_method(cl_object frame, cl_object gf)
 {
 	/* method not cached */
 	cl_object methods, arglist, func;
-	int i;
-	for (i = frame->frame.narg, arglist = Cnil; i; ) {
-		arglist = CONS(ecl_stack_frame_elt(frame, --i), arglist);
+	cl_object *p;
+	for (p = frame->frame.top, arglist = Cnil; p != frame->frame.bottom; ) {
+		arglist = CONS(*(--p), arglist);
 	}
 	methods = funcall(3, @'compute-applicable-methods', gf, arglist);
 	if (methods == Cnil) {
 		func = funcall(3, @'no-applicable-method', gf, arglist);
-		ecl_stack_frame_elt_set(frame, 0, OBJNULL);
+		frame->frame.bottom[0] = OBJNULL;
 		return func;
 	} else {
 		return funcall(4, @'clos::compute-effective-method', gf,
@@ -332,6 +332,15 @@ cl_object
 _ecl_standard_dispatch(cl_object frame, cl_object gf)
 {
 	cl_object func, vector;
+	/*
+	 * We have to copy the frame because it might be cl_env.funcal_frame,
+	 * which will be wiped out by the next function call.
+	 */
+	struct ecl_stack_frame frame_aux;
+	if (frame == (cl_object)&cl_env.funcall_frame) {
+		frame = ecl_stack_frame_copy((cl_object)&frame_aux, frame);
+	}
+	
 #ifdef ECL_THREADS
 	/* See whether we have to clear the hash from some generic functions right now. */
 	if (cl_env.method_hash_clear_list != Cnil) {
@@ -366,11 +375,18 @@ _ecl_standard_dispatch(cl_object frame, cl_object gf)
 		}
 	}
 	{
-		ECL_BUILD_STACK_FRAME(frame1, aux);
-		ecl_stack_frame_push(frame1, frame);
-		ecl_stack_frame_push(frame1, Cnil);
+		/* Stack allocated frame */
+		cl_object frame1 = (cl_object)&(cl_env.funcall_frame);
+		frame1->frame.bottom = cl_env.values;
+		frame1->frame.top = frame1->frame.bottom + 2;
+		frame1->frame.bottom[0] = frame;
+		frame1->frame.bottom[1] = Cnil;
+
 		func = ecl_apply_from_stack_frame(frame1, func);
-		ecl_stack_frame_close(frame1);
+
+		/* Only need to close the copy */
+		if (frame == (cl_object)&frame_aux)
+			ecl_stack_frame_close(frame);
 		return func;
 	}
 }

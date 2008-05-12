@@ -28,6 +28,7 @@ struct cl_test {
 	struct ecl_stack_frame frame_key_aux;
 	cl_object frame_test;
 	struct ecl_stack_frame frame_test_aux;
+	cl_object frame_args[3];
 };
 
 static cl_object subst(struct cl_test *t, cl_object new_obj, cl_object tree);
@@ -129,28 +130,31 @@ setup_test(struct cl_test *t, cl_object item, cl_object test,
 	if (t->test_function != Cnil) {
 		t->frame_test = (cl_object)&(t->frame_test_aux);
 		t->frame_test_aux.t = t_frame;
-		t->frame_test_aux.narg = 0;
-		t->frame_test_aux.sp = 0;
-		ecl_stack_frame_reserve(t->frame_test, 2);
-		ecl_stack_frame_elt_set(t->frame_test, 0, item);
+		t->frame_test_aux.bottom = t->frame_args;
+		t->frame_test_aux.top = t->frame_args + 2;
+		t->frame_test_aux.stack = 0;
 	}
 	if (t->key_function != Cnil) {
 		t->frame_key = (cl_object)&(t->frame_key_aux);
 		t->frame_key_aux.t = t_frame;
-		t->frame_key_aux.narg = 0;
-		t->frame_key_aux.sp = 0;
-		ecl_stack_frame_reserve(t->frame_key, 1);
+		t->frame_key_aux.bottom = t->frame_args;
+		t->frame_key_aux.top = t->frame_args + 1;
+		t->frame_key_aux.stack = 0;
 	}
 }
 
 static void close_test(struct cl_test *t)
 {
+	/* No need to call ecl_stack_frame_close since this frame is not allocated
+	 * in the lisp stack. */
+	/*
 	if (t->key_function != Cnil) {
 		ecl_stack_frame_close(t->frame_key);
 	}
 	if (t->test_function != Cnil) {
 		ecl_stack_frame_close(t->frame_test);
 	}
+	*/
 }
 
 cl_object

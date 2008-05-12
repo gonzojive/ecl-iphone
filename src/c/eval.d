@@ -19,6 +19,28 @@
 #include <ecl/ecl.h>
 #include <ecl/ecl-inl.h>
 
+static cl_object
+build_funcall_frame(cl_va_list args)
+{
+	cl_object f = (cl_object)&(cl_env.funcall_frame);
+	cl_index n = args[0].narg;
+	cl_object *p = args[0].sp;
+	if (!p) {
+#ifdef ECL_USE_VARARG_AS_POINTER
+		p = (cl_object*)(args[0].args);
+#else
+		cl_index i;
+		p = cl_env.values;
+		for (i = 0; i < n; i++) {
+			p[i] = va_arg(args[0].args, cl_object);
+		}
+#endif
+	}
+	f->frame.bottom = p;
+	f->frame.top = p + n;
+	return f;
+}
+
 /* Calling conventions:
    Compiled C code calls lisp function supplying #args, and args.
    Linking function performs check_args, gets jmp_buf with _setjmp, then
@@ -31,8 +53,8 @@
 cl_object
 ecl_apply_from_stack_frame(cl_object frame, cl_object x)
 {
-	cl_index narg = frame->frame.narg;
-	cl_object *sp = frame->frame.sp + cl_env.stack;
+	cl_object *sp = frame->frame.bottom;
+	cl_index narg = frame->frame.top - sp;
 	cl_object fun = x;
       AGAIN:
 	if (fun == OBJNULL || fun == Cnil)
@@ -87,13 +109,6 @@ _ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_v
 
 	if (fun == OBJNULL)
 		FEerror("Undefined function.", 0);
-	frame = (cl_object)&frame_aux;
-	frame->frame.t = t_frame;
-	frame->frame.narg = narg;
-	if (args[0].sp)
-		frame->frame.sp = args[0].sp;
-	else
-		frame->frame.sp = cl_stack_push_va_list(args);
  AGAIN:
 	if (fun == OBJNULL)
 		goto ERROR;
@@ -102,8 +117,9 @@ _ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_v
 		if (fun->cfun.narg >= 0) {
 			if (narg != fun->cfun.narg)
 				FEwrong_num_arguments(fun);
+			frame = build_funcall_frame(args);
 			out = APPLY_fixed(narg, (cl_objectfn_fixed)fun->cfun.entry,
-					  cl_env.stack + frame->frame.sp);
+					  frame->frame.bottom);
 		} else {
 			if (pLK) {
 				si_put_sysprop(sym, @'si::link-from',
@@ -114,13 +130,15 @@ _ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_v
 				cblock->cblock.links =
 				    CONS(sym, cblock->cblock.links);
 			}
-			out = APPLY(narg, fun->cfun.entry, cl_env.stack + frame->frame.sp);
+			frame = build_funcall_frame(args);
+			out = APPLY(narg, fun->cfun.entry, frame->frame.bottom);
 		}
 		break;
 #ifdef CLOS
 	case t_instance:
 		switch (fun->instance.isgf) {
 		case ECL_STANDARD_DISPATCH:
+			frame = build_funcall_frame(args);
 			out = _ecl_standard_dispatch(frame, fun);
 			break;
 		case ECL_USER_DISPATCH:
@@ -132,18 +150,18 @@ _ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_v
 		break;
 #endif /* CLOS */
 	case t_cclosure:
+		frame = build_funcall_frame(args);
 		out = APPLY_closure(narg, fun->cclosure.entry,
-				    fun->cclosure.env, cl_env.stack + frame->frame.sp);
+				    fun->cclosure.env, frame->frame.bottom);
 		break;
 	case t_bytecodes:
+		frame = build_funcall_frame(args);
 		out = ecl_apply_lambda(frame, fun);
 		break;
 	default:
 	ERROR:
 		FEinvalid_function(fun);
 	}
-	if (!args[0].sp)
-		ecl_stack_frame_close(frame);
 	return out;
 }
 
@@ -168,25 +186,8 @@ si_unlink_symbol(cl_object s)
 }
 
 @(defun funcall (function &rest funargs)
-	struct ecl_stack_frame frame_aux;
-	cl_object frame;
-	cl_object out;
 @
-	frame = (cl_object)&frame_aux;
-	frame->frame.t = t_frame;
-	frame->frame.narg = narg-1;
-	if (funargs[0].sp)
-		frame->frame.sp = funargs[0].sp;
-	else
-		frame->frame.sp = cl_stack_push_va_list(funargs);
-        out = ecl_apply_from_stack_frame(frame, function);
-	if (!funargs[0].sp) {
-		/* Closing a frame implies popping out all arguments.
-		 * If the arguments had been previously pushed, we must
-		 * avoid this and leave that task to the caller */
-		ecl_stack_frame_close(frame);
-	}
-	return out;
+	return ecl_apply_from_stack_frame(build_funcall_frame(funargs), function);
 @)
 
 @(defun apply (fun lastarg &rest args)
@@ -197,20 +198,17 @@ si_unlink_symbol(cl_object s)
 		cl_object out;
 		cl_index i;
 		struct ecl_stack_frame frame_aux;
-		const cl_object frame = (cl_object)&frame_aux;
-		frame->frame.t = t_frame;
-		frame->frame.narg = frame->frame.sp = 0;
-		narg -= 2;
-		for (i = 0; narg; i++,narg--) {
-			ecl_stack_frame_push(frame, lastarg);
+		const cl_object frame = ecl_stack_frame_open((cl_object)&frame_aux,
+							     narg -= 2);
+		for (i = 0; i < narg; i++) {
+			ecl_stack_frame_elt_set(frame, i, lastarg);
 			lastarg = cl_va_arg(args);
 		}
 		if (type_of(lastarg) == t_frame) {
-			ecl_stack_frame_reserve(frame, lastarg->frame.narg);
 			/* This could be replaced with a memcpy() */
-			for (i = 0; i < lastarg->frame.narg; i++) {
-				cl_object o = ecl_stack_frame_elt(lastarg, i);
-				ecl_stack_frame_elt_set(frame, i, o);
+			cl_object *p = lastarg->frame.bottom;
+			while (p != lastarg->frame.top) {
+				ecl_stack_frame_push(frame, *(p++));
 			}
 		} else loop_for_in (lastarg) {
 			if (i >= CALL_ARGUMENTS_LIMIT) {

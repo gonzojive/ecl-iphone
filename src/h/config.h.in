@@ -132,7 +132,7 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /*	See cmplam.lsp if you change this value				*/
 #define C_ARGUMENTS_LIMIT 64
 
-/*	Maximum number of output arguments				*/
+/*	Maximum number of output arguments (>= C_ARGUMENTS_LIMIT)	*/
 #define ECL_MULTIPLE_VALUES_LIMIT 64
 
 /* A setjmp that does not save signals					*/
