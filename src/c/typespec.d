@@ -105,6 +105,16 @@ FEtype_error_stream(cl_object strm)
 	FEwrong_type_argument(@'stream', strm);
 }
 
+void
+FEtype_error_sequence(cl_object x) {
+	FEwrong_type_argument(@'sequence', x);
+}
+
+void
+FEtype_error_instance(cl_object x) {
+	FEwrong_type_argument(@'ext::instance', x);
+}
+
 cl_object
 ecl_type_error(cl_object function, const char *place, cl_object o,
 	       cl_object type)

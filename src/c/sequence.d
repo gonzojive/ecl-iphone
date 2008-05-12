@@ -96,7 +96,7 @@ ecl_elt(cl_object seq, cl_fixnum index)
 		return(CODE_CHAR(seq->base_string.self[index]));
 
 	default:
-		FEwrong_type_argument(@'sequence', seq);
+		FEtype_error_sequence(seq);
 	}
 E:
 	FEtype_error_index(seq, MAKE_FIXNUM(index));
@@ -145,7 +145,7 @@ ecl_elt_set(cl_object seq, cl_fixnum index, cl_object val)
 		return(val);
 
 	default:
-		FEwrong_type_argument(@'sequence', seq);
+		FEtype_error_sequence(seq);
 	}
 E:
 	FEtype_error_index(seq, MAKE_FIXNUM(index));
@@ -206,7 +206,7 @@ E:
 		@(return x)
 
 	default:
-		FEwrong_type_argument(@'sequence', sequence);
+		FEtype_error_sequence(sequence);
 	}
 
 ILLEGAL_START_END:
@@ -249,7 +249,7 @@ ecl_length(cl_object x)
 		return(x->vector.fillp);
 
 	default:
-		FEwrong_type_argument(@'sequence', x);
+		FEtype_error_sequence(x);
 	}
 }
 
@@ -276,7 +276,7 @@ cl_reverse(cl_object seq)
 		break;
 
 	default:
-		FEwrong_type_argument(@'sequence', seq);
+		FEtype_error_sequence(seq);
 	}
 	@(return output)
 }
@@ -308,7 +308,7 @@ cl_nreverse(cl_object seq)
 		ecl_reverse_subarray(seq, 0, seq->vector.fillp);
 		break;
 	default:
-		FEwrong_type_argument(@'sequence', seq);
+		FEtype_error_sequence(seq);
 	}
 	@(return seq)
 }
