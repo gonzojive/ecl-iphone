@@ -130,6 +130,23 @@ extern ECL_API ecl_frame_ptr _frs_push(register cl_object val);
  * C CONTROL STACK
  *******************/
 
+#define cl_va_start(a,p,n,k) { \
+	a[0].narg = (n)-(k);	\
+	if ((n) <= C_ARGUMENTS_LIMIT) {	\
+		va_start(a[0].args,p); \
+		a[0].sp = 0; \
+	} else { \
+		a[0].sp = cl_env.stack_top - a[0].narg; \
+	}}
+#define cl_va_arg(a) \
+	(a[0].narg--,(a[0].sp? *(a[0].sp++) : va_arg(a[0].args,cl_object)))
+#define cl_va_copy(dest,orig) { \
+	dest[0].narg = orig[0].narg; \
+	dest[0].sp = orig[0].sp; \
+	va_copy(dest[0].args,orig[0].args); \
+}
+#define cl_va_end(a) \
+	va_end(a[0].args)
 #define	check_arg(n) \
 	do { if (narg != (n)) FEwrong_num_arguments_anonym();} while(0)
 

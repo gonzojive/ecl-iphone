@@ -716,9 +716,9 @@ static inline cl_type type_of(cl_object o) {
 	This is used to retrieve optional arguments
 */
 typedef struct {
-  va_list args;
-  cl_index sp;
-  int narg;
+	va_list args;
+	cl_object *sp;
+	int narg;
 } cl_va_list[1];
 
 #ifdef __cplusplus

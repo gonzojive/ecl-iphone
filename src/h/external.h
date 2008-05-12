@@ -508,12 +508,6 @@ extern ECL_API cl_object cl_apply _ARGS((cl_narg narg, cl_object fun, cl_object 
 extern ECL_API cl_object si_safe_eval _ARGS((cl_narg narg, cl_object form, cl_object env, cl_object value, ...));
 #define cl_safe_eval(form,env,value) si_safe_eval(3,form,env,value)
 
-#define cl_va_start(a,p,n,k) (va_start(a[0].args,p),a[0].narg=n,cl__va_start(a,k))
-extern ECL_API void cl__va_start(cl_va_list args, int args_before);
-extern ECL_API void cl_va_copy(cl_va_list dest, cl_va_list orig);
-#define cl_va_end(args) (va_end((args)[0].args))
-extern ECL_API cl_object cl_va_arg(cl_va_list args);
-
 extern ECL_API cl_object si_unlink_symbol(cl_object s);
 extern ECL_API cl_object cl_eval(cl_object form);
 extern ECL_API cl_object cl_constantp(cl_narg narg, cl_object arg, ...);

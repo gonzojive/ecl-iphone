@@ -28,39 +28,6 @@
     otherwise, it emulates funcall.
  */
 
-void
-cl__va_start(cl_va_list args, int narg_before)
-{
-	if (args[0].narg < narg_before)
-		FEwrong_num_arguments_anonym();
-	if (args[0].narg > C_ARGUMENTS_LIMIT) {
-		args[0].narg -= narg_before;
-		args[0].sp = cl_stack_index() - args[0].narg;
-	} else {
-		args[0].narg -= narg_before;
-		args[0].sp = 0;
-	}
-}
-
-void
-cl_va_copy(cl_va_list dest, cl_va_list orig)
-{
-	dest[0].narg = orig[0].narg;
-	dest[0].sp = orig[0].sp;
-	va_copy(dest[0].args, orig[0].args);
-}
-
-cl_object
-cl_va_arg(cl_va_list args)
-{
-	if (args[0].narg <= 0)
-		FEwrong_num_arguments_anonym();
-	args[0].narg--;
-	if (args[0].sp)
-		return cl_env.stack[args[0].sp++];
-	return va_arg(args[0].args, cl_object);
-}
-
 cl_object
 ecl_apply_from_stack_frame(cl_object frame, cl_object x)
 {
