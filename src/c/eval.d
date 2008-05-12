@@ -19,12 +19,18 @@
 #include <ecl/ecl.h>
 #include <ecl/ecl-inl.h>
 
-static cl_object
-build_funcall_frame(cl_va_list args)
+cl_object *
+_ecl_va_sp(cl_narg narg)
 {
-	cl_object f = (cl_object)&(cl_env.funcall_frame);
+	return cl_env.stack_top - narg;
+}
+
+static cl_object
+build_funcall_frame(cl_object f, cl_va_list args)
+{
 	cl_index n = args[0].narg;
 	cl_object *p = args[0].sp;
+	f->frame.stack = 0;
 	if (!p) {
 #ifdef ECL_USE_VARARG_AS_POINTER
 		p = (cl_object*)(args[0].args);
@@ -34,10 +40,12 @@ build_funcall_frame(cl_va_list args)
 		for (i = 0; i < n; i++) {
 			p[i] = va_arg(args[0].args, cl_object);
 		}
+		f->frame.stack = (void*)0x1;
 #endif
 	}
 	f->frame.bottom = p;
 	f->frame.top = p + n;
+	f->frame.t = t_frame;
 	return f;
 }
 
@@ -117,7 +125,7 @@ _ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_v
 		if (fun->cfun.narg >= 0) {
 			if (narg != fun->cfun.narg)
 				FEwrong_num_arguments(fun);
-			frame = build_funcall_frame(args);
+			frame = build_funcall_frame((cl_object)&frame_aux, args);
 			out = APPLY_fixed(narg, (cl_objectfn_fixed)fun->cfun.entry,
 					  frame->frame.bottom);
 		} else {
@@ -130,7 +138,7 @@ _ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_v
 				cblock->cblock.links =
 				    CONS(sym, cblock->cblock.links);
 			}
-			frame = build_funcall_frame(args);
+			frame = build_funcall_frame((cl_object)&frame_aux, args);
 			out = APPLY(narg, fun->cfun.entry, frame->frame.bottom);
 		}
 		break;
@@ -138,7 +146,7 @@ _ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_v
 	case t_instance:
 		switch (fun->instance.isgf) {
 		case ECL_STANDARD_DISPATCH:
-			frame = build_funcall_frame(args);
+			frame = build_funcall_frame((cl_object)&frame_aux, args);
 			out = _ecl_standard_dispatch(frame, fun);
 			break;
 		case ECL_USER_DISPATCH:
@@ -150,12 +158,12 @@ _ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_v
 		break;
 #endif /* CLOS */
 	case t_cclosure:
-		frame = build_funcall_frame(args);
+		frame = build_funcall_frame((cl_object)&frame_aux, args);
 		out = APPLY_closure(narg, fun->cclosure.entry,
 				    fun->cclosure.env, frame->frame.bottom);
 		break;
 	case t_bytecodes:
-		frame = build_funcall_frame(args);
+		frame = build_funcall_frame((cl_object)&frame_aux, args);
 		out = ecl_apply_lambda(frame, fun);
 		break;
 	default:
@@ -186,8 +194,9 @@ si_unlink_symbol(cl_object s)
 }
 
 @(defun funcall (function &rest funargs)
+	struct ecl_stack_frame frame_aux;
 @
-	return ecl_apply_from_stack_frame(build_funcall_frame(funargs), function);
+	return ecl_apply_from_stack_frame(build_funcall_frame((cl_object)&frame_aux, funargs), function);
 @)
 
 @(defun apply (fun lastarg &rest args)

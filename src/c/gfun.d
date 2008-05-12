@@ -333,13 +333,16 @@ _ecl_standard_dispatch(cl_object frame, cl_object gf)
 {
 	cl_object func, vector;
 	/*
-	 * We have to copy the frame because it might be cl_env.funcal_frame,
-	 * which will be wiped out by the next function call.
+	 * We have to copy the frame because it might be stored in cl_env.values
+	 * which will be wiped out by the next function call. However this only
+	 * happens when we cannot reuse the values in the C stack.
 	 */
+#if !defined(ECL_USE_VARARG_AS_POINTER)
 	struct ecl_stack_frame frame_aux;
-	if (frame == (cl_object)&cl_env.funcall_frame) {
+	if (frame->frame.stack == (void*)0x1) {
 		frame = ecl_stack_frame_copy((cl_object)&frame_aux, frame);
 	}
+#endif
 	
 #ifdef ECL_THREADS
 	/* See whether we have to clear the hash from some generic functions right now. */
@@ -374,19 +377,11 @@ _ecl_standard_dispatch(cl_object frame, cl_object gf)
 			RECORD_VALUE(e) = func;
 		}
 	}
-	{
-		/* Stack allocated frame */
-		cl_object frame1 = (cl_object)&(cl_env.funcall_frame);
-		frame1->frame.bottom = cl_env.values;
-		frame1->frame.top = frame1->frame.bottom + 2;
-		frame1->frame.bottom[0] = frame;
-		frame1->frame.bottom[1] = Cnil;
-
-		func = ecl_apply_from_stack_frame(frame1, func);
-
-		/* Only need to close the copy */
-		if (frame == (cl_object)&frame_aux)
-			ecl_stack_frame_close(frame);
-		return func;
-	}
+	func = cl_funcall(3, func, frame, Cnil);
+	/* Only need to close the copy */
+#if !defined(ECL_USE_VARARG_AS_POINTER)
+	if (frame == (cl_object)&frame_aux)
+		ecl_stack_frame_close(frame);
+#endif
+	return func;
 }
