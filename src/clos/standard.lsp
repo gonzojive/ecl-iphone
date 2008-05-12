@@ -488,14 +488,22 @@ because it contains a reference to the undefined class~%  ~A"
 ;;; Optional accessors
 ;;;
 
+(defun unbound-slot-error (object index)
+  (declare (type standard-object object)
+	   (type fixnum index)
+	   (si::c-local))
+  (let* ((class (class-of object))
+	 (slotd (find index (class-slots class) :key #'slot-definition-location)))
+    (values (slotd-unbound class object (slot-definition-name slotd)))))
+
 (defun safe-instance-ref (object index)
-  (declare (fixnum index))
+  (declare (type standard-object object)
+	   (type fixnum index)
+	   (optimize (safety 0)))
   (let ((value (si:instance-ref object index)))
     (if (si:sl-boundp value)
 	value
-	(let ((class (class-of object))
-	      (slotd (find index (class-slots class) :key #'slot-definition-location)))
-	  (values (slotd-unbound class object (slot-definition-name slotd)))))))
+	(unbound-slot-error object index))))
 
 ;;; The following does not get as fast as it should because we are not
 ;;; allowed to memoize the position of a slot. The problem is that the
