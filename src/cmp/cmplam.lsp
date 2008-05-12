@@ -234,20 +234,21 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
       ;; are declared These checks can be deactivated by appropriate
       ;; safety settings which are checked by OPTIONAL-CHECK-TYPE
       ;;
-      (let* ((type-checks (loop for var in type-checks
-			     unless (or (eq (var-type var) t)
-					(loop for decl in other-decls
-					   when (and (consp decl)
-						     (eq (first decl) 'si::no-check-type)
-						     (member (var-name var) (rest decl)))
-					   do (return t)))
-			     collect var)))
-	(when (and type-checks (policy-automatic-check-type-p))
+      (let* ((pairs (loop for var in type-checks
+		       nconc (let* ((name (var-name var))
+				    (type (assoc name ts)))
+			       (when type
+				 (loop for decl in other-decls
+				    unless (and (consp decl)
+						(eq (first decl) 'si::no-check-type)
+						(member name (rest decl)))
+				    do (return (list (list name (cdr type))))))))))
+	(when (and pairs (policy-automatic-check-type-p))
 	  (cmpnote "In ~:[an anonymous function~;function ~:*~A~], checking types of argument~@[s~]~{ ~A~}."
 		   block-name
 		   (mapcar #'var-name type-checks))
-	  (loop for var in (nreverse type-checks)
-	     do (push `(optional-check-type ,(var-name var) ,(var-type var)) body))))
+	  (loop for pair in (nreverse pairs)
+	     do (push `(optional-check-type ,@pair) body))))
       (setq body
 	    (cond (aux-vars
 		   (let ((let nil))

@@ -120,7 +120,7 @@
   (cmpck (constantp name) "The constant ~s is being bound." name)
   (let (type)
     (if (setq type (assoc name types))
-	(setq type (cdr type))
+	(setq type (type-filter (cdr type)))
 	(setq type 'T))
     (cond ((or (member name specials)
 	       (sys:specialp name)

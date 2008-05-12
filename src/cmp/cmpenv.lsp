@@ -323,8 +323,7 @@
 	       (setf is (append decl-args is)))
 	      (TYPE
 	       (cmpassert decl-args "Syntax error in declaration ~s" decl)
-	       (declare-variables (type-filter (first decl-args))
-				  (rest decl-args)))
+	       (declare-variables (first decl-args) (rest decl-args)))
 	      (OBJECT
 	       (declare-variables 'OBJECT decl-args))
 	      ;; read-only variable treatment. obsolete!
