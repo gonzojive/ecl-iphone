@@ -12,6 +12,7 @@
 
 (in-package "SI")
 
+#-unicode
 (declaim (optimize (safety 1)))
 
 ;;;; Pretty streams
