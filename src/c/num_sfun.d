@@ -55,7 +55,7 @@ log1pf(float x)
 }
 #endif
 
-#ifndef HAVE_LOG1PL
+#if !defined(HAVE_LOG1PL) && defined(ECL_LONG_FLOAT)
 long double
 log1pl(long double x)
 {
