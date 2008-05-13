@@ -30,6 +30,7 @@
 		  (c:build-fasl output :lisp-files (list i))
 		  (load output))))
 
+#+nil
 (defmethod output-files ((o load-op) (c cl-source-file))
   (loop for i in (input-files o c)
 	collect (compile-file-pathname i :type :fasl)))
