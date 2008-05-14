@@ -268,12 +268,12 @@
 
 (proclaim-function character (t) character)
 (proclaim-function char= (character *) t :predicate t :no-side-effects t)
-(def-inline char= :always (character character) :bool "(#0)==(#1)")
 (def-inline char= :always (t t) :bool "ecl_char_code(#0)==ecl_char_code(#1)")
+(def-inline char= :always (character character) :bool "(#0)==(#1)")
 
 (proclaim-function char/= (character *) t :predicate t :no-side-effects t)
-(def-inline char/= :always (character character) :bool "(#0)!=(#1)")
 (def-inline char/= :always (t t) :bool "ecl_char_code(#0)!=ecl_char_code(#1)")
+(def-inline char/= :always (character character) :bool "(#0)!=(#1)")
 
 (proclaim-function char< (character *) t :predicate t :no-side-effects t)
 (def-inline char< :always (character character) :bool "(#0)<(#1)")
@@ -1163,18 +1163,33 @@ type_of(#0)==t_bitvector")
 (proclaim-function schar (simple-string fixnum) character :no-side-effects t)
 (def-inline schar :always (t t) t "ecl_elt(#0,fixint(#1))")
 (def-inline schar :always (t fixnum) t "ecl_elt(#0,#1)")
-(def-inline schar :unsafe (t t) t "CODE_CHAR((#0)->base_string.self[fix(#1)])")
+(def-inline schar :unsafe ((array base-char (*)) t) t "CODE_CHAR((#0)->base_string.self[fix(#1)])")
+#-unicode
 (def-inline schar :unsafe (t t) :fixnum "(#0)->base_string.self[fix(#1)]")
+#-unicode
 (def-inline schar :unsafe (t fixnum) :fixnum "(#0)->base_string.self[#1]")
-(def-inline schar :unsafe (t fixnum) :char "(#0)->base_string.self[#1]")
+(def-inline schar :unsafe ((array base-char (*)) t) :fixnum "(#0)->base_string.self[fix(#1)]")
+(def-inline schar :unsafe ((array base-char (*)) fixnum) :fixnum "(#0)->base_string.self[#1]")
+(def-inline schar :unsafe ((array base-char (*)) fixnum) :char "(#0)->base_string.self[#1]")
+#+unicode
+(def-inline schar :unsafe ((array character (*)) t) t "(#0)->string.self[fix(#1)]")
 
 (proclaim-function si:schar-set (string fixnum character) character)
 (def-inline si:schar-set :always (t t t) t "ecl_elt_set(#0,fixint(#1),#2)")
 (def-inline si:schar-set :always (t fixnum t) t "ecl_elt_set(#0,#1,#2)")
+#-unicode
 (def-inline si:schar-set :unsafe (t t t) t
  "@2;((#0)->base_string.self[fix(#1)]=ecl_char_code(#2),(#2))")
+#-unicode
 (def-inline si:schar-set :unsafe (t fixnum base-char) :char
  "(#0)->base_string.self[#1]= #2")
+(def-inline si:schar-set :unsafe ((array base-char (*)) t t) t
+ "@2;((#0)->base_string.self[fix(#1)]=ecl_char_code(#2),(#2))")
+(def-inline si:schar-set :unsafe ((array base-char (*)) fixnum base-char) :char
+ "(#0)->base_string.self[#1]= #2")
+#+unicode
+(def-inline si:schar-set :unsafe ((array character (*)) fixnum t) :char
+ "(#0)->string.self[#1]= #2")
 
 (proclaim-function string= (string-designator string-designator *) t :predicate t :no-side-effects t)
 (def-inline string= :always (string string) :bool "ecl_string_eq(#0,#1)")
