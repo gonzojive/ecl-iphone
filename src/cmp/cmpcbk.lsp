@@ -99,18 +99,19 @@
     (when return-p
       (wt-nl return-type-name " output;"))
     (wt-nl "cl_object aux;")
+    (wt-nl "ECL_BUILD_STACK_FRAME(frame, helper)")
     (loop for n from 0
 	  and type in arg-types
 	  and ct in arg-type-constants
 	  do
 	  (if (stringp ct)
-	      (wt-nl "cl_stack_push(ecl_foreign_data_ref_elt(&var" n
-		     "," ct "));")
-	      (wt-nl "cl_stack_push(ecl_make_foreign_data(&var" n ","
-		     ct "," (ffi:size-of-foreign-type type) "));")))
-    (wt-nl "aux = cl_apply_from_stack(" (length arg-types)
-	   ",ecl_fdefinition(" c-name-constant "));")
-    (wt-nl "cl_stack_pop_n(" (length arg-types) ");")
+	      (wt-nl "ecl_stack_frame_push(frame,ecl_foreign_data_ref_elt(&var"
+                     n "," ct "));")
+	      (wt-nl "ecl_stack_frame_push(frame,ecl_make_foreign_data(&var"
+                     n "," ct "," (ffi:size-of-foreign-type type) "));")))
+    (wt-nl "aux = ecl_apply_from_stack_frame(frame,"
+           "ecl_fdefinition(" c-name-constant "));")
+    (wt-nl "ecl_stack_frame_close(frame);")
     (when return-p
       (wt-nl "ecl_foreign_data_set_elt(&output,"
 	     (foreign-elt-type-code return-type) ",aux);")
