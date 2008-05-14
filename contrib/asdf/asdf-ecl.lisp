@@ -24,10 +24,12 @@
 (defmethod output-files ((o compile-op) (c cl-source-file))
   (list (compile-file-pathname (component-pathname c) :type :object)))
 
+(defmethod perform :after ((o compile-op) (c cl-source-file))
+  (c:build-fasl output :lisp-files (output-files o c)))
+
 (defmethod perform ((o load-op) (c cl-source-file))
   (loop for i in (input-files o c)
 	collect (let ((output (compile-file-pathname i)))
-		  (c:build-fasl output :lisp-files (list i))
 		  (load output))))
 
 #+nil
