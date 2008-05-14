@@ -74,50 +74,6 @@ struct cl_compiler_env {
 
 /* ffi.d */
 
-#define ECL_FFICALL_LIMIT 256
-
-enum ecl_ffi_tag {
-	ECL_FFI_CHAR = 0,
-	ECL_FFI_UNSIGNED_CHAR,
-	ECL_FFI_BYTE,
-	ECL_FFI_UNSIGNED_BYTE,
-	ECL_FFI_SHORT,
-	ECL_FFI_UNSIGNED_SHORT,
-	ECL_FFI_INT,
-	ECL_FFI_UNSIGNED_INT,
-	ECL_FFI_LONG,
-	ECL_FFI_UNSIGNED_LONG,
-	ECL_FFI_POINTER_VOID,
-	ECL_FFI_CSTRING,
-	ECL_FFI_OBJECT,
-	ECL_FFI_FLOAT,
-	ECL_FFI_DOUBLE,
-	ECL_FFI_VOID
-};
-
-union ecl_ffi_values {
-	char c;
-	unsigned char uc;
-	int8_t b;
-	uint8_t ub;
-	int i;
-	unsigned int ui;
-	short s;
-	unsigned short us;
-	long l;
-	unsigned long ul;
-	void *pv;
-	char *pc;
-	cl_object o;
-	float f;
-	double d;
-};
-
-enum ecl_ffi_calling_convention {
-	ECL_FFI_CC_CDECL = 0,
-	ECL_FFI_CC_STDCALL
-};
-
 struct ecl_fficall {
 	char *buffer_sp;
 	size_t buffer_size;
@@ -134,8 +90,6 @@ extern void ecl_fficall_prepare(cl_object return_type, cl_object arg_types, cl_o
 extern void ecl_fficall_push_bytes(void *data, size_t bytes);
 extern void ecl_fficall_push_int(int word);
 extern void ecl_fficall_align(int data);
-extern cl_object ecl_foreign_data_ref_elt(void *p, enum ecl_ffi_tag type);
-extern void ecl_foreign_data_set_elt(void *p, enum ecl_ffi_tag type, cl_object value);
 
 extern struct ecl_fficall_reg *ecl_fficall_prepare_extra(struct ecl_fficall_reg *registers);
 extern void ecl_fficall_push_arg(union ecl_ffi_values *data, enum ecl_ffi_tag type);

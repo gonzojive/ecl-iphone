@@ -546,6 +546,8 @@ extern ECL_API cl_object ecl_allocate_foreign_data(cl_object tag, cl_index size)
 extern ECL_API void *ecl_foreign_data_pointer_safe(cl_object f);
 extern ECL_API char *ecl_base_string_pointer_safe(cl_object f);
 extern ECL_API cl_object ecl_null_terminated_base_string(cl_object s);
+extern ECL_API cl_object ecl_foreign_data_ref_elt(void *p, enum ecl_ffi_tag type);
+extern ECL_API void ecl_foreign_data_set_elt(void *p, enum ecl_ffi_tag type, cl_object value);
 
 /* file.c */
 
