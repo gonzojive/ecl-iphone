@@ -861,7 +861,7 @@ main(int argc, char **argv)
 {
 	char outfile[BUFSIZ];
 #ifdef _MSC_VER
-	char *p
+	char *p;
 #endif
 	if (argc < 2 || !strcmp(argv[1],"-")) {
 	  in = stdin;
