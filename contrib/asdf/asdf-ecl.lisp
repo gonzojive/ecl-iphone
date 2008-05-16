@@ -25,8 +25,11 @@
   (list (compile-file-pathname (component-pathname c) :type :object)))
 
 (defmethod perform :after ((o compile-op) (c cl-source-file))
-  (let ((output (compile-file-pathname (component-pathname c))))
-    (c:build-fasl output :lisp-files (output-files o c))))
+  ;; Note how we use OUTPUT-FILES to find the binary locations
+  ;; This allows the user to override the names.
+  (let* ((input (output-files o c))
+	 (output (compile-file-pathname (first input) :type :fasl)))
+    (c:build-fasl output :lisp-files input)))
 
 (defmethod perform ((o load-op) (c cl-source-file))
   (loop for i in (input-files o c)
