@@ -413,9 +413,9 @@ AC_C_BIGENDIAN([], [],
 
 dnl ----------------------------------------------------------------------
 dnl This flag is an optimization for GNU
-if test "${GCC}" = "yes"; then
-  CFLAGS="${CFLAGS} -fstrict-aliasing"
-fi
+dnl if test "${GCC}" = "yes"; then
+dnl  CFLAGS="${CFLAGS} -fstrict-aliasing"
+dnl fi
 
 dnl ----------------------------------------------------------------------
 dnl Check the appropiate type for cl_fixnum/cl_index
