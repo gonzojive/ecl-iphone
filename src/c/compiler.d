@@ -335,7 +335,8 @@ asm_op2c(register int code, register cl_object o) {
  *			(:function function-name) |
  *			(var-name {:special | nil} bound-p) |
  *			(symbol si::symbol-macro macro-function) |
- *			CB | LB | UNWIND-PROTECT
+ *			CB | LB | UNWIND-PROTECT |
+ *			(:declare declaration-arguments*)
  * macro-record =	(function-name function) |
  *			(macro-name si::macro macro-function)
  *			CB | LB | UNWIND-PROTECT
@@ -347,6 +348,11 @@ asm_op2c(register int code, register cl_object o) {
  * the variable-record corresponds just to a special declaration.
  * CB, LB and UNWIND-PROTECT are only used by the C compiler and they
  * denote closure, lexical environment and unwind-protect boundaries.
+ *
+ * The last variable records are devoted to declarations and are only
+ * used by the C compiler. Read cmpenv.lsp for more details on the
+ * structure of these declaration forms, as they do not completely
+ * match those of Common-Lisp.
  */
 
 static void
@@ -483,7 +489,8 @@ c_tag_ref(cl_object the_tag, cl_object the_type)
 		} else if (Null(name)) {
 			n++;
 		} else {
-			/* We are counting only locals and ignore specials */
+			/* We are counting only locals and ignore specials
+			 * and other declarations */
 		}
 	}
 	return Cnil;
@@ -500,9 +507,11 @@ c_var_ref(cl_object var, int allow_symbol_macro, bool ensure_defined)
 			continue;
 		name = CAR(record);
 		special = CADR(record);
-		if (name == @':block' || name == @':tag' || name == @':function')
+		if (name == @':block' || name == @':tag' || name == @':function') {
 			n++;
-		else if (name != var) {
+		} else if (name == @':declare') {
+			/* Ignored */
+		} else if (name != var) {
 			/* Symbol not yet found. Only count locals. */
 			if (Null(special)) n++;
 		} else if (special == @'si::symbol-macro') {
@@ -600,6 +609,8 @@ c_undo_bindings(cl_object old_env)
 			FEerror("Internal error: cannot undo BLOCK/TAGBODY.",0);
 		} else if (name == @':function' || Null(special)) {
 			num_lexical++;
+		} else if (name == @':declare') {
+			/* Ignored */
 		} else if (special != @'si::symbol-macro') {
 			/* If (third special) = NIL, the variable was declared
 			   special, but there is no binding! */

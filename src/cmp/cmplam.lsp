@@ -448,6 +448,9 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
 	   (wt (if allow-other-keys ",TRUE);" ",FALSE);"))))
     (when rest (bind rest-loc rest)))
 
+  (when varargs
+    (wt-nl (if simple-varargs "va_end(args);" "cl_va_end(args);")))
+
   ;;; Bind keywords.
   (do ((kwd keywords (cddddr kwd))
        (all-kwd nil)

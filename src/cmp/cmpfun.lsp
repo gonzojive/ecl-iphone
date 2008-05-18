@@ -291,30 +291,6 @@
 	 (subtypep (result-type (second args)) 'FIXNUM)
 	 (c1expr `(the fixnum (ldb1 ,size ,pos ,(second args))))))
 
-;----------------------------------------------------------------------
-
-(defun co1vector-push (args) (co1vector-push1 nil args))
-(defun co1vector-push-extend (args) (co1vector-push1 t args))
-(defun co1vector-push1 (extend args)
-  (unless (or (safe-compile)
-	      (> *space* 3)
-	      (null (cdr args)))
-    (let ((*space* 10))
-      (c1expr
-       `(let* ((.val ,(car args))
-	       (.vec ,(second args))
-	       (.i (fill-pointer .vec))
-	       (.dim (array-total-size .vec)))
-	 (declare (fixnum .i .dim)
-	  (type ,(result-type (second args)) .vec)
-	  (type ,(result-type (car args)) .val))
-	 (cond ((< .i .dim)
-		(the fixnum (sys::fill-pointer-set .vec (the fixnum (+ 1 .i))))
-		(sys::aset .val .vec .i)
-		.i)
-	       (t ,(when extend
-		     `(vector-push-extend .val .vec ,@(cddr args))))))))))
-
 ;;; ----------------------------------------------------------------------
 
 (put-sysprop 'princ 'C1 'c1princ)
@@ -339,5 +315,3 @@
 (put-sysprop 'coerce 'C1CONDITIONAL 'co1coerce)
 (put-sysprop 'cons 'C1CONDITIONAL 'co1cons)
 (put-sysprop 'ldb 'C1CONDITIONAL 'co1ldb)
-(put-sysprop 'vector-push 'C1CONDITIONAL 'co1vector-push)
-(put-sysprop 'vector-push-extend 'C1CONDITIONAL 'co1vector-push-extend)

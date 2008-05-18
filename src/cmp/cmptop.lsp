@@ -479,10 +479,7 @@
     (wt-label *exit*)))
 
 (defun t2decl-body (decls body)
-  (let ((*safety* *safety*)
-	(*space* *space*)
-	(*speed* *speed*)
-	(*debug* *debug*)
+  (let ((*cmp-env* *cmp-env*)
         (*notinline* *notinline*))
     (c1add-declarations decls)
     (t2expr body)))

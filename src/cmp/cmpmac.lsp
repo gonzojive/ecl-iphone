@@ -60,13 +60,13 @@
   `(wt #\Newline ,@forms))
 
 (defmacro safe-compile ()
-  `(>= *safety* 2))
+  `(>= (cmp-env-optimization 'safety) 2))
 
 (defmacro compiler-check-args ()
-  `(>= *safety* 1))
+  `(>= (cmp-env-optimization 'safety) 1))
 
 (defmacro compiler-push-events ()
-  `(>= *safety* 3))
+  `(>= (cmp-env-optimization 'safety) 3))
 
 ;; ----------------------------------------------------------------------
 ;; C1-FORMS

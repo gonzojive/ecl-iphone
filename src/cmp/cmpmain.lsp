@@ -839,7 +839,7 @@ Cannot compile ~a."
   (safe-system
    (format nil
 	   *cc-format*
-	   *cc* *cc-flags* (>= *speed* 2) *cc-optimize*
+	   *cc* *cc-flags* (>= (cmp-env-optimization 'speed) 2) *cc-optimize*
 	   (fix-for-mingw (ecl-include-directory))
 	   (si::coerce-to-filename c-pathname)
 	   (si::coerce-to-filename o-pathname))

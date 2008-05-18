@@ -1131,7 +1131,7 @@ cl_symbols[] = {
 {SYS_ "LOGICAL-PATHNAME-P", SI_ORDINARY, si_logical_pathname_p, 1, OBJNULL},
 {SYS_ "MACRO", SI_ORDINARY, NULL, -1, OBJNULL},
 {SYS_ "MAKE-LAMBDA", SI_ORDINARY, si_make_lambda, 2, OBJNULL},
-{SYS_ "MAKE-PURE-ARRAY", SI_ORDINARY, si_make_pure_array, -1, OBJNULL},
+{SYS_ "MAKE-PURE-ARRAY", SI_ORDINARY, si_make_pure_array, 6, OBJNULL},
 {SYS_ "MAKE-STRING-OUTPUT-STREAM-FROM-STRING", SI_ORDINARY, si_make_string_output_stream_from_string, 1, OBJNULL},
 {SYS_ "MAKE-STRUCTURE", SI_ORDINARY, si_make_structure, -1, OBJNULL},
 {SYS_ "MAKE-VECTOR", SI_ORDINARY, si_make_vector, 6, OBJNULL},

@@ -154,7 +154,8 @@
   (cond
     ;; Check whether it is a global function that we cannot call directly.
      ((and (or (null loc) (fun-global loc)) (not (inline-possible fname)))
-      (if (and *compile-to-linking-call* (<= *debug* 1))
+      (if (and *compile-to-linking-call*
+	       (<= (cmp-env-optimization 'debug) 1))
 	  (call-linking-loc fname narg args)
 	  (call-unknown-global-loc fname nil narg args)))
 
@@ -165,7 +166,7 @@
 
      ;; Call to a function defined in the same file. Direct calls are
      ;; only emitted for low or neutral values of DEBUG is >= 2.
-     ((and (<= *debug* 1)
+     ((and (<= (cmp-env-optimization 'debug) 1)
 	   (or (fun-p loc)
 	       (and (null loc)
 		    (setf loc (find fname *global-funs* :test #'same-fname-p
@@ -179,7 +180,7 @@
      ;; Call to a function whose C language function name is known,
      ;; either because it has been proclaimed so, or because it belongs
      ;; to the runtime.
-     ((and (<= *debug* 1)
+     ((and (<= (cmp-env-optimization 'debug) 1)
 	   (setf fd (get-sysprop fname 'Lfun))
 	   (multiple-value-setq (minarg maxarg) (get-proclaimed-narg fname)))
       (call-exported-function-loc fname narg args fd minarg maxarg
@@ -190,7 +191,7 @@
       (call-exported-function-loc fname narg args fd minarg maxarg t))
 
      ;; Linking calls can only be made to symbols
-     ((and *compile-to-linking-call* (<= *debug* 1))
+     ((and *compile-to-linking-call* (<= (cmp-env-optimization 'debug) 1))
       (call-linking-loc fname narg args))
 
      (t (call-unknown-global-loc fname loc narg args))))

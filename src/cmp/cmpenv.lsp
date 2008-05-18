@@ -363,24 +363,28 @@
 	      ((eq j what)
 	       (return 3)))))))
 
-(defun c1add-declarations (decls &aux (dl nil))
-  (dolist (decl decls dl)
+(defun c1add-declarations (decls &aux (dl nil) (optimizations))
+  (dolist (decl decls)
     (case (car decl)
       (OPTIMIZE
        (push decl dl)
        (dolist (x (cdr decl))
 	 (when (symbolp x) (setq x (list x 3)))
+	 (unless optimizations
+	   (setq optimizations (cmp-env-all-optimizations)))
 	 (if (or (not (consp x))
 		 (not (consp (cdr x)))
 		 (not (numberp (second x)))
 		 (not (<= 0 (second x) 3)))
 	   (cmpwarn "The OPTIMIZE proclamation ~s is illegal." x)
-	   (case (car x)
-	     (DEBUG (setq *debug* (second x)))
-	     (SAFETY (setq *safety* (second x)))
-	     (SPACE (setq *space* (second x)))
-	     ((SPEED COMPILATION-SPEED))
-	     (t (cmpwarn "The OPTIMIZE quality ~s is unknown." (car x)))))))
+	   (let ((value (second x)))
+	     (case (car x)
+	       (DEBUG (setf (first optimizations) value))
+	       (SAFETY (setf (second optimizations) value))
+	       (SPACE (setf (third optimizations) value))
+	       (SPEED (setf (fourth optimizations) value))
+	       (COMPILATION-SPEED)
+	       (t (cmpwarn "The OPTIMIZE quality ~s is unknown." (car x))))))))
       (FTYPE
        (let (ftype)
 	 (cond ((and (consp (cdr decl))
@@ -410,7 +414,13 @@
       (:READ-ONLY)
       (otherwise
        (unless (member (car decl) si:*alien-declarations*)
-	 (cmpwarn "The declaration specifier ~s is unknown." (car decl)))))))
+	 (cmpwarn "The declaration specifier ~s is unknown." (car decl))))))
+  (when optimizations
+    (setf *cmp-env*
+	  (cons (cons `(:declare optimize ,@optimizations)
+		      (car *cmp-env*))
+		(cdr *cmp-env*))))
+  dl)
 
 (defun c1decl-body (decls body)
   (if (null decls)
@@ -418,10 +428,7 @@
       (let* ((*function-declarations* *function-declarations*)
 	     (si:*alien-declarations* si:*alien-declarations*)
 	     (*notinline* *notinline*)
-	     (*safety* *safety*)
-	     (*space* *space*)
- 	     (*speed* *speed*)
-	     (*debug* *debug*)
+	     (*cmp-env* *cmp-env*)
 	     (dl (c1add-declarations decls)))
 	(setq body (c1progn body))
 	(make-c1form 'DECL-BODY body dl body))))
@@ -429,10 +436,7 @@
 (put-sysprop 'decl-body 'c2 'c2decl-body)
 
 (defun c2decl-body (decls body)
-  (let ((*safety* *safety*)
-        (*space* *space*)
-	(*speed* *speed*)
-	(*debug* *debug*)
+  (let ((*cmp-env* *cmp-env*)
         (*notinline* *notinline*))
     (c1add-declarations decls)
     (c2expr body)))
@@ -575,23 +579,36 @@
 	when (and (consp i) (var-p (fourth i)))
 	collect (fourth i)))
 
-(defmacro cmp-env-optimization (property &optional env)
-  (case (eval property)
-    (speed '*speed*)
-    (safety '*safety*)
-    (space '*space*)
-    (debug '*debug*)))
+(defun cmp-env-all-optimizations (&optional (env *cmp-env*))
+  (loop for i in (car env)
+     when (and (consp i)
+	       (eq (first i) :declare)
+	       (eq (second i) 'optimize))
+     do (return (cddr i))
+     finally (return (list *debug* *safety* *space* *speed*))))
 
-(defun policy-inline-slot-access-p (&optional env)
+(defun cmp-env-optimization (property &optional (env *cmp-env*))
+  (let ((x (cmp-env-all-optimizations env)))
+    (case property
+      (debug (first x))
+      (safety (second x))
+      (space (third x))
+      (speed (fourth x)))))
+
+(defun policy-inline-slot-access-p (&optional (env *cmp-env*))
   "Do we inline access to structures and sealed classes?"
   (or (< (cmp-env-optimization 'safety env) 2)
        (<= (cmp-env-optimization 'safety env) (cmp-env-optimization 'speed env))))
 
-(defun policy-check-all-arguments-p (&optional env)
+(defun policy-check-all-arguments-p (&optional (env *cmp-env*))
   "Do we assume that arguments are the right type?"
   (> (cmp-env-optimization 'safety env) 1))
 
-(defun policy-automatic-check-type-p (&optional env)
+(defun policy-automatic-check-type-p (&optional (env *cmp-env*))
   "Do we generate CHECK-TYPE forms for function arguments with type declarations?"
   (and *automatic-check-type-in-lambda*
        (>= (cmp-env-optimization 'safety env) 1)))
+
+(defun policy-assume-types-dont-change-p (&optional (env *cmp-env*))
+  "Do we assume that type and class definitions will not change?"
+  (<= (cmp-env-optimization 'safety env) 1))

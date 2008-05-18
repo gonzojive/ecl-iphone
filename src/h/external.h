@@ -204,7 +204,6 @@ extern ECL_API cl_object cl_alloc_object(cl_type t);
 extern ECL_API cl_object cl_alloc_instance(cl_index slots);
 extern ECL_API cl_object ecl_cons(cl_object a, cl_object d);
 extern ECL_API cl_object ecl_list1(cl_object a);
-extern ECL_API void cl_dealloc(void *p, cl_index s);
 #ifdef GBC_BOEHM
 extern ECL_API cl_object si_gc(cl_object area);
 extern ECL_API cl_object si_gc_dump(void);
@@ -213,7 +212,7 @@ extern ECL_API cl_object si_gc_stats(cl_object enable);
 #define cl_alloc_atomic GC_malloc_atomic_ignore_off_page
 #define cl_alloc_align(s,d) GC_malloc_ignore_off_page(s)
 #define cl_alloc_atomic_align(s,d) GC_malloc_atomic_ignore_off_page(s)
-#define cl_dealloc(p,s)
+#define cl_dealloc(p) GC_free(p)
 #define ecl_register_static_root(x) ecl_register_root(x)
 #else
 extern ECL_API cl_object si_allocate _ARGS((cl_narg narg, cl_object type, cl_object qty, ...));
@@ -230,6 +229,7 @@ extern ECL_API void *cl_alloc(cl_index n);
 extern ECL_API void *cl_alloc_align(cl_index size, cl_index align);
 extern ECL_API void *ecl_alloc_uncollectable(size_t size);
 extern ECL_API void ecl_free_uncollectable(void *);
+extern ECL_API void cl_dealloc(void *p);
 #define cl_alloc_atomic(x) cl_alloc(x)
 #define cl_alloc_atomic_align(x,s) cl_alloc_align(x,s)
 #define ecl_register_static_root(x) ecl_register_root(x);
@@ -280,7 +280,7 @@ extern ECL_API cl_object si_fill_pointer_set(cl_object a, cl_object fp);
 extern ECL_API cl_object si_replace_array(cl_object old_obj, cl_object new_obj);
 extern ECL_API cl_object cl_aref _ARGS((cl_narg narg, cl_object x, ...));
 extern ECL_API cl_object si_aset _ARGS((cl_narg narg, cl_object v, cl_object x, ...));
-extern ECL_API cl_object si_make_pure_array _ARGS((cl_narg narg, cl_object etype, cl_object adj, cl_object displ, cl_object disploff, ...));
+extern ECL_API cl_object si_make_pure_array(cl_object etype, cl_object dims, cl_object adj, cl_object fillp, cl_object displ, cl_object disploff);
 
 extern ECL_API cl_index ecl_to_index(cl_object n);
 extern ECL_API cl_object ecl_aref(cl_object x, cl_index index);

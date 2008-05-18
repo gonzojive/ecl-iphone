@@ -43,22 +43,9 @@ in raw-major indexing is actually the reference to the (I + DISPLACED-INDEX-
 OFFSET)th element of the given array.If the STATIC argument is supplied
 with a non-nil value, then the body of the array is allocated as a
 contiguous block."
-  (setq element-type (upgraded-array-element-type element-type))
-
-  (let (x)
+  (let ((x (sys:make-pure-array element-type dimensions adjustable
+				fill-pointer displaced-to displaced-index-offset)))
     (declare (array x))
-    (cond ((or (integerp dimensions)
-	       (when (= (length dimensions) 1)
-		 (setq dimensions (first dimensions))))
-	   (setf x (sys:make-vector element-type dimensions
-				    adjustable fill-pointer
-				    displaced-to displaced-index-offset)))
-	  (fill-pointer
-	   (error ":FILL-POINTER may not be specified for an array of rank ~D"
-		  (length dimensions)))
-	  (t
-	   (setf x (apply #'sys:make-pure-array element-type adjustable
-			  displaced-to displaced-index-offset dimensions))))
     (when initial-element-supplied-p
       (dotimes (i (array-total-size x))
 	(declare (fixnum i))

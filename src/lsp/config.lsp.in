@@ -46,7 +46,7 @@ Returns, as a string, the location of the machine on which ECL runs."
 (defun lisp-implementation-version ()
   "Args:()
 Returns the version of your ECL as a string."
-  "@PACKAGE_VERSION@ (CVS 2008-05-14 13:43)")
+  "@PACKAGE_VERSION@ (CVS 2008-05-18 22:07)")
 
 (defun machine-type ()
   "Args: ()

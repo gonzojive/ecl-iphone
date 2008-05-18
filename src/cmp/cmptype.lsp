@@ -117,6 +117,9 @@
          (values nil nil))
     (error (c) (values nil nil))))
 
+(defun known-type-p (type)
+  (subtypep type 'T))
+
 (defun type-and (t1 t2)
   ;; FIXME! Should we allow "*" as type name???
   (when (or (eq t1 t2) (eq t2 '*))
@@ -399,7 +402,7 @@
 			   :safe "In the argument ~d of a call to ~a" i fname)
 	    ;; In safe mode, we cannot assume that the type of the
 	    ;; argument is going to be the right one.
-	    (unless (zerop *safety*)
+	    (unless (zerop (cmp-env-optimization 'safety))
               (setf (c1form-type form) old-type))))))
     return-type))
 
