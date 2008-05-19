@@ -28,11 +28,13 @@
 	      string result))
     result))
 
-(defun compile-file-pathname (name &key (output-file name) (type :fasl)
+(defun compile-file-pathname (name &key (output-file name) (type nil type-supplied-p)
                               verbose print c-file h-file data-file shared-data-file
                               system-p load)
   (let ((format '())
 	(extension '()))
+    (unless type-supplied-p
+      (setf type (if system-p :object :fasl)))
     (case type
       ((:shared-library :dll) (setf format +shared-library-format+))
       ((:static-library :library :lib) (setf format +static-library-format+))
