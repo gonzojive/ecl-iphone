@@ -2138,7 +2138,6 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 		if (VVtemp) {
 			block->cblock.temp_data = NULL;
 			block->cblock.temp_data_size = 0;
-			memset(VVtemp, 0, bytes);
 			cl_dealloc(VVtemp);
 		}
 		bds_unwind1();
