@@ -46,7 +46,7 @@ cl_stack_set_size(cl_index new_size)
 #ifdef BOEHM_GBC
 	GC_free(cl_env.stack);
 #else
-	cl_dealloc(cl_env.stack, cl_env.stack_size);
+	cl_dealloc(cl_env.stack);
 #endif
 	cl_env.stack_size = new_size;
 	cl_env.stack = new_stack;

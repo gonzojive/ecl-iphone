@@ -550,7 +550,7 @@ static void flush_output_stream_binary(cl_object strm);
 		if (fclose(fp) != 0)
 			FElibc_error("Cannot close stream ~S.", 1, strm);
 #if !defined(GBC_BOEHM)
-		cl_dealloc(strm->stream.buffer, BUFSIZ);
+		cl_dealloc(strm->stream.buffer);
 		strm->stream.file = NULL;
 #endif
 		break;
@@ -561,7 +561,7 @@ static void flush_output_stream_binary(cl_object strm);
 		if ( closesocket( ( int )strm->stream.file ) != 0 )
 			wsock_error( "Cannot close Windows Socket ~S~%~A.", strm );
 #if !defined(GBC_BOEHM)
-		cl_dealloc(strm->stream.buffer, BUFSIZ);
+		cl_dealloc(strm->stream.buffer);
 		strm->stream.file = NULL;
 #endif
 		break;

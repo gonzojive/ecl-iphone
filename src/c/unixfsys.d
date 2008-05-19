@@ -276,7 +276,7 @@ ecl_backup_fopen(const char *filename, const char *option)
 	if (rename(filename, backupfilename))
 		FElibc_error("Cannot rename the file ~S to ~S.", 2,
 			     make_constant_base_string(filename), make_simple_base_string(backupfilename));
-	cl_dealloc(backupfilename, 0);
+	cl_dealloc(backupfilename);
 	return fopen(filename, option);
 }
 
