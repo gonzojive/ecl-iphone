@@ -2061,7 +2061,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 	volatile cl_object x;
 	cl_index i, len, perm_len, temp_len;
 	cl_object in;
-	cl_object *VV, *VVtemp;
+	cl_object *VV, *VVtemp = 0;
 
 	if (block == NULL) {
 		block = cl_alloc_object(t_codeblock);
@@ -2136,7 +2136,6 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 			}
 		} end_loop_for_on;
 		if (VVtemp) {
-			cl_index bytes = sizeof(*VVtemp) * temp_len;
 			block->cblock.temp_data = NULL;
 			block->cblock.temp_data_size = 0;
 			memset(VVtemp, 0, bytes);
