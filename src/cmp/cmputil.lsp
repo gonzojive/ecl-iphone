@@ -109,53 +109,34 @@
 
 (defun baboon (&aux (*print-case* :upcase))
   (print-current-form)
-  (error "~&;;; A bug was found in the compiler.  Contact worm@arrakis.es.~%")
-  (format
-   t "~&;;; A bug was found in the compiler.  Contact worm@arrakis.es.~%")
   (incf *error-count*)
-  (break)
-;  (throw *cmperr-tag* '*cmperr-tag*) DEBUG
-)
+  (error "~&;;; A bug was found in the compiler.  Contact jjgarcia@users.sourceforge.net.~%"))
 
 (defmacro with-cmp-protection (main-form error-form)
-  `(let* #+nil
-     ((sys::*ihs-base* sys::*ihs-top*)
-      (sys::*ihs-top* (sys::ihs-top 'cmp-toplevel-eval))
-      (*break-enable* *compiler-break-enable*)
-      (sys::*break-hidden-packages*
-       (cons (find-package 'compiler)
-	     sys::*break-hidden-packages*))
-      (throw-flag t))
-     ((*break-enable* *compiler-break-enable*)
-      (throw-flag t))
+  `(let* ((si::*break-enable* *compiler-break-enable*)
+          (throw-flag t))
      (unwind-protect
 	 (multiple-value-prog1 ,main-form
-	   (setf throw-flag nil))
+			       (setf throw-flag nil))
        (when throw-flag ,error-form))))
 
 (defun cmp-eval (form)
   (with-cmp-protection (eval form)
-    (let ((*print-case* :upcase))
-      (print-current-form)
-      (format t "~&;;; The form ~s was not evaluated successfully.~
-                 ~%;;; You are recommended to compile again.~%"
-	      form))))
+    (cmperr "~&;;; The form ~s was not evaluated successfully.~
+             ~%;;; You are recommended to compile again.~%"
+	    form)))
 
 (defun cmp-macroexpand (form &optional (env *cmp-env*))
   (with-cmp-protection (macroexpand form env)
-    (let ((*print-case* :upcase))
-      (print-current-form)
-      (format t "~&;;; The macro form ~S was not expanded successfully.~
-                 ~%;;; You are recommended to compile again.~%" form))))
+    (cmperr "~&;;; The macro form ~S was not expanded successfully.~
+             ~%;;; You are recommended to compile again.~%" form)))
 
 (defun cmp-expand-macro (fd form &optional (env *cmp-env*))
   (with-cmp-protection
     (let ((new-form (funcall *macroexpand-hook* fd form env)))
       (values new-form (not (eql new-form form))))
-    (let ((*print-case* :upcase))
-      (print-current-form)
-      (format t "~&;;; The macro form ~S was not expanded successfully.~
-                 ~%;;; You are recommended to compile again.~%" form))))
+    (cmperr "~&;;; The macro form ~S was not expanded successfully.~
+             ~%;;; You are recommended to compile again.~%" form)))
 
 (defun si::compiler-clear-compiler-properties (symbol)
   #-:CCL

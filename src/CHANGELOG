@@ -107,6 +107,10 @@ ECL 0.9k:
  - The compiler now optimizes calls to TYPE when the type name is constant and
    has a simple way to be checked.
 
+ - When an error is signaled either by evaluating an EVAL-WHEN form or when
+   macroexpanding a form, this error is printed out and COMPILE-FILE returns
+   (VALUES NIL T T). Formerly this error would be ignored.
+
 * CLOS:
 
  - When caching generic function calls, ECL now uses a thread-local hash table
