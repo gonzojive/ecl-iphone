@@ -16,6 +16,15 @@
     See file '../Copyright' for full details.
 */
 
+/********************************************************************************
+ ***                                                                          ***
+ ***  IMPORTANT: This is obsolete code. The current garbage collector of ECL  ***
+ ***  is the Boehm-Weiser garbage collector and it is dealt with in           ***
+ ***                           alloc_2.d                                      ***
+ ***  This file is kept here because of historical purposes, but also because ***
+ ***  it might be useful in the future to implement another garbage collector ***
+ ***                                                                          ***
+ ********************************************************************************/
 
 /*
   			Heap and Relocatable Area
