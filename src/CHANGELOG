@@ -22,6 +22,8 @@ ECL 0.9k:
 
 * Visible changes:
 
+ - --enable-boehm=auto and --with-systemp-gmp=auto are now the default options.
+
  - When (>= SAFETY 1), for each compiled function, the compiler will
    automatically generate CHECK-TYPE forms to ensure that the arguments have
    the values that the user declared.
@@ -137,6 +139,9 @@ ECL 0.9k:
    location.
 
 * Bugs fixed:
+
+ - Intel/64bits running a 32 bits Unix operating system caused a wrong choice
+   of assembler code.
 
  - ASDF:MAKE-BUILD now handles better the case of a monolithic FASL that
    has to include a number of other subsystems.

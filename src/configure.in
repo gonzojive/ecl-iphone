@@ -8,7 +8,7 @@ dnl  AUTOCONF configuration for ECL
 dnl  Giuseppe Attardi 25.1.1994
 dnl
 
-AC_INIT([ecl],[0.9j],[])
+AC_INIT([ecl],[0.9k],[])
 AC_REVISION([$Revision$])
 AC_CONFIG_SRCDIR([bare.lsp.in])
 AC_CONFIG_AUX_DIR([${srcdir}/gmp])
@@ -41,14 +41,8 @@ AC_ARG_ENABLE(threads,
 AC_ARG_ENABLE(boehm,
   AS_HELP_STRING( [--enable-boehm],
                   [use the Boehm-Weiser garbage collector]
-                  [(no|included|system|auto, default=included)] ),
-  [], [enable_boehm=included] )
-
-AC_ARG_ENABLE(local-boehm,
-  AS_HELP_STRING( [--enable-local-boehm], [Deprecated! See --enable-boehm] ),
-  [AC_MSG_WARN(
-    [--enable-local-boehm is deprecated, use --enable-boehm=system instead!])
-   test ${withval} = "no" || enable_boehm="system"])
+                  [(no|included|system|auto, default=auto)] ),
+  [], [enable_boehm=auto] )
 
 AC_ARG_ENABLE(slow-config,
   AS_HELP_STRING( [--enable-slow-config],
