@@ -140,8 +140,8 @@ ECL 0.9k:
 
 * Bugs fixed:
 
- - Intel/64bits running a 32 bits Unix operating system caused a wrong choice
-   of assembler code.
+ - Intel/64bits running a 32 bits operating system caused a wrong choice of
+   assembler code.
 
  - ASDF:MAKE-BUILD now handles better the case of a monolithic FASL that
    has to include a number of other subsystems.
@@ -208,6 +208,9 @@ ECL 0.9k:
  - (FUNCALL (LOAD-TIME-VALUE ...) ...) forced the evaluation of the argument to
    LOAD-TIME-VALUE. LOAD-TIME-VALUE is now implemented as a special operator
    and not as a macro.
+
+ - Garbage collection statistics was broken for libraries other than the one
+   shipped with ECL.
 
 * Optimization and performance:
 

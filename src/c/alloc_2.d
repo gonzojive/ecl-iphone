@@ -409,13 +409,13 @@ finalize_queued()
 		   integer.*/
 		static cl_index bytes = 0;
 		cl_index new_bytes = GC_get_total_bytes();
-		if (bytes < new_bytes) {
+		if (bytes > new_bytes) {
 			cl_index wrapped;
 			wrapped = ~((cl_index)0) - bytes;
 			mpz_add_ui(cl_core.bytes_consed->big.big_num,
 				   cl_core.bytes_consed->big.big_num,
 				   wrapped);
-			bytes = 0;
+			bytes = new_bytes;
 		}
 		mpz_add_ui(cl_core.bytes_consed->big.big_num,
 			   cl_core.bytes_consed->big.big_num,
