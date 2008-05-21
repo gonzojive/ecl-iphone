@@ -21,7 +21,7 @@
 (in-package "SYSTEM")
 
 (export '(*break-readtable* *break-on-warnings* *break-enable*
-	  *tpl-evalhook*))
+	  *tpl-evalhook* *tpl-prompt-hook*))
 
 (defvar *quit-tag* (cons nil nil))
 (defvar *quit-tags* nil)
@@ -405,13 +405,16 @@ under certain conditions; see file 'Copyright' for details.")
 	   (break-where)))))
 
 (defun tpl-prompt ()
-  (fresh-line)
-  (when *tpl-prompt-hook*
-    (funcall *tpl-prompt-hook*))
-  (format t "~A~V,,,'>A "
-	  (if (eq *package* (find-package 'user)) "" (package-name *package*))
-	  (- *tpl-level* *step-level* -1)
-	  ""))
+  (typecase *tpl-prompt-hook*
+    (string (format t *tpl-prompt-hook*))
+    (function (funcall *tpl-prompt-hook*))
+    (t (fresh-line)
+       (format t "~A~V,,,'>A "
+	       (if (eq *package* (find-package 'user))
+		   ""
+		 (package-name *package*))
+	       (- *tpl-level* *step-level* -1)
+	       ""))))
 
 (defun tpl-read ()
   (finish-output)
