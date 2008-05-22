@@ -241,6 +241,13 @@ rebinds this variable to NIL when control enters a break loop.")
 	~@
 	Disassemble the current function. Currently, only interpreted functions~@
 	can be disassembled.~%")
+      ((:le :lambda-expression) tpl-lambda-expression-command nil
+       ":l(ambda-)e(expression)	Show lisp code for current function"
+       ":lambda-expression				[Break command]~@
+	:le						[Abbreviation]~@
+	~@
+	Show the lisp code of the current function. Only works for interpreted~@
+        functions.~%")
       ((:v :variables) tpl-variables-command nil
        ":v(ariables)	Show local variables, functions, blocks, and tags"
        ":variables &optional no-values			[Break command]~@
@@ -557,6 +564,18 @@ under certain conditions; see file 'Copyright' for details.")
       (format t " Function cannot be disassembled.~%"))
     (values)))
 
+(defun tpl-lambda-expression-command (&optional no-values)
+  (let*((*print-level* 2)
+	(*print-length* 4)
+	(*print-pretty* t)
+	(*print-readably* nil)
+	(function (ihs-fun *ihs-current*))
+	(le (function-lambda-expression function)))
+    (if le
+	(pprint le)
+	(format t " No source code available for this function.~%"))
+    (values)))
+
 (defun reconstruct-bytecodes-lambda-list (data)
   (declare (si::c-local data))
   (let ((output '()))
@@ -740,7 +759,7 @@ under certain conditions; see file 'Copyright' for details.")
     (when (and (consp fname) (eq 'SETF (car fname)))
 	  (setq fname (second fname)))
     (or (eq fname 'EVAL)
-	(eq fname 'EVAL-WITH-ENV)
+	(eq fname 'BYTECODES)
 	(and (not (member (symbol-package fname) *break-hidden-packages*
 			  :TEST #'eq))
 	     (not (null fname))

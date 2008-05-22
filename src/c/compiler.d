@@ -2568,7 +2568,8 @@ si_make_lambda(cl_object name, cl_object rest)
 		compile_form(form, FLAG_VALUES);
 		asm_op(OP_EXIT);
 		bytecodes = asm_end(handle);
-		bytecodes->bytecodes.name = @'eval';
+		bytecodes->bytecodes.name = @'si::bytecodes';
+		bytecodes->bytecodes.definition = form;
 	} CL_UNWIND_PROTECT_EXIT {
 		/* Clear up */
 		ENV = old_c_env;

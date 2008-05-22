@@ -69,8 +69,11 @@ disassemble_lambda(cl_object bytecodes) {
 
 	bds_bind(@'*print-pretty*', Cnil);
 
-	if (bytecodes->bytecodes.name == OBJNULL)
+	if (bytecodes->bytecodes.name == OBJNULL ||
+	    bytecodes->bytecodes.name == @'si::bytecodes') {
+		print_noarg("\nEvaluated form:");
 		goto NO_ARGS;
+	}
 
 	/* Name of LAMBDA */
 	print_arg("\nName:\t\t", bytecodes->bytecodes.name);

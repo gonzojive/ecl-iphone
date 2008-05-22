@@ -113,6 +113,28 @@ ECL 0.9k:
    macroexpanding a form, this error is printed out and COMPILE-FILE returns
    (VALUES NIL T T). Formerly this error would be ignored.
 
+ - Interpreted forms now appear as SI:BYTECODES in the backtrace. It is
+   possible to inspect these forms using :lambda-expression
+	> (cos 'a)
+	In function COS, the value of argument is
+	        A
+	which is not of expected type NUMBER
+	Broken at SI:BYTECODES.Available restarts:
+	1. (USE-VALUE) Supply a new value of type NUMBER.
+	Broken at SI:BYTECODES.
+	>> :b
+	Backtrace: SI:BYTECODES > si:bytecodes
+	>> :disassemble
+	Evaluated form:
+	   0	PUSH	'A
+	   2	CALLG	1,COS
+	   5	EXIT
+	>> :lambda-expression
+	(COS 'A)
+   Similarly, :lambda-expression also works for other functions that keep
+   this information.
+
+
 * CLOS:
 
  - When caching generic function calls, ECL now uses a thread-local hash table

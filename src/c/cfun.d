@@ -114,7 +114,7 @@ cl_function_lambda_expression(cl_object fun)
 		    output = Cnil;
 		else if (name == Cnil)
 		    output = cl_cons(@'lambda', output);
-		else
+		else if (name != @'si::bytecodes')
 		    output = @list*(3, @'ext::lambda-block', name, output);
 		break;
 	case t_cfun:

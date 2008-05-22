@@ -1697,5 +1697,7 @@ cl_symbols[] = {
 
 {SYS_ "PROPERTY-LIST",NULL},
 
+{SYS_ "BYTECODES",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};
