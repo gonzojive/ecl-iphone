@@ -379,7 +379,6 @@ under certain conditions; see file 'Copyright' for details.")
       (error "Console interrupt -- cannot continue."))))
 
 (defun tpl (&key ((:commands *tpl-commands*) tpl-commands)
-		 ((:prompt-hook *tpl-prompt-hook*) nil)
 		 (broken-at nil)
 		 (quiet nil))
   (let* ((*ihs-base* *ihs-top*)
