@@ -84,10 +84,9 @@ contiguous block."
   "Args: (&rest objects)
 Creates and returns a simple-vector, with the N-th OBJECT being the N-th
 element."
-  (make-array (list (length objects))
-	      :element-type t
-	      :initial-contents objects))
-
+  (let ((a (si:make-vector t (length objects) nil nil nil 0)))
+    (fill-array a objects)
+    a))
 
 (defun array-dimensions (array)
   "Args: (array)
