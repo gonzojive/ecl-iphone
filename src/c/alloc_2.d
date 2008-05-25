@@ -190,9 +190,9 @@ init_alloc(void)
 	alloc_initialized = TRUE;
 
 	GC_no_dls = 1;
-	GC_register_displacement(1);
 	GC_all_interior_pointers = 0;
 	GC_init();
+	GC_register_displacement(1);
 #if 0
 	GC_init_explicit_typing();
 #endif
