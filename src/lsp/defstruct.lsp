@@ -170,7 +170,7 @@
           ((subtypep type 'VECTOR)
            `(defun ,constructor-name ,keys
               (make-array ',(list (length slot-names))
-			  :element-type ',(closest-vector-type type)
+			  :element-type ',(closest-sequence-type type)
 	       		  :initial-contents (list ,@slot-names))))
           ((eq type 'LIST)
            `(defun ,constructor-name ,keys
