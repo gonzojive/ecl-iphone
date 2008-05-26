@@ -613,6 +613,36 @@ cl_sxhash(cl_object key)
 	@(return MAKE_FIXNUM(output & mask))
 }
 
+@(defun si::hash-eql (&rest args)
+	cl_index h;
+@
+	for (h = 0; narg; narg--) {
+		cl_object o = cl_va_arg(args);
+		h = _hash_eql(h, o);
+	}
+	@(return MAKE_FIXNUM(h))
+@)
+
+@(defun si::hash-equal (&rest args)
+	cl_index h;
+@
+	for (h = 0; narg; narg--) {
+		cl_object o = cl_va_arg(args);
+		h = _hash_equal(0, h, o);
+	}
+	@(return MAKE_FIXNUM(h))
+@)
+
+@(defun si::hash-equalp (&rest args)
+	cl_index h;
+@
+	for (h = 0; narg; narg--) {
+		cl_object o = cl_va_arg(args);
+		h = _hash_equalp(0, h, o);
+	}
+	@(return MAKE_FIXNUM(h))
+@)
+
 cl_object
 cl_maphash(cl_object fun, cl_object ht)
 {
