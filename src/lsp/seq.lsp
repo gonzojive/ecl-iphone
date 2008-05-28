@@ -169,6 +169,31 @@ default value of INITIAL-ELEMENT depends on TYPE."
 	   iterator)
       (rest iterator)))
 
+(defun coerce-to-list (object)
+  (if (listp object)
+      object
+      (do ((it (make-seq-iterator object) (seq-iterator-next object it))
+	   (output nil))
+	  ((null it) (nrevere output))
+	(push (seq-iterator-ref object it) output))))
+
+(defun coerce-to-vector (object elt-type length)
+  (let ((output object))
+    (unless (and (vectorp object)
+		 (eq (array-element-type object) elt-type))
+      (let* ((final-length (if (eq length '*) (length object) length)))
+	(setf output (make-vector elt-type final-length nil nil nil 0))
+	(do ((i (make-seq-iterator object) (seq-iterator-next output i))
+	     (j 0 (1+ j)))
+	    ((= j final-length)
+	     (setf object output))
+	  (declare (index j))
+	  (setf (aref output j) (seq-iterator-ref object i)))))
+    (unless (eq length '*)
+      (unless (= length (length output))
+	(check-type output `(vector ,elt-type (,length)) "coerced object")))
+    output))
+
 (defun concatenate (result-type &rest sequences)
   "Args: (type &rest sequences)
 Returns a new sequence of the specified type, consisting of all elements of

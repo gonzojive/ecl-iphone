@@ -257,13 +257,9 @@
 	  ((subtypep type 'sequence)
 	   (multiple-value-bind (elt-type length)
 	       (si::closest-sequence-type type)
-	     (when (eq elt-type 'list)
-	       (setf type 'list))
-	     `(let ((y ,value))
-		(declare (:read-only y))
-		(if (typep y ',type)
-		    y
-		    (concatenate ',type y)))))
+	     (if (eq elt-type 'list)
+		 `(si::coerce-to-list ,value)
+		 `(si::coerce-to-vector ,value ',elt-type ',length))))
 	  ;;
 	  ;; There are no other atomic types to optimize
 	  ((atom type)
