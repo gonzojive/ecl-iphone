@@ -41,7 +41,7 @@
 	   (setq name type args nil)))
     (case name
       ((VECTOR)
-       (setq elt-type (if (endp args) '* (first args))
+       (setq elt-type (if (endp args) 'T (first args))
 	     length (if (endp (rest args)) '* (second args))))
       ((SIMPLE-VECTOR)
        (setq elt-type 'T
