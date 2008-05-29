@@ -48,20 +48,39 @@
   ;; step. Otherwise the compiler macro will enter an infinite loop.
   (let* ((space (cmp-env-optimization 'space env))
 	 (speed (cmp-env-optimization 'speed env))
+	 (safety (cmp-env-optimization 'safety env))
+	 (orig-type type)
 	 aux function
 	 first rest)
     (declare (si::fixnum space speed))
     (cond ((not (and (constantp type) (setf type (cmp-eval type)) t))
 	   form)
+	  ;; Type is not known
+	  ((not (known-type-p type))
+	   form)
 	  ;; Simple ones
-	  ((eq type 'T) T)
+	  ((subtypep 'T type) T)
 	  ((eq type 'NIL) NIL)
 	  ((eq aux 'SATISFIES)
 	   `(funcall #',function ,object))
 	  ;;
+	  ;; Detect inconsistencies in the provided type. If we run at low
+	  ;; safety, we will simply assume the user knows what she's doing.
+	  ((subtypep type NIL)
+	   (cmpwarn "TYPEP form contains an empty type ~S and cannot be optimized" type)
+	   (if (< safety 1)
+	       NIL
+	       form))
+	  ;;
 	  ;; There exists a function which checks for this type?
 	  ((setf function (get-sysprop type 'si::type-predicate))
 	   `(,function ,object))
+	  ;;
+	  ;; Similar as before, but we assume the user did not give us
+	  ;; the right name, or gave us an equivalent type.
+	  ((loop for (a-type . function-name) in si::+known-typep-predicates+
+	      when (si::type= type a-type)
+	      do (return `(,function-name ,object))))
 	  ;;
 	  ;; The following are not real functions, but are expanded by the
 	  ;; compiler into C forms.
@@ -81,6 +100,11 @@
 	  ((and (>= space 2) (> space speed))
 	   form)
 	  ;;
+	  ;; CONS types. They must be checked _before_ sequence types. We
+	  ;; do not produce optimized forms because they can be recursive.
+	  ((and (consp type) (eq (first type) 'CONS))
+	   form)
+	  ;;
 	  ;; The type denotes a known class and we can check it
 	  #+clos
 	  ((setf aux (find-class type nil))
@@ -94,7 +118,7 @@
 	  ((setf rest (rest type)
 		 first (first type)
 		 function (get-sysprop first 'SI::DEFTYPE-DEFINITION))
-	   (expand-typep form object (apply function rest) env))
+	   (expand-typep form object `',(apply function rest) env))
 	  ;;
 	  ;; (TYPEP o '(NOT t)) => (NOT (TYPEP o 't))
 	  ((eq first 'NOT)
@@ -155,3 +179,131 @@
 	      (setq ,list-var (rest ,typed-var)))
 	   ,(when output-form `(setq ,var nil))
 	   ,output-form)))))
+
+;;;
+;;; COERCE
+;;;
+;;; Simple coercion rules are implemented using the following
+;;; templates.  X is replaced by the coerced value, which can be a
+;;; lisp form. We use a LET form to avoid evaluating twice the same
+;;; form.
+;;;
+(defvar +coercion-table+
+  '((float . (float x))
+    (short-float  . (float x 0.0s0))
+    (single-float . (float x 0.0f0))
+    (double-float . (float x 0.0d0))
+    (long-float . (float x 0.0l0))
+    (base-char . (character x))
+    (character . (character x))
+    (function . (si::coerce-to-function x))
+    (complex .
+     (let ((y x))
+       (declare (:read-only y))
+       (complex (realpart y) (imagpart y))))
+    ))
+
+(defun expand-coerce (form value type env)
+  (declare (si::c-local))
+  ;; This function is reponsible for expanding (TYPEP object type)
+  ;; forms into a reasonable set of system calls. When it fails to
+  ;; match the compiler constraints on speed and space, it simply
+  ;; returns the original form. Note that for successful recursion we
+  ;; have to output indeed the ORIGINAL FORM, not some intermediate
+  ;; step. Otherwise the compiler macro will enter an infinite loop.
+  (let* ((space (cmp-env-optimization 'space env))
+	 (speed (cmp-env-optimization 'speed env))
+	 (safety (cmp-env-optimization 'safety env))
+	 (orig-type type)
+	 first rest)
+    (cond ((not (and (constantp type) (setf type (cmp-eval type))))
+	   form)
+	  ;;
+	  ;; Trivial case
+	  ((subtypep 't type)
+	   value)
+	  ;;
+	  ;; Detect inconsistencies in the type form.
+	  ((subtypep type 'nil)
+	   (cmperror "Cannot COERCE an expression to an empty type."))
+	  ;;
+	  ;; No optimizations that take up too much space unless requested.
+	  ((and (>= space 2) (> space speed))
+	   form)
+	  ;;
+	  ;; Search for a simple template above, replacing X by the value.
+	  ((loop for (a-type . template) in +coercion-table+
+	      when (eq type a-type)
+	      do (return (subst value 'x template))))
+	  ;;
+	  ;; Complex types defined with DEFTYPE.
+	  ((and (atom type)
+		(get-sysprop type 'SI::DEFTYPE-DEFINITION)
+		(setq function (get-sysprop type 'SI::DEFTYPE-DEFINITION)))
+	   (expand-coerce form value `',(funcall function) env))
+	  ;;
+	  ;; CONS types are not coercible.
+	  ((and (consp type)
+		(eq (first type) 'CONS))
+	   form)
+	  ;;
+	  ;; Search for a simple template above, but now assuming the user
+	  ;; provided a more complex form of the same value.
+	  ((loop for (a-type . template) in +coercion-table+
+	      when (si::type= type a-type)
+	      do (return (subst value 'x template))))
+	  ;;
+	  ;; SEQUENCE types
+	  ((subtypep type 'sequence)
+	   (multiple-value-bind (elt-type length)
+	       (si::closest-sequence-type type)
+	     (when (eq elt-type 'list)
+	       (setf type 'list))
+	     `(let ((y ,value))
+		(declare (:read-only y))
+		(if (typep y ',type)
+		    y
+		    (concatenate ',type y)))))
+	  ;;
+	  ;; There are no other atomic types to optimize
+	  ((atom type)
+	   form)
+	  ;;
+	  ;; (TYPEP o '(AND t1 t2 ...)) => (AND (TYPEP o 't1) (TYPEP o 't2) ...)
+	  ((progn
+	     (setf rest (rest type) first (first type))
+	     (eq first 'AND))
+	   `(let ((x ,value))
+	      ,@(loop for i in rest
+		   collect `(setf x (coerce x ',i)))
+	      x))
+	  ;;
+	  ;; (COMPLEX whatever) types
+	  ((and (eq first 'complex)
+		(= (length rest) 1))
+	   `(let ((y ,value))
+	      (declare (:read-only y))
+	      (complex (coerce (realpart y) ',(first rest))
+		       (coerce (imagpart y) ',(first rest)))))
+	  ;;
+	  ;; (INTEGER * *), etc We have to signal an error if the type
+	  ;; does not match. However, if safety settings are low, we
+	  ;; skip this test.
+	  ((member first '(INTEGER RATIONAL FLOAT REAL SINGLE-FLOAT
+			   DOUBLE-FLOAT #+long-float LONG-FLOAT
+			   #+short-float SHORT-FLOAT))
+	   (let ((unchecked (expand-coerce form value `',first env)))
+	     (if (< safety 1)
+		 default
+		 `(let ((x ,unchecked))
+		    (declare (,first x))
+		    (check-type x ',type "coerced value")
+		    x))))
+	  ;;
+	  ;; We did not find a suitable expansion.
+	  (t
+	   form)
+	  )))
+
+(define-compiler-macro coerce (&whole form value type &environment env)
+  (expand-coerce form value type env))
