@@ -14,6 +14,12 @@
 
 (in-package "SYSTEM")
 
+(defvar *subtypep-cache* (si:make-vector t 256 nil nil nil 0))
+
+(defun subtypep-clear-cache ()
+  (and (fboundp 'fill)
+       (fill *subtypep-cache* nil)))
+
 (defun create-type-name (name)
   (when (member name *alien-declarations*)
     (error "Symbol ~s is a declaration specifier and cannot be used to name a new type" name)))
@@ -24,6 +30,7 @@
   (create-type-name name)
   (put-sysprop name 'DEFTYPE-FORM form)
   (put-sysprop name 'DEFTYPE-DEFINITION function)
+  (subtypep-clear-cache)
   name)
 
 ;;; DEFTYPE macro.
@@ -1222,10 +1229,26 @@ if not possible."
 	   (values nil nil)))))
 
 (defun subtypep (t1 t2 &optional env)
+  ;; One easy case: types are equal
   (when (eq t1 t2)
     (return-from subtypep (values t t)))
-  (let* ((*highest-type-tag* *highest-type-tag*)
-	 (*save-types-database* t)
-	 (*member-types* *member-types*)
-	 (*elementary-types* *elementary-types*))
-    (fast-subtypep t1 t2)))
+  ;; Another easy case: types are classes.
+  (when (and (instancep t1) (instancep t2)
+	     (clos::classp t1) (clos::classp t2))
+    (return-from subtypep (subclassp t1 t2) t))
+  ;; Finally, cached results.
+  (let* ((cache *subtypep-cache*)
+	 (hash (logand (hash-eql t1 t2) 255))
+	 (elt (aref cache hash)))
+    (declare (type (integer 0 255) hash))
+    (when (and elt (eq (caar elt) t1) (eq (cdar elt) t2))
+      (setf elt (cdr elt))
+      (return-from subtypep (values (car elt) (cdr elt))))
+    (let* ((*highest-type-tag* *highest-type-tag*)
+	   (*save-types-database* t)
+	   (*member-types* *member-types*)
+	   (*elementary-types* *elementary-types*))
+      (multiple-value-bind (test confident)
+	  (fast-subtypep t1 t2)
+	(setf (aref cache hash) (cons (cons t1 t2) (cons test confident)))
+	(values test confident)))))

@@ -273,6 +273,11 @@ because it contains a reference to the undefined class~%  ~A"
     ;; This is not really needed, because when we modify the list of slots
     ;; all instances automatically become obsolete (See change.lsp)
     ;(make-instances-obsolete class)
+    ;;
+    ;; But this is really needed: we have to clear the different type caches
+    ;; for type comparisons and so on.
+    ;;
+    (si::subtypep-clear-cache)
     )
   ;; As mentioned above, when a parent is finalized, it is responsible for
   ;; invoking FINALIZE-INHERITANCE on all of its children. Obviously,
