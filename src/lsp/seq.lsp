@@ -139,10 +139,10 @@ default value of INITIAL-ELEMENT depends on TYPE."
 	 (setf start 0))
 	((not (integerp start))
 	 (error "Value ~A is not a valid index into sequence ~A" start sequence)))
-  (cond ((>= start (length sequence))
-	 nil)
-	((consp sequence)
+  (cond ((consp sequence)
 	 (nthcdr start sequence))
+	((>= start (length sequence))
+	 nil)
 	(t
 	 start)))
 
@@ -166,18 +166,16 @@ default value of INITIAL-ELEMENT depends on TYPE."
   "Args: (type &rest sequences)
 Returns a new sequence of the specified type, consisting of all elements of
 SEQUENCEs."
-  (do* ((x (make-sequence result-type
-			 (apply #'+ (mapcar #'length sequences))))
-        (s sequences (cdr s))
-        (ix (make-seq-iterator x)))
-      ((null s) x)
-    (declare (fixnum i))
-    (do ((js (make-seq-iterator (car s)) (seq-iterator-next (car s) js))
-         (n (length (car s))))
-        ((null js))
-      (declare (fixnum j n))
-      (seq-iterator-set x ix (seq-iterator-ref (car s) js))
-      (setq ix (seq-iterator-next x ix)))))
+  (do* ((length-list (mapcar #'length sequences) (rest length-list))
+	(output (make-sequence result-type (apply #'+ length-list)))
+        (sequences sequences (rest sequences))
+        (i (make-seq-iterator output)))
+      ((null sequences) output)
+    (do* ((s (first sequences))
+	  (j (make-seq-iterator s) (seq-iterator-next s j)))
+	 ((null j))
+      (seq-iterator-set output i (seq-iterator-ref s j))
+      (setq i (seq-iterator-next output i)))))
 
 
 (defun map (result-type function sequence &rest more-sequences)
