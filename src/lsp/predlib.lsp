@@ -217,6 +217,8 @@ has no fill-pointer, and is not adjustable."
              #-unicode
 	     (EXTENDED-CHAR . CONSTANTLY-NIL)
 	     (BASE-CHAR . BASE-CHAR-P)
+	     (BASE-STRING . BASE-STRING-P)
+	     (BIT-VECTOR . BIT-VECTOR-P)
 	     (CHARACTER . CHARACTERP)
 	     (COMPILED-FUNCTION . COMPILED-FUNCTION-P)
 	     (COMPLEX . COMPLEXP)
