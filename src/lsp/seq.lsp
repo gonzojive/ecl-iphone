@@ -174,7 +174,7 @@ default value of INITIAL-ELEMENT depends on TYPE."
       object
       (do ((it (make-seq-iterator object) (seq-iterator-next object it))
 	   (output nil))
-	  ((null it) (nrevere output))
+	  ((null it) (nreverse output))
 	(push (seq-iterator-ref object it) output))))
 
 (defun coerce-to-vector (object elt-type length)
