@@ -149,9 +149,16 @@
        (lex *lex*))
       ((endp (cdr l))
        (c2expr (car l)))
-    (let ((*destination* 'TRASH)) (c2expr* (car l)))
-    (setq *lex* lex)			; recycle lex locations
-  ))
+    (let* ((this-form (first l))
+	   (name (c1form-name this-form)))
+      (let ((*destination* 'TRASH))
+	(c2expr* (car l)))
+      (setq *lex* lex)	; recycle lex locations
+      ;; Since PROGN does not have tags, any transfer of control means
+      ;; leaving the current PROGN statement.
+      (when (or (eq name 'GO) (eq name 'RETURN-FROM))
+	(cmpnote "Eliminating unreachable code")
+	(return)))))
 
 (defun c1args* (forms)
   (mapcar #'(lambda (form) (c1expr form)) forms))
