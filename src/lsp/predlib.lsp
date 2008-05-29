@@ -16,9 +16,12 @@
 
 (defvar *subtypep-cache* (si:make-vector t 256 nil nil nil 0))
 
+(defvar *upgraded-array-element-type-cache* (si:make-vector t 128 nil nil nil 0))
+
 (defun subtypep-clear-cache ()
-  (and (fboundp 'fill)
-       (fill *subtypep-cache* nil)))
+  (when (fboundp 'fill)
+    (fill *subtypep-cache* nil)
+    (fill *upgraded-array-element-type-cache* nil)))
 
 (defun create-type-name (name)
   (when (member name *alien-declarations*)
@@ -263,11 +266,19 @@ has no fill-pointer, and is not adjustable."
   '(NIL BASE-CHAR #+unicode CHARACTER BIT EXT::BYTE8 EXT::INTEGER8 EXT::CL-FIXNUM EXT::CL-INDEX SINGLE-FLOAT DOUBLE-FLOAT T))
 
 (defun upgraded-array-element-type (element-type &optional env)
-  (if (member element-type +upgraded-array-element-types+ :test #'eq)
-      element-type
-      (dolist (v +upgraded-array-element-types+ 'T)
-	(when (subtypep element-type v)
-	  (return v)))))
+  (let* ((hash (logand 127 (si:hash-eql element-type)))
+	 (record (aref *upgraded-array-element-type-cache* hash)))
+    (declare (type (integer 0 127) hash))
+    (if (and record (eq (car record) element-type))
+	(cdr record)
+	(let ((answer (or (member element-type +upgraded-array-element-types+
+				  :test #'eq)
+			  (dolist (v +upgraded-array-element-types+ 'T)
+			    (when (subtypep element-type v)
+			      (return v))))))
+	  (setf (aref *upgraded-array-element-type-cache* hash)
+		(cons element-type answer))
+	  answer))))
 
 (defun upgraded-complex-part-type (real-type &optional env)
   ;; ECL does not have specialized complex types. If we had them, the
@@ -1235,7 +1246,7 @@ if not possible."
   ;; Another easy case: types are classes.
   (when (and (instancep t1) (instancep t2)
 	     (clos::classp t1) (clos::classp t2))
-    (return-from subtypep (subclassp t1 t2) t))
+    (return-from subtypep (values (subclassp t1 t2) t)))
   ;; Finally, cached results.
   (let* ((cache *subtypep-cache*)
 	 (hash (logand (hash-eql t1 t2) 255))
