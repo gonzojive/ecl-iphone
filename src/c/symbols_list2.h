@@ -1699,5 +1699,9 @@ cl_symbols[] = {
 
 {SYS_ "BYTECODES",NULL},
 
+{SYS_ "HASH-EQL","si_hash_eql"},
+{SYS_ "HASH-EQUAL","si_hash_equal"},
+{SYS_ "HASH-EQUALP","si_hash_equalp"},
+
 /* Tag for end of list */
 {NULL,NULL}};

@@ -678,6 +678,9 @@ extern ECL_API cl_object si_hash_table_iterator(cl_object ht);
 extern ECL_API cl_object cl_make_hash_table _ARGS((cl_narg narg, ...));
 extern ECL_API cl_object cl_gethash _ARGS((cl_narg narg, cl_object key, cl_object ht, ...));
 extern ECL_API cl_object si_copy_hash_table(cl_object orig);
+extern ECL_API cl_object si_hash_eql _ARGS((cl_narg narg, ...));
+extern ECL_API cl_object si_hash_equal _ARGS((cl_narg narg, ...));
+extern ECL_API cl_object si_hash_equalp _ARGS((cl_narg narg, ...));
 
 extern ECL_API void ecl_sethash(cl_object key, cl_object hashtable, cl_object value);
 extern ECL_API cl_object ecl_gethash(cl_object key, cl_object hash);
