@@ -434,8 +434,8 @@ si_load_foreign_module(cl_object filename)
 	output = ecl_library_open(filename, 0);
 	if (output->cblock.handle == NULL)
 	{
-		output = ecl_library_error(output);
 		ecl_library_close(output);
+		output = ecl_library_error(output);
 	}
 OUTPUT:
 #ifdef ECL_THREADS
