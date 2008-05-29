@@ -29,6 +29,12 @@
  */
 
 extern cl_object
+cl_upgraded_array_element_type(cl_narg narg, cl_object type, ...)
+{
+	return cl_funcall(2, @'upgraded-array-element-type', type);
+}
+
+extern cl_object
 si_safe_eval(cl_narg arg, cl_object form, cl_object env, cl_object error_value, ...)
 {
 	return cl_funcall(4, @'si::safe-eval', form, env, error_value);

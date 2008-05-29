@@ -540,7 +540,7 @@ ecl_symbol_to_elttype(cl_object x)
 	else if (x == Cnil) {
 		FEerror("ECL does not support arrays with element type NIL", 0);
 	}
-	x = cl_funcall(2, @'upgraded-array-element-type', x);
+	x = cl_upgraded_array_element_type(1, x);
 	goto BEGIN;
 }
 
