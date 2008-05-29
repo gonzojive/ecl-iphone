@@ -347,11 +347,13 @@ cl_symbol_name(cl_object x)
 		goto AGAIN;
 	}
 	output = ecl_make_string_output_stream(64);
+	bds_bind(@'*print-escape*', Cnil);
+	bds_bind(@'*print-readably*', Cnil);
 	bds_bind(@'*print-base*', MAKE_FIXNUM(10));
 	bds_bind(@'*print-radix*', Cnil);
-	ecl_princ(prefix, output);
-	ecl_princ(counter, output);
-	bds_unwind_n(2);
+	si_write_ugly_object(prefix, output);
+	si_write_ugly_object(counter, output);
+	bds_unwind_n(4);
 	output = cl_make_symbol(cl_get_output_stream_string(output));
 	if (increment)
 		ECL_SETQ(@'*gensym-counter*',ecl_one_plus(counter));
@@ -366,11 +368,13 @@ cl_symbol_name(cl_object x)
 	pack = si_coerce_to_package(pack);
 ONCE_MORE:
 	output = ecl_make_string_output_stream(64);
+	bds_bind(@'*print-escape*', Cnil);
+	bds_bind(@'*print-readably*', Cnil);
 	bds_bind(@'*print-base*', MAKE_FIXNUM(10));
 	bds_bind(@'*print-radix*', Cnil);
-	ecl_princ(prefix, output);
-	ecl_princ(cl_core.gentemp_counter, output);
-	bds_unwind_n(2);
+	si_write_ugly_object(prefix, output);
+	si_write_ugly_object(cl_core.gentemp_counter, output);
+	bds_unwind_n(4);
 	cl_core.gentemp_counter = ecl_one_plus(cl_core.gentemp_counter);
 	s = ecl_intern(cl_get_output_stream_string(output), pack, &intern_flag);
 	if (intern_flag != 0)
