@@ -1453,7 +1453,7 @@ type_of(#0)==t_bitvector")
     si::check-keyword si::check-arg-length si::dm-too-few-arguments si::dm-bad-key
     remove-documentation si::get-documentation
     si::set-documentation si::expand-set-documentation
-    si::closest-vector-type si::packages-iterator
+    si::packages-iterator
     si::pprint-logical-block-helper si::pprint-pop-helper
     si::make-seq-iterator si::seq-iterator-ref si::seq-iterator-set si::seq-iterator-next
     si::structure-type-error si::define-structure

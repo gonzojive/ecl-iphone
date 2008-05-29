@@ -31,7 +31,7 @@
 	 :expected-type type
 	 :datum object))
 
-(defun closest-vector-type (type)
+(defun closest-sequence-type (type)
   (let (elt-type length name args)
     (cond ((consp type)
 	   (setq name (first type) args (cdr type)))
@@ -40,6 +40,10 @@
 	  (t
 	   (setq name type args nil)))
     (case name
+      ((LIST)
+       ;; This is the only descriptor that does not match a real
+       ;; array type.
+       (setq elt-type 'LIST length '*))
       ((VECTOR)
        (setq elt-type (if (endp args) 'T (first args))
 	     length (if (endp (rest args)) '* (second args))))
@@ -76,6 +80,8 @@
        ;; type is *. Instead we just compare with some specialized
        ;; types and otherwise fail.
        (dolist (i '(
+		    (NIL . NIL)
+		    (LIST . LIST)
                     #-unicode
                     (SIMPLE-STRING . BASE-CHAR)
                     #-unicode
@@ -103,6 +109,9 @@
 		    (error-sequence-type type)))
 	  (when (subtypep type (car i))
 	    (setq elt-type (cdr i) length '*)
+	    ;; The (NIL . NIL) case above
+	    (unless elt-type
+	      (error-sequence-type type))
 	    (return)))))
     (values elt-type length)))
 
@@ -111,28 +120,26 @@
 Creates and returns a sequence of the given TYPE and LENGTH.  If INITIAL-
 ELEMENT is given, then it becomes the elements of the created sequence.  The
 default value of INITIAL-ELEMENT depends on TYPE."
-  (if (subtypep type 'LIST)
-      (progn
-	(when (subtypep type 'NIL)
-	  (error-sequence-type type))
-	(setq sequence (make-list size :initial-element initial-element))
-	(unless (subtypep 'LIST type)
-	  (when (or (and (subtypep type 'NULL) (plusp size))
-		    (and (subtypep type 'CONS) (zerop size)))
-	    (error-sequence-length (make-list size :initial-element initial-element) type 0))))
-      (multiple-value-bind (element-type length)
-	  (closest-vector-type type)
-	(setq sequence (sys:make-vector (if (eq element-type '*) T element-type)
-					size nil nil nil nil))
-	(when iesp
-	  (do ((i 0 (1+ i))
-	       (size size))
-	      ((>= i size))
-	    (declare (fixnum i size))
-	    (setf (elt sequence i) initial-element)))
-	(unless (or (eql length '*) (eql length size))
-	  (error-sequence-length sequence type size))))
-  sequence)
+  (multiple-value-bind (element-type length)
+      (closest-sequence-type type)
+    (cond ((eq element-type 'LIST)
+	   (setq sequence (make-list size :initial-element initial-element))
+	   (unless (subtypep 'LIST type)
+	     (when (or (and (subtypep type 'NULL) (plusp size))
+		       (and (subtypep type 'CONS) (zerop size)))
+	       (error-sequence-length (make-list size :initial-element initial-element) type 0))))
+	  (t
+	   (setq sequence (sys:make-vector (if (eq element-type '*) T element-type)
+					   size nil nil nil nil))
+	   (when iesp
+	     (do ((i 0 (1+ i))
+		  (size size))
+		 ((>= i size))
+	       (declare (fixnum i size))
+	       (setf (elt sequence i) initial-element)))
+	   (unless (or (eql length '*) (eql length size))
+	     (error-sequence-length sequence type size))))
+    sequence))
 
 (defun make-seq-iterator (sequence &optional (start 0))
   (cond ((null start)
