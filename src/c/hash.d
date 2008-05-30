@@ -99,12 +99,12 @@ _hash_equal(int depth, cl_hashkey h, cl_object x)
 		return hash_string(h, x->base_string.self, x->base_string.fillp);
 #endif
 	case t_pathname:
-		h = _hash_equal(depth, h, x->pathname.host);
-		h = _hash_equal(depth, h, x->pathname.device);
-		h = _hash_equal(depth, h, x->pathname.directory);
-		h = _hash_equal(depth, h, x->pathname.name);
-		h = _hash_equal(depth, h, x->pathname.type);
-		return _hash_equal(depth, h, x->pathname.version);
+		h = _hash_equal(0, h, x->pathname.directory);
+		h = _hash_equal(0, h, x->pathname.name);
+		h = _hash_equal(0, h, x->pathname.type);
+		h = _hash_equal(0, h, x->pathname.host);
+		h = _hash_equal(0, h, x->pathname.device);
+		return _hash_equal(0, h, x->pathname.version);
 	case t_bitvector:
 		/* Notice that we may round out some bits. We must do this
 		 * because the fill pointer may be set in the middle of a byte.
@@ -113,7 +113,7 @@ _hash_equal(int depth, cl_hashkey h, cl_object x)
 		 * have different hash keys. */
 		return hash_string(h, x->vector.self.ch, x->vector.fillp / 8);
 	case t_random:
-		return _hash_equal(depth, h, x->random.value);
+		return _hash_equal(0, h, x->random.value);
 	default:
 		return _hash_eql(h, x);
 	}
