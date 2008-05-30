@@ -188,10 +188,22 @@ init_alloc(void)
 	int i;
 	if (alloc_initialized) return;
 	alloc_initialized = TRUE;
-
+	/*
+	 * Garbage collector restrictions: we set up the garbage collector
+	 * library to work as follows
+	 *
+	 * 1) The garbage collector shall not scan shared libraries
+	 *    explicitely.
+	 * 2) We only detect objects that are referenced by a pointer to
+	 *    the begining or to the first byte.
+	 * 3) Out of the incremental garbage collector, we only use the
+	 *    generational component.
+	 */
 	GC_no_dls = 1;
 	GC_all_interior_pointers = 0;
+	GC_time_limit = GC_TIME_UNLIMITED;
 	GC_init();
+	GC_enable_incremental();
 	GC_register_displacement(1);
 #if 0
 	GC_init_explicit_typing();
