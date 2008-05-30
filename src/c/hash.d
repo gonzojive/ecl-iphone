@@ -82,11 +82,12 @@ _hash_equal(int depth, cl_hashkey h, cl_object x)
 		if (Null(x)) {
 			return _hash_equal(depth, h, Cnil_symbol->symbol.name);
 		}
-		if (depth++ > 3) {
-			return 0;
+		if (--depth == 0) {
+			return h;
+		} else {
+			h = _hash_equal(depth, h, ECL_CONS_CAR(x));
+			return _hash_equal(depth, h, ECL_CONS_CDR(x));
 		}
-		h = _hash_equal(depth, h, ECL_CONS_CAR(x));
-		return _hash_equal(depth, h, ECL_CONS_CDR(x));
 	case t_symbol:
 		x = x->symbol.name;
 #ifdef ECL_UNICODE
@@ -130,11 +131,12 @@ _hash_equalp(int depth, cl_hashkey h, cl_object x)
 		if (Null(x)) {
 			return _hash_equalp(depth, h, Cnil_symbol->symbol.name);
 		}
-		if (depth++ > 3) {
-			return 0;
+		if (--depth == 0) {
+			return h;
+		} else {
+			h = _hash_equalp(depth, h, ECL_CONS_CAR(x));
+			return _hash_equalp(depth, h, ECL_CONS_CDR(x));
 		}
-		h = _hash_equalp(depth, h, ECL_CONS_CAR(x));
-		return _hash_equalp(depth, h, ECL_CONS_CDR(x));
 #ifdef ECL_UNICODE
 	case t_string:
 #endif
@@ -145,11 +147,10 @@ _hash_equalp(int depth, cl_hashkey h, cl_object x)
 		goto SCAN;
 	case t_array:
 		len = x->vector.dim;
-SCAN:		if (depth++ >= 3) {
-			return 0;
-		}
-		for (i = 0; i < len; i++) {
-			h = _hash_equalp(depth, h, ecl_aref(x, i));
+	SCAN:	if (--depth) {
+			for (i = 0; i < len; i++) {
+				h = _hash_equalp(depth, h, ecl_aref(x, i));
+			}
 		}
 		return h;
 	case t_fixnum:
@@ -173,11 +174,11 @@ SCAN:		if (depth++ >= 3) {
 	case t_bignum:
 		/* FIXME! We should be more precise here! */
 	case t_ratio:
-		h = _hash_equalp(depth, h, x->ratio.num);
-		return _hash_equalp(depth, h, x->ratio.den);
+		h = _hash_equalp(0, h, x->ratio.num);
+		return _hash_equalp(0, h, x->ratio.den);
 	case t_complex:
-		h = _hash_equalp(depth, h, x->complex.real);
-		return _hash_equalp(depth, h, x->complex.imag);
+		h = _hash_equalp(0, h, x->complex.real);
+		return _hash_equalp(0, h, x->complex.imag);
 	case t_instance:
 	case t_hashtable:
 		/* FIXME! We should be more precise here! */
@@ -203,9 +204,9 @@ ecl_search_hash(cl_object key, cl_object hashtable)
 	switch (htest) {
 	case htt_eq:	h = (cl_hashkey)key >> 2; break;
 	case htt_eql:	h = _hash_eql(0, key); break;
-	case htt_equal:	h = _hash_equal(0, 0, key); break;
-	case htt_equalp:h = _hash_equalp(0, 0, key); break;
-	case htt_pack:	h = _hash_equal(0, 0, key);
+	case htt_equal:	h = _hash_equal(3, 0, key); break;
+	case htt_equalp:h = _hash_equalp(3, 0, key); break;
+	case htt_pack:	h = _hash_equal(3, 0, key);
 			ho = MAKE_FIXNUM(h & 0xFFFFFFF);
 			break;
 	default:	corrupted_hash(hashtable);
@@ -283,9 +284,9 @@ add_new_to_hash(cl_object key, cl_object hashtable, cl_object value)
 	switch (htest) {
 	case htt_eq:	h = (cl_hashkey)key >> 2; break;
 	case htt_eql:	h = _hash_eql(0, key); break;
-	case htt_equal:	h = _hash_equal(0, 0, key); break;
-	case htt_equalp:h = _hash_equalp(0, 0, key); break;
-	case htt_pack:	h = _hash_equal(0, 0, key); break;
+	case htt_equal:	h = _hash_equal(3, 0, key); break;
+	case htt_equalp:h = _hash_equalp(3, 0, key); break;
+	case htt_pack:	h = _hash_equal(3, 0, key); break;
 	default:	corrupted_hash(hashtable);
 	}
 	e = hashtable->hash.data;
@@ -608,7 +609,7 @@ cl_hash_table_rehash_threshold(cl_object ht)
 cl_object
 cl_sxhash(cl_object key)
 {
-	cl_index output = _hash_equal(0, 0, key);
+	cl_index output = _hash_equal(3, 0, key);
 	const cl_index mask = ((cl_index)1 << (FIXNUM_BITS - 3)) - 1;
 	@(return MAKE_FIXNUM(output & mask))
 }
@@ -628,7 +629,7 @@ cl_sxhash(cl_object key)
 @
 	for (h = 0; narg; narg--) {
 		cl_object o = cl_va_arg(args);
-		h = _hash_equal(0, h, o);
+		h = _hash_equal(3, h, o);
 	}
 	@(return MAKE_FIXNUM(h))
 @)
@@ -638,7 +639,7 @@ cl_sxhash(cl_object key)
 @
 	for (h = 0; narg; narg--) {
 		cl_object o = cl_va_arg(args);
-		h = _hash_equalp(0, h, o);
+		h = _hash_equalp(3, h, o);
 	}
 	@(return MAKE_FIXNUM(h))
 @)
