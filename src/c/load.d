@@ -314,10 +314,6 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 	cl_object prefix;
 	cl_object output;
 
-	/* A full garbage collection enables us to detect unused code
-	   and leave space for the library to be loaded. */
-	si_gc(Ct);
-
 	/* We need the full pathname */
 	filename = cl_namestring(cl_truename(filename));
 
