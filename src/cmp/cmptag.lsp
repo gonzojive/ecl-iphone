@@ -67,39 +67,61 @@
 	    (setq end w)))))))
 
 ;; FIXME! The variable name should not be a usable one!
-(defun c1tagbody (body &aux (*cmp-env* (cmp-env-copy))
-                       (tag-var (make-var :name 'TAGBODY :kind NIL))
-		       (tag-index 0))
+(defun c1tagbody (orig-body &aux (*cmp-env* (cmp-env-copy))
+		  (tag-var (make-var :name 'TAGBODY :kind NIL))
+		  (tag-index 0)
+		  (body nil))
+
   ;;; Establish tags.
   (setq body
-        (mapcar
-         #'(lambda (x)
-             (if (not (consp x))
-               (let ((tag (make-tag :name x :var tag-var :index tag-index)))
-                 (cmp-env-register-tag tag)
-		 (incf tag-index)
-                 tag)
-               x))
-         body))
+	(loop for x in orig-body
+	   collect (if (consp x)
+		       x
+		       (let ((tag (make-tag :name x :var tag-var :index tag-index)))
+			 (cmp-env-register-tag tag)
+			 (incf tag-index)
+			 tag))))
+  ;; Split forms according to the tag they are preceded by and compile
+  ;; them grouped by PROGN. This help us use the optimizations in
+  ;; C1PROGN to recognize transfers of control.
+  (loop for form in body
+     with output = '()
+     with tag-body = nil
+     with this-tag = (make-var :name 'tagbody-beginnnig :kind nil)
+     do (cond ((tag-p form)
+	       (when tag-body
+		 (setf output (cons (c1progn (nreconc tag-body '(nil))) output)
+		       tag-body nil))
+	       (push form output))
+	      (t
+	       (push form tag-body)))
+     finally (setf body
+		   (if tag-body
+		       (cons (c1progn (nreconc tag-body '(nil))) output)
+		       output)))
 
-  ;;; Process non-tag forms.
-  (setq body (mapcar #'(lambda (x) (if (tag-p x) x (c1expr x))) body))
+  ;;; Reverse the body list, deleting unused tags.
+  (loop for form in body
+     with output = '()
+     when (or (not (tag-p form)) (plusp (tag-ref form)))
+     do (push form output)
+     finally (setf body output))
 
-  ;;; Delete redundant tags.
-  (let ((body1 nil) (ref nil))
-    (dolist (form body)
-      (if (tag-p form)
-	  (when (plusp (tag-ref form))
-	    (push form body1))
-	  (push form body1)))
-    (if (plusp (var-ref tag-var))
-	(progn (setq body1 (nreverse body1))
-	       (when (var-ref-ccb tag-var)
-		 (incf *setjmps*))
-	       (add-loop-registers body1)
-	       (make-c1form* 'TAGBODY :local-vars (list tag-var)
-			     :args tag-var body1))
-	(make-c1form* 'PROGN :args (nreverse (cons (c1nil) body1))))))
+  ;;; Ensure that the end is not just a tag, but at least a NIL body.
+  (when (null body)
+    (return-from c1tagbody (c1progn nil)))
+  (when (tag-p (first (last body)))
+    (setf body (nconc body (list (c1expr nil)))))
+
+  ;;; Only produce a tagbody if it was needed.
+  (when (zerop (var-ref tag-var))
+    (return-from c1tagbody (make-c1form* 'PROGN :args
+					 (delete-if #'tag-p body))))
+  (when (var-ref-ccb tag-var)
+    (incf *setjmps*))
+  (add-loop-registers body)
+  (make-c1form* 'TAGBODY :local-vars (list tag-var)
+		:args tag-var body))
 
 (defun c2tagbody (tag-loc body)
   (declare (type var tag-loc))
@@ -145,30 +167,26 @@
   )
 
 (defun c2tagbody-body (body)
-  (do ((l body (cdr l)) (written nil))
-      ((endp (cdr l))
-       (cond (written (unwind-exit nil))
-             ((tag-p (car l))
-              (wt-label (tag-label (car l)))
-              (unwind-exit nil))
-             (t (let* ((*exit* (next-label))
-                       (*unwind-exit* (cons *exit* *unwind-exit*))
-                       (*destination* 'TRASH))
-                  (c2expr (car l))
-                  (wt-label *exit*))
-                (unless (eq (c1form-name (first l)) 'GO)
-		  (unwind-exit nil)))))
-    (let ((this-form (first l)))
-      (cond (written (setq written nil))
-	    ((tag-p this-form) (wt-label (tag-label this-form)))
-	    (t (let* ((next-form (second l))
-		      (*exit* (if (tag-p next-form)
-				  (progn (setq written t) (tag-label next-form))
-				  (next-label)))
-		      (*unwind-exit* (cons *exit* *unwind-exit*))
-		      (*destination* 'TRASH))
-		 (c2expr this-form)
-		 (wt-label *exit*)))))))
+  ;;; INV: BODY is a list of tags and forms. We have processed the body
+  ;;; so that the last element is always a form producing NIL.
+  (do ((l body (cdr l)))
+      ((null l))
+    (let* ((this-form (first l)))
+      (cond ((tag-p this-form)
+	     (wt-label (tag-label this-form)))
+	    ((endp (rest l))
+	     ;; Last form, it is never a label!
+	     (c2expr this-form))
+	    (t
+	     (let* ((next-form (second l))
+		    (*exit* (if (tag-p next-form)
+				(tag-label next-form)
+				(next-label)))
+		    (*unwind-exit* (cons *exit* *unwind-exit*))
+		    (*destination* 'TRASH))
+	       (c2expr this-form)
+	       (unless (tag-p next-form)
+		 (wt-label *exit*))))))))
 
 (defun c1go (args)
   (check-args-number 'GO args 1 1)
