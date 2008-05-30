@@ -34,19 +34,19 @@
 	 ((cl_index)k[7]<<52))
 
 static cl_index
-hash_string(cl_index initval, const unsigned char *k, cl_index len)
+hash_string(cl_index initval, const unsigned char *k, cl_index length)
 {
 	register cl_index a = GOLDEN_RATIO, b = GOLDEN_RATIO, c = initval;
-	for (; len > 24; ) {
+	register cl_index len;
+	for (len = length; len >= 24; len -= 24) {
 		a += extract_word(k); k+=8;
 		b += extract_word(k); k+=8;
 		c += extract_word(k); k+=8;
 		mix(a,b,c);
-		len -= 24;
 	}
 
 	/*------------------------------------- handle the last 11 bytes */
-	c += len;
+	c += length;
 	switch(len) {
 		/* all the case statements fall through */
 	case 23: c+=((cl_index)k[22]<<52);
@@ -101,21 +101,20 @@ hash_string(cl_index initval, const unsigned char *k, cl_index len)
 #define extract_word(k)							\
 	(k[0]+((cl_index)k[1]<<8)+((cl_index)k[2]<<16)+((cl_index)k[3]<<24))
 
-
 static cl_index
-hash_string(cl_index initval, const unsigned char *k, cl_index len)
+hash_string(cl_index initval, const unsigned char *k, cl_index length)
 {
 	register cl_index a = GOLDEN_RATIO, b = GOLDEN_RATIO, c = initval;
-	for (; len > 12; ) {
+	register cl_index len;
+	for (len = length; len >= 12; len -= 12) {
 		a += extract_word(k); k += 4;
 		b += extract_word(k); k += 4;
 		c += extract_word(k); k += 4;
 		mix(a,b,c);
-		len -= 12;
 	}
 
 	/*------------------------------------- handle the last 11 bytes */
-	c += len;
+	c += length;
 	switch(len) {
 		/* all the case statements fall through */
 	case 11: c+=((cl_index)k[10]<<24);
