@@ -30,21 +30,30 @@
 	       (base (length code))
 	       (output '())
 	       (digit 0))
-	      ((zerop number) (concatenate 'string (nreverse output)))
+	      ((zerop number) (coerce (nreverse output) 'base-string))
 	   (multiple-value-setq (number digit) (floor number base))
 	   (push (char code digit) output)))))
 
-(defun unique-init-name (pathname)
+(defun unique-init-name (file)
   "Create a unique name for this initialization function. The current algorithm
 relies only on the name of the source file and the time at which it is built. This
 should be enough to prevent name collisions for object files built in the same
 machine."
-  (let ((tag (concatenate 'base-string
-			  "_ecl"
-			  (encode-number-in-name (sxhash pathname))
-			  "_"
-			  (encode-number-in-name (get-universal-time)))))
-    (cmpnote "Creating tag: ~S for ~S" tag pathname)
+  (let* ((path (pathname file))
+	 (path-hash (logxor (ash (sxhash path) 8)
+			    (ash (sxhash (cddr (pathname-directory path))) 16)
+			    (sxhash (pathname-name path))))
+	 (seconds (get-universal-time))
+	 (ms (+ (* seconds 1000)
+		(mod (floor (* 1000 (get-internal-real-time))
+			    internal-time-units-per-second)
+		     1000)))
+	 (tag (concatenate 'base-string
+			   "_ecl"
+			   (encode-number-in-name path-hash)
+			   "_"
+			   (encode-number-in-name ms))))
+    (cmpnote "Creating tag: ~S for ~S" tag file)
     tag))
 
 (defun init-name-tag (init-name)
