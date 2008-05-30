@@ -190,7 +190,9 @@ si_catch_bad_signals()
 #ifndef GBC_BOEHM
 	mysignal(SIGBUS, signal_catcher);
 #endif
+#ifndef GBC_BOEHM_GENGC
 	mysignal(SIGSEGV, signal_catcher);
+#endif
 #ifdef SIGIOT
 	mysignal(SIGIOT, signal_catcher);
 #endif
