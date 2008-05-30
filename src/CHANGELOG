@@ -234,6 +234,9 @@ ECL 0.9k:
  - Garbage collection statistics was broken for libraries other than the one
    shipped with ECL.
 
+ - When COMPILE-FILE is provided a value of :OUTPUT-FILE, the file extension
+   ".fas" was not automatically appended.
+
 * Optimization and performance:
 
  - TYPEP now can be optimized if the type argument is a constant.

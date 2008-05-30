@@ -500,7 +500,8 @@ static cl_object VV[VM];
   (setq *compile-file-truename* (truename *compile-file-pathname*))
 
   (when (eq output-file 'T)
-    (setf output-file (compile-file-pathname *compile-file-truename* :type (if system-p :object :fasl))))
+    (setf output-file *compile-file-truename*))
+  (setf output-file (compile-file-pathname output-file :type (if system-p :object :fasl)))
 
   #+PDE (setq sys:*source-pathname* *compile-file-truename*)
 
