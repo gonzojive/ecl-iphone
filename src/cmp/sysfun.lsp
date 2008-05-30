@@ -264,7 +264,7 @@
 (proclaim-function digit-char-p (character *) t :no-side-effects t)
 
 (proclaim-function alphanumericp (character) t :predicate t :no-side-effects t)
-(def-inline alphanumericp :always (character) :bool "isalnum(#0)")
+(def-inline alphanumericp :always (character) :bool "ecl_alphanumericp(#0)")
 
 (proclaim-function character (t) character)
 (proclaim-function char= (character *) t :predicate t :no-side-effects t)
