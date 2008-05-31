@@ -134,6 +134,7 @@ ECL 0.9k:
    Similarly, :lambda-expression also works for other functions that keep
    this information.
 
+ - Accessors for low-level socket timeout attributes (by G. Carncross).
 
 * CLOS:
 
