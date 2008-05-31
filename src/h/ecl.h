@@ -39,6 +39,22 @@ typedef unsigned short uint16_t;
 #include <ecl/config.h>
 #endif
 
+/*
+ * The Boehm-Demers-Weiser garbage collector contains wrappers for
+ * dlopen and similar functions. These wrappers explicitely deactivate
+ * garbage collection. Since we have explicitely deactivated scanning
+ * shared libraries (alloc_2.d), we can get rid of this performance
+ * penalty.
+ */
+#if defined(GBC_BOEHM_GENGC)
+#ifdef dlopen
+# undef dlopen
+#endif
+#ifdef dlclose
+# undef dlclose
+#endif
+#endif
+
 #ifdef ECL_THREADS
 # if defined(_MSC_VER) || defined(mingw32)
 #  include <windows.h>
