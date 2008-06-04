@@ -653,6 +653,13 @@ returns with NIL."
 			(simple-condition-format-arguments condition)
 			(format-error-control-string condition)
 			(format-error-offset condition)))))
+
+(define-condition ext:interactive-interrupt (serious-condition)
+  ()
+  (:report (lambda (condition stream)
+	     (declare (ignore condition))
+	     (format stream "~&~@<Console interrupt~:@>"))))
+
 )))
 ); nehw-lave
 

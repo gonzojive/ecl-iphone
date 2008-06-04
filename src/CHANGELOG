@@ -163,6 +163,9 @@ ECL 0.9k:
 
  - ECL now ships with version 1.118 of ASDF.
 
+ - ECL exports a condition EXT:INTERACTIVE-INTERRUPT, that is signaled when the
+   user interrupts ECL, typically using Ctrl-C, or sending the SIGINT signal.
+
 * Bugs fixed:
 
  - Intel/64bits running a 32 bits operating system caused a wrong choice of

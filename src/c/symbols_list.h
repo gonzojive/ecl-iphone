@@ -1703,5 +1703,7 @@ cl_symbols[] = {
 {SYS_ "HASH-EQUAL", SI_ORDINARY, si_hash_equal, -1, OBJNULL},
 {SYS_ "HASH-EQUALP", SI_ORDINARY, si_hash_equalp, -1, OBJNULL},
 
+{EXT_ "INTERACTIVE-INTERRUPT", SI_ORDINARY, NULL, -1, OBJNULL},
+
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};

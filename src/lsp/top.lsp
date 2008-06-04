@@ -375,7 +375,7 @@ under certain conditions; see file 'Copyright' for details.")
 (defun terminal-interrupt (correctablep)
   (let ((*break-enable* t))
     (if correctablep
-      (cerror "Continues execution." "Console interrupt.")
+      (cerror "Continues execution." 'ext:interactive-interrupt)
       (error "Console interrupt -- cannot continue."))))
 
 (defun tpl (&key ((:commands *tpl-commands*) tpl-commands)
