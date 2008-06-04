@@ -161,6 +161,8 @@ ECL 0.9k:
    speed settings, this leads to inline access to such slots using the precomputed
    location.
 
+ - ECL now ships with version 1.118 of ASDF.
+
 * Bugs fixed:
 
  - Intel/64bits running a 32 bits operating system caused a wrong choice of
