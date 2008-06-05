@@ -82,7 +82,7 @@
 	    (nconc (loop for name in required-parameters
 		      for type in specializers
 		      when (and (not (eq type t)) (symbolp type))
-		      nconc `((type ,name ,type)
+		      nconc `((type ,type ,name)
 			      (si::no-check-type ,name)))
 		   (cdar declarations)))
 	   (method-lambda
