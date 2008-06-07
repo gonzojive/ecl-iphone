@@ -1,4 +1,11 @@
 /* -*- mode: c; c-basic-offset: 8 -*- */
+/**********************************************************************
+ ***
+ ***  IMPORTANT: ANY CHANGE IN THIS FILE MUST BE MATCHED BY
+ ***		 APPROPRIATE CHANGES IN THE INTERPRETER AND COMPILER
+ ***		 IN PARTICULAR, IT MAY HURT THE THREADED INTERPRETER
+ ***		 CODE.
+ **********************************************************************/
 /*
   OP_BLOCK	block-name{obj}
   ...
@@ -203,3 +210,105 @@ typedef int16_t cl_oparg;
 #define GET_OPARG(v)	(*((cl_oparg *)(v)++))
 #define GET_DATA(v,b)	(b->bytecodes.data[GET_OPARG(v)])
 #define GET_LABEL(pc,v)	{pc = (v) + READ_OPARG(v); v += OPARG_SIZE;}
+
+/**********************************************************************
+ * THREADED INTERPRETER CODE
+ *
+ * By using labels as values, we can build a variant of the
+ * interpreter code that leads to better performance because (i) it
+ * saves a range check on the opcode size and (ii) each opcode has a
+ * dispatch instruction at the end, so that the processor may better
+ * predict jumps.
+ */
+#if (defined(__GNUC__) && !defined(__STRICT_ANSI__))
+#define ECL_THREADED_INTERPRETER
+#endif
+
+#ifdef ECL_THREADED_INTERPRETER
+#define BEGIN_SWITCH \
+	NEXT;
+#define CASE(name) \
+	LBL_##name:
+#define NEXT \
+	goto *(&&LBL_OP_NOP + offsets[GET_OPCODE(vector)])
+#else
+#define BEGIN_SWITCH \
+	switch (GET_OPCODE(vector))
+#define NEXT \
+	goto BEGIN
+#define CASE(name) \
+	case name:
+#endif
+
+#if !defined(ECL_THREADED_INTERPRETER)
+#define ECL_OFFSET_TABLE
+#else
+#define ECL_OFFSET_TABLE \
+	static const int offsets[] = {\
+		&&LBL_OP_NOP - &&LBL_OP_NOP,\
+		&&LBL_OP_QUOTE - &&LBL_OP_NOP,\
+		&&LBL_OP_VAR - &&LBL_OP_NOP,\
+		&&LBL_OP_VARS - &&LBL_OP_NOP,\
+		&&LBL_OP_PUSH - &&LBL_OP_NOP,\
+		&&LBL_OP_PUSHV - &&LBL_OP_NOP,\
+		&&LBL_OP_PUSHVS - &&LBL_OP_NOP,\
+		&&LBL_OP_PUSHQ - &&LBL_OP_NOP,\
+		&&LBL_OP_CALLG - &&LBL_OP_NOP,\
+		&&LBL_OP_CALL - &&LBL_OP_NOP,\
+		&&LBL_OP_FCALL - &&LBL_OP_NOP,\
+		&&LBL_OP_PCALLG - &&LBL_OP_NOP,\
+		&&LBL_OP_PCALL - &&LBL_OP_NOP,\
+		&&LBL_OP_PFCALL - &&LBL_OP_NOP,\
+		&&LBL_OP_MCALL - &&LBL_OP_NOP,\
+		&&LBL_OP_EXIT - &&LBL_OP_NOP,\
+		&&LBL_OP_FLET - &&LBL_OP_NOP,\
+		&&LBL_OP_LABELS - &&LBL_OP_NOP,\
+		&&LBL_OP_LFUNCTION - &&LBL_OP_NOP,\
+		&&LBL_OP_FUNCTION - &&LBL_OP_NOP,\
+		&&LBL_OP_CLOSE - &&LBL_OP_NOP,\
+		&&LBL_OP_GO - &&LBL_OP_NOP,\
+		&&LBL_OP_RETURN - &&LBL_OP_NOP,\
+		&&LBL_OP_THROW - &&LBL_OP_NOP,\
+		&&LBL_OP_JMP - &&LBL_OP_NOP,\
+		&&LBL_OP_JNIL - &&LBL_OP_NOP,\
+		&&LBL_OP_JT - &&LBL_OP_NOP,\
+		&&LBL_OP_JEQL - &&LBL_OP_NOP,\
+		&&LBL_OP_JNEQL - &&LBL_OP_NOP,\
+		&&LBL_OP_UNBIND - &&LBL_OP_NOP,\
+		&&LBL_OP_UNBINDS - &&LBL_OP_NOP,\
+		&&LBL_OP_BIND - &&LBL_OP_NOP,\
+		&&LBL_OP_PBIND - &&LBL_OP_NOP,\
+		&&LBL_OP_VBIND - &&LBL_OP_NOP,\
+		&&LBL_OP_BINDS - &&LBL_OP_NOP,\
+		&&LBL_OP_PBINDS - &&LBL_OP_NOP,\
+		&&LBL_OP_VBINDS - &&LBL_OP_NOP,\
+		&&LBL_OP_SETQ - &&LBL_OP_NOP,\
+		&&LBL_OP_SETQS - &&LBL_OP_NOP,\
+		&&LBL_OP_PSETQ - &&LBL_OP_NOP,\
+		&&LBL_OP_PSETQS - &&LBL_OP_NOP,\
+		&&LBL_OP_BLOCK - &&LBL_OP_NOP,\
+		&&LBL_OP_DO - &&LBL_OP_NOP,\
+		&&LBL_OP_CATCH - &&LBL_OP_NOP,\
+		&&LBL_OP_TAGBODY - &&LBL_OP_NOP,\
+		&&LBL_OP_EXIT_TAGBODY - &&LBL_OP_NOP,\
+		&&LBL_OP_EXIT_FRAME - &&LBL_OP_NOP,\
+		&&LBL_OP_PROTECT - &&LBL_OP_NOP,\
+		&&LBL_OP_PROTECT_NORMAL - &&LBL_OP_NOP,\
+		&&LBL_OP_PROTECT_EXIT - &&LBL_OP_NOP,\
+		&&LBL_OP_MSETQ - &&LBL_OP_NOP,\
+		&&LBL_OP_PROGV - &&LBL_OP_NOP,\
+		&&LBL_OP_PUSHVALUES - &&LBL_OP_NOP,\
+		&&LBL_OP_POP - &&LBL_OP_NOP,\
+		&&LBL_OP_POPVALUES - &&LBL_OP_NOP,\
+		&&LBL_OP_PUSHMOREVALUES - &&LBL_OP_NOP,\
+		&&LBL_OP_VALUES - &&LBL_OP_NOP,\
+		&&LBL_OP_VALUEREG0 - &&LBL_OP_NOP,\
+		&&LBL_OP_NTHVAL - &&LBL_OP_NOP,\
+		&&LBL_OP_NIL - &&LBL_OP_NOP,\
+		&&LBL_OP_NOT - &&LBL_OP_NOP,\
+		&&LBL_OP_PUSHNIL - &&LBL_OP_NOP,\
+		&&LBL_OP_STEPIN - &&LBL_OP_NOP,\
+		&&LBL_OP_STEPCALL - &&LBL_OP_NOP,\
+		&&LBL_OP_STEPOUT - &&LBL_OP_NOP\
+	}
+#endif
