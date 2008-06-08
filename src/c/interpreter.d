@@ -1085,9 +1085,9 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	CASE(OP_TAGBODY); {
 		cl_object id = new_frame_id();
 		int n = GET_OPARG(vector);
-		/* Here we save the location of the jump table */
+		/* Here we save the location of the jump table and the env. */
+		cl_stack_push(cl_env.lex_env = bind_tagbody(cl_env.lex_env, id));
 		cl_stack_push((cl_object)vector); /* FIXME! */
-		cl_env.lex_env = bind_tagbody(cl_env.lex_env, id);
 		if (frs_push(id) == 0) {
 			/* The first time, we "name" the tagbody and
 			 * skip the jump table */
@@ -1101,14 +1101,14 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 			cl_opcode *table = (cl_opcode *)cl_env.stack_top[-1];
 			table = table + fix(VALUES(0)) * OPARG_SIZE;
 			vector = table + *(cl_oparg *)table;
-			cl_env.lex_env = cl_env.frs_top->frs_lex;
+			cl_env.lex_env = cl_env.stack_top[-2];
 		}
 		THREAD_NEXT;
 	}
 	CASE(OP_EXIT_TAGBODY); {
-		cl_env.lex_env = CDR(cl_env.frs_top->frs_lex);
 		frs_pop();
 		cl_stack_pop();
+		cl_env.lex_env = ECL_CONS_CDR(cl_stack_pop());
 	}
 	CASE(OP_NIL); {
 		reg0 = Cnil;
