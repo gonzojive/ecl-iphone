@@ -1219,11 +1219,12 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	CASE(OP_PROTECT); {
 		cl_opcode *exit;
 		GET_LABEL(exit, vector);
+		cl_stack_push(cl_env.lex_env);
 		cl_stack_push((cl_object)exit);
 		if (frs_push(ECL_PROTECT_TAG) != 0) {
-			cl_env.lex_env = cl_env.frs_top->frs_lex;
 			frs_pop();
 			vector = (cl_opcode *)cl_stack_pop();
+			cl_env.lex_env = cl_stack_pop();
 			cl_stack_push(MAKE_FIXNUM(cl_env.nlj_fr - cl_env.frs_top));
 			goto PUSH_VALUES;
 		}
@@ -1231,9 +1232,9 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	}
 	CASE(OP_PROTECT_NORMAL); {
 		bds_unwind(cl_env.frs_top->frs_bds_top);
-		cl_env.lex_env = cl_env.frs_top->frs_lex;
 		frs_pop();
 		cl_stack_pop();
+		cl_env.lex_env = cl_stack_pop();
 		cl_stack_push(MAKE_FIXNUM(1));
 		goto PUSH_VALUES;
 	}
