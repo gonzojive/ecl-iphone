@@ -510,42 +510,6 @@ close_around(cl_object fun, cl_object lex) {
 	return v;
 }
 
-/* OP_MSETQ	n{arg}
-   {fixnumn}
-   ...
-   {fixnum1}
-
-	Sets N variables to the N values in VALUES(), filling with
-	NIL when there are values missing. Local variables are denoted
-	with an integer which points a position in the lexical environment,
-	while special variables are denoted with a negative index X, which
-	denotes the value -1-X in the table of constants.
-*/
-static cl_opcode *
-interpret_msetq(cl_object bytecodes, cl_opcode *vector)
-{
-	cl_object value;
-	cl_index i, n = GET_OPARG(vector);
-	for (i=0; i<n; i++) {
-		cl_fixnum var = GET_OPARG(vector);
-		value = (i < NVALUES) ? VALUES(i) : Cnil;
-		if (var >= 0) {
-			ecl_lex_env_set_var(cl_env.lex_env, var, value);
-		} else {
-			cl_object name = bytecodes->bytecodes.data[-1-var];
-			if (Null(name) || (name->symbol.stype & stp_constant))
-				FEassignment_to_constant(name);
-			else
-				ECL_SETQ(name, value);
-		}
-	}
-	if (NVALUES == 0) {
-		VALUES(0) = Cnil;
-	}
-	NVALUES = 1;
-	return vector;
-}
-
 /* OP_PROGV	bindings{list}
    ...
    OP_EXIT
@@ -1110,9 +1074,40 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		NVALUES = 1;
 		THREAD_NEXT;
 	}
+	/* OP_MSETQ	n{arg}
+	   {fixnumn}
+	   ...
+	   {fixnum1}
+
+	   Sets N variables to the N values in VALUES(), filling with
+	   NIL when there are values missing. Local variables are denoted
+	   with an integer which points a position in the lexical environment,
+	   while special variables are denoted with a negative index X, which
+	   denotes the value -1-X in the table of constants.
+	*/
 	CASE(OP_MSETQ); {
-		vector = interpret_msetq(bytecodes, vector);
-		reg0 = VALUES(0);
+		cl_object value;
+		cl_index i, n = GET_OPARG(vector), nv = NVALUES;
+		cl_object env = cl_env.lex_env;
+		for (i=0; i<n; i++) {
+			cl_fixnum var = GET_OPARG(vector);
+			value = (i < nv) ? VALUES(i) : Cnil;
+			if (var >= 0) {
+				ecl_lex_env_set_var(env, var, value);
+			} else {
+				cl_object name = bytecodes->bytecodes.data[-1-var];
+				if (Null(name) || (name->symbol.stype & stp_constant)) {
+					FEassignment_to_constant(name);
+				}
+				ECL_SETQ(name, value);
+			}
+		}
+		if (nv == 0) {
+			VALUES(0) = reg0 = Cnil;
+		} else {
+			reg0 = VALUES(0);
+		}
+		NVALUES = 1;
 		THREAD_NEXT;
 	}
 	CASE(OP_PROGV); {
