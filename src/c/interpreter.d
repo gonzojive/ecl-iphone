@@ -489,15 +489,13 @@ static cl_object
 interpret_funcall(cl_object lex_env, cl_narg narg, cl_object fun)
 {
 	struct ecl_stack_frame frame_aux;
-	struct ihs_frame ihs;
-	ihs_push(&ihs, fun, lex_env);
+	cl_env.ihs_top->lex_env = lex_env;
 	frame_aux.t = t_frame;
 	frame_aux.stack = cl_env.stack;
 	frame_aux.top = cl_env.stack_top;
 	frame_aux.bottom = frame_aux.top - narg;
 	fun = ecl_apply_from_stack_frame((cl_object)&frame_aux, fun);
 	ecl_stack_frame_close((cl_object)&frame_aux);
-	ihs_pop();
 	return fun;
 }
 
