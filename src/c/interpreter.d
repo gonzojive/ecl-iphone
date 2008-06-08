@@ -277,38 +277,38 @@ ecl_stack_frame_copy(cl_object dest, cl_object orig)
 
 /* ------------------------------ LEXICAL ENV. ------------------------------ */
 
-#define bind_var(var, val) \
-	(cl_env.lex_env = CONS(CONS(var, val), cl_env.lex_env))
-#define bind_function(name, fun) \
-	(cl_env.lex_env = CONS(CONS(fun, name), cl_env.lex_env))
-#define bind_block(name, id) \
-	(cl_env.lex_env = CONS(CONS(id, name), cl_env.lex_env))
-#define bind_tagbody(id) \
-	(cl_env.lex_env = CONS(CONS(id, MAKE_FIXNUM(0)), cl_env.lex_env))
+#define bind_var(env, var, val)		CONS(CONS(var, val), (env))
+#define bind_function(env, name, fun) 	CONS(CONS(fun, name), (env))
+#define bind_tagbody(env, id) 		CONS(CONS(id, MAKE_FIXNUM(0)), (env))
 
-static cl_object
-ecl_lex_env_get_record(register int s) {
-	cl_object x;
-	for (x = cl_env.lex_env; s-- > 0; x = CDR(x));
-	if (Null(x))
-		FEerror("Internal error: local not found.", 0);
-	return CAR(x);
+static void
+internal_lex_env_error()
+{
+	FEerror("Internal error: local not found.", 0);
 }
 
-#define ecl_lex_env_get_var(x) ECL_CONS_CDR(ecl_lex_env_get_record(x))
-#define ecl_lex_env_set_var(x,v) ECL_RPLACD(ecl_lex_env_get_record(x),(v))
-#define ecl_lex_env_get_fun(x) ECL_CONS_CAR(ecl_lex_env_get_record(x))
-#define ecl_lex_env_get_tag(x) ECL_CONS_CAR(ecl_lex_env_get_record(x))
+static cl_object
+ecl_lex_env_get_record(register cl_object env, register int s) {
+	for (; s-- > 0; env = CDR(env));
+	if (Null(env)) internal_lex_env_error();
+	return CAR(env);
+}
+
+#define ecl_lex_env_get_var(env,x) ECL_CONS_CDR(ecl_lex_env_get_record(env,x))
+#define ecl_lex_env_set_var(env,x,v) ECL_RPLACD(ecl_lex_env_get_record(env,x),(v))
+#define ecl_lex_env_get_fun(env,x) ECL_CONS_CAR(ecl_lex_env_get_record(env,x))
+#define ecl_lex_env_get_tag(env,x) ECL_CONS_CAR(ecl_lex_env_get_record(env,x))
 
 /* -------------------- LAMBDA FUNCTIONS -------------------- */
 
-static void
-lambda_bind_var(cl_object var, cl_object val, cl_object specials)
+static cl_object
+lambda_bind_var(cl_object env, cl_object var, cl_object val, cl_object specials)
 {
 	if (!ecl_member_eq(var, specials))
-		bind_var(var, val);
+		env = bind_var(env, var, val);
 	else
 		bds_bind(var, val);
+	return env;
 }
 
 static void
@@ -322,114 +322,115 @@ lambda_bind(cl_narg narg, cl_object lambda, cl_object *sp)
 	/* 1) REQUIRED ARGUMENTS:  N var1 ... varN */
 	n = fix(*(data++));
 	if (narg < n)
-	  FEwrong_num_arguments(lambda->bytecodes.name);
+		FEwrong_num_arguments(lambda->bytecodes.name);
 	for (; n; n--, narg--)
-	  lambda_bind_var(*(data++), *(sp++), specials);
+		cl_env.lex_env = lambda_bind_var(cl_env.lex_env, *(data++), *(sp++), specials);
 
 	/* 2) OPTIONAL ARGUMENTS:  N var1 value1 flag1 ... varN valueN flagN */
 	for (n = fix(*(data++)); n; n--, data+=3) {
-	  if (narg) {
-	    lambda_bind_var(data[0], *sp, specials);
-	    sp++; narg--;
-	    if (!Null(data[2]))
-	      lambda_bind_var(data[2], Ct, specials);
-	  } else {
-	    cl_object defaults = data[1];
-	    if (FIXNUMP(defaults)) {
-	      ecl_interpret(lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
-	      defaults = VALUES(0);
-	    }
-	    lambda_bind_var(data[0], defaults, specials);
-	    if (!Null(data[2]))
-	      lambda_bind_var(data[2], Cnil, specials);
-	  }
+		if (narg) {
+			cl_env.lex_env = lambda_bind_var(cl_env.lex_env, data[0], *sp, specials);
+			sp++; narg--;
+			if (!Null(data[2]))
+				cl_env.lex_env = lambda_bind_var(cl_env.lex_env, data[2], Ct, specials);
+		} else {
+			cl_object defaults = data[1];
+			if (FIXNUMP(defaults)) {
+				ecl_interpret(lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
+				defaults = VALUES(0);
+			}
+			cl_env.lex_env = lambda_bind_var(cl_env.lex_env, data[0], defaults, specials);
+			if (!Null(data[2]))
+				cl_env.lex_env = lambda_bind_var(cl_env.lex_env, data[2], Cnil, specials);
+		}
 	}
-
+	
 	/* 3) REST ARGUMENT: {rest-var | NIL} */
 	if (!Null(data[0])) {
-	  cl_object rest = Cnil;
-	  check_remaining = FALSE;
-	  for (i=narg; i; )
-	    rest = CONS(sp[--i], rest);
-	  lambda_bind_var(data[0], rest, specials);
+		cl_object rest = Cnil;
+		check_remaining = FALSE;
+		for (i=narg; i; )
+			rest = CONS(sp[--i], rest);
+		cl_env.lex_env = lambda_bind_var(cl_env.lex_env, data[0], rest, specials);
 	}
 	data++;
 
 	/* 4) ALLOW-OTHER-KEYS: { T | NIL | 0} */
 	if (data[0] == MAKE_FIXNUM(0)) {
-	  data++;
-	  if (narg && check_remaining)
-	    FEprogram_error("LAMBDA: Too many arguments to function ~S.", 1,
-			    lambda->bytecodes.name);
+		data++;
+		if (narg && check_remaining)
+			FEprogram_error("LAMBDA: Too many arguments to function ~S.", 1,
+					lambda->bytecodes.name);
 	} else {
-	  /*
-	   * Only when ALLOW-OTHER-KEYS /= 0, we process this:
-	   * 5) KEYWORDS: N key1 var1 value1 flag1 ... keyN varN valueN flagN
-	   */
-	  bool allow_other_keys = !Null(*(data++));
-	  bool allow_other_keys_found = allow_other_keys;
-	  int n = fix(*(data++));
-	  cl_object *keys;
+		/*
+		 * Only when ALLOW-OTHER-KEYS /= 0, we process this:
+		 * 5) KEYWORDS: N key1 var1 value1 flag1 ... keyN varN valueN flagN
+		 */
+		bool allow_other_keys = !Null(*(data++));
+		bool allow_other_keys_found = allow_other_keys;
+		int n = fix(*(data++));
+		cl_object *keys;
 #ifdef __GNUC__
-	  cl_object spp[n];
+		cl_object spp[n];
 #else
 #define SPP_MAX 64
-	  cl_object spp[SPP_MAX];
+		cl_object spp[SPP_MAX];
 #endif
-	  bool other_found = FALSE;
-	  void *unbound = spp; /* not a valid lisp object */
-	  if ((narg & 1) != 0)
-	    FEprogram_error("Function called with odd number of keyword arguments.", 0);
-	  for (i=0; i<n; i++)
+		bool other_found = FALSE;
+		void *unbound = spp; /* not a valid lisp object */
+		if ((narg & 1) != 0)
+			FEprogram_error("Function called with odd number of keyword arguments.", 0);
+		for (i=0; i<n; i++)
 #ifdef __GNUC__
-	    spp[i] = unbound;
+			spp[i] = unbound;
 #else
-	    if (i >= SPP_MAX)
-	      FEerror("lambda_bind: Too many keyword arguments, limited to ~A.", 1, MAKE_FIXNUM(SPP_MAX));
-	    else
-	    spp[i] = unbound;
+		if (i >= SPP_MAX)
+			FEerror("lambda_bind: Too many keyword arguments, limited to ~A.", 1, MAKE_FIXNUM(SPP_MAX));
+		else
+			spp[i] = unbound;
 #endif
-	  for (; narg; narg-=2) {
-	    cl_object key = *(sp++);
-	    cl_object value = *(sp++);
-	    if (!SYMBOLP(key))
-	      FEprogram_error("LAMBDA: Keyword expected, got ~S.", 1, key);
-	    keys = data;
-	    if (key == @':allow-other-keys') {
-	      if (!allow_other_keys_found) {
-		allow_other_keys_found = TRUE;
-		allow_other_keys = !Null(value);
-	      }
-	    }
-	    for (i = 0; i < n; i++, keys += 4) {
-	      if (key == keys[0]) {
-		if (spp[i] == unbound)
-		  spp[i] = value;
-		goto FOUND;
-	      }
-	    }
-	    if (key != @':allow-other-keys')
-	      other_found = TRUE;
-	  FOUND:
-	    (void)0;
-	  }
-	  if (other_found && !allow_other_keys)
-	    FEprogram_error("LAMBDA: Unknown keys found in function ~S.",
-			    1, lambda->bytecodes.name);
-	  for (i=0; i<n; i++, data+=4) {
-	    if (spp[i] != unbound)
-	      lambda_bind_var(data[1],spp[i],specials);
-	    else {
-	      cl_object defaults = data[2];
-	      if (FIXNUMP(defaults)) {
-		      ecl_interpret(lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
-		      defaults = VALUES(0);
-	      }
-	      lambda_bind_var(data[1],defaults,specials);
-	    }
-	    if (!Null(data[3]))
-	      lambda_bind_var(data[3],(spp[i] != unbound)? Ct : Cnil,specials);
-	  }
+		for (; narg; narg-=2) {
+			cl_object key = *(sp++);
+			cl_object value = *(sp++);
+			if (!SYMBOLP(key))
+				FEprogram_error("LAMBDA: Keyword expected, got ~S.", 1, key);
+			keys = data;
+			if (key == @':allow-other-keys') {
+				if (!allow_other_keys_found) {
+					allow_other_keys_found = TRUE;
+					allow_other_keys = !Null(value);
+				}
+			}
+			for (i = 0; i < n; i++, keys += 4) {
+				if (key == keys[0]) {
+					if (spp[i] == unbound)
+						spp[i] = value;
+					goto FOUND;
+				}
+			}
+			if (key != @':allow-other-keys')
+				other_found = TRUE;
+		FOUND:
+			(void)0;
+		}
+		if (other_found && !allow_other_keys) {
+			FEprogram_error("LAMBDA: Unknown keys found in function ~S.",
+					1, lambda->bytecodes.name);
+		}
+		for (i=0; i<n; i++, data+=4) {
+			if (spp[i] != unbound)
+				cl_env.lex_env = lambda_bind_var(cl_env.lex_env, data[1],spp[i],specials);
+			else {
+				cl_object defaults = data[2];
+				if (FIXNUMP(defaults)) {
+					ecl_interpret(lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
+					defaults = VALUES(0);
+				}
+				cl_env.lex_env = lambda_bind_var(cl_env.lex_env, data[1],defaults,specials);
+			}
+			if (!Null(data[3]))
+				cl_env.lex_env = lambda_bind_var(cl_env.lex_env, data[3],(spp[i] != unbound)? Ct : Cnil,specials);
+		}
 	}
 }
 
@@ -525,7 +526,7 @@ interpret_flet(cl_object bytecodes, cl_opcode *vector) {
 	while (nfun--) {
 		cl_object fun = GET_DATA(vector, bytecodes);
 		cl_object f = close_around(fun,lex);
-		bind_function(f->bytecodes.name, f);
+		cl_env.lex_env = bind_function(cl_env.lex_env, f->bytecodes.name, f);
 	}
 	return vector;
 }
@@ -548,7 +549,7 @@ interpret_labels(cl_object bytecodes, cl_opcode *vector) {
 	/* 1) Build up a new environment with all functions */
 	for (i=0; i<nfun; i++) {
 		cl_object f = GET_DATA(vector, bytecodes);
-		bind_function(f->bytecodes.name, f);
+		cl_env.lex_env = bind_function(cl_env.lex_env, f->bytecodes.name, f);
 	}
 
 	/* 2) Update the closures so that all functions can call each other */
@@ -579,9 +580,9 @@ interpret_msetq(cl_object bytecodes, cl_opcode *vector)
 	for (i=0; i<n; i++) {
 		cl_fixnum var = GET_OPARG(vector);
 		value = (i < NVALUES) ? VALUES(i) : Cnil;
-		if (var >= 0)
-			ecl_lex_env_set_var(var, value);
-		else {
+		if (var >= 0) {
+			ecl_lex_env_set_var(cl_env.lex_env, var, value);
+		} else {
 			cl_object name = bytecodes->bytecodes.data[-1-var];
 			if (Null(name) || (name->symbol.stype & stp_constant))
 				FEassignment_to_constant(name);
@@ -657,7 +658,7 @@ ecl_interpret(cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_VAR); {
 		int lex_env_index = GET_OPARG(vector);
-		reg0 = ecl_lex_env_get_var(lex_env_index);
+		reg0 = ecl_lex_env_get_var(cl_env.lex_env, lex_env_index);
 		NEXT;
 	}
 
@@ -683,7 +684,7 @@ ecl_interpret(cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_PUSHV); {
 		int lex_env_index = GET_OPARG(vector);
-		cl_stack_push(ecl_lex_env_get_var(lex_env_index));
+		cl_stack_push(ecl_lex_env_get_var(cl_env.lex_env, lex_env_index));
 		NEXT;
 	}
 
@@ -808,7 +809,7 @@ ecl_interpret(cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_LFUNCTION); {
 		int lex_env_index = GET_OPARG(vector);
-		cl_object fun_record = ecl_lex_env_get_record(lex_env_index);
+		cl_object fun_record = ecl_lex_env_get_record(cl_env.lex_env, lex_env_index);
 		reg0 = CAR(fun_record);
 		NEXT;
 	}
@@ -839,7 +840,7 @@ ecl_interpret(cl_object bytecodes, void *pc)
 		purposes.
 	*/
 	CASE(OP_GO); {
-		cl_object id = ecl_lex_env_get_tag(GET_OPARG(vector));
+		cl_object id = ecl_lex_env_get_tag(cl_env.lex_env, GET_OPARG(vector));
 		cl_object tag_name = GET_DATA(vector, bytecodes);
 		cl_go(id, tag_name);
 		NEXT;
@@ -850,7 +851,7 @@ ecl_interpret(cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_RETURN); {
 		int lex_env_index = GET_OPARG(vector);
-		cl_object block_record = ecl_lex_env_get_record(lex_env_index);
+		cl_object block_record = ecl_lex_env_get_record(cl_env.lex_env, lex_env_index);
 		cl_object id = CAR(block_record);
 		cl_object block_name = CDR(block_record);
 		cl_return_from(id, block_name);
@@ -937,20 +938,20 @@ ecl_interpret(cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_BIND); {
 		cl_object var_name = GET_DATA(vector, bytecodes);
-		bind_var(var_name, reg0);
+		cl_env.lex_env = bind_var(cl_env.lex_env, var_name, reg0);
 		NEXT;
 	}
 	CASE(OP_PBIND); {
 		cl_object var_name = GET_DATA(vector, bytecodes);
 		cl_object value = cl_stack_pop();
-		bind_var(var_name, value);
+		cl_env.lex_env = bind_var(cl_env.lex_env, var_name, value);
 		NEXT;
 	}
 	CASE(OP_VBIND); {
 		cl_index n = GET_OPARG(vector);
 		cl_object var_name = GET_DATA(vector, bytecodes);
 		cl_object value = (n < NVALUES) ? VALUES(n) : Cnil;
-		bind_var(var_name, value);
+		cl_env.lex_env = bind_var(cl_env.lex_env, var_name, value);
 		NEXT;
 	}
 	CASE(OP_BINDS); {
@@ -981,7 +982,7 @@ ecl_interpret(cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_SETQ); {
 		int lex_env_index = GET_OPARG(vector);
-		ecl_lex_env_set_var(lex_env_index, reg0);
+		ecl_lex_env_set_var(cl_env.lex_env, lex_env_index, reg0);
 		NEXT;
 	}
 	CASE(OP_SETQS); {
@@ -994,7 +995,7 @@ ecl_interpret(cl_object bytecodes, void *pc)
 	}
 	CASE(OP_PSETQ); {
 		int lex_env_index = GET_OPARG(vector);
-		ecl_lex_env_set_var(lex_env_index, cl_stack_pop());
+		ecl_lex_env_set_var(cl_env.lex_env, lex_env_index, cl_stack_pop());
 		NEXT;
 	}
 	CASE(OP_PSETQS); {
@@ -1080,7 +1081,7 @@ ecl_interpret(cl_object bytecodes, void *pc)
 		int n = GET_OPARG(vector);
 		/* Here we save the location of the jump table */
 		cl_stack_push((cl_object)vector); /* FIXME! */
-		bind_tagbody(id);
+		cl_env.lex_env = bind_tagbody(cl_env.lex_env, id);
 		if (frs_push(id) == 0) {
 			/* The first time, we "name" the tagbody and
 			 * skip the jump table */
