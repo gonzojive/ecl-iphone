@@ -506,37 +506,6 @@ close_around(cl_object fun, cl_object lex) {
 	return v;
 }
 
-/* OP_PROGV	bindings{list}
-   ...
-   OP_EXIT
-	Execute the code enclosed with the special variables in BINDINGS
-	set to the values in the list which was passed in VALUES(0).
-*/
-static cl_opcode *
-interpret_progv(cl_object env, cl_object bytecodes, cl_opcode *vector) {
-	cl_object values = VALUES(0);
-	cl_object vars = cl_stack_pop();
-
-	/* 1) Save current environment */
-	bds_ptr old_bds_top = cl_env.bds_top;
-
-	/* 2) Add new bindings */
-	while (!ecl_endp(vars)) {
-		if (values == Cnil) {
-			bds_bind(CAR(vars), OBJNULL);
-		} else {
-			bds_bind(CAR(vars), cl_car(values));
-			values = CDR(values);
-		}
-		vars = CDR(vars);
-	}
-	vector = ecl_interpret(env, bytecodes, vector);
-
-	/* 3) Restore environment */
-	bds_unwind(old_bds_top);
-	return vector;
-}
-
 void *
 ecl_interpret(cl_object lex_env, cl_object bytecodes, void *pc)
 {
@@ -1107,9 +1076,31 @@ ecl_interpret(cl_object lex_env, cl_object bytecodes, void *pc)
 		NVALUES = 1;
 		THREAD_NEXT;
 	}
+	/* OP_PROGV	bindings{list}
+	   ...
+	   OP_EXIT
+	   Execute the code enclosed with the special variables in BINDINGS
+	   set to the values in the list which was passed in VALUES(0).
+	*/
 	CASE(OP_PROGV); {
-		vector = interpret_progv(lex_env, bytecodes, vector);
-		reg0 = VALUES(0);
+		cl_object values = reg0;
+		cl_object vars = cl_stack_pop();
+		cl_index n;
+		for (n = 0; !ecl_endp(vars); n++, vars = ECL_CONS_CDR(vars)) {
+			cl_object var = ECL_CONS_CAR(vars);
+			if (values == Cnil) {
+				bds_bind(var, OBJNULL);
+			} else {
+				bds_bind(var, cl_car(values));
+				values = ECL_CONS_CDR(values);
+			}
+		}
+		cl_stack_push(MAKE_FIXNUM(n));
+		THREAD_NEXT;
+	}
+	CASE(OP_EXIT_PROGV); {
+		cl_index n = fix(cl_stack_pop());
+		bds_unwind_n(n);
 		THREAD_NEXT;
 	}
 	/* OP_PUSHVALUES

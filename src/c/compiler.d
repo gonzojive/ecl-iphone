@@ -1601,8 +1601,8 @@ c_progv(cl_object args, int flags) {
 	/* The list of variables is in the stack */
 	compile_form(vars, FLAG_PUSH);
 
-	/* The list of values is in VALUES(0) */
-	compile_form(values, FLAG_VALUES);
+	/* The list of values is in reg0 */
+	compile_form(values, FLAG_REG0);
 
 	/* The body is interpreted within an extended lexical
 	   environment. However, as all the new variables are
@@ -1610,7 +1610,7 @@ c_progv(cl_object args, int flags) {
 	*/
 	asm_op(OP_PROGV);
 	flags = compile_body(args, FLAG_VALUES);
-	asm_op(OP_EXIT);
+	asm_op(OP_EXIT_PROGV);
 
 	return flags;
 }
