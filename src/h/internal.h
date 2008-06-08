@@ -59,6 +59,7 @@ struct cl_compiler_env {
 	cl_object macros;
 	cl_fixnum lexical_level;
 	cl_object constants;
+	cl_object lex_env;
 	bool coalesce;
 	bool stepping;
 };

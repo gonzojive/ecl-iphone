@@ -226,15 +226,15 @@ typedef int16_t cl_oparg;
 
 #ifdef ECL_THREADED_INTERPRETER
 #define BEGIN_SWITCH \
-	NEXT;
+	THREAD_NEXT;
 #define CASE(name) \
 	LBL_##name:
-#define NEXT \
+#define THREAD_NEXT \
 	goto *(&&LBL_OP_NOP + offsets[GET_OPCODE(vector)])
 #else
 #define BEGIN_SWITCH \
 	switch (GET_OPCODE(vector))
-#define NEXT \
+#define THREAD_NEXT \
 	goto BEGIN
 #define CASE(name) \
 	case name:
