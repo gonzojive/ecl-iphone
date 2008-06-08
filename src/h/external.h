@@ -13,12 +13,6 @@ struct cl_env_struct {
 	/* The four stacks in ECL. */
 
 	/*
-	 * The lexical environment stack, where local bindings of
-	 *    variables are kept by interpreted functions.
-	 */
-	cl_object lex_env;
-
-	/*
 	 * The lisp stack, which is used mainly for keeping the arguments of a
 	 * function before it is invoked, and also by the compiler and by the
 	 * reader when they are building some data structure.

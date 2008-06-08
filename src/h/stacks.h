@@ -76,14 +76,13 @@ typedef struct ihs_frame {
 	cl_index index;
 } *ihs_ptr;
 
-#define ihs_push(r,f) do {\
-	(r)->next=cl_env.ihs_top; (r)->function=(f); (r)->lex_env= cl_env.lex_env; \
+#define ihs_push(r,f,e) do {	\
+	(r)->next=cl_env.ihs_top; (r)->function=(f); (r)->lex_env= (e); \
 	(r)->index=cl_env.ihs_top->index+1;\
 	cl_env.ihs_top = (r); \
 } while(0)
 
 #define ihs_pop() do {\
-	cl_env.lex_env = cl_env.ihs_top->lex_env; \
 	if (cl_env.ihs_top->next == NULL) ecl_internal_error("Underflow in IHS stack"); \
 	cl_env.ihs_top = cl_env.ihs_top->next; \
 } while(0)
@@ -198,11 +197,9 @@ extern ECL_API ecl_frame_ptr _frs_push(register cl_object val);
 
 #define CL_NEWENV_BEGIN {\
 	cl_index __i = cl_stack_push_values(); \
-	cl_object __env = cl_env.lex_env;
 
 #define CL_NEWENV_END \
-	cl_stack_pop_values(__i); \
-	cl_env.lex_env = __env; }
+	cl_stack_pop_values(__i); }
 
 #define CL_UNWIND_PROTECT_BEGIN {\
 	bool __unwinding; ecl_frame_ptr __next_fr; \

@@ -61,8 +61,6 @@ ecl_init_env(struct cl_env_struct *env)
 {
 	int i;
 
-	env->lex_env = Cnil;
-
 	env->c_env = NULL;
 
 	env->string_pool = Cnil;

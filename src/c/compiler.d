@@ -2579,7 +2579,7 @@ si_make_lambda(cl_object name, cl_object rest)
 	/*
 	 * Interpret using the given lexical environment.
 	 */
-	ihs_push(&ihs, bytecodes);
+	ihs_push(&ihs, bytecodes, Cnil);
 	VALUES(0) = Cnil;
 	NVALUES = 0;
 	ecl_interpret(interpreter_env, bytecodes, bytecodes->bytecodes.code);
