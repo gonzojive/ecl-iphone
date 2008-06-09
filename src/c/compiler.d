@@ -1402,10 +1402,18 @@ c_multiple_value_bind(cl_object args, int flags)
 				FEillegal_variable_name(var);
 			if (c_declared_special(var, specials)) {
 				c_register_var(var, FLAG_PUSH, TRUE);
-				asm_op2(OP_VBINDS, n);
+				if (n) {
+					asm_op2(OP_VBINDS, n);
+				} else {
+					asm_op(OP_BINDS);
+				}
 			} else {
 				c_register_var(var, FALSE, TRUE);
-				asm_op2(OP_VBIND, n);
+				if (n) {
+					asm_op2(OP_VBIND, n);
+				} else {
+					asm_op(OP_BIND);
+				}
 			}
 			asm_c(var);
 		}
