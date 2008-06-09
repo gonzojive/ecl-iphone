@@ -20,11 +20,6 @@
 #include <ecl/ecl-inl.h>
 #include <ecl/bytecodes.h>
 
-#undef frs_pop
-#define frs_pop(the_env) { \
-	the_env->stack_top = the_env->stack + the_env->frs_top->frs_sp; \
-	the_env->frs_top--; }
-
 /* -------------------- INTERPRETER STACK -------------------- */
 
 void
@@ -506,6 +501,18 @@ close_around(cl_object fun, cl_object lex) {
 	return v;
 }
 
+#undef frs_pop
+#define frs_pop(the_env) { \
+	the_env->stack_top = the_env->stack + the_env->frs_top->frs_sp; \
+	the_env->frs_top--; }
+
+#define ecl_stack_push(the_env,x) { \
+	cl_object __aux = (x); \
+	if (the_env->stack_top == the_env->stack_limit) { \
+		cl_stack_grow(); \
+	} \
+	*(the_env->stack_top++) = __aux; }
+
 void *
 ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 {
@@ -557,7 +564,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		Pushes the object in VALUES(0).
 	*/
 	CASE(OP_PUSH); {
-		cl_stack_push(reg0);
+		ecl_stack_push(the_env, reg0);
 		THREAD_NEXT;
 	}
 	/* OP_PUSHV	n{arg}
@@ -565,7 +572,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_PUSHV); {
 		int lex_env_index = GET_OPARG(vector);
-		cl_stack_push(ecl_lex_env_get_var(lex_env, lex_env_index));
+		ecl_stack_push(the_env, ecl_lex_env_get_var(lex_env, lex_env_index));
 		THREAD_NEXT;
 	}
 
@@ -575,7 +582,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_PUSHVS); {
 		cl_object var_name = GET_DATA(vector, bytecodes);
-		cl_stack_push(search_global(var_name));
+		ecl_stack_push(the_env, search_global(var_name));
 		THREAD_NEXT;
 	}
 
@@ -583,7 +590,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		Pushes "value" onto the stack.
 	*/
 	CASE(OP_PUSHQ); {
-		cl_stack_push(GET_DATA(vector, bytecodes));
+		ecl_stack_push(the_env, GET_DATA(vector, bytecodes));
 		THREAD_NEXT;
 	}
 	/* OP_CALL	n{arg}
@@ -640,7 +647,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_PCALL); {
 		cl_fixnum n = GET_OPARG(vector);
-		cl_stack_push(interpret_funcall(lex_env, n, reg0));
+		ecl_stack_push(the_env, interpret_funcall(lex_env, n, reg0));
 		THREAD_NEXT;
 	}
 
@@ -652,7 +659,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	CASE(OP_PCALLG); {
 		cl_fixnum n = GET_OPARG(vector);
 		cl_object f = GET_DATA(vector, bytecodes);
-		cl_stack_push(interpret_funcall(lex_env, n, f));
+		ecl_stack_push(the_env, interpret_funcall(lex_env, n, f));
 		THREAD_NEXT;
 	}
 
@@ -970,8 +977,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	DO_BLOCK: {
 		cl_opcode *exit;
 		GET_LABEL(exit, vector);
-		cl_stack_push(lex_env);
-		cl_stack_push((cl_object)exit);
+		ecl_stack_push(the_env, lex_env);
+		ecl_stack_push(the_env, (cl_object)exit);
 		if (frs_push(reg1) == 0) {
 			lex_env = CONS(CONS(reg1, reg0), lex_env);
 		} else {
@@ -1006,8 +1013,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		int n = GET_OPARG(vector);
 		/* Here we save the location of the jump table and the env. */
 		lex_env = bind_tagbody(lex_env, id);
-		cl_stack_push(lex_env);
-		cl_stack_push((cl_object)vector); /* FIXME! */
+		ecl_stack_push(the_env, lex_env);
+		ecl_stack_push(the_env, (cl_object)vector); /* FIXME! */
 		if (frs_push(id) == 0) {
 			/* The first time, we "name" the tagbody and
 			 * skip the jump table */
@@ -1035,7 +1042,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		THREAD_NEXT;
 	}
 	CASE(OP_PUSHNIL); {
-		cl_stack_push(Cnil);
+		ecl_stack_push(the_env, Cnil);
 		THREAD_NEXT;
 	}
 	CASE(OP_VALUEREG0); {
@@ -1087,8 +1094,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	CASE(OP_PUSHVALUES); {
 		cl_index i;
 		for (i=0; i<the_env->nvalues; i++)
-			cl_stack_push(the_env->values[i]);
-		cl_stack_push(MAKE_FIXNUM(the_env->nvalues));
+			ecl_stack_push(the_env, the_env->values[i]);
+		ecl_stack_push(the_env, MAKE_FIXNUM(the_env->nvalues));
 		THREAD_NEXT;
 	}
 	/* OP_PUSHMOREVALUES
@@ -1097,8 +1104,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	CASE(OP_PUSHMOREVALUES); {
 		cl_index i, n = fix(cl_stack_pop());
 		for (i=0; i<the_env->nvalues; i++)
-			cl_stack_push(the_env->values[i]);
-		cl_stack_push(MAKE_FIXNUM(n + the_env->nvalues));
+			ecl_stack_push(the_env, the_env->values[i]);
+		ecl_stack_push(the_env, MAKE_FIXNUM(n + the_env->nvalues));
 		THREAD_NEXT;
 	}
 	/* OP_POP
@@ -1176,13 +1183,13 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	CASE(OP_PROTECT); {
 		cl_opcode *exit;
 		GET_LABEL(exit, vector);
-		cl_stack_push(lex_env);
-		cl_stack_push((cl_object)exit);
+		ecl_stack_push(the_env, lex_env);
+		ecl_stack_push(the_env, (cl_object)exit);
 		if (frs_push(ECL_PROTECT_TAG) != 0) {
 			frs_pop(the_env);
 			vector = (cl_opcode *)cl_stack_pop();
 			lex_env = cl_stack_pop();
-			cl_stack_push(MAKE_FIXNUM(the_env->nlj_fr - the_env->frs_top));
+			ecl_stack_push(the_env, MAKE_FIXNUM(the_env->nlj_fr - the_env->frs_top));
 			goto PUSH_VALUES;
 		}
 		THREAD_NEXT;
@@ -1192,7 +1199,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		frs_pop(the_env);
 		cl_stack_pop();
 		lex_env = cl_stack_pop();
-		cl_stack_push(MAKE_FIXNUM(1));
+		ecl_stack_push(the_env, MAKE_FIXNUM(1));
 		goto PUSH_VALUES;
 	}
 	CASE(OP_PROTECT_EXIT); {
@@ -1225,7 +1232,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 				values = ECL_CONS_CDR(values);
 			}
 		}
-		cl_stack_push(MAKE_FIXNUM(n));
+		ecl_stack_push(the_env, MAKE_FIXNUM(n));
 		THREAD_NEXT;
 	}
 	CASE(OP_EXIT_PROGV); {
@@ -1243,7 +1250,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 			 * what to do. */
 			ECL_SETQ(@'si::*step-level*',
 				 cl_1P(SYM_VAL(@'si::*step-level*')));
-			cl_stack_push(form);
+			ecl_stack_push(the_env, form);
 			interpret_funcall(lex_env, 1, @'si::stepper');
 		} else if (a != Cnil) {
 			/* The user told us to step over. *step-level* contains
@@ -1263,7 +1270,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		 * that. */
 		cl_fixnum n = GET_OPARG(vector);
 		if (SYM_VAL(@'si::*step-action*') == Ct) {
-			cl_stack_push(reg0);
+			ecl_stack_push(the_env, reg0);
 			reg0 = interpret_funcall(lex_env, 1, @'si::stepper');
 		}
 		reg0 = interpret_funcall(lex_env, n, reg0);
