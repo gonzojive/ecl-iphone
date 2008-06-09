@@ -1464,7 +1464,7 @@ c_multiple_value_setq(cl_object orig_args, int flags) {
 	cl_object orig_vars;
 	cl_object vars = Cnil, values;
 	cl_object old_variables = ENV->variables;
-	cl_index nvars = 0;
+	cl_index i, nvars = 0;
 
 	/* Look for symbol macros, building the list of variables
 	   and the list of late assignments. */
@@ -1498,22 +1498,29 @@ c_multiple_value_setq(cl_object orig_args, int flags) {
 	compile_form(values, FLAG_VALUES);
 
 	/* Compile variables */
-	asm_op2(OP_MSETQ, nvars);
 	vars = cl_nreverse(vars);
-	while (nvars--) {
+	for (i = 0; i < nvars; i++) {
 		cl_object var = pop(&vars);
-		cl_fixnum ndx = c_var_ref(var,0,TRUE);
-		if (ndx < 0) { /* Global variable */
-			if (ecl_symbol_type(var) & stp_constant)
-				FEassignment_to_constant(var);
-			ndx = -1-c_register_constant(var);
+		/* Note that we only use VSETQ[S] for values other than 0 */
+		if (i == 0) {
+			compile_setq(OP_SETQ, var);
+		} else {
+			cl_fixnum ndx = c_var_ref(var,0,TRUE);
+			if (ndx < 0) { /* Global variable */
+				if (ecl_symbol_type(var) & stp_constant)
+					FEassignment_to_constant(var);
+				asm_op2(OP_VSETQS, i);
+				asm_c(var);
+			} else {
+				asm_op2(OP_VSETQ, i);
+				asm_arg(ndx);
+			}
 		}
-		asm_arg(ndx);
 	}
 
 	c_undo_bindings(old_variables);
 
-	return FLAG_VALUES;
+	return FLAG_REG0;
 }
 
 /*
