@@ -985,28 +985,30 @@ c_cond(cl_object args, int flags) {
 			compile_body(clause, flags);
 	} else {
 		/* Compile the test. If no more forms, just output
-		   the first value (this is guaranteed by OP_JT) */
-		if (Null(clause)) {
-			if (Null(args)) {
+		   the first value (this is guaranteed by OP_JT), but make
+		   sure it is stored in the appropriate place. */
+		if (Null(args)) {
+			if (Null(clause)) {
 				c_values(cl_list(1,test), flags);
-				return flags;
+			} else {
+				compile_form(test, (flags & FLAG_VALUES)? FLAG_VALUES: FLAG_REG0);
+				label_nil = asm_jmp(OP_JNIL);
+				compile_body(clause, flags);
+				asm_complete(OP_JNIL, label_nil);
 			}
-			compile_form(test, FLAG_VALUES);
+		} else if (Null(clause)) {
+			compile_form(test, (flags & FLAG_VALUES)? FLAG_VALUES : FLAG_REG0);
 			label_exit = asm_jmp(OP_JT);
 			c_cond(args, flags);
 			asm_complete(OP_JT, label_exit);
 		} else {
-			compile_form(test, FLAG_VALUES);
+			compile_form(test, FLAG_REG0);
 			label_nil = asm_jmp(OP_JNIL);
 			compile_body(clause, flags);
-			if (Null(args))
-				asm_complete(OP_JNIL, label_nil);
-			else {
-				label_exit = asm_jmp(OP_JMP);
-				asm_complete(OP_JNIL, label_nil);
-				c_cond(args, flags);
-				asm_complete(OP_JMP, label_exit);
-			}
+			label_exit = asm_jmp(OP_JMP);
+			asm_complete(OP_JNIL, label_nil);
+			c_cond(args, flags);
+			asm_complete(OP_JMP, label_exit);
 		}
 	}
 	return flags;
