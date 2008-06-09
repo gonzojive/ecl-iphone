@@ -991,13 +991,15 @@ c_cond(cl_object args, int flags) {
 			if (Null(clause)) {
 				c_values(cl_list(1,test), flags);
 			} else {
-				compile_form(test, (flags & FLAG_VALUES)? FLAG_VALUES: FLAG_REG0);
+				compile_form(test, FLAG_REG0);
+				if (flags & FLAG_VALUES) asm_op(OP_VALUEREG0);
 				label_nil = asm_jmp(OP_JNIL);
 				compile_body(clause, flags);
 				asm_complete(OP_JNIL, label_nil);
 			}
 		} else if (Null(clause)) {
-			compile_form(test, (flags & FLAG_VALUES)? FLAG_VALUES : FLAG_REG0);
+			compile_form(test, FLAG_REG0);
+			if (flags & FLAG_VALUES) asm_op(OP_VALUEREG0);
 			label_exit = asm_jmp(OP_JT);
 			c_cond(args, flags);
 			asm_complete(OP_JT, label_exit);
@@ -1549,7 +1551,7 @@ c_prog1(cl_object args, int flags) {
 		flags = compile_form(form, flags);
 		compile_body(args, FLAG_IGNORE);
 	} else {
-		flags = FLAG_VALUES;
+		flags = FLAG_REG0;
 		compile_form(form, FLAG_PUSH);
 		compile_body(args, FLAG_IGNORE);
 		asm_op(OP_POP);
