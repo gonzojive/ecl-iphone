@@ -332,8 +332,7 @@ lambda_bind(cl_object env, cl_narg narg, cl_object lambda, cl_object *sp)
 		} else {
 			cl_object defaults = data[1];
 			if (FIXNUMP(defaults)) {
-				ecl_interpret(env, lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
-				defaults = VALUES(0);
+				defaults = ecl_interpret(env, lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
 			}
 			env = lambda_bind_var(env, data[0], defaults, specials);
 			if (!Null(data[2])) {
@@ -422,8 +421,7 @@ lambda_bind(cl_object env, cl_narg narg, cl_object lambda, cl_object *sp)
 			} else {
 				cl_object defaults = data[2];
 				if (FIXNUMP(defaults)) {
-					ecl_interpret(env, lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
-					defaults = VALUES(0);
+					defaults = ecl_interpret(env, lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
 				}
 				env = lambda_bind_var(env, data[1],defaults,specials);
 			}
@@ -454,9 +452,9 @@ ecl_apply_lambda(cl_object frame, cl_object fun)
 	VALUES(0) = Cnil;
 	NVALUES = 0;
 	name = fun->bytecodes.name;
-	ecl_interpret(env, fun, fun->bytecodes.code);
+	fun = ecl_interpret(env, fun, fun->bytecodes.code);
 	bds_unwind(old_bds_top);
-	returnn(VALUES(0));
+	return fun;
 }
 
 
@@ -513,7 +511,7 @@ close_around(cl_object fun, cl_object lex) {
 	} \
 	*(the_env->stack_top++) = __aux; }
 
-void *
+cl_object
 ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 {
 	ECL_OFFSET_TABLE;
@@ -682,7 +680,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_EXIT); {
 		ihs_pop();
-		return (char *)vector;
+		return VALUES(0);
 	}
 	/* OP_FLET	nfun{arg}
 	   fun1{object}
@@ -1160,11 +1158,10 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		if (n < 0) {
 			FEerror("Wrong index passed to NTH-VAL", 1, MAKE_FIXNUM(n));
 		} else if ((cl_index)n >= the_env->nvalues) {
-			the_env->values[0] = reg0 = Cnil;
+			reg0 = Cnil;
 		} else {
-			the_env->values[0] = reg0 = the_env->values[n];
+			reg0 = the_env->values[n];
 		}
-		the_env->nvalues = 1;
 		THREAD_NEXT;
 	}
 	/* OP_PROTECT	label
