@@ -806,14 +806,12 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	}
 	CASE(OP_JNIL); {
 		cl_oparg jump = GET_OPARG(vector);
-		NVALUES = 1;
 		if (Null(reg0))
 			vector += jump - OPARG_SIZE;
 		THREAD_NEXT;
 	}
 	CASE(OP_JT); {
 		cl_oparg jump = GET_OPARG(vector);
-		NVALUES = 1;
 		if (!Null(reg0))
 			vector += jump - OPARG_SIZE;
 		THREAD_NEXT;
