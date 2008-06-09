@@ -507,14 +507,15 @@ close_around(cl_object fun, cl_object lex) {
 }
 
 void *
-ecl_interpret(cl_object lex_env, cl_object bytecodes, void *pc)
+ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 {
 	ECL_OFFSET_TABLE;
 	cl_opcode *vector = pc;
 	cl_object reg0 = VALUES(0), reg1;
 	struct ihs_frame ihs;
 	static int i = 0;
-	ihs_push(&ihs, bytecodes, lex_env);
+	ihs_push(&ihs, bytecodes, env);
+#define lex_env ihs.lex_env
 	i++;
  BEGIN:
 	BEGIN_SWITCH {
@@ -1004,7 +1005,8 @@ ecl_interpret(cl_object lex_env, cl_object bytecodes, void *pc)
 		cl_object id = new_frame_id();
 		int n = GET_OPARG(vector);
 		/* Here we save the location of the jump table and the env. */
-		cl_stack_push(lex_env = bind_tagbody(lex_env, id));
+		lex_env = bind_tagbody(lex_env, id);
+		cl_stack_push(lex_env);
 		cl_stack_push((cl_object)vector); /* FIXME! */
 		if (frs_push(id) == 0) {
 			/* The first time, we "name" the tagbody and
@@ -1076,33 +1078,7 @@ ecl_interpret(cl_object lex_env, cl_object bytecodes, void *pc)
 		NVALUES = 1;
 		THREAD_NEXT;
 	}
-	/* OP_PROGV	bindings{list}
-	   ...
-	   OP_EXIT
-	   Execute the code enclosed with the special variables in BINDINGS
-	   set to the values in the list which was passed in VALUES(0).
-	*/
-	CASE(OP_PROGV); {
-		cl_object values = reg0;
-		cl_object vars = cl_stack_pop();
-		cl_index n;
-		for (n = 0; !ecl_endp(vars); n++, vars = ECL_CONS_CDR(vars)) {
-			cl_object var = ECL_CONS_CAR(vars);
-			if (values == Cnil) {
-				bds_bind(var, OBJNULL);
-			} else {
-				bds_bind(var, cl_car(values));
-				values = ECL_CONS_CDR(values);
-			}
-		}
-		cl_stack_push(MAKE_FIXNUM(n));
-		THREAD_NEXT;
-	}
-	CASE(OP_EXIT_PROGV); {
-		cl_index n = fix(cl_stack_pop());
-		bds_unwind_n(n);
-		THREAD_NEXT;
-	}
+
 	/* OP_PUSHVALUES
 		Pushes the values output by the last form, plus the number
 		of values.
@@ -1218,6 +1194,35 @@ ecl_interpret(cl_object lex_env, cl_object bytecodes, void *pc)
 			ecl_unwind(cl_env.frs_top + n);
 		THREAD_NEXT;
 	}
+
+	/* OP_PROGV	bindings{list}
+	   ...
+	   OP_EXIT
+	   Execute the code enclosed with the special variables in BINDINGS
+	   set to the values in the list which was passed in VALUES(0).
+	*/
+	CASE(OP_PROGV); {
+		cl_object values = reg0;
+		cl_object vars = cl_stack_pop();
+		cl_index n;
+		for (n = 0; !ecl_endp(vars); n++, vars = ECL_CONS_CDR(vars)) {
+			cl_object var = ECL_CONS_CAR(vars);
+			if (values == Cnil) {
+				bds_bind(var, OBJNULL);
+			} else {
+				bds_bind(var, cl_car(values));
+				values = ECL_CONS_CDR(values);
+			}
+		}
+		cl_stack_push(MAKE_FIXNUM(n));
+		THREAD_NEXT;
+	}
+	CASE(OP_EXIT_PROGV); {
+		cl_index n = fix(cl_stack_pop());
+		bds_unwind_n(n);
+		THREAD_NEXT;
+	}
+
 	CASE(OP_STEPIN); {
 		cl_object form = GET_DATA(vector, bytecodes);
 		cl_object a = SYM_VAL(@'si::*step-action*');
