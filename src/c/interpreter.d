@@ -276,17 +276,10 @@ ecl_stack_frame_copy(cl_object dest, cl_object orig)
 #define bind_function(env, name, fun) 	CONS(CONS(fun, name), (env))
 #define bind_tagbody(env, id) 		CONS(CONS(id, MAKE_FIXNUM(0)), (env))
 
-static void
-internal_lex_env_error()
-{
-	FEerror("Internal error: local not found.", 0);
-}
-
 static cl_object
 ecl_lex_env_get_record(register cl_object env, register int s)
 {
 	do {
-		if (Null(env)) internal_lex_env_error();
 		if (s-- == 0) return ECL_CONS_CAR(env);
 		env = ECL_CONS_CDR(env);
 	} while(1);
