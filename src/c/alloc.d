@@ -374,6 +374,10 @@ ONCE_MORE:
 	  obj->bytecodes.data_size = 0;
 	  obj->bytecodes.data = NULL;
 	  break;
+	case t_bclosure:
+	  obj->bclosure.code =
+	  obj->bclosure.lex = Cnil;
+	  break;
 	case t_cfun:
 	  obj->cfun.name = OBJNULL;
 	  obj->cfun.block = NULL;
@@ -719,6 +723,7 @@ init_alloc(void)
 	init_tm(t_doublefloat, "LDOUBLE-FLOAT", /* 16 */
 		sizeof(struct ecl_doublefloat), 1);
 	init_tm(t_bytecodes, "bBYTECODES", sizeof(struct ecl_bytecodes), 64);
+	init_tm(t_bytecodes, "bBCLOSURE", sizeof(struct ecl_bclosure), 64);
 	init_tm(t_base_string, "\"BASE-STRING", sizeof(struct ecl_base_string), 64); /* 20 */
 #ifdef ECL_UNICODE
 	init_tm(t_string, "\"STRING", sizeof(struct ecl_string), 64);

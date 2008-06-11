@@ -439,7 +439,32 @@ ecl_apply_lambda(cl_object frame, cl_object fun)
 		FEinvalid_function(fun);
 
 	/* Save the lexical environment and set up a new one */
-	env = fun->bytecodes.lex;
+	old_bds_top = cl_env.bds_top;
+
+	/* Establish bindings */
+	env = lambda_bind(Cnil, frame->frame.top - frame->frame.bottom, fun, frame->frame.bottom);
+
+	VALUES(0) = Cnil;
+	NVALUES = 0;
+	name = fun->bytecodes.name;
+	fun = ecl_interpret(env, fun, fun->bytecodes.code);
+	bds_unwind(old_bds_top);
+	return fun;
+}
+
+
+cl_object
+ecl_apply_bclosure(cl_object frame, cl_object fun)
+{
+	cl_object name, env;
+	bds_ptr old_bds_top;
+
+	if (type_of(fun) != t_bclosure)
+		FEinvalid_function(fun);
+
+	/* Save the lexical environment and set up a new one */
+	env = fun->bclosure.lex;
+	fun = fun->bclosure.code;
 	old_bds_top = cl_env.bds_top;
 
 	/* Establish bindings */
@@ -489,9 +514,9 @@ interpret_funcall(cl_object lex_env, cl_narg narg, cl_object fun)
 
 static cl_object
 close_around(cl_object fun, cl_object lex) {
-	cl_object v = cl_alloc_object(t_bytecodes);
-	v->bytecodes = fun->bytecodes;
-	v->bytecodes.lex = lex;
+	cl_object v = cl_alloc_object(t_bclosure);
+	v->bclosure.code = fun;
+	v->bclosure.lex = lex;
 	return v;
 }
 

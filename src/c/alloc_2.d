@@ -94,6 +94,7 @@ cl_alloc_object(cl_type t)
 	case t_readtable:
 	case t_pathname:
 	case t_bytecodes:
+	case t_bclosure:
 	case t_cfun:
 	case t_cclosure:
 #ifdef CLOS
@@ -223,6 +224,7 @@ init_alloc(void)
 	init_tm(t_doublefloat, "DOUBLE-FLOAT", /* 16 */
 		sizeof(struct ecl_doublefloat));
 	init_tm(t_bytecodes, "BYTECODES", sizeof(struct ecl_bytecodes));
+	init_tm(t_bclosure, "BCLOSURE", sizeof(struct ecl_bclosure));
 	init_tm(t_base_string, "BASE-STRING", sizeof(struct ecl_base_string)); /* 20 */
 #ifdef ECL_UNICODE
 	init_tm(t_string, "STRING", sizeof(struct ecl_string));

@@ -811,7 +811,7 @@ static cl_object
 sharp_Y_reader(cl_object in, cl_object c, cl_object d)
 {
         cl_index i;
-        cl_object x, rv, nth;
+        cl_object x, rv, nth, lex;
 
 	if (d != Cnil && !read_suppress)
 		extra_argument('C', in, d);
@@ -827,7 +827,7 @@ sharp_Y_reader(cl_object in, cl_object c, cl_object d)
         rv = cl_alloc_object(t_bytecodes);
 
         rv->bytecodes.name = CAR(x); x = CDR(x);
-        rv->bytecodes.lex = CAR(x); x = CDR(x);
+        lex = CAR(x); x = CDR(x);
         rv->bytecodes.specials = CAR(x); x = CDR(x);
         rv->bytecodes.definition = CAR(x); x = CDR(x);
 
@@ -842,6 +842,12 @@ sharp_Y_reader(cl_object in, cl_object c, cl_object d)
         for ( i=0, nth=CAR(x) ; !ecl_endp(nth) ; i++, nth=CDR(nth) )
              ((cl_object*)(rv->bytecodes.data))[i] = CAR(nth);
 
+	if (lex != Cnil) {
+		cl_object x = cl_alloc_object(t_bclosure);
+		x->bclosure.code = rv;
+		x->bclosure.lex = lex;
+		rv = x;
+	}
         @(return rv);
 }
 

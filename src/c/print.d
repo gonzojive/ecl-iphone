@@ -1474,9 +1474,29 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		si_write_ugly_object(namestring, stream);
 		break;
 	}
+	case t_bclosure:
+                if ( ecl_print_readably() ) {
+	                cl_index i;
+			cl_object lex = x->bclosure.lex;
+                        cl_object code_l=Cnil, data_l=Cnil;
+			x = x->bclosure.code;
+                        for ( i=x->bytecodes.code_size-1 ; i<(cl_index)(-1l) ; i-- )
+                             code_l = ecl_cons(MAKE_FIXNUM(((cl_opcode*)(x->bytecodes.code))[i]), code_l);
+                        for ( i=x->bytecodes.data_size-1 ; i<(cl_index)(-1l) ; i-- )
+                             data_l = ecl_cons(x->bytecodes.data[i], data_l);
+
+                        write_str("#Y", stream);
+                        si_write_ugly_object(
+			    cl_list(6, x->bytecodes.name, lex,
+				    x->bytecodes.specials, Cnil /* x->bytecodes.definition */,
+				    code_l, data_l),
+			    stream);
+			break;
+                }
 	case t_bytecodes:
                 if ( ecl_print_readably() ) {
 	                cl_index i;
+			cl_object lex = Cnil;
                         cl_object code_l=Cnil, data_l=Cnil;
                         for ( i=x->bytecodes.code_size-1 ; i<(cl_index)(-1l) ; i-- )
                              code_l = ecl_cons(MAKE_FIXNUM(((cl_opcode*)(x->bytecodes.code))[i]), code_l);
@@ -1485,10 +1505,11 @@ si_write_ugly_object(cl_object x, cl_object stream)
 
                         write_str("#Y", stream);
                         si_write_ugly_object(
-			    cl_list(6, x->bytecodes.name, x->bytecodes.lex,
+			    cl_list(6, x->bytecodes.name, lex,
 				    x->bytecodes.specials, Cnil /* x->bytecodes.definition */,
 				    code_l, data_l),
 			    stream);
+			break;
                 } else {
                         cl_object name = x->bytecodes.name;
                         write_str("#<bytecompiled-function ", stream);

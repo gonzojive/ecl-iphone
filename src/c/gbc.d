@@ -358,6 +358,11 @@ BEGIN:
 		i = x->bytecodes.data_size;
 		goto MARK_DATA;
 
+	case t_bclosure:
+		mark_object(x->bclosure.code);
+		mark_next(x->bclosure.lex);
+		break;
+
 	case t_cfun:
 		mark_object(x->cfun.block);
 		mark_next(x->cfun.name);
