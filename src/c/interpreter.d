@@ -900,14 +900,11 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	}
 	/* OP_SETQ	n{arg}
 	   OP_PSETQ	n{arg}
-	   OP_VSETQ	nval{arg}, n{arg}
 	   OP_SETQS	var-name{symbol}
 	   OP_PSETQS	var-name{symbol}
-	   OP_VSETQS	nval{arg}, var-name{symbol}
 		Sets either the n-th local or a special variable VAR-NAME,
-		to either the value in REG0 (OP_SETQ[S]), or to the 
-		first value on the stack (OP_PSETQ[S]), or to the appropriate
-		value of the values list.
+		to either the value in REG0 (OP_SETQ[S]) or to the 
+		first value on the stack (OP_PSETQ[S]).
 	*/
 	CASE(OP_SETQ); {
 		int lex_env_index = GET_OPARG(vector);
@@ -931,19 +928,6 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		cl_object var = GET_DATA(vector, bytecodes);
 		/* INV: Not NIL, and of type t_symbol */
 		ECL_SETQ(var, cl_stack_pop());
-		THREAD_NEXT;
-	}
-	CASE(OP_VSETQ); {
-		int nval = GET_OPARG(vector);
-		int lex_env_index = GET_OPARG(vector);
-		ecl_lex_env_set_var(lex_env, lex_env_index, the_env->values[nval]);
-		THREAD_NEXT;
-	}
-	CASE(OP_VSETQS); {
-		int nval = GET_OPARG(vector);
-		cl_object var = GET_DATA(vector, bytecodes);
-		/* INV: Not NIL, and of type t_symbol */
-		ECL_SETQ(var, the_env->values[nval]);
 		THREAD_NEXT;
 	}
 
@@ -1059,6 +1043,42 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		the_env->nvalues = 1;
 		THREAD_NEXT;
 	}
+	/* OP_MSETQ	n{arg}
+	   {fixnumn}
+	   ...
+	   {fixnum1}
+
+	   Sets N variables to the N values in VALUES(), filling with
+	   NIL when there are values missing. Local variables are denoted
+	   with an integer which points a position in the lexical environment,
+	   while special variables are denoted with a negative index X, which
+	   denotes the value -1-X in the table of constants.
+	*/
+	CASE(OP_MSETQ); {
+		cl_object value;
+		cl_index i, n = GET_OPARG(vector), nv = the_env->nvalues;
+		for (i=0; i<n; i++) {
+			cl_fixnum var = GET_OPARG(vector);
+			value = (i < nv) ? the_env->values[i] : Cnil;
+			if (var >= 0) {
+				ecl_lex_env_set_var(lex_env, var, value);
+			} else {
+				cl_object name = bytecodes->bytecodes.data[-1-var];
+				if (Null(name) || (name->symbol.stype & stp_constant)) {
+					FEassignment_to_constant(name);
+				}
+				ECL_SETQ(name, value);
+			}
+		}
+		if (nv == 0) {
+			the_env->values[0] = reg0 = Cnil;
+		} else {
+			reg0 = the_env->values[0];
+		}
+		the_env->nvalues = 1;
+		THREAD_NEXT;
+	}
+
 	/* OP_PUSHVALUES
 		Pushes the values output by the last form, plus the number
 		of values.

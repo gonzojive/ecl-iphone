@@ -152,6 +152,44 @@ disassemble_labels(cl_object bytecodes, cl_opcode *vector) {
 	return vector;
 }
 
+/* OP_MSETQ	n{arg}
+   {fixnumn}
+   ...
+   {fixnum1}
+
+	Sets N variables to the N values in VALUES(), filling with
+	NIL when there are values missing. Local variables are denoted
+	with an integer which points a position in the lexical environment,
+	while special variables are denoted with a negative index X, which
+	denotes the value -1-X in the table of constants.
+*/
+static cl_opcode *
+disassemble_msetq(cl_object bytecodes, cl_opcode *vector)
+{
+	int i, n = GET_OPARG(vector);
+	bool newline = FALSE;
+
+	for (i=0; i<n; i++) {
+		cl_fixnum var = GET_OPARG(vector);
+		if (newline) {
+			print_noarg("\n\t");
+		} else
+			newline = TRUE;
+		if (var >= 0) {
+			cl_format(4, Ct,
+				  make_constant_base_string("MSETQ\t~D,VALUES(~D)"),
+				  MAKE_FIXNUM(var), MAKE_FIXNUM(i));
+		} else {
+			cl_object name = bytecodes->bytecodes.data[-1-var];
+			cl_format(4, Ct,
+				  make_constant_base_string("MSETQS\t~A,VALUES(~D)"),
+				  name, MAKE_FIXNUM(i));
+		}
+	}
+	return vector;
+}
+
+
 /* OP_PROGV	bindings{list}
    ...
    OP_EXIT
@@ -529,21 +567,15 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	case OP_PSETQ:		string = "PSETQ\t";
 				n = GET_OPARG(vector);
 				goto OPARG;
-	case OP_VSETQ:		string = "VSETQ\t";
-				n = GET_OPARG(vector);
-				o = MAKE_FIXNUM(GET_OPARG(vector));
-				goto OPARG_ARG;
 	case OP_SETQS:		string = "SETQS\t";
 				o = GET_DATA(vector, bytecodes);
 				goto ARG;
 	case OP_PSETQS:		string = "PSETQS\t";
 				o = GET_DATA(vector, bytecodes);
 				goto ARG;
-	case OP_VSETQS:		string = "VSETQS\t";
-				n = GET_OPARG(vector);
-				o = GET_DATA(vector, bytecodes);
-				goto OPARG_ARG;
 
+	case OP_MSETQ:		vector = disassemble_msetq(bytecodes, vector);
+				break;
 	case OP_PROGV:		vector = disassemble_progv(bytecodes, vector);
 				break;
 
