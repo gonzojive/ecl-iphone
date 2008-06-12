@@ -89,7 +89,7 @@ si_compiled_function_name(cl_object fun)
 
 	switch(type_of(fun)) {
 	case t_bclosure:
-		output = fun->bclosure.code;
+		fun = fun->bclosure.code;
 	case t_bytecodes:
 		output = fun->bytecodes.name; break;
 	case t_cfun:
