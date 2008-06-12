@@ -516,6 +516,10 @@ close_around(cl_object fun, cl_object lex) {
 	} \
 	*(the_env->stack_top++) = __aux; }
 
+#define STACK_POP(the_env) *(--(the_env->stack_top))
+
+#define STACK_POP_N(the_env,n) (the_env->stack_top -= n)
+
 /*
  * INTERPRET-FUNCALL is one of the few ways to "exit" the interpreted
  * environment and get into the C/lisp world. Since almost all data
@@ -649,7 +653,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		cl_object fun = the_env->stack_top[-n-1];
 		INTERPRET_FUNCALL(reg0, the_env, frame_aux, n, fun);
 		the_env->values[0] = reg0;
-		cl_stack_pop();
+		STACK_POP(the_env);
 		THREAD_NEXT;
 	}
 
@@ -658,11 +662,11 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		the stack (They all have been deposited by OP_PUSHVALUES)
 	*/
 	CASE(OP_MCALL); {
-		cl_fixnum n = fix(cl_stack_pop());
+		cl_fixnum n = fix(STACK_POP(the_env));
 		cl_object fun = the_env->stack_top[-n-1];
 		INTERPRET_FUNCALL(reg0, the_env, frame_aux, n, fun);
 		the_env->values[0] = reg0;
-		cl_stack_pop();
+		STACK_POP(the_env);
 		THREAD_NEXT;
 	}
 
@@ -825,7 +829,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		output values are left in VALUES(...).
 	*/
 	CASE(OP_THROW); {
-		cl_object tag_name = cl_stack_pop();
+		cl_object tag_name = STACK_POP(the_env);
 		cl_throw(tag_name);
 		THREAD_NEXT;
 	}
@@ -903,7 +907,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	}
 	CASE(OP_PBIND); {
 		cl_object var_name = GET_DATA(vector, bytecodes);
-		cl_object value = cl_stack_pop();
+		cl_object value = STACK_POP(the_env);
 		lex_env = bind_var(lex_env, var_name, value);
 		THREAD_NEXT;
 	}
@@ -921,7 +925,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	}
 	CASE(OP_PBINDS); {
 		cl_object var_name = GET_DATA(vector, bytecodes);
-		cl_object value = cl_stack_pop();
+		cl_object value = STACK_POP(the_env);
 		bds_bind(var_name, value);
 		THREAD_NEXT;
 	}
@@ -955,13 +959,13 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	}
 	CASE(OP_PSETQ); {
 		int lex_env_index = GET_OPARG(vector);
-		ecl_lex_env_set_var(lex_env, lex_env_index, cl_stack_pop());
+		ecl_lex_env_set_var(lex_env, lex_env_index, STACK_POP(the_env));
 		THREAD_NEXT;
 	}
 	CASE(OP_PSETQS); {
 		cl_object var = GET_DATA(vector, bytecodes);
 		/* INV: Not NIL, and of type t_symbol */
-		ECL_SETQ(var, cl_stack_pop());
+		ECL_SETQ(var, STACK_POP(the_env));
 		THREAD_NEXT;
 	}
 
@@ -1011,16 +1015,16 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		} else {
 			reg0 = the_env->values[0];
 			frs_pop(the_env);
-			vector = (cl_opcode *)cl_stack_pop(); /* FIXME! */
-			lex_env = cl_stack_pop();
+			vector = (cl_opcode *)STACK_POP(the_env); /* FIXME! */
+			lex_env = STACK_POP(the_env);
 		}
 		THREAD_NEXT;
 	}
 	CASE(OP_EXIT_FRAME); {
 		bds_unwind(the_env->frs_top->frs_bds_top);
 		frs_pop(the_env);
-		cl_stack_pop();
-		lex_env = cl_stack_pop();
+		STACK_POP(the_env);
+		lex_env = STACK_POP(the_env);
 		THREAD_NEXT;
 	}
 	/* OP_TAGBODY	n{arg}
@@ -1061,8 +1065,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	}
 	CASE(OP_EXIT_TAGBODY); {
 		frs_pop(the_env);
-		cl_stack_pop();
-		lex_env = ECL_CONS_CDR(cl_stack_pop());
+		STACK_POP(the_env);
+		lex_env = ECL_CONS_CDR(STACK_POP(the_env));
 	}
 	CASE(OP_NIL); {
 		reg0 = Cnil;
@@ -1128,7 +1132,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		Adds more values to the ones pushed by OP_PUSHVALUES.
 	*/
 	CASE(OP_PUSHMOREVALUES); {
-		cl_index i, n = fix(cl_stack_pop());
+		cl_index i, n = fix(STACK_POP(the_env));
 		for (i=0; i<the_env->nvalues; i++)
 			STACK_PUSH(the_env, the_env->values[i]);
 		STACK_PUSH(the_env, MAKE_FIXNUM(n + the_env->nvalues));
@@ -1138,7 +1142,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		Pops a singe value pushed by a OP_PUSH* operator.
 	*/
 	CASE(OP_POP); {
-		reg0 = cl_stack_pop();
+		reg0 = STACK_POP(the_env);
 		THREAD_NEXT;
 	}
 	/* OP_POPVALUES
@@ -1183,7 +1187,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		The index N-th is extracted from the top of the stack.
 	*/
 	CASE(OP_NTHVAL); {
-		cl_fixnum n = fix(cl_stack_pop());
+		cl_fixnum n = fix(STACK_POP(the_env));
 		if (n < 0) {
 			FEerror("Wrong index passed to NTH-VAL", 1, MAKE_FIXNUM(n));
 		} else if ((cl_index)n >= the_env->nvalues) {
@@ -1213,8 +1217,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		STACK_PUSH(the_env, (cl_object)exit);
 		if (frs_push(ECL_PROTECT_TAG) != 0) {
 			frs_pop(the_env);
-			vector = (cl_opcode *)cl_stack_pop();
-			lex_env = cl_stack_pop();
+			vector = (cl_opcode *)STACK_POP(the_env);
+			lex_env = STACK_POP(the_env);
 			STACK_PUSH(the_env, MAKE_FIXNUM(the_env->nlj_fr - the_env->frs_top));
 			goto PUSH_VALUES;
 		}
@@ -1223,17 +1227,17 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	CASE(OP_PROTECT_NORMAL); {
 		bds_unwind(the_env->frs_top->frs_bds_top);
 		frs_pop(the_env);
-		cl_stack_pop();
-		lex_env = cl_stack_pop();
+		STACK_POP(the_env);
+		lex_env = STACK_POP(the_env);
 		STACK_PUSH(the_env, MAKE_FIXNUM(1));
 		goto PUSH_VALUES;
 	}
 	CASE(OP_PROTECT_EXIT); {
-		volatile cl_fixnum n = the_env->nvalues = fix(cl_stack_pop());
+		volatile cl_fixnum n = the_env->nvalues = fix(STACK_POP(the_env));
 		while (n--)
-			the_env->values[n] = cl_stack_pop();
+			the_env->values[n] = STACK_POP(the_env);
 		reg0 = the_env->values[0];
-		n = fix(cl_stack_pop());
+		n = fix(STACK_POP(the_env));
 		if (n <= 0)
 			ecl_unwind(the_env->frs_top + n);
 		THREAD_NEXT;
@@ -1247,7 +1251,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_PROGV); {
 		cl_object values = reg0;
-		cl_object vars = cl_stack_pop();
+		cl_object vars = STACK_POP(the_env);
 		cl_index n;
 		for (n = 0; !ecl_endp(vars); n++, vars = ECL_CONS_CDR(vars)) {
 			cl_object var = ECL_CONS_CAR(vars);
@@ -1262,7 +1266,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		THREAD_NEXT;
 	}
 	CASE(OP_EXIT_PROGV); {
-		cl_index n = fix(cl_stack_pop());
+		cl_index n = fix(STACK_POP(the_env));
 		bds_unwind_n(n);
 		THREAD_NEXT;
 	}
