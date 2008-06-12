@@ -1517,7 +1517,7 @@ c_multiple_value_setq(cl_object orig_args, int flags) {
 
 	c_undo_bindings(old_variables);
 
-	return FLAG_VALUES;
+	return FLAG_REG0;
 }
 
 /*
