@@ -683,6 +683,18 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		THREAD_NEXT;
 	}
 
+	CASE(OP_CALLG1); {
+		cl_object s = GET_DATA(vector, bytecodes);
+		reg0 = SYM_FUN(s)->cfun.entry(reg0);
+		THREAD_NEXT;
+	}
+
+	CASE(OP_CALLG2); {
+		cl_object s = GET_DATA(vector, bytecodes);
+		reg0 = SYM_FUN(s)->cfun.entry(STACK_POP(the_env), reg0);
+		THREAD_NEXT;
+	}
+
 	/* OP_FCALL	n{arg}
 		Calls a function in the stack with N arguments which
 		have been also deposited in the stack. The output values

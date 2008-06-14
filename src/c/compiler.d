@@ -1986,6 +1986,28 @@ for special form ~S.", 1, function);
 	 */
 	if (ENV->stepping)
 		asm_op2c(OP_STEPIN, stmt);
+	if (function >= (cl_object)cl_symbols
+	    && function < (cl_object)(cl_symbols + cl_num_symbols_in_core))
+	{
+		cl_object f = SYM_FUN(function);
+		if (f != OBJNULL && type_of(f) == t_cfun) {
+			cl_object args = ECL_CONS_CDR(stmt);
+			cl_index n = ecl_length(args);
+			if (f->cfun.narg == 1 && n == 1) {
+				compile_form(ECL_CONS_CAR(args), FLAG_REG0);
+				asm_op2c(OP_CALLG1, function);
+				new_flags = FLAG_VALUES;
+				goto OUTPUT;
+			} else if (f->cfun.narg == 2 && n == 2) {
+				compile_form(ECL_CONS_CAR(args), FLAG_PUSH);
+				args = ECL_CONS_CDR(args);
+				compile_form(ECL_CONS_CAR(args), FLAG_REG0);
+				asm_op2c(OP_CALLG2, function);
+				new_flags = FLAG_VALUES;
+				goto OUTPUT;
+			}
+		}
+	}
 	new_flags = c_call(stmt, flags);
  OUTPUT:
 	/*

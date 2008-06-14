@@ -641,6 +641,12 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	case OP_LISTA:		string = "LIST*\t";
 				n = GET_OPARG(bytecodes);
 				goto OPARG;
+	case OP_CALLG1:		string = "CALLG1\t";
+				o = GET_DATA(vector, bytecodes);
+				goto ARG;
+	case OP_CALLG2:		string = "CALLG2\t";
+				o = GET_DATA(vector, bytecodes);
+				goto ARG;
 
 	default:
 		FEerror("Unknown code ~S", 1, MAKE_FIXNUM(*(vector-1)));
