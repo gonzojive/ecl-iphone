@@ -190,9 +190,10 @@ disassemble_tagbody(cl_object bytecodes, cl_opcode *vector) {
 	print_noarg("TAGBODY");
 	for (i=0; i<ntags; i++) {
 		GET_LABEL(destination, vector);
-		cl_format(4, Ct,
-			  make_constant_base_string("\n\tTAG\t~D @@ ~D"),
-			  MAKE_FIXNUM(i), MAKE_FIXNUM(destination-base));
+		ecl_princ_str("\n\tTAG\t", Ct);
+		ecl_princ(MAKE_FIXNUM(i), Ct);
+		ecl_princ_str(" @@ ", Ct);
+		ecl_princ(MAKE_FIXNUM(destination - base), Ct);
 	}
 	vector = disassemble(bytecodes, vector);
 	print_noarg("\t\t; tagbody");
@@ -205,11 +206,27 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	const char *string;
 	cl_object o;
 	cl_fixnum n, m;
-	cl_object line_format = make_constant_base_string("~%~4d\t");
+	cl_object line_format;
 	cl_object *data = bytecodes->bytecodes.data;
+	cl_object line_no;
 
+	if (cl_fboundp(@'si::formatter-aux') != Cnil)
+		line_format = make_constant_base_string("~%~4d\t");
+	else
+		line_format = Cnil;
  BEGIN:
-	cl_format(3, Ct, line_format, MAKE_FIXNUM(vector-base));
+	if (0) {
+		line_no = MAKE_FIXNUM(vector-base);
+	} else {
+		line_no = @'*';
+	}
+	if (line_format != Cnil) {
+		cl_format(3, Ct, line_format, line_no);
+	} else {
+		ecl_princ_char('\n', Ct);
+		ecl_princ(line_no, Ct);
+		ecl_princ_char('\t', Ct);
+	}
 	switch (GET_OPCODE(vector)) {
 
 	/* OP_NOP
@@ -610,10 +627,10 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	case OP_CAR:		string = "CAR\tREG0"; goto NOARG;
 	case OP_CDR:		string = "CDR\tREG0"; goto NOARG;
 	case OP_LIST:		string = "LIST\t";
-				GET_OPARG(n, bytecodes);
+				GET_OPARG(n, vector);
 				goto OPARG;
 	case OP_LISTA:		string = "LIST*\t";
-				GET_OPARG(n, bytecodes);
+				GET_OPARG(n, vector);
 				goto OPARG;
 	case OP_CALLG1:		string = "CALLG1\t";
 				GET_DATA(o, vector, data);
