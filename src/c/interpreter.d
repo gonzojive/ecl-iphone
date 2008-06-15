@@ -557,6 +557,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	typedef struct cl_env_struct *cl_env_ptr;
 	const cl_env_ptr the_env = &cl_env;
 	cl_opcode *vector = pc;
+	cl_object *data = bytecodes->bytecodes.data;
 	cl_object reg0 = the_env->values[0], reg1, lex_env = env;
 	struct ecl_stack_frame frame_aux;
 	volatile struct ihs_frame ihs;
@@ -574,7 +575,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		Sets REG0 to an immediate value.
 	*/
 	CASE(OP_QUOTE); {
-		reg0 = GET_DATA(vector, bytecodes);
+		GET_DATA(reg0, vector, data);
 		THREAD_NEXT;
 	}
 	/* OP_VAR	n{arg}, var{symbol}
@@ -582,7 +583,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		VAR is the name of the variable for readability purposes.
 	*/
 	CASE(OP_VAR); {
-		int lex_env_index = GET_OPARG(vector);
+		int lex_env_index;
+		GET_OPARG(lex_env_index, vector);
 		reg0 = ecl_lex_env_get_var(lex_env, lex_env_index);
 		THREAD_NEXT;
 	}
@@ -592,7 +594,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		VAR should be either a special variable or a constant.
 	*/
 	CASE(OP_VARS); {
-		cl_object var_name = GET_DATA(vector, bytecodes);
+		cl_object var_name;
+		GET_DATA(var_name, vector, data);
 		reg0 = search_global(var_name);
 		THREAD_NEXT;
 	}
@@ -623,7 +626,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		reg0 = ecl_list1(reg0);
 
 	CASE(OP_LISTA);	{
-		cl_index n = GET_OPARG(vector);
+		cl_index n;
+		GET_OPARG(n, vector);
 		while (--n) {
 			reg0 = CONS(STACK_POP(the_env), reg0);
 		}
@@ -641,7 +645,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		Pushes the value of the n-th local onto the stack.
 	*/
 	CASE(OP_PUSHV); {
-		int lex_env_index = GET_OPARG(vector);
+		int lex_env_index;
+		GET_OPARG(lex_env_index, vector);
 		STACK_PUSH(the_env, ecl_lex_env_get_var(lex_env, lex_env_index));
 		THREAD_NEXT;
 	}
@@ -651,7 +656,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		VAR should be either a special variable or a constant.
 	*/
 	CASE(OP_PUSHVS); {
-		cl_object var_name = GET_DATA(vector, bytecodes);
+		cl_object var_name;
+		GET_DATA(var_name, vector, data);
 		STACK_PUSH(the_env, search_global(var_name));
 		THREAD_NEXT;
 	}
@@ -660,7 +666,9 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		Pushes "value" onto the stack.
 	*/
 	CASE(OP_PUSHQ); {
-		STACK_PUSH(the_env, GET_DATA(vector, bytecodes));
+		cl_object aux;
+		GET_DATA(aux, vector, data);
+		STACK_PUSH(the_env, aux);
 		THREAD_NEXT;
 	}
 	/* OP_CALL	n{arg}
@@ -669,7 +677,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		are left in VALUES(...)
 	*/
 	CASE(OP_CALL); {
-		cl_fixnum n = GET_OPARG(vector);
+		cl_fixnum n;
+		GET_OPARG(n, vector);
 		INTERPRET_FUNCALL(reg0, the_env, frame_aux, n, reg0);
 		THREAD_NEXT;
 	}
@@ -679,22 +688,28 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		deposited in the stack. The output values are left in VALUES.
 	*/
 	CASE(OP_CALLG); {
-		cl_fixnum n = GET_OPARG(vector);
-		cl_object f = GET_DATA(vector, bytecodes);
+		cl_fixnum n;
+		cl_object f;
+		GET_OPARG(n, vector);
+		GET_DATA(f, vector, data);
 		INTERPRET_FUNCALL(reg0, the_env, frame_aux, n, f);
 		THREAD_NEXT;
 	}
 
 	CASE(OP_CALLG1); {
-		cl_object s = GET_DATA(vector, bytecodes);
-		cl_objectfn_fixed f = (cl_objectfn_fixed)SYM_FUN(s)->cfun.entry;
+		cl_object s;
+		cl_objectfn_fixed f;
+		GET_DATA(s, vector, data);
+		f = (cl_objectfn_fixed)SYM_FUN(s)->cfun.entry;
 		reg0 = f(reg0);
 		THREAD_NEXT;
 	}
 
 	CASE(OP_CALLG2); {
-		cl_object s = GET_DATA(vector, bytecodes);
-		cl_objectfn_fixed f = (cl_objectfn_fixed)SYM_FUN(s)->cfun.entry;
+		cl_object s;
+		cl_objectfn_fixed f;
+		GET_DATA(s, vector, data);
+		f = (cl_objectfn_fixed)SYM_FUN(s)->cfun.entry;
 		reg0 = f(STACK_POP(the_env), reg0);
 		THREAD_NEXT;
 	}
@@ -705,8 +720,10 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		are left in VALUES(...)
 	*/
 	CASE(OP_FCALL); {
-		cl_fixnum n = GET_OPARG(vector);
-		cl_object fun = STACK_REF(the_env,-n-1);
+		cl_fixnum n;
+		cl_object fun;
+		GET_OPARG(n, vector);
+		fun = STACK_REF(the_env,-n-1);
 		INTERPRET_FUNCALL(reg0, the_env, frame_aux, n, fun);
 		STACK_POP(the_env);
 		THREAD_NEXT;
@@ -730,7 +747,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		is pushed on the stack.
 	*/
 	CASE(OP_PCALL); {
-		cl_fixnum n = GET_OPARG(vector);
+		cl_fixnum n;
+		GET_OPARG(n, vector);
 		INTERPRET_FUNCALL(reg0, the_env, frame_aux, n, reg0);
 		STACK_PUSH(the_env, reg0);
 		THREAD_NEXT;
@@ -742,8 +760,10 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		the stack.
 	*/
 	CASE(OP_PCALLG); {
-		cl_fixnum n = GET_OPARG(vector);
-		cl_object f = GET_DATA(vector, bytecodes);
+		cl_fixnum n;
+		cl_object f;
+		GET_OPARG(n, vector);
+		GET_DATA(f, vector, data);
 		INTERPRET_FUNCALL(f, the_env, frame_aux, n, f);
 		STACK_PUSH(the_env, f);
 		THREAD_NEXT;
@@ -755,8 +775,10 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		is pushed on the stack.
 	*/
 	CASE(OP_PFCALL); {
-		cl_fixnum n = GET_OPARG(vector);
-		cl_object fun = STACK_REF(the_env, -n-1);
+		cl_fixnum n;
+		cl_object fun;
+		GET_OPARG(n, vector);
+		fun = STACK_REF(the_env, -n-1);
 		INTERPRET_FUNCALL(fun, the_env, frame_aux, n, fun);
 		STACK_REF(the_env, -1) = fun;
 		THREAD_NEXT;
@@ -779,18 +801,18 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	   index of the first function: the others are after this one.
 	*/
 	CASE(OP_FLET); {
-		cl_index nfun = GET_OPARG(vector);
-		cl_index first = GET_OPARG(vector);
-		cl_object *fun = bytecodes->bytecodes.data + first;
+		cl_index nfun, first;
+		cl_object old_lex, *fun;
+		GET_OPARG(nfun, vector);
+		GET_OPARG(first, vector);
+		fun = data + first;
 		/* Copy the environment so that functions get it without references
 		   to themselves, and then add new closures to the environment. */
-		cl_object old_lex = lex_env;
-		cl_object new_lex = old_lex;
+		old_lex = lex_env;
 		while (nfun--) {
 			cl_object f = close_around(*(fun++), old_lex);
-			new_lex = bind_function(new_lex, f->bytecodes.name, f);
+			lex_env = bind_function(lex_env, f->bytecodes.name, f);
 		}
-		lex_env = new_lex;
 		THREAD_NEXT;
 	}
 	/* OP_LABELS	nfun{arg}
@@ -804,10 +826,11 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	   the functions "fun1" ... "funn".
 	*/
 	CASE(OP_LABELS); {
-		cl_index i, nfun = GET_OPARG(vector);
-		cl_index first = GET_OPARG(vector);
-		cl_object *fun = bytecodes->bytecodes.data + first;
-		cl_object l, new_lex;
+		cl_index i, nfun, first;
+		cl_object *fun, l, new_lex;
+		GET_OPARG(nfun, vector);
+		GET_OPARG(first, vector);
+		fun = data + first;
 		/* Build up a new environment with all functions */
 		for (new_lex = lex_env, i = nfun; i; i--) {
 			cl_object f = *(fun++);
@@ -828,9 +851,10 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		which have been deposited in the stack.
 	*/
 	CASE(OP_LFUNCTION); {
-		int lex_env_index = GET_OPARG(vector);
-		cl_object fun_record = ecl_lex_env_get_record(lex_env, lex_env_index);
-		reg0 = CAR(fun_record);
+		int lex_env_index;
+		cl_object fun_record;
+		GET_OPARG(lex_env_index, vector);
+		reg0 = ECL_CONS_CAR(ecl_lex_env_get_record(lex_env, lex_env_index));
 		THREAD_NEXT;
 	}
 
@@ -839,9 +863,11 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		may be defined in the global environment or in the local
 		environment. This last value takes precedence.
 	*/
-	CASE(OP_FUNCTION);
-		reg0 = ecl_fdefinition(GET_DATA(vector, bytecodes));
+	CASE(OP_FUNCTION); {
+		GET_DATA(reg0, vector, data);
+		reg0 = ecl_fdefinition(reg0);
 		THREAD_NEXT;
+	}
 
 	/* OP_CLOSE	name{symbol}
 		Extracts the function associated to a symbol. The function
@@ -849,8 +875,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		environment. This last value takes precedence.
 	*/
 	CASE(OP_CLOSE); {
-		cl_object function_object = GET_DATA(vector, bytecodes);
-		reg0 = close_around(function_object, lex_env);
+		GET_DATA(reg0, vector, data);
+		reg0 = close_around(reg0, lex_env);
 		THREAD_NEXT;
 	}
 	/* OP_GO	n{arg}
@@ -860,9 +886,11 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		purposes.
 	*/
 	CASE(OP_GO); {
-		cl_object id = ecl_lex_env_get_tag(lex_env, GET_OPARG(vector));
-		cl_object tag_name = GET_DATA(vector, bytecodes);
-		cl_go(id, tag_name);
+		cl_index lex_env_index;
+		cl_object tag_name;
+		GET_OPARG(lex_env_index, vector);
+		GET_DATA(tag_name, vector, data);
+		cl_go(ecl_lex_env_get_tag(lex_env, lex_env_index), tag_name);
 		THREAD_NEXT;
 	}
 	/* OP_RETURN	n{arg}
@@ -870,12 +898,14 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		occuppies the n-th position.
 	*/
 	CASE(OP_RETURN); {
-		int lex_env_index = GET_OPARG(vector);
-		cl_object block_record = ecl_lex_env_get_record(lex_env, lex_env_index);
-		cl_object id = CAR(block_record);
-		cl_object block_name = CDR(block_record);
+		int lex_env_index;
+		cl_object block_record, id, block_name;
+		GET_OPARG(lex_env_index, vector);
+		/* record = (id . name) */
+		block_record = ecl_lex_env_get_record(lex_env, lex_env_index);
 		the_env->values[0] = reg0;
-		cl_return_from(id, block_name);
+		cl_return_from(ECL_CONS_CAR(block_record),
+			       ECL_CONS_CDR(block_record));
 		THREAD_NEXT;
 	}
 	/* OP_THROW
@@ -898,33 +928,38 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		comparing with the value of REG0.
 	*/
 	CASE(OP_JMP); {
-		cl_oparg jump = GET_OPARG(vector);
+		cl_oparg jump;
+		GET_OPARG(jump, vector);
 		vector += jump - OPARG_SIZE;
 		THREAD_NEXT;
 	}
 	CASE(OP_JNIL); {
-		cl_oparg jump = GET_OPARG(vector);
+		cl_oparg jump;
+		GET_OPARG(jump, vector);
 		if (Null(reg0))
 			vector += jump - OPARG_SIZE;
 		THREAD_NEXT;
 	}
 	CASE(OP_JT); {
-		cl_oparg jump = GET_OPARG(vector);
+		cl_oparg jump;
+		GET_OPARG(jump, vector);
 		if (!Null(reg0))
 			vector += jump - OPARG_SIZE;
 		THREAD_NEXT;
 	}
 	CASE(OP_JEQL); {
-		cl_oparg value = GET_OPARG(vector);
-		cl_oparg jump = GET_OPARG(vector);
-		if (ecl_eql(reg0, bytecodes->bytecodes.data[value]))
+		cl_oparg value, jump;
+		GET_OPARG(value, vector);
+		GET_OPARG(jump, vector);
+		if (ecl_eql(reg0, data[value]))
 			vector += jump - OPARG_SIZE;
 		THREAD_NEXT;
 	}
 	CASE(OP_JNEQL); {
-		cl_oparg value = GET_OPARG(vector);
-		cl_oparg jump = GET_OPARG(vector);
-		if (!ecl_eql(reg0, bytecodes->bytecodes.data[value]))
+		cl_oparg value, jump;
+		GET_OPARG(value, vector);
+		GET_OPARG(jump, vector);
+		if (!ecl_eql(reg0, data[value]))
 			vector += jump - OPARG_SIZE;
 		THREAD_NEXT;
 	}
@@ -941,7 +976,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		Undo "n" local bindings.
 	*/
 	CASE(OP_UNBIND); {
-		cl_index n = GET_OPARG(vector);
+		cl_oparg n;
+		GET_OPARG(n, vector);
 		while (n--)
 			lex_env = ECL_CONS_CDR(lex_env);
 		THREAD_NEXT;
@@ -950,7 +986,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		Undo "n" bindings of special variables.
 	*/
 	CASE(OP_UNBINDS); {
-		cl_index n = GET_OPARG(vector);
+		cl_oparg n;
+		GET_OPARG(n, vector);
 		bds_unwind_n(n);
 		THREAD_NEXT;
 	}
@@ -965,39 +1002,44 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		to a given value in the values array.
 	*/
 	CASE(OP_BIND); {
-		cl_object var_name = GET_DATA(vector, bytecodes);
+		cl_object var_name;
+		GET_DATA(var_name, vector, data);
 		lex_env = bind_var(lex_env, var_name, reg0);
 		THREAD_NEXT;
 	}
 	CASE(OP_PBIND); {
-		cl_object var_name = GET_DATA(vector, bytecodes);
-		cl_object value = STACK_POP(the_env);
-		lex_env = bind_var(lex_env, var_name, value);
+		cl_object var_name, value;
+		GET_DATA(var_name, vector, data);
+		lex_env = bind_var(lex_env, var_name, STACK_POP(the_env));
 		THREAD_NEXT;
 	}
 	CASE(OP_VBIND); {
-		cl_index n = GET_OPARG(vector);
-		cl_object var_name = GET_DATA(vector, bytecodes);
-		cl_object value = (n < the_env->nvalues) ? the_env->values[n] : Cnil;
-		lex_env = bind_var(lex_env, var_name, value);
+		cl_index n;
+		cl_object var_name;
+		GET_OPARG(n, vector);
+		GET_DATA(var_name, vector, data);
+		lex_env = bind_var(lex_env, var_name,
+				   (n < the_env->nvalues) ? the_env->values[n] : Cnil);
 		THREAD_NEXT;
 	}
 	CASE(OP_BINDS); {
-		cl_object var_name = GET_DATA(vector, bytecodes);
+		cl_object var_name;
+		GET_DATA(var_name, vector, data);
 		bds_bind(var_name, reg0);
 		THREAD_NEXT;
 	}
 	CASE(OP_PBINDS); {
-		cl_object var_name = GET_DATA(vector, bytecodes);
-		cl_object value = STACK_POP(the_env);
-		bds_bind(var_name, value);
+		cl_object var_name;
+		GET_DATA(var_name, vector, data);
+		bds_bind(var_name, STACK_POP(the_env));
 		THREAD_NEXT;
 	}
 	CASE(OP_VBINDS); {
-		cl_index n = GET_OPARG(vector);
-		cl_object var_name = GET_DATA(vector, bytecodes);
-		cl_object value = (n < the_env->nvalues) ? the_env->values[n] : Cnil;
-		bds_bind(var_name, value);
+		cl_index n;
+		cl_object var_name;
+		GET_OPARG(n, vector);
+		GET_DATA(var_name, vector, data);
+		bds_bind(var_name, (n < the_env->nvalues) ? the_env->values[n] : Cnil);
 		THREAD_NEXT;
 	}
 	/* OP_SETQ	n{arg}
@@ -1013,12 +1055,14 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		that NVALUE > 0 strictly.
 	*/
 	CASE(OP_SETQ); {
-		int lex_env_index = GET_OPARG(vector);
+		int lex_env_index;
+		GET_OPARG(lex_env_index, vector);
 		ecl_lex_env_set_var(lex_env, lex_env_index, reg0);
 		THREAD_NEXT;
 	}
 	CASE(OP_SETQS); {
-		cl_object var = GET_DATA(vector, bytecodes);
+		cl_object var;
+		GET_DATA(var, vector, data);
 		/* INV: Not NIL, and of type t_symbol */
 		if (var->symbol.stype & stp_constant)
 			FEassignment_to_constant(var);
@@ -1026,27 +1070,33 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		THREAD_NEXT;
 	}
 	CASE(OP_PSETQ); {
-		int lex_env_index = GET_OPARG(vector);
+		int lex_env_index;
+		GET_OPARG(lex_env_index, vector);
 		ecl_lex_env_set_var(lex_env, lex_env_index, STACK_POP(the_env));
 		THREAD_NEXT;
 	}
 	CASE(OP_PSETQS); {
-		cl_object var = GET_DATA(vector, bytecodes);
+		cl_object var;
+		GET_DATA(var, vector, data);
 		/* INV: Not NIL, and of type t_symbol */
 		ECL_SETQ(var, STACK_POP(the_env));
 		THREAD_NEXT;
 	}
 	CASE(OP_VSETQ); {
-		int lex_env_index = GET_OPARG(vector);
-		int index = GET_OPARG(vector);
-		cl_object v = (index >= the_env->nvalues)? Cnil : the_env->values[index];
-		ecl_lex_env_set_var(lex_env, lex_env_index, v);
+		cl_index lex_env_index;
+		cl_oparg index;
+		GET_OPARG(lex_env_index, vector);
+		GET_OPARG(index, vector);
+		ecl_lex_env_set_var(lex_env, lex_env_index,
+				    (index >= the_env->nvalues)? Cnil : the_env->values[index]);
 		THREAD_NEXT;
 	}
 	CASE(OP_VSETQS); {
-		cl_object var = GET_DATA(vector, bytecodes);
-		int index = GET_OPARG(vector);
-		cl_object v = (index >= the_env->nvalues)? Cnil : the_env->values[index];
+		cl_object var, v;
+		cl_oparg index;
+		GET_DATA(var, vector, data);
+		GET_OPARG(index, vector);
+		v = (index >= the_env->nvalues)? Cnil : the_env->values[index];
 		ECL_SETQ(var, v);
 		THREAD_NEXT;
 	}
@@ -1061,7 +1111,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	   LABEL points to the first instruction after OP_EXIT.
 	*/
 	CASE(OP_BLOCK); {
-		reg0 = GET_DATA(vector, bytecodes);
+		GET_DATA(reg0, vector, data);
 		reg1 = new_frame_id();
 		goto DO_BLOCK;
 	}
@@ -1124,7 +1174,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_TAGBODY); {
 		cl_object id = new_frame_id();
-		int n = GET_OPARG(vector);
+		int n;
+		GET_OPARG(n, vector);
 		/* Here we save the location of the jump table and the env. */
 		lex_env = bind_tagbody(lex_env, id);
 		STACK_PUSH(the_env, lex_env);
@@ -1220,7 +1271,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		Note that N is strictly > 0.
 	*/
 	CASE(OP_VALUES); {
-		cl_fixnum n = GET_OPARG(vector);
+		cl_fixnum n;
+		GET_OPARG(n, vector);
 		the_env->nvalues = n;
 		STACK_POP_N(the_env, n);
 		memcpy(the_env->values, &STACK_REF(the_env, 0), n * sizeof(cl_object));
@@ -1318,9 +1370,10 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	}
 
 	CASE(OP_STEPIN); {
-		cl_object form = GET_DATA(vector, bytecodes);
+		cl_object form;
 		cl_object a = SYM_VAL(@'si::*step-action*');
 		cl_index n;
+		GET_DATA(form, vector, data);
 		SETUP_ENV(the_env);
 		the_env->values[0] = reg0;
 		n = cl_stack_push_values();
@@ -1348,7 +1401,8 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		/* We are going to call a function. However, we would
 		 * like to step _in_ the function. STEPPER takes care of
 		 * that. */
-		cl_fixnum n = GET_OPARG(vector);
+		cl_fixnum n;
+		GET_OPARG(n, vector);
 		SETUP_ENV(the_env);
 		if (SYM_VAL(@'si::*step-action*') == Ct) {
 			STACK_PUSH(the_env, reg0);
