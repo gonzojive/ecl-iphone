@@ -173,6 +173,8 @@ enum {
   OP_SETQS,
   OP_PSETQ,
   OP_PSETQS,
+  OP_VSETQ,
+  OP_VSETQS,
   OP_BLOCK,
   OP_DO,
   OP_CATCH,
@@ -182,7 +184,6 @@ enum {
   OP_PROTECT,
   OP_PROTECT_NORMAL,
   OP_PROTECT_EXIT,
-  OP_MSETQ,
   OP_PROGV,
   OP_EXIT_PROGV,
   OP_PUSHVALUES,
@@ -303,6 +304,8 @@ typedef int16_t cl_oparg;
 		&&LBL_OP_SETQS - &&LBL_OP_NOP,\
 		&&LBL_OP_PSETQ - &&LBL_OP_NOP,\
 		&&LBL_OP_PSETQS - &&LBL_OP_NOP,\
+		&&LBL_OP_VSETQ - &&LBL_OP_NOP,\
+		&&LBL_OP_VSETQS - &&LBL_OP_NOP,\
 		&&LBL_OP_BLOCK - &&LBL_OP_NOP,\
 		&&LBL_OP_DO - &&LBL_OP_NOP,\
 		&&LBL_OP_CATCH - &&LBL_OP_NOP,\
@@ -312,7 +315,6 @@ typedef int16_t cl_oparg;
 		&&LBL_OP_PROTECT - &&LBL_OP_NOP,\
 		&&LBL_OP_PROTECT_NORMAL - &&LBL_OP_NOP,\
 		&&LBL_OP_PROTECT_EXIT - &&LBL_OP_NOP,\
-		&&LBL_OP_MSETQ - &&LBL_OP_NOP,\
 		&&LBL_OP_PROGV - &&LBL_OP_NOP,\
 		&&LBL_OP_EXIT_PROGV - &&LBL_OP_NOP,\
 		&&LBL_OP_PUSHVALUES - &&LBL_OP_NOP,\

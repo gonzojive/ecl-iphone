@@ -597,7 +597,9 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		THREAD_NEXT;
 	}
 
-	/* OP_CONS, OP_CAR, OP_CDR, etc act on reg0 and stack. */
+	/* OP_CONS, OP_CAR, OP_CDR, etc
+		Inlined forms for some functions which act on reg0 and stack.
+	*/
 
 	CASE(OP_CONS); {
 		cl_object car = STACK_POP(the_env);
@@ -685,13 +687,15 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 
 	CASE(OP_CALLG1); {
 		cl_object s = GET_DATA(vector, bytecodes);
-		reg0 = SYM_FUN(s)->cfun.entry(reg0);
+		cl_objectfn_fixed f = (cl_objectfn_fixed)SYM_FUN(s)->cfun.entry;
+		reg0 = f(reg0);
 		THREAD_NEXT;
 	}
 
 	CASE(OP_CALLG2); {
 		cl_object s = GET_DATA(vector, bytecodes);
-		reg0 = SYM_FUN(s)->cfun.entry(STACK_POP(the_env), reg0);
+		cl_objectfn_fixed f = (cl_objectfn_fixed)SYM_FUN(s)->cfun.entry;
+		reg0 = f(STACK_POP(the_env), reg0);
 		THREAD_NEXT;
 	}
 
@@ -952,10 +956,13 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	}
 	/* OP_BIND	name{symbol}
 	   OP_PBIND	name{symbol}
+	   OP_VBIND	nvalue{arg}, name{symbol}
 	   OP_BINDS	name{symbol}
 	   OP_PBINDS	name{symbol}
-		Binds a lexical or special variable to the either the
-		value of REG0 or the first value of the stack.
+	   OP_VBINDS	nvalue{arg}, name{symbol}
+		Binds a lexical or special variable to the the
+		value of REG0, the first value of the stack (PBIND) or
+		to a given value in the values array.
 	*/
 	CASE(OP_BIND); {
 		cl_object var_name = GET_DATA(vector, bytecodes);
@@ -997,9 +1004,13 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	   OP_PSETQ	n{arg}
 	   OP_SETQS	var-name{symbol}
 	   OP_PSETQS	var-name{symbol}
+	   OP_VSETQ	n{arg}, nvalue{arg}
+	   OP_VSETQS	var-name{symbol}, nvalue{arg}
 		Sets either the n-th local or a special variable VAR-NAME,
 		to either the value in REG0 (OP_SETQ[S]) or to the 
-		first value on the stack (OP_PSETQ[S]).
+		first value on the stack (OP_PSETQ[S]), or to a given
+		value from the multiple values array (OP_VSETQ[S]). Note
+		that NVALUE > 0 strictly.
 	*/
 	CASE(OP_SETQ); {
 		int lex_env_index = GET_OPARG(vector);
@@ -1025,6 +1036,21 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		ECL_SETQ(var, STACK_POP(the_env));
 		THREAD_NEXT;
 	}
+	CASE(OP_VSETQ); {
+		int lex_env_index = GET_OPARG(vector);
+		int index = GET_OPARG(vector);
+		cl_object v = (index >= the_env->nvalues)? Cnil : the_env->values[index];
+		ecl_lex_env_set_var(lex_env, lex_env_index, v);
+		THREAD_NEXT;
+	}
+	CASE(OP_VSETQS); {
+		cl_object var = GET_DATA(vector, bytecodes);
+		int index = GET_OPARG(vector);
+		cl_object v = (index >= the_env->nvalues)? Cnil : the_env->values[index];
+		ECL_SETQ(var, v);
+		THREAD_NEXT;
+	}
+			
 
 	/* OP_BLOCK	label{arg}
 	   ...
@@ -1135,39 +1161,6 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	}
 	CASE(OP_VALUEREG0); {
 		the_env->nvalues = 1;
-		THREAD_NEXT;
-	}
-	/* OP_MSETQ	n{arg}
-	   {fixnumn}
-	   ...
-	   {fixnum1}
-
-	   Sets N variables to the N values in VALUES(), filling with
-	   NIL when there are values missing. Local variables are denoted
-	   with an integer which points a position in the lexical environment,
-	   while special variables are denoted with a negative index X, which
-	   denotes the value -1-X in the table of constants.
-	*/
-	CASE(OP_MSETQ); {
-		cl_object value;
-		cl_index i, n = GET_OPARG(vector), nv = the_env->nvalues;
-		the_env->values[0] = reg0;
-		for (i=0; i<n; i++) {
-			cl_fixnum var = GET_OPARG(vector);
-			value = (i < nv) ? the_env->values[i] : Cnil;
-			if (var >= 0) {
-				ecl_lex_env_set_var(lex_env, var, value);
-			} else {
-				cl_object name = bytecodes->bytecodes.data[-1-var];
-				if (Null(name) || (name->symbol.stype & stp_constant)) {
-					FEassignment_to_constant(name);
-				}
-				ECL_SETQ(name, value);
-			}
-		}
-		if (nv == 0) {
-			reg0 = Cnil;
-		}
 		THREAD_NEXT;
 	}
 
