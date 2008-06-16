@@ -379,6 +379,7 @@ ONCE_MORE:
 	  obj->bclosure.lex = Cnil;
 	  break;
 	case t_cfun:
+	case t_cfunfixed:
 	  obj->cfun.name = OBJNULL;
 	  obj->cfun.block = NULL;
 	  break;
@@ -743,6 +744,7 @@ init_alloc(void)
 	init_tm(t_random, "$RANDOM-STATE", sizeof(struct ecl_random), 1);
 	init_tm(t_readtable, "rREADTABLE", sizeof(struct ecl_readtable), 1);
 	init_tm(t_cfun, "fCFUN", sizeof(struct ecl_cfun), 32);
+	init_tm(t_cfunfixed, "fCFUN", sizeof(struct ecl_cfun), 32);
 	init_tm(t_cclosure, "cCCLOSURE", sizeof(struct ecl_cclosure), 1);
 #ifndef CLOS
 	init_tm(t_structure, "SSTRUCTURE", sizeof(struct ecl_structure), 32);

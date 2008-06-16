@@ -90,22 +90,37 @@ enum {
 };
 
 #define MAX_OPARG 0x7FFF
-#ifdef ECL_SMALL_BYTECODES
-#define OPCODE_SIZE 1
-#define OPARG_SIZE sizeof(cl_oparg)
-typedef char cl_opcode;
-#else
-#define OPCODE_SIZE 1
-#define OPARG_SIZE 1
-typedef int16_t cl_opcode;
-#endif
 typedef int16_t cl_oparg;
-#define READ_OPCODE(v)	(*(cl_opcode *)(v))
-#define READ_OPARG(v)	(*(cl_oparg *)(v))
-#define GET_OPCODE(v)	(*((cl_opcode *)(v)++))
-#define GET_OPARG(r,v) { \
-	r = *((cl_oparg *)(v)++); \
-}
+
+/*
+ * Note that in the small bytecodes case, we have to recompose a signed
+ * small integer out of its pieces. We have to be careful because the
+ * least significant byte has to be interpreted as unsigned, while the
+ * most significant byte carries a sign.
+ */
+#ifdef ECL_SMALL_BYTECODES
+  typedef signed char cl_opcode;
+# define OPCODE_SIZE 1
+# define OPARG_SIZE 2
+# ifdef WORDS_BIGENDIAN
+#  define READ_OPARG(v)	((cl_fixnum)v[0] << 8) + (unsigned char)v[1]
+# else
+#if 0
+#  define READ_OPARG(v) ((cl_fixnum)v[1] << 8) + (unsigned char)v[0]
+#else
+#  define READ_OPARG(v) ((cl_oparg*)v)[0]
+#endif
+# endif
+# define GET_OPARG(r,v) { r = READ_OPARG(v); v += 2; }
+#else
+  typedef int16_t cl_opcode;
+# define OPCODE_SIZE 1
+# define OPARG_SIZE 1
+# define READ_OPCODE(v)	v[0]
+# define READ_OPARG(v)	v[0]
+# define GET_OPARG(r,v) { r = READ_OPARG(v); v++; }
+#endif
+#define GET_OPCODE(v) *((v)++)
 #define GET_DATA(r,v,data) { \
 	cl_oparg ndx; \
 	GET_OPARG(ndx, v); \

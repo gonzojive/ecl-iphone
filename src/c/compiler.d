@@ -166,8 +166,7 @@ asm_end(cl_index beginning) {
 	bytecodes->bytecodes.file = (file == OBJNULL)? Cnil : file;
 	bytecodes->bytecodes.file_position = (position == OBJNULL)? Cnil : position;
 	for (i = 0, code = (cl_opcode *)bytecodes->bytecodes.code; i < code_size; i++) {
-		code[i] =
-			(cl_fixnum)cl_env.stack[beginning+i];
+		code[i] = (cl_opcode)(cl_fixnum)cl_env.stack[beginning+i];
 	}
 	for (i=0; i < data_size; i++) {
 		bytecodes->bytecodes.data[i] = CAR(ENV->constants);
@@ -181,11 +180,11 @@ asm_end(cl_index beginning) {
 static void
 asm_arg(int n) {
 #ifdef WORDS_BIGENDIAN
-	asm_op((n >> 8));
+	asm_op((n >> 8) & 0xFF);
 	asm_op(n & 0xFF);
 #else
 	asm_op(n & 0xFF);
-	asm_op((n >> 8));
+	asm_op((n >> 8) & 0xFF);
 #endif
 }
 #else
@@ -224,7 +223,7 @@ asm_complete(register int op, register cl_index pc) {
 		FEprogram_error("Too large jump", 0);
 	else {
 #ifdef ECL_SMALL_BYTECODES
-		char low = delta & 0xFF;
+		unsigned char low = delta & 0xFF;
 		char high = delta >> 8;
 # ifdef WORDS_BIGENDIAN
 		cl_env.stack[pc] = (cl_object)(cl_fixnum)high;
@@ -1996,7 +1995,8 @@ for special form ~S.", 1, function);
 	    && function < (cl_object)(cl_symbols + cl_num_symbols_in_core))
 	{
 		cl_object f = SYM_FUN(function);
-		if (f != OBJNULL && type_of(f) == t_cfun) {
+		cl_type t = (f == OBJNULL)? t_other : type_of(f);
+		if (t == t_cfunfixed) {
 			cl_object args = ECL_CONS_CDR(stmt);
 			cl_index n = ecl_length(args);
 			if (f->cfun.narg == 1 && n == 1) {

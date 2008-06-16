@@ -104,10 +104,9 @@ mangle_name(cl_object output, char *source, int l)
 			@(return found output maxarg)
 		}
 	} else if (!Null(symbol)) {
-		cl_object fun;
-		fun = symbol->symbol.gfdef;
-		if (fun != OBJNULL && type_of(fun) == t_cfun &&
-		    fun->cfun.block == OBJNULL) {
+		cl_object fun = symbol->symbol.gfdef;
+		cl_type t = (fun == OBJNULL)? t_other : type_of(fun);
+		if ((t == t_cfun || t == t_cfunfixed) && fun->cfun.block == OBJNULL) {
 			for (l = 0; l <= cl_num_symbols_in_core; l++) {
 				cl_object s = (cl_object)(cl_symbols + l);
 				if (fun == SYM_FUN(s)) {
@@ -220,9 +219,13 @@ make_this_symbol(int i, cl_object s, int code, const char *name,
 	if (form) {
 		s->symbol.stype |= stp_special_form;
 	} else if (fun) {
-		cl_object f = cl_make_cfun_va(fun, s, NULL);
+		cl_object f;
+		if (narg >= 0) {
+			f = cl_make_cfun(fun, s, NULL, narg);
+		} else {
+			f = cl_make_cfun_va(fun, s, NULL);
+		}
 		SYM_FUN(s) = f;
-		f->cfun.narg = narg;
 	}
 	cl_num_symbols_in_core = i + 1;
 }

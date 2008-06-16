@@ -364,6 +364,7 @@ BEGIN:
 		break;
 
 	case t_cfun:
+	case t_cfunfixed:
 		mark_object(x->cfun.block);
 		mark_next(x->cfun.name);
 		break;

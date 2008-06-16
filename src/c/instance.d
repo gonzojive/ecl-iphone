@@ -336,6 +336,7 @@ cl_class_of(cl_object x)
 	case t_bytecodes:
 	case t_bclosure:
 	case t_cfun:
+	case t_cfunfixed:
 	case t_cclosure:
 		index = ECL_BUILTIN_FUNCTION; break;
 #ifdef ECL_THREADS

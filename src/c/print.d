@@ -1520,6 +1520,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
                 }
                 break;
         case t_cfun:
+	case t_cfunfixed:
 		if (ecl_print_readably()) FEprint_not_readable(x);
 		write_str("#<compiled-function ", stream);
 		if (x->cfun.name != Cnil)

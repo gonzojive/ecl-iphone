@@ -73,6 +73,7 @@ typedef enum {
 	t_bytecodes,
 	t_bclosure,
 	t_cfun,
+	t_cfunfixed,
 	t_cclosure,
 #ifdef CLOS
 	t_instance,

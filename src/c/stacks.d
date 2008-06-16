@@ -186,6 +186,7 @@ ihs_function_name(cl_object x)
 			return y;
 
 	case t_cfun:
+	case t_cfunfixed:
 		return(x->cfun.name);
 
 	default:

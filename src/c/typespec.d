@@ -183,6 +183,7 @@ ecl_type_to_symbol(cl_type t)
 	case t_bytecodes:
 	case t_bclosure:
 	case t_cfun:
+	case t_cfunfixed:
 	case t_cclosure:
 		return @'compiled-function';
 #ifdef ECL_THREADS

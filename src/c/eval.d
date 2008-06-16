@@ -68,13 +68,11 @@ ecl_apply_from_stack_frame(cl_object frame, cl_object x)
 	if (fun == OBJNULL || fun == Cnil)
 		FEundefined_function(x);
 	switch (type_of(fun)) {
+	case t_cfunfixed:
+		if (narg != (cl_index)fun->cfun.narg)
+			FEwrong_num_arguments(fun);
+		return APPLY_fixed(narg, (cl_objectfn_fixed)fun->cfun.entry, sp);
 	case t_cfun:
-		if (fun->cfun.narg >= 0) {
-			if (narg != (cl_index)fun->cfun.narg)
-				FEwrong_num_arguments(fun);
-			return APPLY_fixed(narg, (cl_objectfn_fixed)fun->cfun.entry,
-					   sp);
-		}
 		return APPLY(narg, fun->cfun.entry, sp);
 	case t_cclosure:
 		return APPLY_closure(narg, fun->cclosure.entry,
@@ -123,26 +121,25 @@ _ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_v
 	if (fun == OBJNULL)
 		goto ERROR;
 	switch (type_of(fun)) {
+	case t_cfunfixed:
+		if (narg != fun->cfun.narg)
+			FEwrong_num_arguments(fun);
+		frame = build_funcall_frame((cl_object)&frame_aux, args);
+		out = APPLY_fixed(narg, (cl_objectfn_fixed)fun->cfun.entry,
+				  frame->frame.bottom);
+		break;
 	case t_cfun:
-		if (fun->cfun.narg >= 0) {
-			if (narg != fun->cfun.narg)
-				FEwrong_num_arguments(fun);
-			frame = build_funcall_frame((cl_object)&frame_aux, args);
-			out = APPLY_fixed(narg, (cl_objectfn_fixed)fun->cfun.entry,
-					  frame->frame.bottom);
-		} else {
-			if (pLK) {
-				si_put_sysprop(sym, @'si::link-from',
-					       CONS(CONS(ecl_make_unsigned_integer((cl_index)pLK),
-							 ecl_make_unsigned_integer((cl_index)*pLK)),
-						    si_get_sysprop(sym, @'si::link-from')));
-				*pLK = fun->cfun.entry;
-				cblock->cblock.links =
-				    CONS(sym, cblock->cblock.links);
-			}
-			frame = build_funcall_frame((cl_object)&frame_aux, args);
-			out = APPLY(narg, fun->cfun.entry, frame->frame.bottom);
+		if (pLK) {
+			si_put_sysprop(sym, @'si::link-from',
+				       CONS(CONS(ecl_make_unsigned_integer((cl_index)pLK),
+						 ecl_make_unsigned_integer((cl_index)*pLK)),
+					    si_get_sysprop(sym, @'si::link-from')));
+			*pLK = fun->cfun.entry;
+			cblock->cblock.links =
+				CONS(sym, cblock->cblock.links);
 		}
+		frame = build_funcall_frame((cl_object)&frame_aux, args);
+		out = APPLY(narg, fun->cfun.entry, frame->frame.bottom);
 		break;
 #ifdef CLOS
 	case t_instance:
