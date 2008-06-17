@@ -879,8 +879,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		reg0 = close_around(reg0, lex_env);
 		THREAD_NEXT;
 	}
-	/* OP_GO	n{arg}
-	   OP_QUOTE	tag-name{symbol}
+	/* OP_GO	n{arg}, tag-name{symbol}
 		Jumps to the tag which is defined at the n-th position in
 		the lexical environment. TAG-NAME is kept for debugging
 		purposes.
