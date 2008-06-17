@@ -303,6 +303,11 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	*/
 	case OP_POP:		string = "POP";
 				goto NOARG;
+	/* OP_POP1
+		Pops a single value pushed by a OP_PUSH[V[S]] operator.
+	*/
+	case OP_POP1:		string = "POP1";
+				goto NOARG;
 	/* OP_POPVALUES
 		Pops all values pushed by a OP_PUSHVALUES operator.
 	*/
@@ -345,34 +350,6 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	*/
 	case OP_STEPCALL:
 	case OP_FCALL:		string = "FCALL\t";
-				GET_OPARG(n, vector);
-				goto OPARG;
-
-	/* OP_PCALL	n{arg}
-		Calls the function in VALUES(0) with N arguments which
-		have been deposited in the stack. The first output value
-		is pushed on the stack.
-	*/
-	case OP_PCALL:		string = "PCALL\t";
-				GET_OPARG(n, vector);
-				goto OPARG;
-
-	/* OP_PCALLG	n{arg}, name{arg}
-		Calls the function NAME with N arguments which have been
-		deposited in the stack. The first output value is pushed on
-		the stack.
-	*/
-	case OP_PCALLG:		string = "PCALLG\t";
-				GET_OPARG(n, vector);
-				GET_DATA(o, vector, data);
-				goto OPARG_ARG;
-
-	/* OP_PFCALL	n{arg}
-		Calls the function in the stack with N arguments which
-		have been deposited in the stack. The first output value
-		is pushed on the stack.
-	*/
-	case OP_PFCALL:		string = "PFCALL\t";
 				GET_OPARG(n, vector);
 				goto OPARG;
 
