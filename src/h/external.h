@@ -457,10 +457,7 @@ extern ECL_API cl_index cl_stack_push_list(cl_object list);
 extern ECL_API void cl_stack_push_n(cl_index n, cl_object *args);
 extern ECL_API cl_index cl_stack_push_values(void);
 extern ECL_API void cl_stack_pop_values(cl_index n);
-
-extern ECL_API cl_object ecl_apply_lambda(cl_object frame, cl_object fun);
-extern ECL_API cl_object ecl_apply_bclosure(cl_object frame, cl_object fun);
-extern ECL_API cl_object ecl_interpret(cl_object env, cl_object bytecodes, void *pc);
+extern ECL_API cl_object ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offset);
 
 /* disassembler.c */
 

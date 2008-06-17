@@ -2061,7 +2061,7 @@ compile_body(cl_object body, int flags) {
 			VALUES(0) = Cnil;
 			NVALUES = 0;
 			bytecodes = asm_end(handle);
-			ecl_interpret(ENV->lex_env, bytecodes, bytecodes->bytecodes.code);
+			ecl_interpret(Cnil, ENV->lex_env, bytecodes, 0);
 			asm_clear(handle);
 			ENV = old_c_env;
 #ifdef GBC_BOEHM
@@ -2535,6 +2535,9 @@ ecl_make_lambda(cl_object name, cl_object lambda) {
 
 	handle = asm_begin();
 
+	/* Mark that we need to parse arguments */
+	asm_op(OP_ENTRY);
+
 	/* Transform (SETF fname) => fname */
 	if (Null(si_valid_function_name_p(name)))
 		FEprogram_error("LAMBDA: Not a valid function name ~S",1,name);
@@ -2588,10 +2591,12 @@ ecl_make_lambda(cl_object name, cl_object lambda) {
 
 	ENV->coalesce = TRUE;
 
-	if ((current_pc() - label) == OPARG_SIZE)
+	if ((current_pc() - label) == OPARG_SIZE) {
 		set_pc(handle);
-	else
+		asm_op(OP_ENTRY);
+	} else {
 		asm_complete(OP_JMP, label);
+	}
 	while (!ecl_endp(auxs)) {		/* Local bindings */
 		cl_object var = pop(&auxs);
 		cl_object value = pop(&auxs);
@@ -2703,7 +2708,7 @@ si_make_lambda(cl_object name, cl_object rest)
 	VALUES(0) = Cnil;
 	NVALUES = 0;
 	{
-	cl_object output = ecl_interpret(interpreter_env, bytecodes, bytecodes->bytecodes.code);
+	cl_object output = ecl_interpret(Cnil, interpreter_env, bytecodes, 0);
 #ifdef GBC_BOEHM
 	GC_free(bytecodes->bytecodes.code);
 	GC_free(bytecodes->bytecodes.data);

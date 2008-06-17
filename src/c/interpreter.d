@@ -328,7 +328,7 @@ lambda_bind(cl_object env, cl_narg narg, cl_object lambda, cl_object *sp)
 		} else {
 			cl_object defaults = data[1];
 			if (FIXNUMP(defaults)) {
-				defaults = ecl_interpret(env, lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
+				defaults = ecl_interpret(Cnil, env, lambda, fix(defaults));
 			}
 			env = lambda_bind_var(env, data[0], defaults, specials);
 			if (!Null(data[2])) {
@@ -417,7 +417,7 @@ lambda_bind(cl_object env, cl_narg narg, cl_object lambda, cl_object *sp)
 			} else {
 				cl_object defaults = data[2];
 				if (FIXNUMP(defaults)) {
-					defaults = ecl_interpret(env, lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
+					defaults = ecl_interpret(Cnil, env, lambda, fix(defaults));
 				}
 				env = lambda_bind_var(env, data[1],defaults,specials);
 			}
@@ -428,56 +428,6 @@ lambda_bind(cl_object env, cl_narg narg, cl_object lambda, cl_object *sp)
 	}
 	return env;
 }
-
-cl_object
-ecl_apply_lambda(cl_object frame, cl_object fun)
-{
-	cl_object name, env;
-	bds_ptr old_bds_top;
-
-	if (type_of(fun) != t_bytecodes)
-		FEinvalid_function(fun);
-
-	/* Save the lexical environment and set up a new one */
-	old_bds_top = cl_env.bds_top;
-
-	/* Establish bindings */
-	env = lambda_bind(Cnil, frame->frame.top - frame->frame.bottom, fun, frame->frame.bottom);
-
-	VALUES(0) = Cnil;
-	NVALUES = 0;
-	name = fun->bytecodes.name;
-	fun = ecl_interpret(env, fun, fun->bytecodes.code);
-	bds_unwind(old_bds_top);
-	return fun;
-}
-
-
-cl_object
-ecl_apply_bclosure(cl_object frame, cl_object fun)
-{
-	cl_object name, env;
-	bds_ptr old_bds_top;
-
-	if (type_of(fun) != t_bclosure)
-		FEinvalid_function(fun);
-
-	/* Save the lexical environment and set up a new one */
-	env = fun->bclosure.lex;
-	fun = fun->bclosure.code;
-	old_bds_top = cl_env.bds_top;
-
-	/* Establish bindings */
-	env = lambda_bind(env, frame->frame.top - frame->frame.bottom, fun, frame->frame.bottom);
-
-	VALUES(0) = Cnil;
-	NVALUES = 0;
-	name = fun->bytecodes.name;
-	fun = ecl_interpret(env, fun, fun->bytecodes.code);
-	bds_unwind(old_bds_top);
-	return fun;
-}
-
 
 /* -------------------- AIDS TO THE INTERPRETER -------------------- */
 
@@ -551,21 +501,28 @@ close_around(cl_object fun, cl_object lex) {
 /* -------------------- THE INTERPRETER -------------------- */
 
 cl_object
-ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
+ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offset)
 {
 	ECL_OFFSET_TABLE;
 	typedef struct cl_env_struct *cl_env_ptr;
 	const cl_env_ptr the_env = &cl_env;
-	register cl_opcode *vector = pc;
+	volatile bds_ptr old_bds_top = cl_env.bds_top;
+	cl_opcode *vector = (cl_opcode*)bytecodes->bytecodes.code + offset;
 	cl_object *data = bytecodes->bytecodes.data;
-	register cl_object reg0 = the_env->values[0];
+	cl_object reg0;
 	cl_object reg1, lex_env = env;
 	struct ecl_stack_frame frame_aux;
 	cl_index narg;
 	volatile struct ihs_frame ihs;
-	ihs_push(&ihs, bytecodes, env);
+
+	if (type_of(bytecodes) != t_bytecodes)
+		FEinvalid_function(bytecodes);
+
+	ihs_push(&ihs, bytecodes, lex_env);
 	frame_aux.t = t_frame;
 	frame_aux.stack = frame_aux.top = frame_aux.bottom = 0;
+	reg0 = Cnil;
+	the_env->nvalues = 0;
  BEGIN:
 	BEGIN_SWITCH {
 	CASE(OP_NOP); {
@@ -776,10 +733,10 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 			reg0 = SYM_FUN(reg0);
 			goto AGAIN;
 		case t_bytecodes:
-			reg0 = ecl_apply_lambda(frame, reg0);
+			reg0 = ecl_interpret(frame, Cnil, reg0, 0);
 			break;
 		case t_bclosure:
-			reg0 = ecl_apply_bclosure(frame, reg0);
+			reg0 = ecl_interpret(frame, reg0->bclosure.lex, reg0->bclosure.code, 0);
 			break;
 		default:
 			FEinvalid_function(reg0);
@@ -802,12 +759,23 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		STACK_POP(the_env);
 		THREAD_NEXT;
 	}
+	/* OP_ENTRY
+		Binds all the arguments of a function using the given frame.
+	*/
+	CASE(OP_ENTRY); {
+		if (frame == Cnil)
+			ecl_internal_error("Not enough arguments to bytecodes.");
+		lex_env = lambda_bind(lex_env, frame->frame.top - frame->frame.bottom,
+				      bytecodes, frame->frame.bottom);
+		THREAD_NEXT;
+	}
 	/* OP_EXIT
 		Marks the end of a high level construct (BLOCK, CATCH...)
 		or a function.
 	*/
 	CASE(OP_EXIT); {
 		ihs_pop();
+		bds_unwind(old_bds_top);
 		return reg0;
 	}
 	/* OP_FLET	nfun{arg}, fun1{object}
