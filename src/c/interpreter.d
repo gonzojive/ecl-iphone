@@ -593,6 +593,20 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		THREAD_NEXT;
 	}
 
+	CASE(OP_INT); {
+		cl_fixnum n;
+		GET_OPARG(n, vector);
+		reg0 = MAKE_FIXNUM(n);
+		THREAD_NEXT;
+	}
+
+	CASE(OP_PINT); {
+		cl_fixnum n;
+		GET_OPARG(n, vector);
+		STACK_PUSH(the_env, MAKE_FIXNUM(n));
+		THREAD_NEXT;
+	}
+
 	/* OP_PUSH
 		Pushes the object in VALUES(0).
 	*/
