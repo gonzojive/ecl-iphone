@@ -55,14 +55,18 @@ extern cl_object ecl_alloc_bytecodes(cl_index data_size, cl_index code_size);
 /* compiler.d */
 
 struct cl_compiler_env {
-	cl_object variables;
-	cl_object macros;
-	cl_fixnum lexical_level;
-	cl_object constants;
-	cl_object lex_env;
+	cl_object variables;		/* Variables, tags, functions, etc: the env. */
+	cl_object macros;		/* Macros and function bindings */
+	cl_fixnum lexical_level;	/* =0 if toplevel form */
+	cl_object constants;		/* Constants for this form */
+	cl_object lex_env;		/* Lexical env. for eval-when */
+	cl_index env_depth;
+	cl_index env_size;
 	bool coalesce;
 	bool stepping;
 };
+
+typedef struct cl_compiler_env *cl_compiler_env_ptr;
 
 /* interpreter.d */
 
