@@ -351,14 +351,14 @@ asm_op2c(register int code, register cl_object o) {
  * The compiler environment consists of two lists, one stored in
  * env->variables, the other one stored in env->macros.
  *
- * variable-record =	(:block block-name) |
- *			(:tag ({tag-name}*)) |
- *			(:function function-name) |
- *			(var-name {:special | nil} bound-p) |
+ * variable-record =	(:block block-name [used-p | block-object] location) |
+ *			(:tag ({tag-name}*) [NIL | tag-object] location) |
+ *			(:function function-name used-p [location]) |
+ *			(var-name {:special | nil} bound-p [location]) |
  *			(symbol si::symbol-macro macro-function) |
  *			CB | LB | UNWIND-PROTECT |
  *			(:declare declaration-arguments*)
- * macro-record =	(function-name function) |
+ * macro-record =	(function-name FUNCTION [| function-object]) |
  *			(macro-name si::macro macro-function)
  *			CB | LB | UNWIND-PROTECT
  *
@@ -370,28 +370,52 @@ asm_op2c(register int code, register cl_object o) {
  * CB, LB and UNWIND-PROTECT are only used by the C compiler and they
  * denote closure, lexical environment and unwind-protect boundaries.
  *
+ * The brackets [] denote differences between the bytecodes and C
+ * compiler environments, with the first option belonging to the
+ * interpreter and the second alternative to the compiler.
+ *
+ * A LOCATION object is proper to the bytecodes compiler and denotes
+ * the position of this variable, block, tag or function, in the
+ * lexical environment. Currently, it is a CONS with two integers
+ * (DEPTH . ORDER), denoting the depth of the nested environments and
+ * the position in the environment (from the beginning, not from the
+ * tail).
+ *
+ * The BLOCK-, TAG- and FUNCTION- objects are proper of the compiler
+ * and carry further information.
+ *
  * The last variable records are devoted to declarations and are only
  * used by the C compiler. Read cmpenv.lsp for more details on the
  * structure of these declaration forms, as they do not completely
  * match those of Common-Lisp.
  */
 
+static cl_object
+new_location(cl_object name)
+{
+	cl_object loc = CONS(MAKE_FIXNUM(ENV->env_depth), MAKE_FIXNUM((ENV->env_size++)));
+	return loc;
+}
+
 static void
 c_register_block(cl_object name)
 {
-	ENV->variables = CONS(cl_list(3, @':block', name, Cnil), ENV->variables);
+	ENV->variables = CONS(cl_list(4, @':block', name, Cnil, new_location(name)),
+			      ENV->variables);
 }
 
 static void
 c_register_tags(cl_object all_tags)
 {
-	ENV->variables = CONS(cl_list(2, @':tag', all_tags), ENV->variables);
+	ENV->variables = CONS(cl_list(4, @':tag', all_tags, Cnil, new_location(@':tag')),
+			      ENV->variables);
 }
 
 static void
 c_register_function(cl_object name)
 {
-	ENV->variables = CONS(cl_list(3, @':function', name, Cnil), ENV->variables);
+	ENV->variables = CONS(cl_list(4, @':function', name, Cnil, new_location(name)),
+			      ENV->variables);
 	ENV->macros = CONS(cl_list(2, name, @'function'), ENV->macros);
 }
 
@@ -420,9 +444,10 @@ c_register_var(register cl_object var, bool special, bool bound)
 	/* If this is just a declaration, ensure that the variable was not
 	 * declared before as special, to save memory. */
 	if (bound || (c_var_ref(var, 0, FALSE) >= ECL_UNDEFINED_VAR_REF)) {
-		ENV->variables = CONS(cl_list(3, var,
+		ENV->variables = CONS(cl_list(4, var,
 					      special? @'special' : Cnil,
-					      bound? Ct : Cnil),
+					      bound? Ct : Cnil,
+					      new_location(var)),
 				      ENV->variables);
 	}
 }
