@@ -139,6 +139,8 @@ enum {
   OP_PUSHVS,
   OP_PUSHQ,
   OP_CALLG,
+  OP_CALLG1,
+  OP_CALLG2,
   OP_CALL,
   OP_FCALL,
   OP_PCALLG,
@@ -267,6 +269,8 @@ typedef int16_t cl_oparg;
 		&&LBL_OP_PUSHVS - &&LBL_OP_NOP,\
 		&&LBL_OP_PUSHQ - &&LBL_OP_NOP,\
 		&&LBL_OP_CALLG - &&LBL_OP_NOP,\
+		&&LBL_OP_CALLG1 - &&LBL_OP_NOP,\
+		&&LBL_OP_CALLG2 - &&LBL_OP_NOP,\
 		&&LBL_OP_CALL - &&LBL_OP_NOP,\
 		&&LBL_OP_FCALL - &&LBL_OP_NOP,\
 		&&LBL_OP_PCALLG - &&LBL_OP_NOP,\
