@@ -661,8 +661,7 @@ do_write_integer(cl_object x, struct powers *powers, cl_index len,
 				write_positive_fixnum(0, powers->base, len, stream);
 			powers--;
 		}
-		ecl_floor2(x, powers->number);
-		left = VALUES(0);
+		left = ecl_floor2(x, powers->number);
 		x = VALUES(1);
 		if (len) len -= powers->n_digits;
 		do_write_integer(left, powers-1, len, stream);
