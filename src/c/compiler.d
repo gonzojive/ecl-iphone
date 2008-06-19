@@ -1046,7 +1046,7 @@ c_while_until(cl_object body, int flags, bool is_while) {
 
 	/* Compile test */
 	asm_complete(OP_JMP, labelt);
-	compile_form(test, FLAG_VALUES);
+	compile_form(test, FLAG_REG0);
 	asm_op(is_while? OP_JT : OP_JNIL);
 	asm_arg(labelb - current_pc());
 
