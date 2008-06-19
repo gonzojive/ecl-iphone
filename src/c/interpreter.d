@@ -1051,22 +1051,23 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	DO_BLOCK: {
 		cl_opcode *exit;
 		GET_LABEL(exit, vector);
+		cl_stack_push(cl_env.lex_env);
 		cl_stack_push((cl_object)exit);
 		if (frs_push(reg1) == 0) {
 			cl_env.lex_env = CONS(CONS(reg1, reg0), cl_env.lex_env);
 		} else {
 			reg0 = VALUES(0);
-			cl_env.lex_env = cl_env.frs_top->frs_lex;
 			frs_pop();
 			vector = (cl_opcode *)cl_stack_pop(); /* FIXME! */
+			cl_env.lex_env = cl_stack_pop();
 		}
 		THREAD_NEXT;
 	}
 	CASE(OP_EXIT_FRAME); {
 		bds_unwind(cl_env.frs_top->frs_bds_top);
-		cl_env.lex_env = cl_env.frs_top->frs_lex;
 		frs_pop();
 		cl_stack_pop();
+		cl_env.lex_env = cl_stack_pop();
 		THREAD_NEXT;
 	}
 	/* OP_TAGBODY	n{arg}
