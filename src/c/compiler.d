@@ -654,7 +654,12 @@ compile_setq(int op, cl_object var)
 			FEassignment_to_constant(var);
 		}
 		ndx = c_register_constant(var);
-		op = (op == OP_SETQ)? OP_SETQS : OP_PSETQS;
+		if (op == OP_SETQ)
+			op = OP_SETQS;
+		else if (op == OP_PSETQ)
+			op = OP_PSETQS;
+		else if (op == OP_VSETQ)
+			op = OP_VSETQS;
 	}
 	asm_op2(op, ndx);
 }
@@ -1520,17 +1525,13 @@ c_multiple_value_setq(cl_object orig_args, int flags) {
 	compile_form(values, FLAG_VALUES);
 
 	/* Compile variables */
-	asm_op2(OP_MSETQ, nvars);
-	vars = cl_nreverse(vars);
-	while (nvars--) {
-		cl_object var = pop(&vars);
-		cl_fixnum ndx = c_var_ref(var,0,TRUE);
-		if (ndx < 0) { /* Global variable */
-			if (ecl_symbol_type(var) & stp_constant)
-				FEassignment_to_constant(var);
-			ndx = -1-c_register_constant(var);
+	for (nvars = 0, vars = cl_nreverse(vars); vars != Cnil; nvars++, vars = ECL_CONS_CDR(vars)) {
+		if (nvars) {
+			compile_setq(OP_VSETQ, ECL_CONS_CAR(vars));
+			asm_arg(nvars);
+		} else {
+			compile_setq(OP_SETQ, ECL_CONS_CAR(vars));
 		}
-		asm_arg(ndx);
 	}
 
 	c_undo_bindings(old_variables);
