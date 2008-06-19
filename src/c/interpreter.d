@@ -445,13 +445,11 @@ ecl_apply_lambda(cl_object frame, cl_object fun)
 {
 	cl_object name, env;
 	bds_ptr old_bds_top;
-	struct ihs_frame ihs;
 
 	if (type_of(fun) != t_bytecodes)
 		FEinvalid_function(fun);
 
 	/* Save the lexical environment and set up a new one */
-	ihs_push(&ihs, fun, Cnil);
 	env = fun->bytecodes.lex;
 	old_bds_top = cl_env.bds_top;
 
@@ -463,7 +461,6 @@ ecl_apply_lambda(cl_object frame, cl_object fun)
 	name = fun->bytecodes.name;
 	ecl_interpret(env, fun, fun->bytecodes.code);
 	bds_unwind(old_bds_top);
-	ihs_pop();
 	returnn(VALUES(0));
 }
 
@@ -546,7 +543,9 @@ ecl_interpret(cl_object lex_env, cl_object bytecodes, void *pc)
 	ECL_OFFSET_TABLE;
 	cl_opcode *vector = pc;
 	cl_object reg0 = VALUES(0), reg1;
+	struct ihs_frame ihs;
 	static int i = 0;
+	ihs_push(&ihs, bytecodes, lex_env);
 	i++;
  BEGIN:
 	BEGIN_SWITCH {
@@ -703,6 +702,7 @@ ecl_interpret(cl_object lex_env, cl_object bytecodes, void *pc)
 		or a function.
 	*/
 	CASE(OP_EXIT); {
+		ihs_pop();
 		return (char *)vector;
 	}
 	/* OP_FLET	nfun{arg}
