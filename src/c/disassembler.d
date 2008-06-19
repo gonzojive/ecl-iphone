@@ -221,7 +221,6 @@ labeln:
 static cl_opcode *
 disassemble_tagbody(cl_object bytecodes, cl_opcode *vector) {
 	cl_index i, ntags = GET_OPARG(vector);
-	cl_object lex_old = cl_env.lex_env;
 	cl_opcode *destination;
 
 	print_noarg("TAGBODY");
@@ -234,7 +233,6 @@ disassemble_tagbody(cl_object bytecodes, cl_opcode *vector) {
 	vector = disassemble(bytecodes, vector);
 	print_noarg("\t\t; tagbody");
 
-	cl_env.lex_env = lex_old;
 	return vector;
 }
 
