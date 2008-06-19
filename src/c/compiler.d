@@ -783,12 +783,7 @@ c_block(cl_object body, int old_flags) {
 		[OP_CALL + nargs]
 		function_name
 
-		[OP_PCALL + nargs]
-		function_name
-
 		[OP_FCALL + nargs]
-
-		[OP_PFCALL + nargs]
 
 	 OP_CALL and OP_FCALL leave all arguments in the VALUES() array,
 	 while OP_PCALL and OP_PFCALL leave the first argument in the
@@ -822,16 +817,19 @@ c_call(cl_object args, int flags) {
 		 * calls: OP_STEPFCALL. */
 		asm_function(name, (flags & FLAG_GLOBAL) | FLAG_REG0);
 		asm_op2(OP_STEPCALL, nargs);
-		flags = FLAG_REG0;
+		asm_op(OP_POP1);
+		flags = FLAG_VALUES;
 	} else if (SYMBOLP(name) &&
 		   ((flags & FLAG_GLOBAL) || Null(c_tag_ref(name, @':function'))))
 	{
-		asm_op2(push? OP_PCALLG : OP_CALLG, nargs);
+		asm_op2(OP_CALLG, nargs);
 		asm_c(name);
+		flags = FLAG_VALUES;
 	} else {
 		/* Fixme!! We can optimize the case of global functions! */
 		asm_function(name, (flags & FLAG_GLOBAL) | FLAG_REG0);
-		asm_op2(push? OP_PCALL : OP_CALL, nargs);
+		asm_op2(OP_CALL, nargs);
+		flags = FLAG_VALUES;
 	}
 	return flags;
 }
@@ -860,10 +858,12 @@ c_funcall(cl_object args, int flags) {
 	nargs = c_arguments(args);
 	if (ENV->stepping) {
 		asm_op2(OP_STEPCALL, nargs);
-		flags = FLAG_REG0;
+		flags = FLAG_VALUES;
 	} else {
-		asm_op2((flags & FLAG_PUSH)? OP_PFCALL : OP_FCALL, nargs);
+		asm_op2(OP_FCALL, nargs);
+		flags = FLAG_VALUES;
 	}
+	asm_op(OP_POP1);
 	return flags;
 }
 
@@ -1472,6 +1472,7 @@ c_multiple_value_call(cl_object args, int flags) {
 		asm_op(op);
 	}
 	asm_op(OP_MCALL);
+	asm_op(OP_POP1);
 
 	return FLAG_VALUES;
 }

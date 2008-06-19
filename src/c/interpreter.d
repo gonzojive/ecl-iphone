@@ -561,6 +561,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	register cl_object reg0 = the_env->values[0];
 	cl_object reg1, lex_env = env;
 	struct ecl_stack_frame frame_aux;
+	cl_index narg;
 	volatile struct ihs_frame ihs;
 	ihs_push(&ihs, bytecodes, env);
 	frame_aux.t = t_frame;
@@ -672,30 +673,6 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		STACK_PUSH(the_env, aux);
 		THREAD_NEXT;
 	}
-	/* OP_CALL	n{arg}
-		Calls the function in REG0 with N arguments which
-		have been deposited in the stack. The output values
-		are left in VALUES(...)
-	*/
-	CASE(OP_CALL); {
-		cl_fixnum n;
-		GET_OPARG(n, vector);
-		INTERPRET_FUNCALL(reg0, the_env, frame_aux, n, reg0);
-		THREAD_NEXT;
-	}
-
-	/* OP_CALLG	n{arg}, name{arg}
-		Calls the function NAME with N arguments which have been
-		deposited in the stack. The output values are left in VALUES.
-	*/
-	CASE(OP_CALLG); {
-		cl_fixnum n;
-		cl_object f;
-		GET_OPARG(n, vector);
-		GET_DATA(f, vector, data);
-		INTERPRET_FUNCALL(reg0, the_env, frame_aux, n, f);
-		THREAD_NEXT;
-	}
 
 	CASE(OP_CALLG1); {
 		cl_object s;
@@ -715,19 +692,36 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		THREAD_NEXT;
 	}
 
+	/* OP_CALL	n{arg}
+		Calls the function in REG0 with N arguments which
+		have been deposited in the stack. The first output value
+		is pushed on the stack.
+	*/
+	CASE(OP_CALL); {
+		GET_OPARG(narg, vector);
+		goto DO_CALL;
+	}
+
+	/* OP_CALLG	n{arg}, name{arg}
+		Calls the function NAME with N arguments which have been
+		deposited in the stack. The first output value is pushed on
+		the stack.
+	*/
+	CASE(OP_CALLG); {
+		GET_OPARG(narg, vector);
+		GET_DATA(reg0, vector, data);
+		goto DO_CALL;
+	}
+
 	/* OP_FCALL	n{arg}
 		Calls a function in the stack with N arguments which
 		have been also deposited in the stack. The output values
 		are left in VALUES(...)
 	*/
 	CASE(OP_FCALL); {
-		cl_fixnum n;
-		cl_object fun;
-		GET_OPARG(n, vector);
-		fun = STACK_REF(the_env,-n-1);
-		INTERPRET_FUNCALL(reg0, the_env, frame_aux, n, fun);
-		STACK_POP(the_env);
-		THREAD_NEXT;
+		GET_OPARG(narg, vector);
+		reg0 = STACK_REF(the_env,-narg-1);
+		goto DO_CALL;
 	}
 
 	/* OP_MCALL
@@ -735,56 +729,79 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		the stack (They all have been deposited by OP_PUSHVALUES)
 	*/
 	CASE(OP_MCALL); {
-		cl_fixnum n = fix(STACK_POP(the_env));
-		cl_object fun = STACK_REF(the_env,-n-1);
-		INTERPRET_FUNCALL(reg0, the_env, frame_aux, n, fun);
+		narg = fix(STACK_POP(the_env));
+		reg0 = STACK_REF(the_env,-narg-1);
+		goto DO_CALL;
+	}
+
+	DO_CALL: {
+		cl_object x = reg0;
+		cl_object frame = (cl_object)&frame_aux;
+		frame_aux.top = the_env->stack_top;
+		frame_aux.bottom = the_env->stack_top - narg;
+	AGAIN:
+		if (reg0 == OBJNULL || reg0 == Cnil)
+			FEundefined_function(x);
+		switch (type_of(reg0)) {
+		case t_cfunfixed:
+			if (narg != (cl_index)reg0->cfun.narg)
+				FEwrong_num_arguments(reg0);
+			reg0 = APPLY_fixed(narg, (cl_objectfn_fixed)reg0->cfun.entry,
+					   frame_aux.bottom);
+			break;
+		case t_cfun:
+			reg0 = APPLY(narg, reg0->cfun.entry, frame_aux.bottom);
+			break;
+		case t_cclosure:
+			reg0 = APPLY_closure(narg, reg0->cclosure.entry,
+					     reg0->cclosure.env, frame_aux.bottom);
+			break;
+#ifdef CLOS
+		case t_instance:
+			switch (reg0->instance.isgf) {
+			case ECL_STANDARD_DISPATCH:
+				reg0 = _ecl_standard_dispatch(frame, reg0);
+				break;
+			case ECL_USER_DISPATCH:
+				reg0 = reg0->instance.slots[reg0->instance.length - 1];
+				goto AGAIN;
+			default:
+				FEinvalid_function(reg0);
+			}
+			break;
+#endif
+		case t_symbol:
+			if (reg0->symbol.stype & stp_macro)
+				FEundefined_function(x);
+			reg0 = SYM_FUN(reg0);
+			goto AGAIN;
+		case t_bytecodes:
+			reg0 = ecl_apply_lambda(frame, reg0);
+			break;
+		case t_bclosure:
+			reg0 = ecl_apply_bclosure(frame, reg0);
+			break;
+		default:
+			FEinvalid_function(reg0);
+		}
+		the_env->stack_top -= narg;
+		THREAD_NEXT;
+	}
+
+	/* OP_POP
+		Pops a singe value pushed by a OP_PUSH* operator.
+	*/
+	CASE(OP_POP); {
+		reg0 = STACK_POP(the_env);
+		THREAD_NEXT;
+	}
+	/* OP_POP1
+		Pops a singe value pushed by a OP_PUSH* operator, ignoring it.
+	*/
+	CASE(OP_POP1); {
 		STACK_POP(the_env);
 		THREAD_NEXT;
 	}
-
-	/* OP_PCALL	n{arg}
-		Calls the function in REG0 with N arguments which
-		have been deposited in the stack. The first output value
-		is pushed on the stack.
-	*/
-	CASE(OP_PCALL); {
-		cl_fixnum n;
-		GET_OPARG(n, vector);
-		INTERPRET_FUNCALL(reg0, the_env, frame_aux, n, reg0);
-		STACK_PUSH(the_env, reg0);
-		THREAD_NEXT;
-	}
-
-	/* OP_PCALLG	n{arg}, name{arg}
-		Calls the function NAME with N arguments which have been
-		deposited in the stack. The first output value is pushed on
-		the stack.
-	*/
-	CASE(OP_PCALLG); {
-		cl_fixnum n;
-		cl_object f;
-		GET_OPARG(n, vector);
-		GET_DATA(f, vector, data);
-		INTERPRET_FUNCALL(f, the_env, frame_aux, n, f);
-		STACK_PUSH(the_env, f);
-		THREAD_NEXT;
-	}
-
-	/* OP_PFCALL	n{arg}
-		Calls the function in the stack with N arguments which
-		have been also deposited in the stack. The first output value
-		is pushed on the stack.
-	*/
-	CASE(OP_PFCALL); {
-		cl_fixnum n;
-		cl_object fun;
-		GET_OPARG(n, vector);
-		fun = STACK_REF(the_env, -n-1);
-		INTERPRET_FUNCALL(fun, the_env, frame_aux, n, fun);
-		STACK_REF(the_env, -1) = fun;
-		THREAD_NEXT;
-	}
-
 	/* OP_EXIT
 		Marks the end of a high level construct (BLOCK, CATCH...)
 		or a function.
@@ -1239,13 +1256,6 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		the_env->values[0] = reg0;
 		memcpy(&STACK_REF(the_env, -(i+1)), the_env->values, i * sizeof(cl_object));
 		STACK_REF(the_env, -1) = MAKE_FIXNUM(n + i);
-		THREAD_NEXT;
-	}
-	/* OP_POP
-		Pops a singe value pushed by a OP_PUSH* operator.
-	*/
-	CASE(OP_POP); {
-		reg0 = STACK_POP(the_env);
 		THREAD_NEXT;
 	}
 	/* OP_POPVALUES
