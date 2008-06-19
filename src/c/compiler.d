@@ -226,8 +226,13 @@ asm_complete(register int op, register cl_index pc) {
 #ifdef ECL_SMALL_BYTECODES
 		char low = delta & 0xFF;
 		char high = delta >> 8;
+# ifdef WORDS_BIGENDIAN
+		cl_env.stack[pc] = (cl_object)(cl_fixnum)high;
+		cl_env.stack[pc+1] = (cl_object)(cl_fixnum)low;
+# else
 		cl_env.stack[pc] = (cl_object)(cl_fixnum)low;
 		cl_env.stack[pc+1] = (cl_object)(cl_fixnum)high;
+# endif
 #else
 		cl_env.stack[pc] = (cl_object)(cl_fixnum)delta;
 #endif
