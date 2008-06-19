@@ -650,6 +650,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		cl_objectfn_fixed f;
 		GET_DATA(s, vector, data);
 		f = (cl_objectfn_fixed)SYM_FUN(s)->cfun.entry;
+		SETUP_ENV(the_env);
 		reg0 = f(reg0);
 		THREAD_NEXT;
 	}
@@ -659,6 +660,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		cl_objectfn_fixed f;
 		GET_DATA(s, vector, data);
 		f = (cl_objectfn_fixed)SYM_FUN(s)->cfun.entry;
+		SETUP_ENV(the_env);
 		reg0 = f(STACK_POP(the_env), reg0);
 		THREAD_NEXT;
 	}
