@@ -1105,11 +1105,10 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 			}
 		}
 		if (nv == 0) {
-			the_env->values[0] = reg0 = Cnil;
+			reg0 = Cnil;
 		} else {
 			reg0 = the_env->values[0];
 		}
-		the_env->nvalues = 1;
 		THREAD_NEXT;
 	}
 
