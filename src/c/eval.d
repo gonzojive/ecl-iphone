@@ -95,9 +95,9 @@ ecl_apply_from_stack_frame(cl_object frame, cl_object x)
 		fun = SYM_FUN(fun);
 		goto AGAIN;
 	case t_bytecodes:
-		return ecl_apply_lambda(frame, fun);
+		return ecl_interpret(frame, Cnil, fun, 0);
 	case t_bclosure:
-		return ecl_apply_bclosure(frame, fun);
+		return ecl_interpret(frame, fun->bclosure.lex, fun->bclosure.code, 0);
 	default:
 	ERROR:
 		FEinvalid_function(x);
@@ -163,11 +163,11 @@ _ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_v
 		break;
 	case t_bytecodes:
 		frame = build_funcall_frame((cl_object)&frame_aux, args);
-		out = ecl_apply_lambda(frame, fun);
+		out = ecl_interpret(frame, Cnil, fun, 0);
 		break;
 	case t_bclosure:
 		frame = build_funcall_frame((cl_object)&frame_aux, args);
-		out = ecl_apply_bclosure(frame, fun);
+		out = ecl_interpret(frame, fun->bclosure.lex, fun->bclosure.code, 0);
 		break;
 	default:
 	ERROR:

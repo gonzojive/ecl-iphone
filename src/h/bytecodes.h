@@ -32,6 +32,7 @@ enum {
   OP_MCALL,
   OP_POP,
   OP_POP1,
+  OP_ENTRY,
   OP_EXIT,
   OP_FLET,
   OP_LABELS,
@@ -163,7 +164,7 @@ typedef int16_t cl_oparg;
 #else
 #define ECL_OFFSET_TABLE \
 	static const int offsets[] = {\
-  0,\
+  &&LBL_OP_NOP - &&LBL_OP_NOP,\
   &&LBL_OP_QUOTE - &&LBL_OP_NOP,\
   &&LBL_OP_ENDP - &&LBL_OP_NOP,\
   &&LBL_OP_CONS - &&LBL_OP_NOP,\
@@ -185,6 +186,7 @@ typedef int16_t cl_oparg;
   &&LBL_OP_MCALL - &&LBL_OP_NOP,\
   &&LBL_OP_POP - &&LBL_OP_NOP,\
   &&LBL_OP_POP1 - &&LBL_OP_NOP,\
+  &&LBL_OP_ENTRY - &&LBL_OP_NOP,\
   &&LBL_OP_EXIT - &&LBL_OP_NOP,\
   &&LBL_OP_FLET - &&LBL_OP_NOP,\
   &&LBL_OP_LABELS - &&LBL_OP_NOP,\
@@ -235,6 +237,5 @@ typedef int16_t cl_oparg;
   &&LBL_OP_PUSHNIL - &&LBL_OP_NOP,\
   &&LBL_OP_STEPIN - &&LBL_OP_NOP,\
   &&LBL_OP_STEPCALL - &&LBL_OP_NOP,\
-  &&LBL_OP_STEPOUT - &&LBL_OP_NOP,\
-	}
+  &&LBL_OP_STEPOUT - &&LBL_OP_NOP }
 #endif
