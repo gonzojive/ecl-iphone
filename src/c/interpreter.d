@@ -933,8 +933,6 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	CASE(OP_PSETQS); {
 		cl_object var = GET_DATA(vector, bytecodes);
 		/* INV: Not NIL, and of type t_symbol */
-		if (var->symbol.stype & stp_constant)
-			FEassignment_to_constant(var);
 		ECL_SETQ(var, cl_stack_pop());
 		THREAD_NEXT;
 	}
@@ -948,8 +946,6 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		int nval = GET_OPARG(vector);
 		cl_object var = GET_DATA(vector, bytecodes);
 		/* INV: Not NIL, and of type t_symbol */
-		if (var->symbol.stype & stp_constant)
-			FEassignment_to_constant(var);
 		ECL_SETQ(var, the_env->values[nval]);
 		THREAD_NEXT;
 	}
