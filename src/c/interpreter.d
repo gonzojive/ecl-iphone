@@ -283,10 +283,13 @@ internal_lex_env_error()
 }
 
 static cl_object
-ecl_lex_env_get_record(register cl_object env, register int s) {
-	for (; s-- > 0; env = CDR(env));
-	if (Null(env)) internal_lex_env_error();
-	return CAR(env);
+ecl_lex_env_get_record(register cl_object env, register int s)
+{
+	do {
+		if (Null(env)) internal_lex_env_error();
+		if (s-- == 0) return ECL_CONS_CAR(env);
+		env = ECL_CONS_CDR(env);
+	} while(1);
 }
 
 #define ecl_lex_env_get_var(env,x) ECL_CONS_CDR(ecl_lex_env_get_record(env,x))
