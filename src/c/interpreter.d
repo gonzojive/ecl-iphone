@@ -518,7 +518,16 @@ close_around(cl_object fun, cl_object lex) {
 
 #define STACK_POP(the_env) *(--(the_env->stack_top))
 
+#define STACK_PUSH_N(the_env,n) { \
+	cl_index __aux = (n); \
+	while ((the_env->stack_limit - the_env->stack_top) <= __aux) { \
+		cl_stack_grow(); \
+	} \
+	the_env->stack_top += __aux; }
+
 #define STACK_POP_N(the_env,n) (the_env->stack_top -= n)
+
+#define STACK_REF(the_env,n) (the_env->stack_top[n])
 
 /*
  * INTERPRET-FUNCALL is one of the few ways to "exit" the interpreted
@@ -1122,20 +1131,21 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	*/
 	PUSH_VALUES:
 	CASE(OP_PUSHVALUES); {
-		cl_index i;
-		for (i=0; i<the_env->nvalues; i++)
-			STACK_PUSH(the_env, the_env->values[i]);
-		STACK_PUSH(the_env, MAKE_FIXNUM(the_env->nvalues));
+		cl_index i = the_env->nvalues;
+		STACK_PUSH_N(the_env, i+1);
+		memcpy(&STACK_REF(the_env, -(i+1)), the_env->values, i * sizeof(cl_object));
+		STACK_REF(the_env, -1) = MAKE_FIXNUM(the_env->nvalues);
 		THREAD_NEXT;
 	}
 	/* OP_PUSHMOREVALUES
 		Adds more values to the ones pushed by OP_PUSHVALUES.
 	*/
 	CASE(OP_PUSHMOREVALUES); {
-		cl_index i, n = fix(STACK_POP(the_env));
-		for (i=0; i<the_env->nvalues; i++)
-			STACK_PUSH(the_env, the_env->values[i]);
-		STACK_PUSH(the_env, MAKE_FIXNUM(n + the_env->nvalues));
+		cl_index n = fix(STACK_REF(the_env,-1));
+		cl_index i = the_env->nvalues;
+		STACK_PUSH_N(the_env, i);
+		memcpy(&STACK_REF(the_env, -(i+1)), the_env->values, i * sizeof(cl_object));
+		STACK_REF(the_env, -1) = MAKE_FIXNUM(n + i);
 		THREAD_NEXT;
 	}
 	/* OP_POP
