@@ -621,13 +621,13 @@ c_undo_bindings(cl_object old_env)
 	cl_index num_lexical = 0;
 	cl_index num_special = 0;
 
-	for (env = ENV->variables; env != old_env && !Null(env); env = CDR(env))
+	for (env = ENV->variables; env != old_env && !Null(env); env = ECL_CONS_CDR(env))
 	{
-		cl_object record = CAR(env);
+		cl_object record = ECL_CONS_CAR(env);
 		cl_object name = CAR(record);
 		cl_object special = CADR(record);
 		if (name == @':block' || name == @':tag') {
-			FEerror("Internal error: cannot undo BLOCK/TAGBODY.",0);
+			(void)0;
 		} else if (name == @':function' || Null(special)) {
 			num_lexical++;
 		} else if (name == @':declare') {
@@ -771,7 +771,7 @@ c_block(cl_object body, int old_flags) {
 	} else {
 		asm_op(OP_EXIT_FRAME);
 		asm_complete(Null(name)? OP_DO : 0, labelz);
-		ENV->variables = old_env.variables;
+		c_undo_bindings(old_env.variables);
 		return flags;
 	}
 }
@@ -952,7 +952,7 @@ c_catch(cl_object args, int flags) {
 	asm_op(OP_EXIT_FRAME);
 	asm_complete(OP_CATCH, labelz);
 
-	ENV->variables = old_env;
+	c_undo_bindings(old_env);
 	return FLAG_VALUES;
 }
 
@@ -1383,7 +1383,7 @@ c_locally(cl_object args, int flags) {
 	/* ...and then process body */
 	flags = compile_body(args, flags);
 
-	ENV->variables = old_env;
+	c_undo_bindings(old_env);
 
 	return flags;
 }
@@ -1424,7 +1424,7 @@ c_multiple_value_bind(cl_object args, int flags)
 	if (n == 0) {
 		c_declare_specials(specials);
 		flags = compile_body(body, flags);
-		ENV->variables = old_env;
+		c_undo_bindings(old_env);
 	} else {
 		cl_object old_variables = ENV->variables;
 		for (vars=cl_reverse(vars); n--; ) {
@@ -1777,7 +1777,7 @@ declared special and appear in a symbol-macrolet.", 1, name);
 	}
 	c_declare_specials(specials);
 	flags = compile_body(body, flags);
-	ENV->variables = old_variables;
+	c_undo_bindings(old_variables);
 	return flags;
 }
 
@@ -1822,7 +1822,7 @@ c_tagbody(cl_object args, int flags)
 		}
 	}
 	asm_op(OP_EXIT_TAGBODY);
-	ENV->variables = old_env;
+	c_undo_bindings(old_env);
 	return FLAG_REG0;
 }
 
