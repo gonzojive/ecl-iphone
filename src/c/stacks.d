@@ -234,7 +234,7 @@ si_ihs_fun(cl_object arg)
 cl_object
 si_ihs_env(cl_object arg)
 {
-	@(return get_ihs_ptr(fixnnint(si_ihs_next(arg)))->lex_env)
+	@(return get_ihs_ptr(fixnnint(arg))->lex_env)
 }
 
 /********************** FRAME STACK *************************/

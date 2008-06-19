@@ -781,7 +781,7 @@ under certain conditions; see file 'Copyright' for details.")
   (set-break-env))
 
 (defun set-break-env ()
-  (setq *break-env* (if (= *ihs-current* *ihs-top*) nil (ihs-env *ihs-current*))))
+  (setq *break-env* (ihs-env *ihs-current*)))
 
 (defun ihs-search (string unrestricted &optional (start (si::ihs-top 'tpl)))
   (do ((ihs start (si::ihs-prev ihs)))

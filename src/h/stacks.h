@@ -77,7 +77,7 @@ typedef struct ihs_frame {
 } *ihs_ptr;
 
 #define ihs_push(r,f,e) do {	\
-	(r)->next=cl_env.ihs_top; (r)->function=(f); (r)->lex_env= (e); \
+	(r)->next=cl_env.ihs_top; (r)->function=(f); (r)->lex_env=(e); \
 	(r)->index=cl_env.ihs_top->index+1;\
 	cl_env.ihs_top = (r); \
 } while(0)
