@@ -510,63 +510,6 @@ close_around(cl_object fun, cl_object lex) {
 	return v;
 }
 
-/* OP_FLET	nfun{arg}
-   fun1{object}
-   ...
-   funn{object}
-   ...
-   OP_UNBIND n
-
-	Executes the enclosed code in a lexical enviroment extended with
-	the functions "fun1" ... "funn".
-*/
-static cl_opcode *
-interpret_flet(cl_object bytecodes, cl_opcode *vector) {
-	cl_index nfun = GET_OPARG(vector);
-
-	/* 1) Copy the environment so that functions get it without references
-	      to themselves. */
-	cl_object lex = cl_env.lex_env;
-
-	/* 3) Add new closures to environment */
-	while (nfun--) {
-		cl_object fun = GET_DATA(vector, bytecodes);
-		cl_object f = close_around(fun,lex);
-		cl_env.lex_env = bind_function(cl_env.lex_env, f->bytecodes.name, f);
-	}
-	return vector;
-}
-
-/* OP_LABELS	nfun{arg}
-   fun1{object}
-   ...
-   funn{object}
-   ...
-   OP_UNBIND n
-
-	Executes the enclosed code in a lexical enviroment extended with
-	the functions "fun1" ... "funn".
-*/
-static cl_opcode *
-interpret_labels(cl_object bytecodes, cl_opcode *vector) {
-	cl_index i, nfun = GET_OPARG(vector);
-	cl_object l;
-
-	/* 1) Build up a new environment with all functions */
-	for (i=0; i<nfun; i++) {
-		cl_object f = GET_DATA(vector, bytecodes);
-		cl_env.lex_env = bind_function(cl_env.lex_env, f->bytecodes.name, f);
-	}
-
-	/* 2) Update the closures so that all functions can call each other */
-	for (i=0, l=cl_env.lex_env; i<nfun; i++) {
-		cl_object record = CAR(l);
-		ECL_RPLACA(record, close_around(CAR(record), cl_env.lex_env));
-		l = CDR(l);
-	}
-	return vector;
-}
-
 /* OP_MSETQ	n{arg}
    {fixnumn}
    ...
@@ -800,12 +743,56 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	CASE(OP_EXIT); {
 		return (char *)vector;
 	}
+	/* OP_FLET	nfun{arg}
+	   fun1{object}
+	   ...
+	   funn{object}
+	   ...
+	   OP_UNBIND n
+	   
+	   Executes the enclosed code in a lexical enviroment extended with
+	   the functions "fun1" ... "funn".
+	*/
 	CASE(OP_FLET); {
-		vector = interpret_flet(bytecodes, vector);
+		cl_index nfun = GET_OPARG(vector);
+		/* Copy the environment so that functions get it without references
+		   to themselves, and then add new closures to the environment. */
+		cl_object old_lex = cl_env.lex_env;
+		cl_object new_lex = old_lex;
+		while (nfun--) {
+			cl_object fun = GET_DATA(vector, bytecodes);
+			cl_object f = close_around(fun, old_lex);
+			new_lex = bind_function(new_lex, f->bytecodes.name, f);
+		}
+		cl_env.lex_env = new_lex;
 		THREAD_NEXT;
 	}
+	/* OP_LABELS	nfun{arg}
+	   fun1{object}
+	   ...
+	   funn{object}
+	   ...
+	   OP_UNBIND n
+
+	   Executes the enclosed code in a lexical enviroment extended with
+	   the functions "fun1" ... "funn".
+	*/
 	CASE(OP_LABELS); {
-		vector = interpret_labels(bytecodes, vector);
+		cl_index i, nfun = GET_OPARG(vector);
+		cl_object l, new_lex;
+		/* Build up a new environment with all functions */
+		for (new_lex = cl_env.lex_env, i = nfun; i; i--) {
+			cl_object f = GET_DATA(vector, bytecodes);
+			new_lex = bind_function(new_lex, f->bytecodes.name, f);
+		}
+		/* Update the closures so that all functions can call each other */
+		;
+		for (l = new_lex, i = nfun; i; i--) {
+			cl_object record = ECL_CONS_CAR(l);
+			ECL_RPLACA(record, close_around(ECL_CONS_CAR(record), new_lex));
+			l = ECL_CONS_CDR(l);
+		}
+		cl_env.lex_env = new_lex;
 		THREAD_NEXT;
 	}
 	/* OP_LFUNCTION	n{arg}, function-name{symbol}
