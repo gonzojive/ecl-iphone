@@ -114,10 +114,7 @@ NO_ARGS:
 
 /* -------------------- DISASSEMBLER CORE -------------------- */
 
-/* OP_FLET	nfun{arg}
-   fun1{object}
-   ...
-   funn{object}
+/* OP_FLET	nfun{arg}, fun1{object}
    ...
 
 	Executes the enclosed code in a lexical enviroment extended with
@@ -126,18 +123,17 @@ NO_ARGS:
 static cl_opcode *
 disassemble_flet(cl_object bytecodes, cl_opcode *vector) {
 	cl_index nfun = GET_OPARG(vector);
+	cl_index first = GET_OPARG(vector);
+	cl_object *data = bytecodes->bytecodes.data + first;
 	print_noarg("FLET");
 	while (nfun--) {
-		cl_object fun = GET_DATA(vector, bytecodes);
+		cl_object fun = *(data++);
 		print_arg("\n\tFLET\t", fun->bytecodes.name);
 	}
 	return vector;
 }
 
-/* OP_LABELS	nfun{arg}
-   fun1{object}
-   ...
-   funn{object}
+/* OP_LABELS	nfun{arg}, fun1{object}
    ...
 
 	Executes the enclosed code in a lexical enviroment extended with
@@ -146,9 +142,11 @@ disassemble_flet(cl_object bytecodes, cl_opcode *vector) {
 static cl_opcode *
 disassemble_labels(cl_object bytecodes, cl_opcode *vector) {
 	cl_index nfun = GET_OPARG(vector);
+	cl_index first = GET_OPARG(vector);
+	cl_object *data = bytecodes->bytecodes.data + first;
 	print_noarg("LABELS");
 	while (nfun--) {
-		cl_object fun = GET_DATA(vector, bytecodes);
+		cl_object fun = *(data++);
 		print_arg("\n\tLABELS\t", fun->bytecodes.name);
 	}
 	return vector;

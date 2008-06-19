@@ -678,25 +678,24 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		ihs_pop();
 		return VALUES(0);
 	}
-	/* OP_FLET	nfun{arg}
-	   fun1{object}
+	/* OP_FLET	nfun{arg}, fun1{object}
 	   ...
-	   funn{object}
-	   ...
-	   OP_UNBIND n
+	   OP_UNBIND nfun
 	   
 	   Executes the enclosed code in a lexical enviroment extended with
-	   the functions "fun1" ... "funn".
+	   the functions "fun1" ... "funn". Note that we only record the
+	   index of the first function: the others are after this one.
 	*/
 	CASE(OP_FLET); {
 		cl_index nfun = GET_OPARG(vector);
+		cl_index first = GET_OPARG(vector);
+		cl_object *fun = bytecodes->bytecodes.data + first;
 		/* Copy the environment so that functions get it without references
 		   to themselves, and then add new closures to the environment. */
 		cl_object old_lex = lex_env;
 		cl_object new_lex = old_lex;
 		while (nfun--) {
-			cl_object fun = GET_DATA(vector, bytecodes);
-			cl_object f = close_around(fun, old_lex);
+			cl_object f = close_around(*(fun++), old_lex);
 			new_lex = bind_function(new_lex, f->bytecodes.name, f);
 		}
 		lex_env = new_lex;
@@ -714,10 +713,12 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_LABELS); {
 		cl_index i, nfun = GET_OPARG(vector);
+		cl_index first = GET_OPARG(vector);
+		cl_object *fun = bytecodes->bytecodes.data + first;
 		cl_object l, new_lex;
 		/* Build up a new environment with all functions */
 		for (new_lex = lex_env, i = nfun; i; i--) {
-			cl_object f = GET_DATA(vector, bytecodes);
+			cl_object f = *(fun++);
 			new_lex = bind_function(new_lex, f->bytecodes.name, f);
 		}
 		/* Update the closures so that all functions can call each other */

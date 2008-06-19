@@ -1082,12 +1082,9 @@ c_eval_when(cl_object args, int flags) {
 	The OP_FLET/OP_FLABELS operators change the lexical environment
 	to add a few local functions.
 
-		[OP_FLET/OP_FLABELS + nfun]
-		fun1
+		[OP_FLET/OP_FLABELS + nfun + fun1]
 		...
-		fun2
-		...
-		OP_UNBIND n
+		OP_UNBIND nfun
 	labelz:
 */
 static cl_index
@@ -1106,7 +1103,11 @@ static int
 c_labels_flet(int op, cl_object args, int flags) {
 	cl_object l, def_list = pop(&args);
 	struct cl_compiler_env *old_c_env, new_c_env;
-	cl_index nfun;
+	cl_index nfun, first = 0;
+
+	if (ecl_length(def_list) == 0) {
+		return c_locally(args, flags);
+	}
 
 	old_c_env = ENV;
 	new_c_env = *ENV;
@@ -1129,7 +1130,12 @@ c_labels_flet(int op, cl_object args, int flags) {
 	for (l = def_list; !ecl_endp(l); ) {
 		cl_object definition = pop(&l);
 		cl_object name = pop(&definition);
-		asm_c(ecl_make_lambda(name, definition));
+		cl_object lambda = ecl_make_lambda(name, definition);
+		cl_index c = c_register_constant(lambda);
+		if (first == 0) {
+			asm_arg(c);
+			first = 1;
+		}
 	}
 
 	/* If compiling a FLET form, add the function names to the lexical
