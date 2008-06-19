@@ -649,6 +649,9 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 cl_object
 si_bc_disassemble(cl_object v)
 {
+	if (type_of(v) == t_bclosure) {
+		v = v->bclosure.code;
+	}
 	if (type_of(v) == t_bytecodes) {
 		disassemble_lambda(v);
 		@(return v)
@@ -661,19 +664,27 @@ si_bc_split(cl_object b)
 {
 	cl_object vector;
 	cl_object data;
+	cl_object lex = Cnil;
 
+	if (type_of(b) == t_bclosure) {
+		b = b->bclosure.code;
+		lex = b->bclosure.lex;
+	}
 	if (type_of(b) != t_bytecodes)
 		@(return Cnil Cnil)
 	vector = ecl_alloc_simple_vector(b->bytecodes.code_size, aet_b8);
 	vector->vector.self.b8 = (uint8_t*)b->bytecodes.code;
 	data = ecl_alloc_simple_vector(b->bytecodes.data_size, aet_object);
 	data->vector.self.t = b->bytecodes.data;
-	@(return b->bytecodes.lex vector data)
+	@(return lex vector data)
 }
 
 cl_object
 si_bc_file(cl_object b)
 {
+	if (type_of(b) == t_bclosure) {
+		b = b->bclosure.code;
+	}
 	if (type_of(b) != t_bytecodes) {
 		@(return Cnil Cnil);
 	} else {

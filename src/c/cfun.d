@@ -88,6 +88,8 @@ si_compiled_function_name(cl_object fun)
 	cl_object output;
 
 	switch(type_of(fun)) {
+	case t_bclosure:
+		output = fun->bclosure.code;
 	case t_bytecodes:
 		output = fun->bytecodes.name; break;
 	case t_cfun:
@@ -106,8 +108,10 @@ cl_function_lambda_expression(cl_object fun)
 	cl_object output, name = Cnil, lex = Cnil;
 
 	switch(type_of(fun)) {
+	case t_bclosure:
+		lex = fun->bclosure.lex;
+		fun = fun->bclosure.code;
 	case t_bytecodes:
-		lex = fun->bytecodes.lex;
 		name = fun->bytecodes.name;
 		output = fun->bytecodes.definition;
 		if (!CONSP(output))

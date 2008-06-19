@@ -228,7 +228,7 @@ cl_functionp(cl_object x)
 	cl_object output;
 
 	t = type_of(x);
-	if (t == t_bytecodes || t == t_cfun || t == t_cclosure
+	if (t == t_bytecodes || t == t_bclosure || t == t_cfun || t == t_cclosure
 #ifdef CLOS
 	    || (t == t_instance && x->instance.isgf)
 #endif
@@ -243,7 +243,7 @@ cl_object
 cl_compiled_function_p(cl_object x)
 {
 	cl_type t = type_of(x);
-	@(return ((t == t_bytecodes || t == t_cfun || t == t_cclosure) ? Ct : Cnil))
+	@(return ((t == t_bytecodes || t == t_bclosure || t == t_cfun || t == t_cclosure) ? Ct : Cnil))
 }
 
 cl_object

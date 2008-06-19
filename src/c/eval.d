@@ -98,6 +98,8 @@ ecl_apply_from_stack_frame(cl_object frame, cl_object x)
 		goto AGAIN;
 	case t_bytecodes:
 		return ecl_apply_lambda(frame, fun);
+	case t_bclosure:
+		return ecl_apply_bclosure(frame, fun);
 	default:
 	ERROR:
 		FEinvalid_function(x);
@@ -165,6 +167,10 @@ _ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_v
 	case t_bytecodes:
 		frame = build_funcall_frame((cl_object)&frame_aux, args);
 		out = ecl_apply_lambda(frame, fun);
+		break;
+	case t_bclosure:
+		frame = build_funcall_frame((cl_object)&frame_aux, args);
+		out = ecl_apply_bclosure(frame, fun);
 		break;
 	default:
 	ERROR:

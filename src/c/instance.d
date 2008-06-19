@@ -334,6 +334,7 @@ cl_class_of(cl_object x)
 	case t_random:
 		index = ECL_BUILTIN_RANDOM_STATE; break;
 	case t_bytecodes:
+	case t_bclosure:
 	case t_cfun:
 	case t_cclosure:
 		index = ECL_BUILTIN_FUNCTION; break;

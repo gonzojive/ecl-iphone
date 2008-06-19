@@ -71,6 +71,7 @@ typedef enum {
 	t_readtable,
 	t_pathname,
 	t_bytecodes,
+	t_bclosure,
 	t_cfun,
 	t_cclosure,
 #ifdef CLOS
@@ -559,7 +560,6 @@ struct ecl_codeblock {
 struct ecl_bytecodes {
 	HEADER;
 	cl_object name;		/*  function name  */
-	cl_object lex;		/*  lexical environment  */
 	cl_object specials;	/*  list of special variables  */
 	cl_object definition;	/*  function definition in list form  */
 	cl_index code_size;	/*  number of bytecodes  */
@@ -568,6 +568,12 @@ struct ecl_bytecodes {
 	cl_object *data;	/*  non-inmediate constants used in the code  */
 	cl_object file;		/*  file where it was defined...  */
 	cl_index file_position;	/*  and where it was created  */
+};
+
+struct ecl_bclosure {
+	HEADER;
+	cl_object code;
+	cl_object lex;
 };
 
 struct ecl_cfun {		/*  compiled function header  */
@@ -724,7 +730,8 @@ union cl_lispunion {
 	struct ecl_random	random;		/*  random-states  */
 	struct ecl_readtable	readtable; 	/*  read table  */
 	struct ecl_pathname	pathname; 	/*  path name  */
-	struct ecl_bytecodes	bytecodes; 	/*  bytecompiled closure */
+	struct ecl_bytecodes	bytecodes; 	/*  bytecompiled function / code */
+	struct ecl_bclosure	bclosure; 	/*  bytecompiled closure */
 	struct ecl_cfun		cfun;		/*  compiled function  */
 	struct ecl_cclosure	cclosure; 	/*  compiled closure  */
 

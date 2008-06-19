@@ -112,7 +112,7 @@ cl_object
 si_coerce_to_function(cl_object fun)
 {
 	cl_type t = type_of(fun);
-	if (!(t == t_cfun || t == t_cclosure || t == t_bytecodes
+	if (!(t == t_cfun || t == t_cclosure || t == t_bytecodes || t == t_bclosure
 #ifdef CLOS
 	      || (t == t_instance && fun->instance.isgf)
 #endif

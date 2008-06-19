@@ -175,6 +175,9 @@ ihs_function_name(cl_object x)
 	case t_symbol:
 		return(x);
 
+	case t_bclosure:
+		x = x->bclosure.code;
+
 	case t_bytecodes:
 		y = x->bytecodes.name;
 		if (Null(y))
