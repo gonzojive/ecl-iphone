@@ -529,6 +529,8 @@ close_around(cl_object fun, cl_object lex) {
 
 #define STACK_REF(the_env,n) (the_env->stack_top[n])
 
+#define SETUP_ENV(the_env) { ihs.lex_env = lex_env; }
+
 /*
  * INTERPRET-FUNCALL is one of the few ways to "exit" the interpreted
  * environment and get into the C/lisp world. Since almost all data
@@ -539,6 +541,7 @@ close_around(cl_object fun, cl_object lex) {
 
 #define INTERPRET_FUNCALL(reg0, the_env, frame, narg, fun) {	\
 	cl_index __n = narg; \
+	SETUP_ENV(the_env); \
 	frame.stack = the_env->stack; \
 	frame.top = the_env->stack_top; \
 	frame.bottom = frame.top - __n; \
@@ -554,11 +557,10 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	typedef struct cl_env_struct *cl_env_ptr;
 	const cl_env_ptr the_env = &cl_env;
 	cl_opcode *vector = pc;
-	cl_object reg0 = the_env->values[0], reg1;
+	cl_object reg0 = the_env->values[0], reg1, lex_env = env;
 	struct ecl_stack_frame frame_aux;
-	struct ihs_frame ihs;
+	volatile struct ihs_frame ihs;
 	ihs_push(&ihs, bytecodes, env);
-#define lex_env ihs.lex_env
 	frame_aux.t = t_frame;
 	frame_aux.stack = frame_aux.top = frame_aux.bottom = 0;
  BEGIN:
@@ -657,7 +659,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_FCALL); {
 		cl_fixnum n = GET_OPARG(vector);
-		cl_object fun = the_env->stack_top[-n-1];
+		cl_object fun = STACK_REF(the_env,-n-1);
 		INTERPRET_FUNCALL(reg0, the_env, frame_aux, n, fun);
 		STACK_POP(the_env);
 		THREAD_NEXT;
@@ -669,7 +671,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_MCALL); {
 		cl_fixnum n = fix(STACK_POP(the_env));
-		cl_object fun = the_env->stack_top[-n-1];
+		cl_object fun = STACK_REF(the_env,-n-1);
 		INTERPRET_FUNCALL(reg0, the_env, frame_aux, n, fun);
 		STACK_POP(the_env);
 		THREAD_NEXT;
@@ -1063,10 +1065,10 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 			   to ntags-1, depending on the tag. These
 			   numbers are indices into the jump table and
 			   are computed at compile time. */
-			cl_opcode *table = (cl_opcode *)the_env->stack_top[-1];
+			cl_opcode *table = (cl_opcode *)STACK_REF(the_env,-1);
+			lex_env = STACK_REF(the_env,-2);
 			table = table + fix(the_env->values[0]) * OPARG_SIZE;
 			vector = table + *(cl_oparg *)table;
-			lex_env = the_env->stack_top[-2];
 		}
 		THREAD_NEXT;
 	}
@@ -1158,21 +1160,17 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_POPVALUES); {
 		cl_object *dest = the_env->values;
-		cl_object *sp = the_env->stack_top;
-		int n = the_env->nvalues = fix(*(--sp));
+		int n = the_env->nvalues = fix(STACK_POP(the_env));
 		if (n == 0) {
 			*dest = reg0 = Cnil;
-			the_env->stack_top = sp;
 			THREAD_NEXT;
 		} else if (n == 1) {
-			*dest = reg0 = *(--sp);
-			the_env->stack_top = sp;
+			*dest = reg0 = STACK_POP(the_env);
 			THREAD_NEXT;
 		} else {
-			sp -= n;
-			memcpy(dest, sp, n * sizeof(cl_object));
+			STACK_POP_N(the_env,n);
+			memcpy(dest, &STACK_REF(the_env,0), n * sizeof(cl_object));
 			reg0 = *dest;
-			the_env->stack_top = sp;
 			THREAD_NEXT;
 		}
 	}
@@ -1182,12 +1180,10 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	*/
 	CASE(OP_VALUES); {
 		cl_fixnum n = GET_OPARG(vector);
-		cl_object *sp = the_env->stack_top - n;
-		cl_object *dest = the_env->values;
 		the_env->nvalues = n;
-		memcpy(dest, sp, n * sizeof(cl_object));
-		reg0 = *dest;
-		the_env->stack_top = sp;
+		STACK_POP_N(the_env, n);
+		memcpy(the_env->values, &STACK_REF(the_env, 0), n * sizeof(cl_object));
+		reg0 = the_env->values[0];
 		THREAD_NEXT;
 	}
 	/* OP_NTHVAL
@@ -1284,6 +1280,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		cl_object form = GET_DATA(vector, bytecodes);
 		cl_object a = SYM_VAL(@'si::*step-action*');
 		cl_index n;
+		SETUP_ENV(the_env);
 		the_env->values[0] = reg0;
 		n = cl_stack_push_values();
 		if (a == Ct) {
@@ -1311,6 +1308,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		 * like to step _in_ the function. STEPPER takes care of
 		 * that. */
 		cl_fixnum n = GET_OPARG(vector);
+		SETUP_ENV(the_env);
 		if (SYM_VAL(@'si::*step-action*') == Ct) {
 			STACK_PUSH(the_env, reg0);
 			INTERPRET_FUNCALL(reg0, the_env, frame_aux, 1, @'si::stepper');
@@ -1320,6 +1318,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	CASE(OP_STEPOUT); {
 		cl_object a = SYM_VAL(@'si::*step-action*');
 		cl_index n;
+		SETUP_ENV(the_env);
 		the_env->values[0] = reg0;
 		n = cl_stack_push_values();
 		if (a == Ct) {
