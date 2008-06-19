@@ -630,6 +630,18 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 				goto ARG;
 	case OP_STEPOUT:	string = "STEP\tOUT";
 				goto NOARG;
+
+	case OP_CONS:		string = "CONS"; goto NOARG;
+	case OP_ENDP:		string = "ENDP\tREG0"; goto NOARG;
+	case OP_CAR:		string = "CAR\tREG0"; goto NOARG;
+	case OP_CDR:		string = "CDR\tREG0"; goto NOARG;
+	case OP_LIST:		string = "LIST\t";
+				n = GET_OPARG(bytecodes);
+				goto OPARG;
+	case OP_LISTA:		string = "LIST*\t";
+				n = GET_OPARG(bytecodes);
+				goto OPARG;
+
 	default:
 		FEerror("Unknown code ~S", 1, MAKE_FIXNUM(*(vector-1)));
 		return vector;

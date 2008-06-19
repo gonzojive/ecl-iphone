@@ -109,6 +109,13 @@ static int c_until(cl_object args, int flags);
 static int compile_body(cl_object args, int flags);
 static int compile_form(cl_object args, int push);
 
+static int c_cons(cl_object args, int push);
+static int c_endp(cl_object args, int push);
+static int c_car(cl_object args, int push);
+static int c_cdr(cl_object args, int push);
+static int c_list(cl_object args, int push);
+static int c_listA(cl_object args, int push);
+
 static cl_object ecl_make_lambda(cl_object name, cl_object lambda);
 
 static void FEillegal_variable_name(cl_object) /*__attribute__((noreturn))*/;
@@ -274,6 +281,17 @@ static compiler_record database[] = {
   {@'values', c_values, 1},
   {@'si::while', c_while, 0},
   {@'si::until', c_until, 0},
+
+  /* Extras */
+
+  {@'cons', c_cons, 0},
+  {@'car', c_car, 0},
+  {@'cdr', c_cdr, 0},
+  {@'first', c_car, 0},
+  {@'rest', c_cdr, 0},
+  {@'list', c_list, 0},
+  {@'list*', c_listA, 0},
+  {@'endp', c_endp, 0},
   {NULL, NULL, 1}
 };
 
@@ -2036,6 +2054,87 @@ compile_body(cl_object body, int flags) {
 		} while (1);
 	}
 }
+
+/* ------------------------ INLINED FUNCTIONS -------------------------------- */
+
+static int
+c_cons(cl_object args, int flags)
+{
+	cl_object car, cdr;
+	if (ecl_length(args) != 2) {
+		FEprogram_error("CONS: Wrong number of arguments", 0);
+	}
+	compile_form(cl_first(args), FLAG_PUSH);
+	compile_form(cl_second(args), FLAG_REG0);
+	asm_op(OP_CONS);
+	return FLAG_REG0;
+}
+
+static int
+c_endp(cl_object args, int flags)
+{
+	cl_object list = pop(&args);
+	if (args != Cnil) {
+		FEprogram_error("ENDP: Too many arguments", 0);
+	}
+	compile_form(list, FLAG_REG0);
+	asm_op(OP_ENDP);
+	return FLAG_REG0;
+}
+
+static int
+c_car(cl_object args, int flags)
+{
+	cl_object list = pop(&args);
+	if (args != Cnil) {
+		FEprogram_error("CAR: Too many arguments", 0);
+	}
+	compile_form(list, FLAG_REG0);
+	asm_op(OP_CAR);
+	return FLAG_REG0;
+}
+
+static int
+c_cdr(cl_object args, int flags)
+{
+	cl_object list = pop(&args);
+	if (args != Cnil) {
+		FEprogram_error("CDR: Too many arguments", 0);
+	}
+	compile_form(list, FLAG_REG0);
+	asm_op(OP_CDR);
+	return FLAG_REG0;
+}
+
+static int
+c_list_listA(cl_object args, int flags, int op)
+{
+	cl_index n = ecl_length(args);
+	if (n == 0) {
+		return compile_form(Cnil, flags);
+	} else {
+		while (ECL_CONS_CDR(args) != Cnil) {
+			compile_form(ECL_CONS_CAR(args), FLAG_PUSH);
+			args = ECL_CONS_CDR(args);
+		}
+		compile_form(ECL_CONS_CAR(args), FLAG_REG0);
+		asm_op2(op, n);
+		return FLAG_REG0;
+	}
+}
+
+static int
+c_list(cl_object args, int flags)
+{
+	return c_list_listA(args, flags, OP_LIST);
+}
+
+static int
+c_listA(cl_object args, int flags)
+{
+	return c_list_listA(args, flags, OP_LISTA);
+}
+
 
 /* ----------------------------- PUBLIC INTERFACE ---------------------------- */
 

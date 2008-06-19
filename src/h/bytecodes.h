@@ -126,6 +126,12 @@
 enum {
   OP_NOP,
   OP_QUOTE,
+  OP_ENDP,
+  OP_CONS,
+  OP_CAR,
+  OP_CDR,
+  OP_LIST,
+  OP_LISTA,
   OP_VAR,
   OP_VARS,
   OP_PUSH,
@@ -248,6 +254,12 @@ typedef int16_t cl_oparg;
 	static const int offsets[] = {\
 		&&LBL_OP_NOP - &&LBL_OP_NOP,\
 		&&LBL_OP_QUOTE - &&LBL_OP_NOP,\
+		&&LBL_OP_ENDP - &&LBL_OP_NOP,\
+		&&LBL_OP_CONS - &&LBL_OP_NOP,\
+		&&LBL_OP_CAR - &&LBL_OP_NOP,\
+		&&LBL_OP_CDR - &&LBL_OP_NOP,\
+		&&LBL_OP_LIST - &&LBL_OP_NOP,\
+		&&LBL_OP_LISTA - &&LBL_OP_NOP,\
 		&&LBL_OP_VAR - &&LBL_OP_NOP,\
 		&&LBL_OP_VARS - &&LBL_OP_NOP,\
 		&&LBL_OP_PUSH - &&LBL_OP_NOP,\

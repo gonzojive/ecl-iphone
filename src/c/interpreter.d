@@ -597,6 +597,37 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		THREAD_NEXT;
 	}
 
+	/* OP_CONS, OP_CAR, OP_CDR, etc act on reg0 and stack. */
+
+	CASE(OP_CONS); {
+		cl_object car = STACK_POP(the_env);
+		reg0 = CONS(car, reg0);
+		THREAD_NEXT;
+	}
+
+	CASE(OP_CAR); {
+		if (!LISTP(reg0)) FEtype_error_cons(reg0);
+		reg0 = CAR(reg0);
+		THREAD_NEXT;
+	}
+
+	CASE(OP_CDR); {
+		if (!LISTP(reg0)) FEtype_error_cons(reg0);
+		reg0 = CDR(reg0);
+		THREAD_NEXT;
+	}
+
+	CASE(OP_LIST);
+		reg0 = ecl_list1(reg0);
+
+	CASE(OP_LISTA);	{
+		cl_index n = GET_OPARG(vector);
+		while (--n) {
+			reg0 = CONS(STACK_POP(the_env), reg0);
+		}
+		THREAD_NEXT;
+	}
+
 	/* OP_PUSH
 		Pushes the object in VALUES(0).
 	*/
@@ -881,10 +912,15 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 			vector += jump - OPARG_SIZE;
 		THREAD_NEXT;
 	}
+
+	CASE(OP_ENDP);
+		if (!LISTP(reg0)) FEtype_error_list(reg0);
+
 	CASE(OP_NOT); {
 		reg0 = (reg0 == Cnil)? Ct : Cnil;
 		THREAD_NEXT;
 	}
+
 	/* OP_UNBIND	n{arg}
 		Undo "n" local bindings.
 	*/
