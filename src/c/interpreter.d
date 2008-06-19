@@ -311,8 +311,8 @@ lambda_bind_var(cl_object env, cl_object var, cl_object val, cl_object specials)
 	return env;
 }
 
-static void
-lambda_bind(cl_narg narg, cl_object lambda, cl_object *sp)
+static cl_object
+lambda_bind(cl_object env, cl_narg narg, cl_object lambda, cl_object *sp)
 {
 	cl_object *data = lambda->bytecodes.data;
 	cl_object specials = lambda->bytecodes.specials;
@@ -324,24 +324,27 @@ lambda_bind(cl_narg narg, cl_object lambda, cl_object *sp)
 	if (narg < n)
 		FEwrong_num_arguments(lambda->bytecodes.name);
 	for (; n; n--, narg--)
-		cl_env.lex_env = lambda_bind_var(cl_env.lex_env, *(data++), *(sp++), specials);
+		env = lambda_bind_var(env, *(data++), *(sp++), specials);
 
 	/* 2) OPTIONAL ARGUMENTS:  N var1 value1 flag1 ... varN valueN flagN */
 	for (n = fix(*(data++)); n; n--, data+=3) {
 		if (narg) {
-			cl_env.lex_env = lambda_bind_var(cl_env.lex_env, data[0], *sp, specials);
+			env = lambda_bind_var(env, data[0], *sp, specials);
 			sp++; narg--;
-			if (!Null(data[2]))
-				cl_env.lex_env = lambda_bind_var(cl_env.lex_env, data[2], Ct, specials);
+			if (!Null(data[2])) {
+				env = lambda_bind_var(env, data[2], Ct, specials);
+			}
 		} else {
 			cl_object defaults = data[1];
 			if (FIXNUMP(defaults)) {
+				cl_env.lex_env = env;
 				ecl_interpret(lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
 				defaults = VALUES(0);
 			}
-			cl_env.lex_env = lambda_bind_var(cl_env.lex_env, data[0], defaults, specials);
-			if (!Null(data[2]))
-				cl_env.lex_env = lambda_bind_var(cl_env.lex_env, data[2], Cnil, specials);
+			env = lambda_bind_var(env, data[0], defaults, specials);
+			if (!Null(data[2])) {
+				env = lambda_bind_var(env, data[2], Cnil, specials);
+			}
 		}
 	}
 	
@@ -349,18 +352,20 @@ lambda_bind(cl_narg narg, cl_object lambda, cl_object *sp)
 	if (!Null(data[0])) {
 		cl_object rest = Cnil;
 		check_remaining = FALSE;
-		for (i=narg; i; )
+		for (i=narg; i; ) {
 			rest = CONS(sp[--i], rest);
-		cl_env.lex_env = lambda_bind_var(cl_env.lex_env, data[0], rest, specials);
+		}
+		env = lambda_bind_var(env, data[0], rest, specials);
 	}
 	data++;
 
 	/* 4) ALLOW-OTHER-KEYS: { T | NIL | 0} */
 	if (data[0] == MAKE_FIXNUM(0)) {
 		data++;
-		if (narg && check_remaining)
+		if (narg && check_remaining) {
 			FEprogram_error("LAMBDA: Too many arguments to function ~S.", 1,
 					lambda->bytecodes.name);
+		}
 	} else {
 		/*
 		 * Only when ALLOW-OTHER-KEYS /= 0, we process this:
@@ -418,26 +423,29 @@ lambda_bind(cl_narg narg, cl_object lambda, cl_object *sp)
 					1, lambda->bytecodes.name);
 		}
 		for (i=0; i<n; i++, data+=4) {
-			if (spp[i] != unbound)
-				cl_env.lex_env = lambda_bind_var(cl_env.lex_env, data[1],spp[i],specials);
-			else {
+			if (spp[i] != unbound) {
+				env = lambda_bind_var(env, data[1],spp[i],specials);
+			} else {
 				cl_object defaults = data[2];
 				if (FIXNUMP(defaults)) {
+					cl_env.lex_env = env;
 					ecl_interpret(lambda, (cl_opcode*)lambda->bytecodes.code + fix(defaults));
 					defaults = VALUES(0);
 				}
-				cl_env.lex_env = lambda_bind_var(cl_env.lex_env, data[1],defaults,specials);
+				env = lambda_bind_var(env, data[1],defaults,specials);
 			}
-			if (!Null(data[3]))
-				cl_env.lex_env = lambda_bind_var(cl_env.lex_env, data[3],(spp[i] != unbound)? Ct : Cnil,specials);
+			if (!Null(data[3])) {
+				env = lambda_bind_var(env, data[3],(spp[i] != unbound)? Ct : Cnil,specials);
+			}
 		}
 	}
+	return env;
 }
 
 cl_object
 ecl_apply_lambda(cl_object frame, cl_object fun)
 {
-	cl_object name;
+	cl_object name, env;
 	bds_ptr old_bds_top;
 	struct ihs_frame ihs;
 
@@ -446,15 +454,16 @@ ecl_apply_lambda(cl_object frame, cl_object fun)
 
 	/* Save the lexical environment and set up a new one */
 	ihs_push(&ihs, fun);
-	cl_env.lex_env = fun->bytecodes.lex;
+	env = fun->bytecodes.lex;
 	old_bds_top = cl_env.bds_top;
 
 	/* Establish bindings */
-	lambda_bind(frame->frame.top - frame->frame.bottom, fun, frame->frame.bottom);
+	env = lambda_bind(env, frame->frame.top - frame->frame.bottom, fun, frame->frame.bottom);
 
 	VALUES(0) = Cnil;
 	NVALUES = 0;
 	name = fun->bytecodes.name;
+	cl_env.lex_env = env;
 	ecl_interpret(fun, fun->bytecodes.code);
 	bds_unwind(old_bds_top);
 	ihs_pop();
