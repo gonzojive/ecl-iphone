@@ -122,9 +122,11 @@ NO_ARGS:
 */
 static cl_opcode *
 disassemble_flet(cl_object bytecodes, cl_opcode *vector) {
-	cl_index nfun = GET_OPARG(vector);
-	cl_index first = GET_OPARG(vector);
-	cl_object *data = bytecodes->bytecodes.data + first;
+	cl_index nfun, first;
+	cl_object *data;
+	GET_OPARG(nfun, vector);
+	GET_OPARG(first, vector);
+	data = bytecodes->bytecodes.data + first;
 	print_noarg("FLET");
 	while (nfun--) {
 		cl_object fun = *(data++);
@@ -141,9 +143,11 @@ disassemble_flet(cl_object bytecodes, cl_opcode *vector) {
 */
 static cl_opcode *
 disassemble_labels(cl_object bytecodes, cl_opcode *vector) {
-	cl_index nfun = GET_OPARG(vector);
-	cl_index first = GET_OPARG(vector);
-	cl_object *data = bytecodes->bytecodes.data + first;
+	cl_index nfun, first;
+	cl_object *data;
+	GET_OPARG(nfun, vector);
+	GET_OPARG(first, vector);
+	data = bytecodes->bytecodes.data + first;
 	print_noarg("LABELS");
 	while (nfun--) {
 		cl_object fun = *(data++);
@@ -180,9 +184,9 @@ labeln:
 */
 static cl_opcode *
 disassemble_tagbody(cl_object bytecodes, cl_opcode *vector) {
-	cl_index i, ntags = GET_OPARG(vector);
+	cl_index i, ntags;
 	cl_opcode *destination;
-
+	GET_OPARG(ntags, vector);
 	print_noarg("TAGBODY");
 	for (i=0; i<ntags; i++) {
 		GET_LABEL(destination, vector);
@@ -200,8 +204,9 @@ static cl_opcode *
 disassemble(cl_object bytecodes, cl_opcode *vector) {
 	const char *string;
 	cl_object o;
-	cl_fixnum n;
+	cl_fixnum n, m;
 	cl_object line_format = make_constant_base_string("~%~4d\t");
+	cl_object *data = bytecodes->bytecodes.data;
 
  BEGIN:
 	cl_format(3, Ct, line_format, MAKE_FIXNUM(vector-base));
@@ -216,14 +221,14 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		Sets VALUES(0) to an immediate value.
 	*/
 	case OP_QUOTE:		string = "QUOTE\t";
-				o = GET_DATA(vector, bytecodes);
+				GET_DATA(o, vector, data);
 				goto ARG;
 
 	/* OP_VAR	n{arg}
 		Sets NVALUES=1 and VALUES(0) to the value of the n-th local.
 	*/
 	case OP_VAR:		string = "VAR\t";
-				n = GET_OPARG(vector);
+				GET_OPARG(n, vector);
 				goto OPARG;
 
 	/* OP_VARS	var{symbol}
@@ -231,7 +236,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		VAR should be either a special variable or a constant.
 	*/
 	case OP_VARS:		string = "VARS\t";
-				o = GET_DATA(vector, bytecodes);
+				GET_DATA(o, vector, data);
 				goto ARG;
 
 	/* OP_PUSH
@@ -247,7 +252,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		Pushes the value of the n-th local onto the stack.
 	*/
 	case OP_PUSHV:		string = "PUSHV\t";
-				n = GET_OPARG(vector);
+				GET_OPARG(n, vector);
 				goto OPARG;
 
 	/* OP_PUSHVS	var{symbol}
@@ -255,14 +260,14 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		VAR should be either a special variable or a constant.
 	*/
 	case OP_PUSHVS:		string = "PUSHVS\t";
-				o = GET_DATA(vector, bytecodes);
+				GET_DATA(o, vector, data);
 				goto ARG;
 
 	/* OP_PUSHQ	value{object}
 		Pushes "value" onto the stack.
 	*/
 	case OP_PUSHQ:		string = "PUSH\t'";
-				o = GET_DATA(vector, bytecodes);
+				GET_DATA(o, vector, data);
 				goto ARG;
 
 	/* OP_PUSHVALUES
@@ -304,7 +309,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		are left in VALUES(...)
 	*/
 	case OP_CALL:		string = "CALL\t";
-				n = GET_OPARG(vector);
+				GET_OPARG(n, vector);
 				goto OPARG;
 
 	/* OP_CALLG	n{arg}, name{arg}
@@ -312,8 +317,8 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		deposited in the stack. The output values are left in VALUES.
 	*/
 	case OP_CALLG:		string = "CALLG\t";
-				n = GET_OPARG(vector);
-				o = GET_DATA(vector, bytecodes);
+				GET_OPARG(n, vector);
+				GET_DATA(o, vector, data);
 				goto OPARG_ARG;
 
 	/* OP_FCALL	n{arg}
@@ -323,7 +328,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	*/
 	case OP_STEPCALL:
 	case OP_FCALL:		string = "FCALL\t";
-				n = GET_OPARG(vector);
+				GET_OPARG(n, vector);
 				goto OPARG;
 
 	/* OP_PCALL	n{arg}
@@ -332,7 +337,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		is pushed on the stack.
 	*/
 	case OP_PCALL:		string = "PCALL\t";
-				n = GET_OPARG(vector);
+				GET_OPARG(n, vector);
 				goto OPARG;
 
 	/* OP_PCALLG	n{arg}, name{arg}
@@ -341,8 +346,8 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		the stack.
 	*/
 	case OP_PCALLG:		string = "PCALLG\t";
-				n = GET_OPARG(vector);
-				o = GET_DATA(vector, bytecodes);
+				GET_OPARG(n, vector);
+				GET_DATA(o, vector, data);
 				goto OPARG_ARG;
 
 	/* OP_PFCALL	n{arg}
@@ -351,7 +356,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		is pushed on the stack.
 	*/
 	case OP_PFCALL:		string = "PFCALL\t";
-				n = GET_OPARG(vector);
+				GET_OPARG(n, vector);
 				goto OPARG;
 
 	/* OP_MCALL
@@ -398,7 +403,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		environment. This last value takes precedence.
 	*/
 	case OP_LFUNCTION:	string = "LOCFUNC\t";
-				n = GET_OPARG(vector);
+				GET_OPARG(n, vector);
 				goto OPARG;
 
 	/* OP_FUNCTION	name{symbol}
@@ -407,7 +412,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		environment. This last value takes precedence.
 	*/
 	case OP_FUNCTION:	string = "SYMFUNC\t";
-				o = GET_DATA(vector, bytecodes);
+				GET_DATA(o, vector, data);
 				goto ARG;
 
 	/* OP_CLOSE	name{arg}
@@ -416,7 +421,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		environment. This last value takes precedence.
 	*/
 	case OP_CLOSE:		string = "CLOSE\t";
-				o = GET_DATA(vector, bytecodes);
+				GET_DATA(o, vector, data);
 				goto ARG;
 
 	/* OP_GO	n{arg}
@@ -426,8 +431,8 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		purposes.
 	*/
 	case OP_GO:		string = "GO\t";
-				n = GET_OPARG(vector);
-				o = GET_DATA(vector, bytecodes);
+				GET_OPARG(n, vector);
+				GET_DATA(o, vector, data);
 				goto OPARG_ARG;
 
 	/* OP_RETURN	n{arg}
@@ -435,7 +440,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		occuppies the n-th position.
 	*/
 	case OP_RETURN:		string = "RETFROM";
-				n = GET_OPARG(vector);
+				GET_OPARG(n, vector);
 				goto OPARG;
 
 	/* OP_THROW
@@ -459,17 +464,17 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	case OP_JNIL:		string = "JNIL\t";
 				goto JMP;
 	case OP_JT:		string = "JT\t";
-	JMP: {			cl_oparg jmp = GET_OPARG(vector);
-				n = vector + jmp - OPARG_SIZE - base;
+	JMP: {			GET_OPARG(m, vector);
+				n = vector + m - OPARG_SIZE - base;
 				goto OPARG;
 	}
 	case OP_JEQL:		string = "JEQL\t";
 				goto JEQL;
 	case OP_JNEQL:		string = "JNEQL\t";
 	JEQL: {			cl_oparg jmp;
-				o = GET_DATA(vector, bytecodes);
-				jmp = GET_OPARG(vector);
-				n = vector + jmp - OPARG_SIZE - base;
+				GET_DATA(o, vector, data);
+				GET_OPARG(m, vector);
+				n = vector + m - OPARG_SIZE - base;
 				goto OPARG_ARG;
 	}
 	case OP_NOT:		string = "NOT";
@@ -479,13 +484,13 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		Undo "n" bindings of lexical variables.
 	*/
 	case OP_UNBIND:		string = "UNBIND\t";
-				n = GET_OPARG(vector);
+				GET_OPARG(n, vector);
 				goto OPARG;
 	/* OP_UNBINDS	n{arg}
 		Undo "n" bindings of special variables.
 	*/
 	case OP_UNBINDS:	string = "UNBINDS\t";
-				n = GET_OPARG(vector);
+				GET_OPARG(n, vector);
 				goto OPARG;
 	/* OP_BIND	name{symbol}
 	   OP_PBIND	name{symbol}
@@ -496,24 +501,24 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		to the n-th value of VALUES(...).
 	*/
 	case OP_BIND:		string = "BIND\t";
-				o = GET_DATA(vector, bytecodes);
+				GET_DATA(o, vector, data);
 				goto ARG;
 	case OP_PBIND:		string = "PBIND\t";
-				o = GET_DATA(vector, bytecodes);
+				GET_DATA(o, vector, data);
 				goto ARG;
 	case OP_VBIND:		string = "VBIND\t";
-				n = GET_OPARG(vector);
-				o = GET_DATA(vector, bytecodes);
+				GET_OPARG(n, vector);
+				GET_DATA(o, vector, data);
 				goto OPARG_ARG;
 	case OP_BINDS:		string = "BINDS\t";
-				o = GET_DATA(vector, bytecodes);
+				GET_DATA(o, vector, data);
 				goto ARG;
 	case OP_PBINDS:		string = "PBINDS\t";
-				o = GET_DATA(vector, bytecodes);
+				GET_DATA(o, vector, data);
 				goto ARG;
 	case OP_VBINDS:		string = "VBINDS\t";
-				n = GET_OPARG(vector);
-				o = GET_DATA(vector, bytecodes);
+				GET_OPARG(n, vector);
+				GET_DATA(o, vector, data);
 				goto OPARG_ARG;
 	/* OP_SETQ	n{arg}
 	   OP_PSETQ	n{arg}
@@ -524,24 +529,25 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		first value on the stack (OP_PSETQ[S]).
 	*/
 	case OP_SETQ:		string = "SETQ\t";
-				n = GET_OPARG(vector);
+				GET_OPARG(n, vector);
 				goto OPARG;
 	case OP_PSETQ:		string = "PSETQ\t";
-				n = GET_OPARG(vector);
+				GET_OPARG(n, vector);
 				goto OPARG;
 	case OP_VSETQ:		string = "VSETQ\t";
-				o = MAKE_FIXNUM(GET_OPARG(vector));
-				n = GET_OPARG(vector);
+				GET_OPARG(m, vector);
+				o = MAKE_FIXNUM(m);
+				GET_OPARG(n, vector);
 				goto OPARG_ARG;
 	case OP_SETQS:		string = "SETQS\t";
-				o = GET_DATA(vector, bytecodes);
+				GET_DATA(o, vector, data);
 				goto ARG;
 	case OP_PSETQS:		string = "PSETQS\t";
-				o = GET_DATA(vector, bytecodes);
+				GET_DATA(o, vector, data);
 				goto ARG;
 	case OP_VSETQS:		string = "VSETQS\t";
-				o = GET_DATA(vector, bytecodes);
-				n = GET_OPARG(vector);
+				GET_DATA(o, vector, data);
+				GET_OPARG(n, vector);
 				goto OPARG_ARG;
 
 	case OP_PROGV:		vector = disassemble_progv(bytecodes, vector);
@@ -551,7 +557,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		Pop N values from the stack and store them in VALUES(...)
 	*/
 	case OP_VALUES:		string = "VALUES\t";
-				n = GET_OPARG(vector);
+				GET_OPARG(n, vector);
 				goto OPARG;
 	/* OP_NTHVAL
 		Set VALUES(0) to the N-th value of the VALUES(...) list.
@@ -594,7 +600,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	case OP_PUSHNIL:	string = "PUSH\t'NIL";
 		    		goto NOARG;
 	case OP_STEPIN:		string = "STEP\tIN,";
-				o = GET_DATA(vector, bytecodes);
+				GET_DATA(o, vector, data);
 				goto ARG;
 	case OP_STEPOUT:	string = "STEP\tOUT";
 				goto NOARG;
@@ -604,16 +610,16 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	case OP_CAR:		string = "CAR\tREG0"; goto NOARG;
 	case OP_CDR:		string = "CDR\tREG0"; goto NOARG;
 	case OP_LIST:		string = "LIST\t";
-				n = GET_OPARG(bytecodes);
+				GET_OPARG(n, bytecodes);
 				goto OPARG;
 	case OP_LISTA:		string = "LIST*\t";
-				n = GET_OPARG(bytecodes);
+				GET_OPARG(n, bytecodes);
 				goto OPARG;
 	case OP_CALLG1:		string = "CALLG1\t";
-				o = GET_DATA(vector, bytecodes);
+				GET_DATA(o, vector, data);
 				goto ARG;
 	case OP_CALLG2:		string = "CALLG2\t";
-				o = GET_DATA(vector, bytecodes);
+				GET_DATA(o, vector, data);
 				goto ARG;
 
 	default:
