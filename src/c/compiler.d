@@ -1209,43 +1209,19 @@ c_go(cl_object args, int flags) {
 
 
 /*
-	To get an idea of what goes on
-
-		...		; test form
-		JNIL	labeln
-		...		; form for true case
-		JMP	labelz
-		...		; form for nil case
-	labelz:
+	(if a b) -> (cond (a b))
+	(if a b c) -> (cond (a b) (t c))
 */
 static int
 c_if(cl_object form, int flags) {
-	cl_index label_nil, label_true;
-
-	/* Compile test */
-	compile_form(pop(&form), FLAG_VALUES);
-	label_nil = asm_jmp(OP_JNIL);
-
-	/* Compile THEN ... */
-	flags = maybe_values_or_reg0(flags);
-	compile_form(pop(&form), flags);
-
-	/* ... and then ELSE */
-	if (ecl_endp(form)) {
-		/* ... in case there is any! */
-		asm_complete(OP_JNIL, label_nil);
+	cl_object test = pop(&form);
+	cl_object then = pop(&form);
+	then = cl_list(2, test, then);
+	if (Null(form)) {
+		return c_cond(ecl_list1(then), flags);
 	} else {
-		label_true = asm_jmp(OP_JMP);
-		asm_complete(OP_JNIL, label_nil);
-		compile_form(pop(&form), flags);
-		asm_complete(OP_JMP, label_true);
-
-		if (!Null(form))
-			FEprogram_error("IF: Too many arguments.", 0);
+		return c_cond(cl_list(2, then, CONS(Ct, form)), flags);
 	}
-
-
-	return flags;
 }
 
 
