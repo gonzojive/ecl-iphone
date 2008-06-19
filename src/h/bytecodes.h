@@ -18,6 +18,8 @@ enum {
   OP_CDR,
   OP_LIST,
   OP_LISTA,
+  OP_INT,
+  OP_PINT,
   OP_VAR,
   OP_VARS,
   OP_PUSH,
@@ -172,6 +174,8 @@ typedef int16_t cl_oparg;
   &&LBL_OP_CDR - &&LBL_OP_NOP,\
   &&LBL_OP_LIST - &&LBL_OP_NOP,\
   &&LBL_OP_LISTA - &&LBL_OP_NOP,\
+  &&LBL_OP_INT - &&LBL_OP_NOP,\
+  &&LBL_OP_PINT - &&LBL_OP_NOP,\
   &&LBL_OP_VAR - &&LBL_OP_NOP,\
   &&LBL_OP_VARS - &&LBL_OP_NOP,\
   &&LBL_OP_PUSH - &&LBL_OP_NOP,\
