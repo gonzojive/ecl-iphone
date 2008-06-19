@@ -1375,8 +1375,7 @@ c_macrolet(cl_object args, int flags)
 	cl_object env = funcall(3, @'si::cmp-env-register-macrolet', pop(&args),
 				CONS(ENV->variables, ENV->macros));
 	ENV->macros = CDR(env);
-	args = c_process_declarations(args);
-	flags = compile_body(args, flags);
+	flags = c_locally(args, flags);
 	ENV->macros = old_env;
 	return flags;
 }
@@ -1456,7 +1455,7 @@ c_multiple_value_prog1(cl_object args, int flags) {
 	compile_form(pop(&args), FLAG_VALUES);
 	if (!ecl_endp(args)) {
 		asm_op(OP_PUSHVALUES);
-		compile_body(args, FLAG_VALUES);
+		compile_body(args, FLAG_IGNORE);
 		asm_op(OP_POPVALUES);
 	}
 	return FLAG_VALUES;
