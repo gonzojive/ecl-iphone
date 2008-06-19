@@ -2022,7 +2022,7 @@ compile_body(cl_object body, int flags) {
 			VALUES(0) = Cnil;
 			NVALUES = 0;
 			bytecodes = asm_end(handle);
-			ecl_interpret(bytecodes, bytecodes->bytecodes.code);
+			ecl_interpret(ENV->lex_env, bytecodes, bytecodes->bytecodes.code);
 			asm_clear(handle);
 			ENV = old_c_env;
 #ifdef GBC_BOEHM
@@ -2561,7 +2561,7 @@ si_make_lambda(cl_object name, cl_object rest)
 	}
 	c_new_env(&new_c_env, compiler_env);
 	guess_environment(interpreter_env);
-	cl_env.lex_env = env;
+	ENV->lex_env = env;
 	ENV->stepping = stepping != Cnil;
 	handle = asm_begin();
 	CL_UNWIND_PROTECT_BEGIN {
@@ -2580,10 +2580,9 @@ si_make_lambda(cl_object name, cl_object rest)
 	 * Interpret using the given lexical environment.
 	 */
 	ihs_push(&ihs, bytecodes);
-	cl_env.lex_env = interpreter_env;
 	VALUES(0) = Cnil;
 	NVALUES = 0;
-	ecl_interpret(bytecodes, bytecodes->bytecodes.code);
+	ecl_interpret(interpreter_env, bytecodes, bytecodes->bytecodes.code);
 #ifdef GBC_BOEHM
 	GC_free(bytecodes->bytecodes.code);
 	GC_free(bytecodes->bytecodes.data);
