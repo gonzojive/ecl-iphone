@@ -116,7 +116,6 @@ extern ECL_API cl_object ihs_top_function_name(void);
 typedef struct ecl_frame {
 	jmp_buf		frs_jmpbuf;
 	cl_object	frs_val;
-	cl_object	frs_lex;
 	bds_ptr		frs_bds_top;
 	ihs_ptr		frs_ihs;
 	cl_index	frs_sp;

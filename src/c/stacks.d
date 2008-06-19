@@ -262,7 +262,6 @@ _frs_push(register cl_object val)
 {
 	ecl_frame_ptr output = ++cl_env.frs_top;
 	if (output >= cl_env.frs_limit) frs_overflow();
-	output->frs_lex = cl_env.lex_env;
 	output->frs_bds_top = cl_env.bds_top;
 	output->frs_val = val;
 	output->frs_ihs = cl_env.ihs_top;
@@ -276,7 +275,6 @@ ecl_unwind(ecl_frame_ptr fr)
 	cl_env.nlj_fr = fr;
 	while (cl_env.frs_top != fr && cl_env.frs_top->frs_val != ECL_PROTECT_TAG)
 		--cl_env.frs_top;
-	cl_env.lex_env = cl_env.frs_top->frs_lex;
 	cl_env.ihs_top = cl_env.frs_top->frs_ihs;
 	bds_unwind(cl_env.frs_top->frs_bds_top);
 	cl_stack_set_index(cl_env.frs_top->frs_sp);
