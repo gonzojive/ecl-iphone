@@ -1540,7 +1540,7 @@ c_nth_value(cl_object args, int flags) {
 	if (args != Cnil)
 		FEprogram_error("NTH-VALUE: Too many arguments.",0);
 	asm_op(OP_NTHVAL);
-	return FLAG_VALUES;
+	return FLAG_REG0;
 }
 
 
@@ -2562,12 +2562,14 @@ si_make_lambda(cl_object name, cl_object rest)
 	ihs_push(&ihs, bytecodes, Cnil);
 	VALUES(0) = Cnil;
 	NVALUES = 0;
-	ecl_interpret(interpreter_env, bytecodes, bytecodes->bytecodes.code);
+	{
+	cl_object output = ecl_interpret(interpreter_env, bytecodes, bytecodes->bytecodes.code);
 #ifdef GBC_BOEHM
 	GC_free(bytecodes->bytecodes.code);
 	GC_free(bytecodes->bytecodes.data);
 	GC_free(bytecodes);
 #endif
 	ihs_pop();
-	return VALUES(0);
+	return output;
+	}
 @)
