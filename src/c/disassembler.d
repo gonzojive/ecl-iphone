@@ -215,7 +215,7 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	else
 		line_format = Cnil;
  BEGIN:
-	if (0) {
+	if (1) {
 		line_no = MAKE_FIXNUM(vector-base);
 	} else {
 		line_no = @'*';

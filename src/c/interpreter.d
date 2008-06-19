@@ -556,9 +556,10 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 	ECL_OFFSET_TABLE;
 	typedef struct cl_env_struct *cl_env_ptr;
 	const cl_env_ptr the_env = &cl_env;
-	cl_opcode *vector = pc;
+	register cl_opcode *vector = pc;
 	cl_object *data = bytecodes->bytecodes.data;
-	cl_object reg0 = the_env->values[0], reg1, lex_env = env;
+	register cl_object reg0 = the_env->values[0];
+	cl_object reg1, lex_env = env;
 	struct ecl_stack_frame frame_aux;
 	volatile struct ihs_frame ihs;
 	ihs_push(&ihs, bytecodes, env);

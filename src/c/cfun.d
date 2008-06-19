@@ -23,7 +23,7 @@ cl_make_cfun(void *c_function, cl_object name, cl_object cblock, int narg)
 {
 	cl_object cf;
 
-	cf = cl_alloc_object(t_cfun);
+	cf = cl_alloc_object(t_cfunfixed);
 	cf->cfun.entry = c_function;
 	cf->cfun.name = name;
 	cf->cfun.block = cblock;
@@ -93,6 +93,7 @@ si_compiled_function_name(cl_object fun)
 	case t_bytecodes:
 		output = fun->bytecodes.name; break;
 	case t_cfun:
+	case t_cfunfixed:
 		output = fun->cfun.name; break;
 	case t_cclosure:
 		output = Cnil; break;
@@ -122,6 +123,7 @@ cl_function_lambda_expression(cl_object fun)
 		    output = @list*(3, @'ext::lambda-block', name, output);
 		break;
 	case t_cfun:
+	case t_cfunfixed:
 		name = fun->cfun.name;
 		lex = Cnil;
 		output = Cnil;
@@ -152,12 +154,13 @@ si_compiled_function_block(cl_object fun)
        cl_object output;
 
        switch(type_of(fun)) {
-	case t_cfun:
-		output = fun->cfun.block; break;
-	case t_cclosure:
-		output = fun->cclosure.block; break;
-	default:
-		FEerror("~S is not a compiled-function.", 1, fun);
-	}
-	@(return output)
+       case t_cfun:
+       case t_cfunfixed:
+	       output = fun->cfun.block; break;
+       case t_cclosure:
+	       output = fun->cclosure.block; break;
+       default:
+	       FEerror("~S is not a compiled-function.", 1, fun);
+       }
+       @(return output)
 }
