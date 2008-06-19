@@ -1103,8 +1103,7 @@ ecl_interpret(cl_object env, cl_object bytecodes, void *pc)
 		Pops a singe value pushed by a OP_PUSH* operator.
 	*/
 	CASE(OP_POP); {
-		VALUES(0) = reg0 = cl_stack_pop();
-		NVALUES = 1;
+		reg0 = cl_stack_pop();
 		THREAD_NEXT;
 	}
 	/* OP_POPVALUES
