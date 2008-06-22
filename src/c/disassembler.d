@@ -205,7 +205,7 @@ static cl_opcode *
 disassemble(cl_object bytecodes, cl_opcode *vector) {
 	const char *string;
 	cl_object o;
-	cl_fixnum n, m;
+	cl_fixnum n, m, env_index;
 	cl_object line_format;
 	cl_object *data = bytecodes->bytecodes.data;
 	cl_object line_no;
@@ -233,6 +233,14 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 		Sets VALUES(0) = NIL and NVALUES = 1
 	*/
 	case OP_NOP:		string = "NOP";	goto NOARG;
+
+	case OP_INT:		string = "QUOTE\t";
+				GET_OPARG(n, vector);
+				goto OPARG;
+
+	case OP_PINT:		string = "PUSH\t";
+				GET_OPARG(n, vector);
+				goto OPARG;
 
 	/* OP_QUOTE
 		Sets VALUES(0) to an immediate value.
@@ -314,16 +322,24 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	case OP_POPVALUES:	string = "POP\tVALUES";
 				goto NOARG;
 
-	/* OP_BLOCK	label{arg}, block-name{symbol}
-	     ...
-	   OP_EXIT
-	   label:
-
-	   Executes the enclosed code in a named block.  LABEL points
-	   to the first instruction after OP_EXIT.
-	*/
 	case OP_BLOCK:		string = "BLOCK\t";
-				goto JEQL;
+				GET_DATA(o, vector, data);
+				goto DO_BLOCK;
+	case OP_CATCH:		ecl_princ_str("CATCH\tREG0,", Cnil);
+				goto DO_CATCH;
+	case OP_DO:		string = "DO\t";
+				o = Cnil;
+	DO_BLOCK:		ecl_princ_str(string, Cnil);
+				ecl_princ(o, Cnil);
+				ecl_princ_str(",", Cnil);
+	DO_CATCH: {		GET_OPARG(env_index, vector);
+				GET_OPARG(m, vector);
+				n = vector + m - OPARG_SIZE - base;
+				ecl_princ(MAKE_FIXNUM(n), Cnil);
+				ecl_princ_str(",", Cnil);
+				ecl_princ(MAKE_FIXNUM(m), Cnil);
+				break;
+	}
 
 	/* OP_CALL	n{arg}
 		Calls the function in VALUES(0) with N arguments which
@@ -360,16 +376,6 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	case OP_MCALL:		string = "MCALL";
 				goto NOARG;
 
-	/* OP_CATCH	label{arg}
-	   ...
-	   OP_EXIT_FRAME
-	   label:
-
-	   Sets a catch point using the tag in VALUES(0). LABEL points to the
-	   first instruction after the end (OP_EXIT) of the block
-	*/
-	case OP_CATCH:		string = "CATCH\t";
-				goto JMP;
 	/* OP_ENTRY
 		Marks the entry of a lambda form
 	*/
@@ -564,30 +570,8 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	*/
 	case OP_NTHVAL:		string = "NTHVAL\t";
 				goto NOARG;
-	/* OP_DO	label
-	     ...	; code executed within a NIL block
-	   OP_EXIT_FRAME
-	   label:
-
-	   High level construct for the DO and BLOCK forms.
-	*/
-	case OP_DO:		string = "DO\t";
-				goto JMP;
 	case OP_TAGBODY:	vector = disassemble_tagbody(bytecodes, vector);
 				break;
-	/* OP_PROTECT	label
-	     ...	; code to be protected and whose value is output
-	   OP_PROTECT_NORMAL
-	   label:
-	     ...	; code executed at exit
-	   OP_PROTECT_EXIT
-
-	  High level construct for UNWIND-PROTECT. The first piece of code is
-	  executed and its output value is saved. Then the second piece of code
-	  is executed and the output values restored. The second piece of code
-	  is always executed, even if a THROW, RETURN or GO happen within the
-	  first piece of code.
-	*/
 	case OP_PROTECT:	string = "PROTECT\t";
 				goto JMP;
 	case OP_PROTECT_NORMAL:	string = "PROTECT\tNORMAL";
