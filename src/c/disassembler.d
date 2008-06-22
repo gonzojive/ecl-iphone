@@ -324,22 +324,14 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 
 	case OP_BLOCK:		string = "BLOCK\t";
 				GET_DATA(o, vector, data);
-				goto DO_BLOCK;
-	case OP_CATCH:		ecl_princ_str("CATCH\tREG0,", Cnil);
-				goto DO_CATCH;
-	case OP_DO:		string = "DO\t";
+				goto ARG;
+	case OP_CATCH:		string = "CATCH\tREG0";
+				goto NOARG;
+	case OP_DO:		string = "BLOCK\t";
 				o = Cnil;
-	DO_BLOCK:		ecl_princ_str(string, Cnil);
-				ecl_princ(o, Cnil);
-				ecl_princ_str(",", Cnil);
-	DO_CATCH: {		GET_OPARG(env_index, vector);
-				GET_OPARG(m, vector);
-				n = vector + m - OPARG_SIZE - base;
-				ecl_princ(MAKE_FIXNUM(n), Cnil);
-				ecl_princ_str(",", Cnil);
-				ecl_princ(MAKE_FIXNUM(m), Cnil);
-				break;
-	}
+				goto ARG;
+	case OP_FRAME:		string = "FRAME\t";
+				goto JMP;
 
 	/* OP_CALL	n{arg}
 		Calls the function in VALUES(0) with N arguments which

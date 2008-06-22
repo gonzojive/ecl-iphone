@@ -800,11 +800,9 @@ c_block(cl_object body, int old_flags) {
 	if (Null(name)) {
 		asm_op(OP_DO);
 	} else {
-		asm_op(OP_BLOCK);
-		asm_c(name);
+		asm_op2c(OP_BLOCK, name);
 	}
-	labelz = current_pc();
-	asm_arg(0);
+	labelz = asm_jmp(OP_FRAME);
 	compile_body(body, flags);
 	if (CADDR(block_record) == Cnil) {
 		/* Block unused. We remove the enclosing OP_BLOCK/OP_DO */
@@ -984,13 +982,13 @@ c_catch(cl_object args, int flags) {
 	/* Compile evaluation of tag */
 	compile_form(pop(&args), FLAG_REG0);
 
+	/* Compile binding of tag */
 	old_env = ENV->variables;
 	loc = c_register_block(MAKE_FIXNUM(0));
+	asm_op(OP_CATCH);
 
 	/* Compile jump point */
-	asm_op(OP_CATCH);
-	labelz = current_pc();
-	asm_arg(0);
+	labelz = asm_jmp(OP_FRAME);
 
 	/* Compile body of CATCH */
 	compile_body(args, FLAG_VALUES);
@@ -1846,6 +1844,7 @@ c_tagbody(cl_object args, int flags)
 		compile_body(args, 0);
 		return compile_form(Cnil, flags);
 	}
+	asm_op2c(OP_BLOCK, MAKE_FIXNUM(0));
 	c_register_tags(labels);
 	asm_op2(OP_TAGBODY, nt);
 	tag_base = current_pc();

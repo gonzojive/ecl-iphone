@@ -66,6 +66,7 @@ enum {
   OP_BLOCK,
   OP_DO,
   OP_CATCH,
+  OP_FRAME,
   OP_TAGBODY,
   OP_EXIT_TAGBODY,
   OP_EXIT_FRAME,
@@ -222,6 +223,7 @@ typedef int16_t cl_oparg;
   &&LBL_OP_BLOCK - &&LBL_OP_NOP,\
   &&LBL_OP_DO - &&LBL_OP_NOP,\
   &&LBL_OP_CATCH - &&LBL_OP_NOP,\
+  &&LBL_OP_FRAME - &&LBL_OP_NOP,\
   &&LBL_OP_TAGBODY - &&LBL_OP_NOP,\
   &&LBL_OP_EXIT_TAGBODY - &&LBL_OP_NOP,\
   &&LBL_OP_EXIT_FRAME - &&LBL_OP_NOP,\
