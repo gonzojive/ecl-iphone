@@ -274,6 +274,7 @@ ecl_stack_frame_copy(cl_object dest, cl_object orig)
 
 #define bind_var(env, var, val)		CONS(CONS(var, val), (env))
 #define bind_function(env, name, fun) 	CONS(CONS(fun, name), (env))
+#define bind_frame(env, id, name)	CONS(CONS(id, name), (env))
 
 static cl_object
 ecl_lex_env_get_record(register cl_object env, register int s)
@@ -1109,18 +1110,18 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	CASE(OP_BLOCK); {
 		GET_DATA(reg0, vector, data);
 		reg1 = new_frame_id();
-		lex_env = CONS(CONS(reg1, reg0), lex_env);
+		lex_env = bind_frame(lex_env, reg1, reg0);
 		THREAD_NEXT;
 	}
 	CASE(OP_DO); {
 		reg0 = Cnil;
 		reg1 = new_frame_id();
-		lex_env = CONS(CONS(reg1, reg0), lex_env);
+		lex_env = bind_frame(lex_env, reg1, reg0);
 		THREAD_NEXT;
 	}
 	CASE(OP_CATCH); {
 		reg1 = reg0;
-		lex_env = CONS(CONS(reg1, reg0), lex_env);
+		lex_env = bind_frame(lex_env, reg1, reg0);
 		THREAD_NEXT;
 	}
 	CASE(OP_FRAME); {
