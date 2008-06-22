@@ -177,7 +177,7 @@ AC_ARG_ENABLE(longdouble,
   [enable_longdouble=${enableval}], [enable_longdouble=no])
 
 AC_ARG_ENABLE(c99complex,
-  AS_HELP_STRING( [--enable-c99-complex],
+  AS_HELP_STRING( [--enable-c99complex],
                   [include support for C complex type]
                   [(default=NO)]),
   [enable_c99complex=${enableval}], [enable_c99complex=no])

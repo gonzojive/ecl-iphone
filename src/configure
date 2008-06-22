@@ -1334,7 +1334,7 @@ Optional Features:
                           on Intel)
   --enable-unicode        enable support for unicode (default=NO)
   --enable-longdouble     include support for long double (default=NO)
-  --enable-c99-complex    include support for C complex type (default=NO)
+  --enable-c99complex     include support for C complex type (default=NO)
   --enable-hierarchical-packages
                           hierarchical package names (default=YES)
   --enable-asmapply       enable optimizations written in assembler
