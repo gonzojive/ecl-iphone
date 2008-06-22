@@ -1101,7 +1101,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	}
 			
 
-	/* OP_BLOCK	label{arg}
+	/* OP_BLOCK	name{symbol}, env_index{arg}, label{arg}
 	   ...
 	   OP_EXIT_FRAME
 	 label:
@@ -1114,7 +1114,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		reg1 = new_frame_id();
 		goto DO_BLOCK;
 	}
-	/* OP_CATCH	label{arg}
+	/* OP_CATCH	env_index{arg}, label{arg}
 	   ...
 	   OP_EXIT_FRAME
 	   label:
@@ -1126,7 +1126,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		reg1 = reg0;
 		goto DO_BLOCK;
 	}
-	/* OP_DO	label
+	/* OP_DO	env_index{arg}, label{arg}
 	     ...	; code executed within a NIL block
 	   OP_EXIT_FRAME
 	   label:
@@ -1138,7 +1138,9 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		reg1 = new_frame_id();
 	}
 	DO_BLOCK: {
+		cl_index lex_env_index;
 		cl_opcode *exit;
+		GET_OPARG(lex_env_index, vector);
 		GET_LABEL(exit, vector);
 		STACK_PUSH(the_env, lex_env);
 		STACK_PUSH(the_env, (cl_object)exit);
@@ -1153,7 +1155,6 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		THREAD_NEXT;
 	}
 	CASE(OP_EXIT_FRAME); {
-		bds_unwind(the_env->frs_top->frs_bds_top);
 		frs_pop(the_env);
 		STACK_POP(the_env);
 		lex_env = STACK_POP(the_env);
