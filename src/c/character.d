@@ -551,16 +551,34 @@ cl_char_name(cl_object c)
 cl_object
 cl_name_char(cl_object name)
 {
-	cl_object c = ecl_gethash_safe((name = cl_string(name)), cl_core.char_names, Cnil);
-	if (c == Cnil && type_of(name) == t_base_string &&
-	    ecl_length(name)) {
+	cl_object c;
+	cl_index l;
+	name = cl_string(name);
+	c = ecl_gethash_safe(name, cl_core.char_names, Cnil);
+	if (c == Cnil && ecl_stringp(name) && (l = ecl_length(name))) {
 		c = cl_char(name, MAKE_FIXNUM(0));
-		if (c == CODE_CHAR('u') || c == CODE_CHAR('U')) {
-			/* FIXME! This only works with base-strings */
-			cl_index end = name->base_string.fillp;
-			cl_index real_end = end;
-			c = ecl_parse_integer(name, 1, end, &real_end, 16);
-			if ((real_end != end) || !FIXNUMP(c)) {
+		if (l == 1) {
+			(void)0;
+		} else if (c != CODE_CHAR('u') && c != CODE_CHAR('U')) {
+			c = Cnil;
+		} else {
+			cl_index used_l;
+			if (type_of(name) == t_base_string) {
+				cl_index end = name->base_string.fillp;
+				cl_index real_end = end;
+				c = ecl_parse_integer(name, 1, end, &real_end, 16);
+				used_l = real_end;
+			} else {
+				/* Unsafe code: what about read errors?
+				bds_bind(@'*read-base*', MAKE_FIXNUM(16));
+				c = cl_funcall(6, @'read-from-string', name,
+					       Cnil, Cnil, @':start', MAKE_FIXNUM(1));
+				bds_unwind1();
+				used_l = fix(VALUES(0));
+				*/
+				c = Cnil;
+			}
+			if (!FIXNUMP(c) || (used_l == (l - 1))) {
 				c = Cnil;
 			} else {
 				c = CODE_CHAR(fix(c));
