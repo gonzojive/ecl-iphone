@@ -273,7 +273,7 @@ ecl_stack_frame_copy(cl_object dest, cl_object orig)
 /* ------------------------------ LEXICAL ENV. ------------------------------ */
 
 #define bind_var(env, var, val)		CONS(CONS(var, val), (env))
-#define bind_function(env, name, fun) 	CONS(CONS(fun, name), (env))
+#define bind_function(env, name, fun) 	CONS(fun, (env))
 #define bind_frame(env, id, name)	CONS(CONS(id, name), (env))
 
 static cl_object
@@ -287,7 +287,7 @@ ecl_lex_env_get_record(register cl_object env, register int s)
 
 #define ecl_lex_env_get_var(env,x) ECL_CONS_CDR(ecl_lex_env_get_record(env,x))
 #define ecl_lex_env_set_var(env,x,v) ECL_RPLACD(ecl_lex_env_get_record(env,x),(v))
-#define ecl_lex_env_get_fun(env,x) ECL_CONS_CAR(ecl_lex_env_get_record(env,x))
+#define ecl_lex_env_get_fun(env,x) ecl_lex_env_get_record(env,x)
 #define ecl_lex_env_get_tag(env,x) ECL_CONS_CAR(ecl_lex_env_get_record(env,x))
 
 /* -------------------- LAMBDA FUNCTIONS -------------------- */
@@ -836,8 +836,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		/* Update the closures so that all functions can call each other */
 		;
 		for (l = new_lex, i = nfun; i; i--) {
-			cl_object record = ECL_CONS_CAR(l);
-			ECL_RPLACA(record, close_around(ECL_CONS_CAR(record), new_lex));
+			ECL_RPLACA(l, close_around(ECL_CONS_CAR(l), new_lex));
 			l = ECL_CONS_CDR(l);
 		}
 		lex_env = new_lex;
@@ -851,7 +850,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		int lex_env_index;
 		cl_object fun_record;
 		GET_OPARG(lex_env_index, vector);
-		reg0 = ECL_CONS_CAR(ecl_lex_env_get_record(lex_env, lex_env_index));
+		reg0 = ecl_lex_env_get_fun(lex_env, lex_env_index);
 		THREAD_NEXT;
 	}
 
