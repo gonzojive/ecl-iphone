@@ -535,9 +535,11 @@ c_tag_ref(cl_object the_tag, cl_object the_type)
 		type = CAR(record);
 		name = CADR(record);
 		if (type == @':tag') {
-			if (type == the_type && !Null(ecl_assql(the_tag, name))) {
-				return CONS(MAKE_FIXNUM(n),
-					    CDR(ecl_assql(the_tag, name)));
+			if (type == the_type) {
+				cl_object label = ecl_assql(the_tag, name);
+				if (!Null(label)) {
+					return CONS(MAKE_FIXNUM(n), ECL_CONS_CDR(label));
+				}
 			}
 			n++;
 		} else if (type == @':block' || type == @':function') {
@@ -1279,7 +1281,7 @@ c_go(cl_object args, int flags) {
 	if (!Null(args))
 		FEprogram_error("GO: Too many arguments.",0);
 	asm_op2(OP_GO, fix(CAR(info)));
-	asm_c(CDR(info));
+	asm_arg(fix(CDR(info)));
 	return flags;
 }
 
