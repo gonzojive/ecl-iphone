@@ -877,17 +877,18 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		reg0 = close_around(reg0, lex_env);
 		THREAD_NEXT;
 	}
-	/* OP_GO	n{arg}, tag-name{symbol}
-		Jumps to the tag which is defined at the n-th position in
-		the lexical environment. TAG-NAME is kept for debugging
-		purposes.
+	/* OP_GO	n{arg}, tag-ndx{arg}
+		Jumps to the tag which is defined for the tagbody
+		frame registered at the n-th position in the lexical
+		environment. TAG-NDX is the number of tag in the list.
 	*/
 	CASE(OP_GO); {
 		cl_index lex_env_index;
-		cl_object tag_name;
+		cl_fixnum tag_ndx;
 		GET_OPARG(lex_env_index, vector);
-		GET_DATA(tag_name, vector, data);
-		cl_go(ecl_lex_env_get_tag(lex_env, lex_env_index), tag_name);
+		GET_OPARG(tag_ndx, vector);
+		cl_go(ecl_lex_env_get_tag(lex_env, lex_env_index),
+		      MAKE_FIXNUM(tag_ndx));
 		THREAD_NEXT;
 	}
 	/* OP_RETURN	n{arg}
