@@ -50,6 +50,8 @@
 #define FLAG_IGNORE		0
 #define FLAG_USEFUL		(FLAG_PUSH | FLAG_VALUES | FLAG_REG0)
 
+#define ENV_RECORD_LOCATION(r)	CADDDR(r)
+
 #define ECL_SPECIAL_VAR_REF	-2
 #define ECL_UNDEFINED_VAR_REF	-1
 
@@ -397,18 +399,22 @@ new_location(cl_object name)
 	return loc;
 }
 
-static void
+static cl_index
 c_register_block(cl_object name)
 {
-	ENV->variables = CONS(cl_list(4, @':block', name, Cnil, new_location(name)),
+	cl_object loc = new_location(name);
+	ENV->variables = CONS(cl_list(4, @':block', name, Cnil, loc),
 			      ENV->variables);
+	return fix(ECL_CONS_CDR(loc));
 }
 
-static void
+static cl_index
 c_register_tags(cl_object all_tags)
 {
-	ENV->variables = CONS(cl_list(4, @':tag', all_tags, Cnil, new_location(@':tag')),
+	cl_object loc = new_location(@':tag');
+	ENV->variables = CONS(cl_list(4, @':tag', all_tags, Cnil, loc),
 			      ENV->variables);
+	return fix(ECL_CONS_CDR(loc));
 }
 
 static void
@@ -529,9 +535,10 @@ c_tag_ref(cl_object the_tag, cl_object the_type)
 		type = CAR(record);
 		name = CADR(record);
 		if (type == @':tag') {
-			if (type == the_type && !Null(ecl_assql(the_tag, name)))
+			if (type == the_type && !Null(ecl_assql(the_tag, name))) {
 				return CONS(MAKE_FIXNUM(n),
 					    CDR(ecl_assql(the_tag, name)));
+			}
 			n++;
 		} else if (type == @':block' || type == @':function') {
 			/* We compare with EQUAL, because of (SETF fname) */
@@ -576,8 +583,10 @@ c_var_ref(cl_object var, int allow_symbol_macro, bool ensure_defined)
 				return -1;
 			FEprogram_error("Internal error: symbol macro ~S used as variable",
 					1, var);
+		} else if (Null(special)) {
+			return n;
 		} else {
-			return Null(special)? n : ECL_SPECIAL_VAR_REF;
+			return ECL_SPECIAL_VAR_REF;
 		}
 	}
 	if (ensure_defined) {
@@ -776,7 +785,7 @@ c_block(cl_object body, int old_flags) {
 	struct cl_compiler_env old_env;
 	cl_object name = pop(&body);
 	cl_object block_record;
-	cl_index labelz, pc;
+	cl_index labelz, pc, loc;
 	int flags;
 
 	if (!SYMBOLP(name))
@@ -786,16 +795,16 @@ c_block(cl_object body, int old_flags) {
 	pc = current_pc();
 
 	flags = maybe_values_or_reg0(old_flags);
-	c_register_block(name);
+	loc = c_register_block(name);
 	block_record = CAR(ENV->variables);
 	if (Null(name)) {
-		labelz = asm_jmp(OP_DO);
+		asm_op(OP_DO);
 	} else {
 		asm_op(OP_BLOCK);
 		asm_c(name);
-		labelz = current_pc();
-		asm_arg(0);
 	}
+	labelz = current_pc();
+	asm_arg(0);
 	compile_body(body, flags);
 	if (CADDR(block_record) == Cnil) {
 		/* Block unused. We remove the enclosing OP_BLOCK/OP_DO */
@@ -803,9 +812,9 @@ c_block(cl_object body, int old_flags) {
 		set_pc(pc);
 		return compile_body(body, old_flags);
 	} else {
-		asm_op(OP_EXIT_FRAME);
-		asm_complete(Null(name)? OP_DO : 0, labelz);
 		c_undo_bindings(old_env.variables);
+		asm_op(OP_EXIT_FRAME);
+		asm_complete(0, labelz);
 		return flags;
 	}
 }
@@ -969,24 +978,27 @@ c_case(cl_object clause, int flags) {
 
 static int
 c_catch(cl_object args, int flags) {
-	cl_index labelz;
+	cl_index labelz, loc;
 	cl_object old_env;
 
 	/* Compile evaluation of tag */
 	compile_form(pop(&args), FLAG_REG0);
 
 	old_env = ENV->variables;
-	c_register_block(MAKE_FIXNUM(0));
+	loc = c_register_block(MAKE_FIXNUM(0));
 
 	/* Compile jump point */
-	labelz = asm_jmp(OP_CATCH);
+	asm_op(OP_CATCH);
+	labelz = current_pc();
+	asm_arg(0);
 
 	/* Compile body of CATCH */
 	compile_body(args, FLAG_VALUES);
-	asm_op(OP_EXIT_FRAME);
-	asm_complete(OP_CATCH, labelz);
 
 	c_undo_bindings(old_env);
+	asm_op(OP_EXIT_FRAME);
+	asm_complete(0, labelz);
+
 	return FLAG_VALUES;
 }
 

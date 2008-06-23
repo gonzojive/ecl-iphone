@@ -1140,9 +1140,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		reg1 = new_frame_id();
 	}
 	DO_BLOCK: {
-		cl_index lex_env_index;
 		cl_opcode *exit;
-		GET_OPARG(lex_env_index, vector);
 		GET_LABEL(exit, vector);
 		STACK_PUSH(the_env, lex_env);
 		STACK_PUSH(the_env, (cl_object)exit);
