@@ -370,6 +370,11 @@ disassemble(cl_object bytecodes, cl_opcode *vector) {
 	*/
 	case OP_CATCH:		string = "CATCH\t";
 				goto JMP;
+	/* OP_ENTRY
+		Marks the entry of a lambda form
+	*/
+	case OP_ENTRY:		string = "ENTRY";
+				goto NOARG;
 	/* OP_EXIT
 		Marks the end of a high level construct
 	*/

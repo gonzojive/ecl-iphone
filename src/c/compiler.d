@@ -455,28 +455,37 @@ guess_environment(cl_object interpreter_env)
 }
 
 static void
-c_new_env(struct cl_compiler_env *new_c_env, cl_object env)
+c_new_env(cl_compiler_env_ptr new, cl_object env, cl_compiler_env_ptr old)
 {
-	ENV = new_c_env;
-	ENV->stepping = 0;
-	ENV->coalesce = TRUE;
-	ENV->macros = Cnil;
-	ENV->lexical_level = 0;
-	ENV->constants = Cnil;
-	if (Null(env)) {
-		ENV->macros = Cnil;
-		ENV->variables = Cnil;
+	ENV = new;
+	new->stepping = 0;
+	new->coalesce = TRUE;
+	new->lexical_level = 0;
+	new->constants = Cnil;
+	new->env_depth = 0;
+	new->env_size = 0;
+	if (old) {
+		if (!Null(env))
+			ecl_internal_error("c_new_env with both ENV and OLD");
+		new->variables = old->variables;
+		new->macros = old->macros;
+		new->lexical_level = old->lexical_level;
+		new->constants = old->constants;
+		new->lex_env = old->lex_env;
+		new->env_depth = old->env_depth + 1;
+		new->coalesce = old->coalesce;
+		new->stepping = old->stepping;
 	} else {
-		ENV->variables = CAR(env);
-		ENV->macros = CDR(env);
-		for (env = ENV->variables; !Null(env); env = CDR(env)) {
+		new->variables = CAR(env);
+		new->macros = CDR(env);
+		for (env = new->variables; !Null(env); env = CDR(env)) {
 			cl_object record = CAR(env);
 			if (ATOM(record))
 				continue;
 			if (SYMBOLP(CAR(record)) && CADR(record) != @'si::symbol-macro') {
 				continue;
 			} else {
-				ENV->lexical_level = 1;
+				new->lexical_level = 1;
 				break;
 			}
 		}
@@ -615,13 +624,13 @@ c_bind(cl_object var, cl_object specials)
 }
 
 static void
-c_undo_bindings(cl_object old_env)
+c_undo_bindings(cl_object old_vars)
 {
 	cl_object env;
 	cl_index num_lexical = 0;
 	cl_index num_special = 0;
 
-	for (env = ENV->variables; env != old_env && !Null(env); env = ECL_CONS_CDR(env))
+	for (env = ENV->variables; env != old_vars && !Null(env); env = ECL_CONS_CDR(env))
 	{
 		cl_object record = ECL_CONS_CAR(env);
 		cl_object name = CAR(record);
@@ -640,9 +649,9 @@ c_undo_bindings(cl_object old_env)
 			}
 		}
 	}
+	ENV->variables = env;
 	if (num_lexical) asm_op2(OP_UNBIND, num_lexical);
 	if (num_special) asm_op2(OP_UNBINDS, num_special);
-	ENV->variables = old_env;
 }
 
 static void
@@ -1128,16 +1137,13 @@ c_register_functions(cl_object l)
 static int
 c_labels_flet(int op, cl_object args, int flags) {
 	cl_object l, def_list = pop(&args);
-	struct cl_compiler_env *old_c_env, new_c_env;
+	cl_object old_vars = ENV->variables;
+	cl_object old_funs = ENV->macros;
 	cl_index nfun, first = 0;
 
 	if (ecl_length(def_list) == 0) {
 		return c_locally(args, flags);
 	}
-
-	old_c_env = ENV;
-	new_c_env = *ENV;
-	ENV = &new_c_env;
 
 	/* Remove declarations */
 	args = c_process_declarations(args);
@@ -1174,9 +1180,8 @@ c_labels_flet(int op, cl_object args, int flags) {
 	flags = compile_body(args, flags);
 
 	/* Restore and return */
-	c_undo_bindings(old_c_env->variables);
-	old_c_env->constants = ENV->constants;
-	ENV = old_c_env;
+	c_undo_bindings(old_vars);
+	ENV->macros = old_funs;
 
 	return flags;
 }
@@ -2518,8 +2523,7 @@ ecl_make_lambda(cl_object name, cl_object lambda) {
 		 @list*(3, @'ext::lambda-block', name, lambda));
 
 	old_c_env = ENV;
-	new_c_env = *ENV;
-	ENV = &new_c_env;
+	c_new_env(&new_c_env, Cnil, old_c_env);
 
 	ENV->lexical_level++;
 	ENV->coalesce = 0;
@@ -2657,10 +2661,10 @@ cl_object
 si_make_lambda(cl_object name, cl_object rest)
 {
 	cl_object lambda;
-	struct cl_compiler_env *old_c_env, new_c_env;
+	volatile cl_compiler_env_ptr old_c_env = ENV;
+	struct cl_compiler_env new_c_env;
 
-	old_c_env = ENV;
-	c_new_env(&new_c_env, Cnil);
+	c_new_env(&new_c_env, Cnil, 0);
 	CL_UNWIND_PROTECT_BEGIN {
 		lambda = ecl_make_lambda(name,rest);
 	} CL_UNWIND_PROTECT_EXIT {
@@ -2670,7 +2674,7 @@ si_make_lambda(cl_object name, cl_object rest)
 }
 
 @(defun si::eval-with-env (form &optional (env Cnil) (stepping Cnil) (compiler_env_p Cnil))
-	struct cl_compiler_env *old_c_env = ENV;
+	volatile cl_compiler_env_ptr old_c_env = ENV;
 	struct cl_compiler_env new_c_env;
 	volatile cl_index handle;
 	struct ihs_frame ihs;
@@ -2679,7 +2683,6 @@ si_make_lambda(cl_object name, cl_object rest)
 	/*
 	 * Compile to bytecodes.
 	 */
-	ENV = &new_c_env;
 	if (compiler_env_p == Cnil) {
 		interpreter_env = env;
 		compiler_env = Cnil;
@@ -2687,7 +2690,7 @@ si_make_lambda(cl_object name, cl_object rest)
 		interpreter_env = Cnil;
 		compiler_env = env;
 	}
-	c_new_env(&new_c_env, compiler_env);
+	c_new_env(&new_c_env, compiler_env, 0);
 	guess_environment(interpreter_env);
 	ENV->lex_env = env;
 	ENV->stepping = stepping != Cnil;
