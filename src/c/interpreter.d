@@ -274,7 +274,6 @@ ecl_stack_frame_copy(cl_object dest, cl_object orig)
 
 #define bind_var(env, var, val)		CONS(CONS(var, val), (env))
 #define bind_function(env, name, fun) 	CONS(CONS(fun, name), (env))
-#define bind_tagbody(env, id) 		CONS(CONS(id, MAKE_FIXNUM(0)), (env))
 
 static cl_object
 ecl_lex_env_get_record(register cl_object env, register int s)
@@ -1142,22 +1141,15 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	DO_BLOCK: {
 		cl_opcode *exit;
 		GET_LABEL(exit, vector);
+		lex_env = CONS(CONS(reg1, reg0), lex_env);
 		STACK_PUSH(the_env, lex_env);
 		STACK_PUSH(the_env, (cl_object)exit);
-		if (frs_push(reg1) == 0) {
-			lex_env = CONS(CONS(reg1, reg0), lex_env);
-		} else {
+		if (frs_push(reg1) != 0) {
 			reg0 = the_env->values[0];
 			frs_pop(the_env);
 			vector = (cl_opcode *)STACK_POP(the_env); /* FIXME! */
-			lex_env = STACK_POP(the_env);
+			lex_env = ECL_CONS_CDR(STACK_POP(the_env));
 		}
-		THREAD_NEXT;
-	}
-	CASE(OP_EXIT_FRAME); {
-		frs_pop(the_env);
-		STACK_POP(the_env);
-		lex_env = STACK_POP(the_env);
 		THREAD_NEXT;
 	}
 	/* OP_TAGBODY	n{arg}
@@ -1177,7 +1169,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		int n;
 		GET_OPARG(n, vector);
 		/* Here we save the location of the jump table and the env. */
-		lex_env = bind_tagbody(lex_env, id);
+		lex_env = CONS(CONS(id, MAKE_FIXNUM(0)), lex_env);
 		STACK_PUSH(the_env, lex_env);
 		STACK_PUSH(the_env, (cl_object)vector); /* FIXME! */
 		if (frs_push(id) == 0) {
@@ -1198,9 +1190,21 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		THREAD_NEXT;
 	}
 	CASE(OP_EXIT_TAGBODY); {
+		reg0 = Cnil;
+	}
+	CASE(OP_EXIT_FRAME); {
 		frs_pop(the_env);
+#if 0
 		STACK_POP(the_env);
-		lex_env = ECL_CONS_CDR(STACK_POP(the_env));
+		if (lex_env != STACK_REF(the_env,-1))
+			ecl_internal_error("ENV botch!");
+		lex_env = STACK_POP(the_env);
+		lex_env = ECL_CONS_CDR(lex_env);
+#else
+		STACK_POP_N(the_env, 2);
+		lex_env = ECL_CONS_CDR(lex_env);
+#endif
+		THREAD_NEXT;
 	}
 	CASE(OP_NIL); {
 		reg0 = Cnil;
