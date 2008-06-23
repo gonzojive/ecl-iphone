@@ -447,9 +447,7 @@ close_around(cl_object fun, cl_object lex) {
 }
 
 #undef frs_pop
-#define frs_pop(the_env) { \
-	the_env->stack_top = the_env->stack + the_env->frs_top->frs_sp; \
-	the_env->frs_top--; }
+#define frs_pop(the_env) { the_env->frs_top--; }
 
 /*
  * Manipulation of the interpreter stack. As shown here, we omit may
@@ -508,10 +506,9 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	volatile bds_ptr old_bds_top = cl_env.bds_top;
 	cl_opcode *vector = (cl_opcode*)bytecodes->bytecodes.code + offset;
 	cl_object *data = bytecodes->bytecodes.data;
-	cl_object reg0;
-	cl_object reg1, lex_env = env;
-	struct ecl_stack_frame frame_aux;
+	cl_object reg0, reg1, lex_env = env;
 	cl_index narg;
+	struct ecl_stack_frame frame_aux;
 	volatile struct ihs_frame ihs;
 
 	if (type_of(bytecodes) != t_bytecodes)
@@ -1101,58 +1098,49 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		THREAD_NEXT;
 	}
 			
+	/* OP_BLOCK	constant
+	   OP_DO
+	   OP_CATCH
 
-	/* OP_BLOCK	name{symbol}, env_index{arg}, label{arg}
-	   ...
+	   OP_FRAME	label{arg}
+	      ...
 	   OP_EXIT_FRAME
 	 label:
+	 */
 
-	   Executes the enclosed code in a named block.
-	   LABEL points to the first instruction after OP_EXIT.
-	*/
 	CASE(OP_BLOCK); {
 		GET_DATA(reg0, vector, data);
 		reg1 = new_frame_id();
-		goto DO_BLOCK;
+		lex_env = CONS(CONS(reg1, reg0), lex_env);
+		THREAD_NEXT;
 	}
-	/* OP_CATCH	env_index{arg}, label{arg}
-	   ...
-	   OP_EXIT_FRAME
-	   label:
-
-	   Sets a catch point using the tag in VALUES(0). LABEL points to the
-	   first instruction after the end (OP_EXIT) of the block
-	*/
-	CASE(OP_CATCH); {
-		reg1 = reg0;
-		goto DO_BLOCK;
-	}
-	/* OP_DO	env_index{arg}, label{arg}
-	     ...	; code executed within a NIL block
-	   OP_EXIT_FRAME
-	   label:
-
-	   High level construct for the DO and BLOCK forms.
-	*/
 	CASE(OP_DO); {
 		reg0 = Cnil;
 		reg1 = new_frame_id();
-	}
-	DO_BLOCK: {
-		cl_opcode *exit;
-		GET_LABEL(exit, vector);
 		lex_env = CONS(CONS(reg1, reg0), lex_env);
-		STACK_PUSH(the_env, lex_env);
-		STACK_PUSH(the_env, (cl_object)exit);
-		if (frs_push(reg1) != 0) {
-			reg0 = the_env->values[0];
-			frs_pop(the_env);
-			vector = (cl_opcode *)STACK_POP(the_env); /* FIXME! */
-			lex_env = ECL_CONS_CDR(STACK_POP(the_env));
-		}
 		THREAD_NEXT;
 	}
-	/* OP_TAGBODY	n{arg}
+	CASE(OP_CATCH); {
+		reg1 = reg0;
+		lex_env = CONS(CONS(reg1, reg0), lex_env);
+		THREAD_NEXT;
+	}
+	CASE(OP_FRAME); {
+		cl_opcode *exit;
+		GET_LABEL(exit, vector);
+		STACK_PUSH(the_env, lex_env);
+		STACK_PUSH(the_env, (cl_object)exit);
+		if (frs_push(reg1) == 0) {
+			THREAD_NEXT;
+		} else {
+			reg0 = the_env->values[0];
+			vector = (cl_opcode *)STACK_REF(the_env,-1); /* FIXME! */
+			lex_env = STACK_REF(the_env,-2);
+			goto DO_EXIT_FRAME;
+		}
+	}
+	/* OP_FRAMEID	0
+	   OP_TAGBODY	n{arg}
 	     label1
 	     ...
 	     labeln
@@ -1165,18 +1153,12 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	   High level construct for the TAGBODY form.
 	*/
 	CASE(OP_TAGBODY); {
-		cl_object id = new_frame_id();
 		int n;
 		GET_OPARG(n, vector);
-		/* Here we save the location of the jump table and the env. */
-		lex_env = CONS(CONS(id, MAKE_FIXNUM(0)), lex_env);
 		STACK_PUSH(the_env, lex_env);
 		STACK_PUSH(the_env, (cl_object)vector); /* FIXME! */
-		if (frs_push(id) == 0) {
-			/* The first time, we "name" the tagbody and
-			 * skip the jump table */
-			vector += n * OPARG_SIZE;
-		} else {
+		vector += n * OPARG_SIZE;
+		if (frs_push(reg1) != 0) {
 			/* Wait here for gotos. Each goto sets
 			   VALUES(0) to an integer which ranges from 0
 			   to ntags-1, depending on the tag. These
@@ -1193,17 +1175,10 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		reg0 = Cnil;
 	}
 	CASE(OP_EXIT_FRAME); {
+	DO_EXIT_FRAME:
 		frs_pop(the_env);
-#if 0
-		STACK_POP(the_env);
-		if (lex_env != STACK_REF(the_env,-1))
-			ecl_internal_error("ENV botch!");
-		lex_env = STACK_POP(the_env);
-		lex_env = ECL_CONS_CDR(lex_env);
-#else
 		STACK_POP_N(the_env, 2);
 		lex_env = ECL_CONS_CDR(lex_env);
-#endif
 		THREAD_NEXT;
 	}
 	CASE(OP_NIL); {
