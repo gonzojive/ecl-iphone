@@ -31,7 +31,9 @@
 	   (args (cddr whole))
 	   iterators for-statements
 	   (in-or-on :IN)
-	   (do-or-collect :COLLECT))
+	   (do-or-collect :COLLECT)
+	   (list-1-form nil)
+	   (finally-form nil))
       (case which
 	(MAPCAR)
 	(MAPLIST (setf in-or-on :ON))
@@ -39,11 +41,19 @@
 	(MAPL (setf in-or-on :ON do-or-collect :DO))
 	(MAPCAN (setf do-or-collect 'NCONC))
 	(MAPCON (setf in-or-on :ON do-or-collect 'NCONC)))
+      (when (eq do-or-collect :DO)
+	(let ((var (gensym)))
+	  (setf list-1-form `(with ,var = ,(first args))
+		args (list* var (rest args))
+		finally-form `(finally (return ,var)))))
       (loop for arg in (reverse args)
 	    do (let ((var (gensym)))
 		 (setf iterators (cons var iterators)
 		       for-statements (list* :for var in-or-on arg for-statements))))
-      `(loop ,@for-statements ,do-or-collect (funcall ,function ,@iterators)))))
+      `(loop ,@list-1-form
+	     ,@for-statements
+	     ,do-or-collect (funcall ,function ,@iterators)
+	     ,@finally-form))))
 
 (define-compiler-macro mapcar (&whole whole &rest r)
   (expand-mapcar whole))
