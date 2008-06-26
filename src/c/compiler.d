@@ -1979,7 +1979,7 @@ compile_form(cl_object stmt, int flags) {
 			cl_fixnum n;
 			if (stmt == Cnil) {
 				asm_op(push? OP_PUSHNIL : OP_NIL);
-			} else if (FIXNUMP(stmt) && (n = fix(stmt), abs(n)) <= MAX_OPARG) {
+			} else if (FIXNUMP(stmt) && (n = fix(stmt)) <= MAX_OPARG && n >= -MAX_OPARG) {
 				asm_op2(push? OP_PINT : OP_INT, n);
 			} else {
 				asm_op2c(push? OP_PUSHQ : OP_QUOTE, stmt);

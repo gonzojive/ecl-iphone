@@ -47,6 +47,7 @@ Returns, as a string, the location of the machine on which ECL runs."
   "Args:()
 Returns the version of your ECL as a string."
   "@PACKAGE_VERSION@ (CVS 2008-06-04 23:07)")
+  "@PACKAGE_VERSION@ (CVS 2008-06-19 17:09)")
 
 (defun machine-type ()
   "Args: ()
