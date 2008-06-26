@@ -545,6 +545,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     DWORD thread_id;
 
     /* initialize everything */
+    GC_all_interior_pointers = 0;
+    GC_no_dls = 1;
     GC_init();
 
     /* start the main thread */
@@ -764,6 +766,8 @@ BOOL WINAPI DllMain(HINSTANCE inst, ULONG reason, LPVOID reserved)
 {
   switch (reason) {
   case DLL_PROCESS_ATTACH:
+    GC_no_dls = 1;
+    GC_all_interior_pointers = 0;
     GC_init();	/* Force initialization before thread attach.	*/
     /* fall through */
   case DLL_THREAD_ATTACH:
