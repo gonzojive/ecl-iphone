@@ -243,5 +243,5 @@ typedef int16_t cl_oparg;
   &&LBL_OP_PUSHNIL - &&LBL_OP_NOP,\
   &&LBL_OP_STEPIN - &&LBL_OP_NOP,\
   &&LBL_OP_STEPCALL - &&LBL_OP_NOP,\
-  &&LBL_OP_STEPOUT - &&LBL_OP_NOP }
+  &&LBL_OP_STEPOUT - &&LBL_OP_NOP };
 #endif

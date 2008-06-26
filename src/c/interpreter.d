@@ -501,7 +501,7 @@ close_around(cl_object fun, cl_object lex) {
 cl_object
 ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offset)
 {
-	ECL_OFFSET_TABLE;
+	ECL_OFFSET_TABLE
 	typedef struct cl_env_struct *cl_env_ptr;
 	const cl_env_ptr the_env = &cl_env;
 	volatile bds_ptr old_bds_top = cl_env.bds_top;
