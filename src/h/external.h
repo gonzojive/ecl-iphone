@@ -1530,8 +1530,7 @@ extern ECL_API cl_object si_trap_fpe(cl_object condition, cl_object flag);
 /* unixsys.c */
 
 extern ECL_API cl_object si_system(cl_object cmd);
-extern ECL_API cl_object si_open_pipe(cl_object cmd);
-extern ECL_API cl_object si_close_pipe(cl_object stream);
+extern ECL_API cl_object si_make_pipe();
 extern ECL_API cl_object si_run_program _ARGS((cl_narg narg, cl_object command, cl_object args, ...));
 
 

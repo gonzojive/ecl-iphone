@@ -49,44 +49,26 @@ si_getpid(void)
 }
 
 cl_object
-si_open_pipe(cl_object cmd_string)
+si_make_pipe()
 {
+	cl_object output;
+	int fds[2], ret;
 #ifdef _MSC_VER
-	FEerror("Pipes are not supported under Win32/MSVC", 0);
+	ret = _pipe(fds, 4096, _O_BINARY);
 #else
-	FILE *ptr;
-	cl_object stream;
-	cl_object cmd = si_copy_to_simple_base_string(cmd);
-	ptr = popen(cmd->base_string.self, "r");
-	if (ptr == NULL)
-		@(return Cnil);
-	stream = cl_alloc_object(t_stream);
-	stream->stream.mode = smm_input;
-	stream->stream.file = ptr;
-	stream->stream.object0 = @'base-char';
-	stream->stream.char_stream_p = 1;
-	stream->stream.object1 = @'si::open-pipe';
-	stream->stream.int0 = stream->stream.int1 = 0;
-	si_set_buffering_mode(stream, @':line-buffered');
-	@(return stream)
+	ret = pipe(fds);
 #endif
-}
-
-cl_object
-si_close_pipe(cl_object stream)
-{
-#ifdef _MSC_VER
-	FEerror("Pipes are not supported under Win32/MSVC", 0);
-#else
-	if (type_of(stream) == t_stream &&
-	    stream->stream.object1 == @'si::open-pipe') {
-		stream->stream.closed = 1;
-		pclose(stream->stream.file);
-		stream->stream.file = NULL;
-		stream->stream.object0 = OBJNULL;
+	if (ret < 0) {
+		FElibc_error("Unable to create pipe", 0);
+		output = Cnil;
+	} else {
+		cl_object fake_in_name = make_simple_base_string("PIPE-READ-ENDPOINT");
+		cl_object in = ecl_make_stream_from_fd(fake_in_name, fds[0], smm_input);
+		cl_object fake_out_name = make_simple_base_string("PIPE-WRITE-ENDPOINT");
+		cl_object out = ecl_make_stream_from_fd(fake_out_name, fds[1], smm_output);
+		output = cl_make_two_way_stream(in, out);
 	}
-	@(return)
-#endif
+	@(return output)
 }
 
 @(defun ext::run-program (command argv &key (input @':stream') (output @':stream')
