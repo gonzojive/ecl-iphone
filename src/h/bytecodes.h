@@ -107,10 +107,7 @@ typedef int16_t cl_oparg;
 # ifdef WORDS_BIGENDIAN
 #  define READ_OPARG(v)	((cl_fixnum)v[0] << 8) + (unsigned char)v[1]
 # else
-#if 0
 #  define READ_OPARG(v) ((cl_fixnum)v[1] << 8) + (unsigned char)v[0]
-#else
-#  define READ_OPARG(v) ((cl_oparg*)v)[0]
 #endif
 # endif
 # define GET_OPARG(r,v) { r = READ_OPARG(v); v += 2; }
