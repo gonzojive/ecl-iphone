@@ -392,12 +392,16 @@ asm_op2c(register int code, register cl_object o) {
  * match those of Common-Lisp.
  */
 
+#if 0
+#define new_location(x) MAKE_FIXNUM(0)
+#else
 static cl_object
 new_location(cl_object name)
 {
 	cl_object loc = CONS(MAKE_FIXNUM(ENV->env_depth), MAKE_FIXNUM((ENV->env_size++)));
 	return loc;
 }
+#endif
 
 static cl_index
 c_register_block(cl_object name)
