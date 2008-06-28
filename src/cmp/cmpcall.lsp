@@ -24,8 +24,8 @@
 (defun unoptimized-long-call (fun arguments)
   (let ((frame (gensym)))
     (c1expr `(with-stack ,frame
-	       ,@(loop for i in arguments collect `(stack-push ,i))
-	       (si::apply-from-stack-frame ,frame ,fim)))))
+	       ,@(loop for i in arguments collect `(stack-push ,frame ,i))
+	       (si::apply-from-stack-frame ,frame ,fun)))))
 
 (defun unoptimized-funcall (fun arguments)
   (let ((l (length arguments)))
