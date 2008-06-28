@@ -45,7 +45,7 @@
       c::*ecl-library-directory* "@true_builddir@/")
 #-:wants-dlopen 
 (setf c::*ld-flags*
-      "@LDFLAGS@ @LDRPATH@ @LIBPREFIX@ecl.@LIBEXT@ @CORE_LIBS@ @LIBS@ @FASL_LIBS@")
+      "@LDFLAGS@ @LIBPREFIX@ecl.@LIBEXT@ @CORE_LIBS@ @LIBS@ @FASL_LIBS@")
 #+(and :wants-dlopen (not nonstop))
 (setf c::*ld-flags*
       "@LDFLAGS@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @LIBS@"
