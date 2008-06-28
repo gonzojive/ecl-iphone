@@ -63,9 +63,6 @@ struct cl_env_struct {
 	cl_index nvalues;
 	cl_object values[ECL_MULTIPLE_VALUES_LIMIT];
 
-	/* Stack frame used by cl_funcall() */
-	struct ecl_stack_frame funcall_frame;
-
 	/* Private variables used by different parts of ECL: */
 	/* ... the reader ... */
 	cl_object string_pool;
