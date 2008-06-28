@@ -21,14 +21,17 @@
   (or (cmp-env-search-macro name)
       (macro-function name)))
 
+(defun unoptimized-long-call (fun arguments)
+  (let ((frame (gensym)))
+    (c1expr `(with-stack ,frame
+	       ,@(loop for i in arguments collect `(stack-push ,i))
+	       (si::apply-from-stack-frame ,frame ,fim)))))
+
 (defun unoptimized-funcall (fun arguments)
   (let ((l (length arguments)))
     (if (<= l si::c-arguments-limit)
 	(make-c1form* 'FUNCALL :args (c1expr fun) (c1args* arguments))
-	(let ((frame (gensym)))
-	  (c1expr `(with-stack ,frame
-		     ,@(loop for i in arguments collect `(stack-push ,i))
-		     (si::apply-from-stack-frame ,frame ,fim)))))))
+	(unoptimized-long-call fun arguments))))
 
 (defun c1funcall (args)
   (check-args-number 'FUNCALL args 1)
