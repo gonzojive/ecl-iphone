@@ -203,7 +203,7 @@ make_longfloat(long double f)
 	if (isnanl(f)) {
 		cl_error(1, @'division-by-zero');
 	}
-	if (!finitel(f)) {
+	if (!finite(f)) {
 		cl_error(1, @'floating-point-overflow');
 	}
 	x = cl_alloc_object(t_longfloat);
