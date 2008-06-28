@@ -164,8 +164,7 @@ struct ecl_doublefloat {
 #define	df(obje)	(obje)->DF.DFVAL
 #define ecl_double_float(o) ((o)->doublefloat.value)
 
-#ifdef HAVE_LONG_DOUBLE
-#define ECL_LONG_FLOAT
+#ifdef ECL_LONG_FLOAT
 struct ecl_long_float {
 	HEADER;
 	long double value;
