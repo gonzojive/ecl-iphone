@@ -108,7 +108,6 @@ typedef int16_t cl_oparg;
 #  define READ_OPARG(v)	((cl_fixnum)v[0] << 8) + (unsigned char)v[1]
 # else
 #  define READ_OPARG(v) ((cl_fixnum)v[1] << 8) + (unsigned char)v[0]
-#endif
 # endif
 # define GET_OPARG(r,v) { r = READ_OPARG(v); v += 2; }
 #else
