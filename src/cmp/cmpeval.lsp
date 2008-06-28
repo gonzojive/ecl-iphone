@@ -71,13 +71,8 @@
 (defun c1call-local (fname args)
   (let ((fun (local-function-ref fname)))
     (when fun
-      (let ((l (length args)))
-	(when (> l si::c-arguments-limit)
-	  (return-from c1call-local
-	    (let ((frame (gensym)))
-	      (c1expr `(with-stack ,frame
-			 ,@(loop for i in args collect `(stack-push ,i))
-			 (si::apply-from-stack-frame ,frame #',fname)))))))
+      (when (> (length args) si::c-arguments-limit)
+	(return-from c1call-local (unoptimized-long-call `#',fname args)))
       (let* ((forms (c1args* args))
 	     (lambda-form (fun-lambda fun))
 	     (return-type (or (get-local-return-type fun) 'T))
@@ -100,10 +95,7 @@
   (let ((l (length args))
 	forms)
     (cond ((> l si::c-arguments-limit)
-	   (c1expr (let ((frame (gensym)))
-		     `(with-stack ,frame
-			,@(loop for i in args collect `(stack-push ,frame ,i))
-			(si::apply-from-stack-frame ,frame #',fname)))))
+	   (unoptimized-long-call `#',fname args))
 	  ((maybe-optimize-structure-access fname args))
 	  #+clos
 	  ((maybe-optimize-generic-function fname args))
