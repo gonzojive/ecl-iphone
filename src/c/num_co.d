@@ -145,46 +145,47 @@ cl_denominator(cl_object x)
 cl_object
 ecl_floor1(cl_object x)
 {
+	cl_object v0, v1;
  AGAIN:
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
-		VALUES(0) = x;
-		VALUES(1) = MAKE_FIXNUM(0);
+		v0 = x;
+		v1 = MAKE_FIXNUM(0);
 		break;
 	case t_ratio:
-		VALUES(0) = ecl_floor2(x->ratio.num, x->ratio.den);
-		VALUES(1) = ecl_make_ratio(VALUES(1), x->ratio.den);
+		v0 = ecl_floor2(x->ratio.num, x->ratio.den);
+		v1 = ecl_make_ratio(VALUES(1), x->ratio.den);
 		break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat: {
 		float d = ecl_short_float(x);
 		float y = floorf(d);
-		VALUES(0) = float_to_integer(y);
-		VALUES(1) = make_shortfloat(d - y);
+		v0 = float_to_integer(y);
+		v1 = make_shortfloat(d - y);
 		break;
 	}
 #endif
 	case t_singlefloat: {
 		float d = sf(x);
 		float y = floorf(d);
-		VALUES(0) = float_to_integer(y);
-		VALUES(1) = ecl_make_singlefloat(d - y);
+		v0 = float_to_integer(y);
+		v1 = ecl_make_singlefloat(d - y);
 		break;
 	}
 	case t_doublefloat: {
 		double d = df(x);
 		double y = floor(d);
-		VALUES(0) = double_to_integer(y);
-		VALUES(1) = ecl_make_doublefloat(d - y);
+		v0 = double_to_integer(y);
+		v1 = ecl_make_doublefloat(d - y);
 		break;
 	}
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat: {
 		long double d = ecl_long_float(x);
 		long double y = floorl(d);
-		VALUES(0) = long_double_to_integer(y);
-		VALUES(1) = make_longfloat(d - y);
+		v0 = long_double_to_integer(y);
+		v1 = make_longfloat(d - y);
 		break;
 	}
 #endif
@@ -192,13 +193,13 @@ ecl_floor1(cl_object x)
 		x = ecl_type_error(@'floor',"argument",x,@'real');
 		goto AGAIN;
 	}
-	NVALUES = 2;
-	return VALUES(0);
+	@(return v0 v1)
 }
 
 cl_object
 ecl_floor2(cl_object x, cl_object y)
 {
+	cl_object v0, v1;
 	cl_type ty;
  AGAIN:
 	while ((ty = type_of(y), !ECL_NUMBER_TYPE_P(ty))) {
@@ -211,11 +212,11 @@ ecl_floor2(cl_object x, cl_object y)
 		  cl_fixnum a = fix(x), b = fix(y);
 		  cl_fixnum q = a / b,  r = a % b;
 		  if ((r^b) < 0 && r) {	/* opposite sign and some remainder*/
-		    VALUES(0) = MAKE_FIXNUM(q-1);
-		    VALUES(1) = MAKE_FIXNUM(r+b);
+		    v0 = MAKE_FIXNUM(q-1);
+		    v1 = MAKE_FIXNUM(r+b);
 		  } else {
-		    VALUES(0) = MAKE_FIXNUM(q);
-		    VALUES(1) = MAKE_FIXNUM(r);
+		    v0 = MAKE_FIXNUM(q);
+		    v1 = MAKE_FIXNUM(r);
 		  }
 		  break;
 		}
@@ -235,21 +236,21 @@ ecl_floor2(cl_object x, cl_object y)
                   q->big.big_num = (big_num_t)fix(x) / y->big.big_num;
                   r->big.big_num = (big_num_t)fix(x) % y->big.big_num;
 #endif /* WITH_GMP */
-		  VALUES(0) = big_register_normalize(q);
-		  VALUES(1) = big_register_normalize(r);
+		  v0 = big_register_normalize(q);
+		  v1 = big_register_normalize(r);
 		  break;
 		}
 		case t_ratio:		/* FIX / RAT */
-		  ecl_floor2(ecl_times(x, y->ratio.den), y->ratio.num);
-		  VALUES(1) = ecl_make_ratio(VALUES(1), y->ratio.den);
+		  v0 = ecl_floor2(ecl_times(x, y->ratio.den), y->ratio.num);
+		  v1 = ecl_make_ratio(VALUES(1), y->ratio.den);
 		  break;
 #ifdef ECL_SHORT_FLOAT
 		case t_shortfloat: {	/* FIX / SF */
 		  float n = ecl_short_float(y);
 		  float p = fix(x) / n;
 		  float q = floorf(p);
-		  VALUES(0) = float_to_integer(q);
-		  VALUES(1) = make_shortfloat((p - q)*n);
+		  v0 = float_to_integer(q);
+		  v1 = make_shortfloat((p - q)*n);
 		  break;
 		}
 #endif
@@ -257,16 +258,16 @@ ecl_floor2(cl_object x, cl_object y)
 		  float n = sf(y);
 		  float p = fix(x) / n;
 		  float q = floorf(p);
-		  VALUES(0) = float_to_integer(q);
-		  VALUES(1) = ecl_make_singlefloat((p - q)*n);
+		  v0 = float_to_integer(q);
+		  v1 = ecl_make_singlefloat((p - q)*n);
 		  break;
 		}
 		case t_doublefloat: {	/* FIX / DF */
 		  double n = df(y);
 		  double p = fix(x) / n;
 		  double q = floor(p);
-		  VALUES(0) = double_to_integer(q);
-		  VALUES(1) = ecl_make_doublefloat((p - q)*n);
+		  v0 = double_to_integer(q);
+		  v1 = ecl_make_doublefloat((p - q)*n);
 		  break;
 		}
 #ifdef ECL_LONG_FLOAT
@@ -274,8 +275,8 @@ ecl_floor2(cl_object x, cl_object y)
 		  long double n = ecl_long_float(y);
 		  long double p = fix(x) / n;
 		  long double q = floorl(p);
-		  VALUES(0) = long_double_to_integer(q);
-		  VALUES(1) = make_longfloat((p - q)*n);
+		  v0 = long_double_to_integer(q);
+		  v1 = make_longfloat((p - q)*n);
 		  break;
 		}
 #endif
@@ -296,8 +297,8 @@ ecl_floor2(cl_object x, cl_object y)
                   q->big.big_num = x->big.big_num / fix(y);
                   r->big.big_num = x->big.big_num % fix(y);
 #endif /* WITH_GMP */
-		  VALUES(0) = big_register_normalize(q);
-		  VALUES(1) = big_register_normalize(r);
+		  v0 = big_register_normalize(q);
+		  v1 = big_register_normalize(r);
 		  break;
 		}
 		case t_bignum: {	/* BIG / BIG */
@@ -309,21 +310,21 @@ ecl_floor2(cl_object x, cl_object y)
                   q = x->big.big_num / y->big.big_num;
                   r = x->big.big_num % y->big.big_num;
 #endif /* WITH_GMP */
-		  VALUES(0) = big_register_normalize(q);
-		  VALUES(1) = big_register_normalize(r);
+		  v0 = big_register_normalize(q);
+		  v1 = big_register_normalize(r);
 		  break;
 		}
 		case t_ratio:		/* BIG / RAT */
-		  ecl_floor2(ecl_times(x, y->ratio.den), y->ratio.num);
-		  VALUES(1) = ecl_make_ratio(VALUES(1), y->ratio.den);
+		  v0 = ecl_floor2(ecl_times(x, y->ratio.den), y->ratio.num);
+		  v1 = ecl_make_ratio(VALUES(1), y->ratio.den);
 		  break;
 #ifdef ECL_SHORT_FLOAT
 		case t_shortfloat: {	/* BIG / SF */
 		  float n = ecl_short_float(y);
 		  float p = big_to_double(x) / n;
 		  float q = floorf(p);
-		  VALUES(0) = float_to_integer(q);
-		  VALUES(1) = make_shortfloat((p - q)*n);
+		  v0 = float_to_integer(q);
+		  v1 = make_shortfloat((p - q)*n);
 		  break;
 		}
 #endif
@@ -331,16 +332,16 @@ ecl_floor2(cl_object x, cl_object y)
 		  float n = sf(y);
 		  float p = big_to_double(x) / n;
 		  float q = floorf(p);
-		  VALUES(0) = float_to_integer(q);
-		  VALUES(1) = ecl_make_singlefloat((p - q)*n);
+		  v0 = float_to_integer(q);
+		  v1 = ecl_make_singlefloat((p - q)*n);
 		  break;
 		}
 		case t_doublefloat: {	/* BIG / DF */
 		  double n = df(y);
 		  double p = big_to_double(x) / n;
 		  double q = floor(p);
-		  VALUES(0) = double_to_integer(q);
-		  VALUES(1) = ecl_make_doublefloat((p - q)*n);
+		  v0 = double_to_integer(q);
+		  v1 = ecl_make_doublefloat((p - q)*n);
 		  break;
 		}
 #ifdef ECL_LONG_FLOAT
@@ -348,8 +349,8 @@ ecl_floor2(cl_object x, cl_object y)
 		  long double n = ecl_long_float(y);
 		  long double p = big_to_double(x) / n;
 		  long double q = floorl(p);
-		  VALUES(0) = long_double_to_integer(q);
-		  VALUES(1) = make_longfloat((p - q)*n);
+		  v0 = long_double_to_integer(q);
+		  v1 = make_longfloat((p - q)*n);
 		  break;
 		}
 #endif
@@ -360,13 +361,13 @@ ecl_floor2(cl_object x, cl_object y)
 	case t_ratio:
 		switch(ty) {
 		case t_ratio:		/* RAT / RAT */
-		  ecl_floor2(ecl_times(x->ratio.num, y->ratio.den),
-			 ecl_times(x->ratio.den, y->ratio.num));
-		  VALUES(1) = ecl_make_ratio(VALUES(1), ecl_times(x->ratio.den, y->ratio.den));
+		  v0 = ecl_floor2(ecl_times(x->ratio.num, y->ratio.den),
+				  ecl_times(x->ratio.den, y->ratio.num));
+		  v1 = ecl_make_ratio(VALUES(1), ecl_times(x->ratio.den, y->ratio.den));
 		  break;
 		default:		/* RAT / ANY */
-		  ecl_floor2(x->ratio.num, ecl_times(x->ratio.den, y));
-		  VALUES(1) = ecl_divide(VALUES(1), x->ratio.den);
+		  v0 = ecl_floor2(x->ratio.num, ecl_times(x->ratio.den, y));
+		  v1 = ecl_divide(VALUES(1), x->ratio.den);
 		}
 		break;
 #ifdef ECL_SHORT_FLOAT
@@ -374,8 +375,8 @@ ecl_floor2(cl_object x, cl_object y)
 		float n = ecl_to_double(y);
 		float p = sf(x)/n;
 		float q = floorf(p);
-		VALUES(0) = float_to_integer(q);
-		VALUES(1) = make_shortfloat((p - q)*n);
+		v0 = float_to_integer(q);
+		v1 = make_shortfloat((p - q)*n);
 		break;
 	}
 #endif
@@ -383,16 +384,16 @@ ecl_floor2(cl_object x, cl_object y)
 		float n = ecl_to_double(y);
 		float p = sf(x)/n;
 		float q = floorf(p);
-		VALUES(0) = float_to_integer(q);
-		VALUES(1) = ecl_make_singlefloat((p - q)*n);
+		v0 = float_to_integer(q);
+		v1 = ecl_make_singlefloat((p - q)*n);
 		break;
 	}
 	case t_doublefloat: {		/* DF / ANY */
 		double n = ecl_to_double(y);
 		double p = df(x)/n;
 		double q = floor(p);
-		VALUES(0) = double_to_integer(q);
-		VALUES(1) = ecl_make_doublefloat((p - q)*n);
+		v0 = double_to_integer(q);
+		v1 = ecl_make_doublefloat((p - q)*n);
 		break;
 	}
 #ifdef ECL_LONG_FLOAT
@@ -400,8 +401,8 @@ ecl_floor2(cl_object x, cl_object y)
 		long double n = ecl_to_long_double(y);
 		long double p = ecl_long_float(x)/n;
 		long double q = floorl(p);
-		VALUES(0) = long_double_to_integer(q);
-		VALUES(1) = make_longfloat((p - q)*n);
+		v0 = long_double_to_integer(q);
+		v1 = make_longfloat((p - q)*n);
 		break;
 	}
 #endif
@@ -409,62 +410,62 @@ ecl_floor2(cl_object x, cl_object y)
 		x = ecl_type_error(@'floor',"argument",x,@'real');
 		goto AGAIN;
 	}
-	NVALUES = 2;
-	return VALUES(0);
+	@(return v0 v1)
 }
 
 @(defun floor (x &optional (y OBJNULL))
 @
 	if (narg == 1)
-		ecl_floor1(x);
+		x = ecl_floor1(x);
 	else
-		ecl_floor2(x, y);
-	returnn(VALUES(0));
+		x = ecl_floor2(x, y);
+	returnn(x);
 @)
 
 cl_object
 ecl_ceiling1(cl_object x)
 {
+	cl_object v0, v1;
  AGAIN:
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
-		VALUES(0) = x;
-		VALUES(1) = MAKE_FIXNUM(0);
+		v0 = x;
+		v1 = MAKE_FIXNUM(0);
 		break;
 	case t_ratio:
-		VALUES(0) = ecl_ceiling2(x->ratio.num, x->ratio.den);
-		VALUES(1) = ecl_make_ratio(VALUES(1), x->ratio.den);
+		v0 = ecl_ceiling2(x->ratio.num, x->ratio.den);
+		v1 = ecl_make_ratio(VALUES(1), x->ratio.den);
 		break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat: {
 		float d = ecl_short_float(x);
 		float y = ceilf(d);
-		VALUES(0) = float_to_integer(y);
-		VALUES(1) = make_shortfloat(d - y);
+		v0 = float_to_integer(y);
+		v1 = make_shortfloat(d - y);
 		break;
 	}
 #endif
 	case t_singlefloat: {
 		float d = sf(x);
 		float y = ceilf(d);
-		VALUES(0) = float_to_integer(y);
-		VALUES(1) = ecl_make_singlefloat(d - y);
+		v0 = float_to_integer(y);
+		v1 = ecl_make_singlefloat(d - y);
 		break;
 	}
 	case t_doublefloat: {
 		double d = df(x);
 		double y = ceil(d);
-		VALUES(0) = double_to_integer(y);
-		VALUES(1) = ecl_make_doublefloat(d - y);
+		v0 = double_to_integer(y);
+		v1 = ecl_make_doublefloat(d - y);
 		break;
 	}
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat: {
 		long double d = ecl_long_float(x);
 		long double y = ceill(d);
-		VALUES(0) = long_double_to_integer(y);
-		VALUES(1) = make_longfloat(d - y);
+		v0 = long_double_to_integer(y);
+		v1 = make_longfloat(d - y);
 		break;
 	}
 #endif
@@ -472,13 +473,13 @@ ecl_ceiling1(cl_object x)
 		x = ecl_type_error(@'ceiling',"argument",x,@'real');
 		goto AGAIN;
 	}
-	NVALUES = 2;
-	return VALUES(0);
+	@(return v0 v1)
 }
 
 cl_object
 ecl_ceiling2(cl_object x, cl_object y)
 {
+	cl_object v0, v1;
 	cl_type ty;
  AGAIN:
 	while ((ty = type_of(y), !ECL_NUMBER_TYPE_P(ty))) {
@@ -491,11 +492,11 @@ ecl_ceiling2(cl_object x, cl_object y)
 		  cl_fixnum a = fix(x); cl_fixnum b = fix(y);
 		  cl_fixnum q = a / b;  cl_fixnum r = a % b;
 		  if ((r^b) > 0 && r) {	/* same signs and some remainder */
-		    VALUES(0) = MAKE_FIXNUM(q+1);
-		    VALUES(1) = MAKE_FIXNUM(r-b);
+		    v0 = MAKE_FIXNUM(q+1);
+		    v1 = MAKE_FIXNUM(r-b);
 		  } else {
-		    VALUES(0) = MAKE_FIXNUM(q);
-		    VALUES(1) = MAKE_FIXNUM(r);
+		    v0 = MAKE_FIXNUM(q);
+		    v1 = MAKE_FIXNUM(r);
 		  }
 		  break;
 		}
@@ -515,21 +516,21 @@ ecl_ceiling2(cl_object x, cl_object y)
                   q = (big_num_t)fix(x) / y->big.big_num;
                   r = (big_num_t)fix(x) % y->big.big_num;
 #endif /* WITH_GMP */
-		  VALUES(0) = big_register_normalize(q);
-		  VALUES(1) = big_register_normalize(r);
+		  v0 = big_register_normalize(q);
+		  v1 = big_register_normalize(r);
 		  break;
 		}
 		case t_ratio:		/* FIX / RAT */
-		  ecl_ceiling2(ecl_times(x, y->ratio.den), y->ratio.num);
-		  VALUES(1) = ecl_make_ratio(VALUES(1), y->ratio.den);
+		  v0 = ecl_ceiling2(ecl_times(x, y->ratio.den), y->ratio.num);
+		  v1 = ecl_make_ratio(VALUES(1), y->ratio.den);
 		  break;
 #ifdef ECL_SHORT_FLOAT
 		case t_shortfloat: {	/* FIX / SF */
 		  float n = ecl_short_float(y);
 		  float p = fix(x)/n;
 		  float q = ceilf(p);
-		  VALUES(0) = float_to_integer(q);
-		  VALUES(1) = ecl_make_singlefloat((p - q)*n);
+		  v0 = float_to_integer(q);
+		  v1 = ecl_make_singlefloat((p - q)*n);
 		  break;
 		}
 #endif
@@ -537,16 +538,16 @@ ecl_ceiling2(cl_object x, cl_object y)
 		  float n = sf(y);
 		  float p = fix(x)/n;
 		  float q = ceilf(p);
-		  VALUES(0) = float_to_integer(q);
-		  VALUES(1) = ecl_make_singlefloat((p - q)*n);
+		  v0 = float_to_integer(q);
+		  v1 = ecl_make_singlefloat((p - q)*n);
 		  break;
 		}
 		case t_doublefloat: {	/* FIX / DF */
 		  double n = df(y);
 		  double p = fix(x)/n;
 		  double q = ceil(p);
-		  VALUES(0) = double_to_integer(q);
-		  VALUES(1) = ecl_make_doublefloat((p - q)*n);
+		  v0 = double_to_integer(q);
+		  v1 = ecl_make_doublefloat((p - q)*n);
 		  break;
 		}
 #ifdef ECL_LONG_FLOAT
@@ -554,8 +555,8 @@ ecl_ceiling2(cl_object x, cl_object y)
 		  long double n = ecl_long_float(y);
 		  long double p = fix(x)/n;
 		  long double q = ceill(p);
-		  VALUES(0) = long_double_to_integer(q);
-		  VALUES(1) = make_longfloat((p - q)*n);
+		  v0 = long_double_to_integer(q);
+		  v1 = make_longfloat((p - q)*n);
 		  break;
 		}
 #endif
@@ -576,8 +577,8 @@ ecl_ceiling2(cl_object x, cl_object y)
                   q = x->big.big_num / fix(y);
                   r = x->big.big_num % fix(y);
 #endif /* WITH_GMP */
-		  VALUES(0) = big_register_normalize(q);
-		  VALUES(1) = big_register_normalize(r);
+		  v0 = big_register_normalize(q);
+		  v1 = big_register_normalize(r);
 		  break;
 		}
 		case t_bignum: {	/* BIG / BIG */
@@ -589,21 +590,21 @@ ecl_ceiling2(cl_object x, cl_object y)
                   q->big.big_num = x->big.big_num / y->big.big_num;
                   r->big.big_num = x->big.big_num % y->big.big_num;
 #endif /* WITH_GMP */
-		  VALUES(0) = big_register_normalize(q);
-		  VALUES(1) = big_register_normalize(r);
+		  v0 = big_register_normalize(q);
+		  v1 = big_register_normalize(r);
 		  break;
 		}
 		case t_ratio:		/* BIG / RAT */
-		  ecl_ceiling2(ecl_times(x, y->ratio.den), y->ratio.num);
-		  VALUES(1) = ecl_make_ratio(VALUES(1), y->ratio.den);
+		  v0 = ecl_ceiling2(ecl_times(x, y->ratio.den), y->ratio.num);
+		  v1 = ecl_make_ratio(VALUES(1), y->ratio.den);
 		  break;
 #ifdef ECL_SHORT_FLOAT
 		case t_shortfloat: {	/* BIG / SF */
 		  float n = ecl_short_float(y);
 		  float p = big_to_double(x)/n;
 		  float q = ceilf(p);
-		  VALUES(0) = float_to_integer(q);
-		  VALUES(1) = make_shortfloat((p - q)*n);
+		  v0 = float_to_integer(q);
+		  v1 = make_shortfloat((p - q)*n);
 		  break;
 		}
 #endif
@@ -611,16 +612,16 @@ ecl_ceiling2(cl_object x, cl_object y)
 		  float n = sf(y);
 		  float p = big_to_double(x)/n;
 		  float q = ceilf(p);
-		  VALUES(0) = float_to_integer(q);
-		  VALUES(1) = ecl_make_singlefloat((p - q)*n);
+		  v0 = float_to_integer(q);
+		  v1 = ecl_make_singlefloat((p - q)*n);
 		  break;
 		}
 		case t_doublefloat: {	/* BIG / DF */
 		  double n = df(y);
 		  double p = big_to_double(x)/n;
 		  double q = ceil(p);
-		  VALUES(0) = double_to_integer(q);
-		  VALUES(1) = ecl_make_doublefloat((p - q)*n);
+		  v0 = double_to_integer(q);
+		  v1 = ecl_make_doublefloat((p - q)*n);
 		  break;
 		}
 #ifdef ECL_LONG_FLOAT
@@ -628,8 +629,8 @@ ecl_ceiling2(cl_object x, cl_object y)
 		  long double n = ecl_long_float(y);
 		  long double p = big_to_double(x)/n;
 		  long double q = ceill(p);
-		  VALUES(0) = long_double_to_integer(q);
-		  VALUES(1) = make_longfloat((p - q)*n);
+		  v0 = long_double_to_integer(q);
+		  v1 = make_longfloat((p - q)*n);
 		  break;
 		}
 #endif
@@ -640,13 +641,13 @@ ecl_ceiling2(cl_object x, cl_object y)
 	case t_ratio:
 		switch(type_of(y)) {
 		case t_ratio:		/* RAT / RAT */
-		  ecl_ceiling2(ecl_times(x->ratio.num, y->ratio.den),
-			   ecl_times(x->ratio.den, y->ratio.num));
-		  VALUES(1) = ecl_make_ratio(VALUES(1), ecl_times(x->ratio.den, y->ratio.den));
+		  v0 = ecl_ceiling2(ecl_times(x->ratio.num, y->ratio.den),
+				    ecl_times(x->ratio.den, y->ratio.num));
+		  v1 = ecl_make_ratio(VALUES(1), ecl_times(x->ratio.den, y->ratio.den));
 		  break;
 		default:		/* RAT / ANY */
-		  ecl_ceiling2(x->ratio.num, ecl_times(x->ratio.den, y));
-		  VALUES(1) = ecl_divide(VALUES(1), x->ratio.den);
+		  v0 = ecl_ceiling2(x->ratio.num, ecl_times(x->ratio.den, y));
+		  v1 = ecl_divide(VALUES(1), x->ratio.den);
 		}
 		break;
 #ifdef ECL_SHORT_FLOAT
@@ -654,8 +655,8 @@ ecl_ceiling2(cl_object x, cl_object y)
 		float n = ecl_to_double(y);
 		float p = sf(x)/n;
 		float q = ceilf(p);
-		VALUES(0) = float_to_integer(q);
-		VALUES(1) = make_shortfloat((p - q)*n);
+		v0 = float_to_integer(q);
+		v1 = make_shortfloat((p - q)*n);
 		break;
 	}
 #endif
@@ -663,16 +664,16 @@ ecl_ceiling2(cl_object x, cl_object y)
 		float n = ecl_to_double(y);
 		float p = sf(x)/n;
 		float q = ceilf(p);
-		VALUES(0) = float_to_integer(q);
-		VALUES(1) = ecl_make_singlefloat((p - q)*n);
+		v0 = float_to_integer(q);
+		v1 = ecl_make_singlefloat((p - q)*n);
 		break;
 	}
 	case t_doublefloat: {		/* DF / ANY */
 		double n = ecl_to_double(y);
 		double p = df(x)/n;
 		double q = ceil(p);
-		VALUES(0) = double_to_integer(q);
-		VALUES(1) = ecl_make_doublefloat((p - q)*n);
+		v0 = double_to_integer(q);
+		v1 = ecl_make_doublefloat((p - q)*n);
 		break;
 	}
 #ifdef ECL_LONG_FLOAT
@@ -680,8 +681,8 @@ ecl_ceiling2(cl_object x, cl_object y)
 		long double n = ecl_to_long_double(y);
 		long double p = ecl_long_float(x)/n;
 		long double q = ceill(p);
-		VALUES(0) = long_double_to_integer(q);
-		VALUES(1) = make_longfloat((p - q)*n);
+		v0 = long_double_to_integer(q);
+		v1 = make_longfloat((p - q)*n);
 		break;
 	}
 #endif
@@ -689,62 +690,62 @@ ecl_ceiling2(cl_object x, cl_object y)
 		x = ecl_type_error(@'ceiling',"argument",x,@'real');
 		goto AGAIN;
 	}
-	NVALUES = 2;
-	return VALUES(0);
+	@(return v0 v1)
 }
 
 @(defun ceiling (x &optional (y OBJNULL))
 @
 	if (narg == 1)
-		ecl_ceiling1(x);
+		x = ecl_ceiling1(x);
 	else
-		ecl_ceiling2(x, y);
-	returnn(VALUES(0));
+		x = ecl_ceiling2(x, y);
+	returnn(x);
 @)
 
 cl_object
 ecl_truncate1(cl_object x)
 {
+	cl_object v0, v1;
  AGAIN:
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
-		VALUES(0) = x;
-		VALUES(1) = MAKE_FIXNUM(0);
+		v0 = x;
+		v1 = MAKE_FIXNUM(0);
 		break;
 	case t_ratio:
-		VALUES(0) = ecl_truncate2(x->ratio.num, x->ratio.den);
-		VALUES(1) = ecl_make_ratio(VALUES(1), x->ratio.den);
+		v0 = ecl_truncate2(x->ratio.num, x->ratio.den);
+		v1 = ecl_make_ratio(VALUES(1), x->ratio.den);
 		break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat: {
 		float d = ecl_short_float(x);
 		float y = d > 0? floorf(d) : ceilf(d);
-		VALUES(0) = float_to_integer(y);
-		VALUES(1) = make_shortfloat(d - y);
+		v0 = float_to_integer(y);
+		v1 = make_shortfloat(d - y);
 		break;
 	}
 #endif
 	case t_singlefloat: {
 		float d = sf(x);
 		float y = d > 0? floorf(d) : ceilf(d);
-		VALUES(0) = float_to_integer(y);
-		VALUES(1) = ecl_make_singlefloat(d - y);
+		v0 = float_to_integer(y);
+		v1 = ecl_make_singlefloat(d - y);
 		break;
 	}
 	case t_doublefloat: {
 		double d = df(x);
 		double y = d > 0? floor(d) : ceil(d);
-		VALUES(0) = double_to_integer(y);
-		VALUES(1) = ecl_make_doublefloat(d - y);
+		v0 = double_to_integer(y);
+		v1 = ecl_make_doublefloat(d - y);
 		break;
 	}
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat: {
 		long double d = ecl_long_float(x);
 		long double y = d > 0? floorl(d) : ceill(d);
-		VALUES(0) = long_double_to_integer(y);
-		VALUES(1) = make_longfloat(d - y);
+		v0 = long_double_to_integer(y);
+		v1 = make_longfloat(d - y);
 		break;
 	}
 #endif
@@ -752,8 +753,7 @@ ecl_truncate1(cl_object x)
 		x = ecl_type_error(@'truncate',"argument",x,@'real');
 		goto AGAIN;
 	}
-	NVALUES = 2;
-	return VALUES(0);
+	@(return v0 v1)
 }
 
 cl_object
@@ -768,10 +768,10 @@ ecl_truncate2(cl_object x, cl_object y)
 @(defun truncate (x &optional (y OBJNULL))
 @
 	if (narg == 1)
-		ecl_truncate1(x);
+		x = ecl_truncate1(x);
 	else
-		ecl_truncate2(x, y);
-	returnn(VALUES(0));
+		x = ecl_truncate2(x, y);
+	returnn(x);
 @)
 
 static double
@@ -817,16 +817,17 @@ round_long_double(long double d)
 cl_object
 ecl_round1(cl_object x)
 {
+	cl_object v0, v1;
  AGAIN:
 	switch (type_of(x)) {
 	case t_fixnum:
 	case t_bignum:
-		VALUES(0) = x;
-		VALUES(1) = MAKE_FIXNUM(0);
+		v0 = x;
+		v1 = MAKE_FIXNUM(0);
 		break;
 	case t_ratio:
-		VALUES(0) = ecl_round2(x->ratio.num, x->ratio.den);
-		VALUES(1) = ecl_make_ratio(VALUES(1), x->ratio.den);
+		v0 = ecl_round2(x->ratio.num, x->ratio.den);
+		v1 = ecl_make_ratio(VALUES(1), x->ratio.den);
 		break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
@@ -836,23 +837,23 @@ ecl_round1(cl_object x)
 	case t_singlefloat: {
 		float d = sf(x);
 		float q = round_double(d);
-		VALUES(0) = float_to_integer(q);
-		VALUES(1) = ecl_make_singlefloat(d - q);
+		v0 = float_to_integer(q);
+		v1 = ecl_make_singlefloat(d - q);
 		break;
 	}
 	case t_doublefloat: {
 		double d = df(x);
 		double q = round_double(d);
-		VALUES(0) = double_to_integer(q);
-		VALUES(1) = ecl_make_doublefloat(d - q);
+		v0 = double_to_integer(q);
+		v1 = ecl_make_doublefloat(d - q);
 		break;
 	}
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat: {
 		long double d = ecl_long_float(x);
 		long double q = round_long_double(d);
-		VALUES(0) = long_double_to_integer(q);
-		VALUES(1) = make_longfloat(d - q);
+		v0 = long_double_to_integer(q);
+		v1 = make_longfloat(d - q);
 		break;
 	}
 #endif
@@ -860,21 +861,21 @@ ecl_round1(cl_object x)
 		x = ecl_type_error(@'round',"argument",x,@'real');
 		goto AGAIN;
 	}
-	NVALUES = 2;
-	return VALUES(0);
+	@(return v0 v1)
 }
 
 cl_object
 ecl_round2(cl_object x, cl_object y)
 {
+	cl_object v0, v1;
 	cl_object q;
 
 	q = ecl_divide(x, y);
 	switch (type_of(q)) {
 	case t_fixnum:
 	case t_bignum:
-		VALUES(0) = q;
-		VALUES(1) = MAKE_FIXNUM(0);
+		v0 = q;
+		v1 = MAKE_FIXNUM(0);
 		break;
 	case t_ratio: {
 		cl_object q1 = ecl_integer_divide(q->ratio.num, q->ratio.den);
@@ -890,25 +891,24 @@ ecl_round2(cl_object x, cl_object y)
 				q1 = ecl_one_plus(q1);
 			}
 		}
-		VALUES(0) = q1;
-		VALUES(1) = number_remainder(x, y, q1);
+		v0 = q1;
+		v1 = number_remainder(x, y, q1);
 		break;
 	}
 	default:
-		VALUES(0) = q = ecl_round1(q);
-		VALUES(1) = number_remainder(x, y, q);
+		v0 = q = ecl_round1(q);
+		v1 = number_remainder(x, y, q);
 	}
-	NVALUES = 2;
-	return VALUES(0);
+	@(return v0 v1)
 }
 
 @(defun round (x &optional (y OBJNULL))
 @
 	if (narg == 1)
-		ecl_round1(x);
+		x = ecl_round1(x);
 	else
-		ecl_round2(x, y);
-	returnn(VALUES(0));
+		x = ecl_round2(x, y);
+	returnn(x);
 @)
 
 
