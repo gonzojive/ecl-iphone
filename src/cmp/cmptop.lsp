@@ -113,6 +113,7 @@
     (wt-nl-h "#include <string.h>"))
   ;;; Initialization function.
   (let* ((*lcl* 0) (*lex* 0) (*max-lex* 0) (*max-env* 0) (*max-temp* 0)
+	 (*max-stack* 0)
 	 (*reservation-cmacro* (next-cmacro))
 	 (c-output-file *compiler-output1*)
 	 (*compiler-output1* (make-string-output-stream))
@@ -124,8 +125,10 @@
     (wt-nl1 "extern \"C\"")
     (wt-nl1 "#endif")
     (wt-nl1 "ECL_DLLEXPORT void " name "(cl_object flag)")
-    (wt-nl1 "{ VT" *reservation-cmacro* " VLEX" *reservation-cmacro*
-            " CLSR" *reservation-cmacro*)
+    (wt-nl1 "{ VT" *reservation-cmacro*
+	    " VLEX" *reservation-cmacro*
+            " CLSR" *reservation-cmacro*
+	    " STCK" *reservation-cmacro*)
     (wt-nl "cl_object value0;")
     (wt-nl "cl_object *VVtemp;")
     (when shared-data
@@ -334,7 +337,8 @@
 (defun wt-function-prolog (&optional sp local-entry)
   (wt " VT" *reservation-cmacro*
       " VLEX" *reservation-cmacro*
-      " CLSR" *reservation-cmacro*)
+      " CLSR" *reservation-cmacro*
+      " STCK" *reservation-cmacro*)
   (wt-nl "cl_object value0;")
   (when sp (wt-nl "bds_check;"))
   ; (when (compiler-push-events) (wt-nl "ihs_check;"))
@@ -359,6 +363,11 @@
   (when (plusp *max-lex*)
     (wt-h " volatile cl_object lex" *level* "[" *max-lex* "];"))
   (wt-nl-h "#define CLSR" *reservation-cmacro*)
+  (wt-nl-h "#define STCK" *reservation-cmacro*)
+  (unless (zerop *max-stack*)
+    (wt-h " cl_object " +ecl-local-stack-variable+ "[" *max-stack* "]; "
+	  "struct ecl_stack_frame " +ecl-local-stack-frame-variable+
+	  " = { t_frame, 0, 0, 0, " +ecl-local-stack-variable+ ", 0, 0 };"))
   (when (plusp *max-env*)
     (unless (eq closure-type 'CLOSURE)
       (wt-h " cl_object " *volatile* "env0;"))
@@ -567,7 +576,8 @@
     (wt-nl1 "{")
     (wt " VT" *reservation-cmacro*
 	" VLEX" *reservation-cmacro*
-	" CLSR" *reservation-cmacro*)
+	" CLSR" *reservation-cmacro*
+	" STCK" *reservation-cmacro*)
     (wt-nl *volatile* "cl_object value0;")
     (when (>= (fun-debug fun) 2)
       (wt-nl "struct ihs_frame ihs;"))

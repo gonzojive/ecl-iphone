@@ -258,7 +258,20 @@
 	      (progn
 		(cmpnote "Emiting FDEFINITION for ~S" fname)
 		(setq loc (list 'FDEFINITION fname))))))
-  `(CALL "funcall" (,(1+ (length args)) ,loc ,@(coerce-locs args)) ,fname))
+  (do ((i 0 (1+ i))
+       (l args (cdr l)))
+      ((endp l)
+       (progn
+	 (cond ((> i *max-stack*)
+		(setf *max-stack* i))
+	       ((zerop *max-stack*)
+		(setf *max-stack* 1)))
+	 (wt-nl +ecl-local-stack-frame-variable+ ".top = "
+		+ecl-local-stack-variable+ "+" i ";")
+	 `(CALL "ecl_apply_from_stack_frame" ((LOCAL-FRAME NIL) ,loc) ,fname)))
+    (wt-nl +ecl-local-stack-variable+ "[" i "]=")
+    (wt-coerce-loc :object (second (first l)))
+    (wt ";")))
 
 ;;; Functions that use MAYBE-SAVE-VALUE should rebind *temp*.
 (defun maybe-save-value (value &optional (other-forms nil other-forms-flag))
