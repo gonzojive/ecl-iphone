@@ -21,6 +21,7 @@
 (defun init-env ()
   (setq *compiler-phase* 't1)
   (setq *callbacks* nil)
+  (setq *max-stack* 0)
   (setq *max-temp* 0)
   (setq *temp* 0)
   (setq *next-cmacro* 0)

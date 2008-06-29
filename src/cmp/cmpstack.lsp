@@ -22,14 +22,18 @@
 
 (in-package "COMPILER")
 
+(defconstant +ecl-stack-frame-variable+ "_ecl_inner_frame")
+
+(defconstant +ecl-local-stack-frame-variable+ "__frame")
+
+(defconstant +ecl-local-stack-variable+ "__frame_sp")
+
 (defun c1with-stack (forms)
   (let* ((var (pop forms))
 	 (body (c1expr `(let ((,var (innermost-stack-frame))) ,@forms))))
       (make-c1form* 'WITH-STACK
 		    :type (c1form-type body)
 		    :args body)))
-
-(defvar +ecl-stack-frame-variable+ "_ecl_inner_frame")
 
 (defun c2with-stack (body)
   (let* ((new-destination (tmp-destination *destination*))

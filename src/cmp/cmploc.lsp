@@ -26,6 +26,7 @@
 ;;;	( VV-temp vv-index )
 ;;;	( LCL lcl [representation-type]) local variable, type unboxed
 ;;;	( TEMP temp )			local variable, type object
+;;;	( FRAME ndx )			variable in local frame stack
 ;;;	( CALL c-fun-name args fname )	locs are locations containing the arguments
 ;;;	( CALL-NORMAL fun locs)		similar as CALL, but number of arguments is fixed
 ;;;	( C-INLINE output-type fun/string locs side-effects output-var )
@@ -182,8 +183,14 @@
 (defun values-loc (n)
   (list 'VALUE n))
 
+(defun wt-local-frame (n)
+  (if n
+      (wt +ecl-local-stack-variable+ "[" n "]")
+      (wt "((cl_object)&" +ecl-local-stack-frame-variable+ ")")))
+
 ;;; -----------------------------------------------------------------
 
+(put-sysprop 'LOCAL-FRAME 'WT-LOC #'wt-local-frame)
 (put-sysprop 'TEMP 'WT-LOC #'wt-temp)
 (put-sysprop 'LCL 'WT-LOC #'wt-lcl-loc)
 (put-sysprop 'VV 'WT-LOC #'wt-vv)
