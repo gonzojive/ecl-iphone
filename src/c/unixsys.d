@@ -53,7 +53,7 @@ si_make_pipe()
 {
 	cl_object output;
 	int fds[2], ret;
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(mingw32)
 	ret = _pipe(fds, 4096, _O_BINARY);
 #else
 	ret = pipe(fds);
