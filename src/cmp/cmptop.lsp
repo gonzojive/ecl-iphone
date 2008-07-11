@@ -445,7 +445,7 @@
 (defun add-load-time-values (form)
   (let ((previous (append (and (consp *load-time-values*)
 			       (nreverse *load-time-values*))
-			  *make-forms*)))
+			  (nreverse *make-forms*))))
     (when previous
       (setf *load-time-values* nil
 	    *make-forms* nil)
