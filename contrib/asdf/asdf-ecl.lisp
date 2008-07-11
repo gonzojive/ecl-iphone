@@ -136,8 +136,7 @@
 ;; with the static library of this module.
 ;;
 (defmethod bundle-sub-operations ((o dll-op) c)
-  (append (gather-components 'dll-op c :filter-type 'system)
-	  (list (cons (make-instance 'lib-op) c))))	 
+  (list (cons (make-instance 'lib-op) c)))
 ;;
 ;; FASL FILES
 ;;
