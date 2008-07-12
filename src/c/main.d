@@ -414,9 +414,6 @@ cl_boot(int argc, char **argv)
 		CONS(make_constant_base_string("LISP"), @'si::load-source'),
 		CONS(Cnil, @'si::load-source'));
 	ECL_SET(@'si::*load-hooks*', aux);
-#ifdef PDE
-	ECL_SET(@'si::*record-source-pathname-p*', Cnil);
-#endif
 	init_error();
 	init_macros();
 
@@ -468,9 +465,7 @@ cl_boot(int argc, char **argv)
 #ifdef ECL_OLD_LOOP
 	ADD_FEATURE("OLD-LOOP");
 #endif
-#ifdef PDE
-	ADD_FEATURE("PDE");
-#endif
+	ADD_FEATURE("ECL-PDE");
 #ifdef unix
 	ADD_FEATURE("UNIX");
 #endif

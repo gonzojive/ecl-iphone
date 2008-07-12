@@ -477,8 +477,7 @@ static cl_object VV[VM];
 			   (*compile-verbose* verbose)
 			   (*suppress-compiler-notes* (or *suppress-compiler-notes* (not verbose)))
 			   (*suppress-compiler-warnings* (or *suppress-compiler-warnings* (not verbose)))
-			   init-name
-			   #+PDE sys:*source-pathname*)
+			   init-name)
   (declare (notinline compiler-cc))
 
   #-dlopen
@@ -502,8 +501,6 @@ static cl_object VV[VM];
   (when (eq output-file 'T)
     (setf output-file *compile-file-truename*))
   (setf output-file (compile-file-pathname output-file :type (if system-p :object :fasl)))
-
-  #+PDE (setq sys:*source-pathname* *compile-file-truename*)
 
   (when (and system-p load)
     (error "Cannot load system files."))
@@ -549,10 +546,12 @@ Cannot compile ~a."
 	  (data-init))
 
       (with-open-file (*compiler-input* *compile-file-pathname*)
-	(do ((form (read *compiler-input* nil eof)
+	(do ((ext:*source-location* (cons *compile-file-pathname* 0))
+	     (form (read *compiler-input* nil eof)
 		   (read *compiler-input* nil eof)))
 	    ((eq form eof))
-	  (t1expr form)))
+	  (t1expr form)
+	  (incf (cdr ext:*source-location*))))
 
       (when (zerop *error-count*)
 	(when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
