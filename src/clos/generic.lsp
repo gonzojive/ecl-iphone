@@ -15,7 +15,7 @@
 ;;; DEFGENERIC
 ;;;
 
-(defmacro defgeneric (&rest args)
+(defmacro defgeneric (&whole whole &rest args)
   (multiple-value-bind (function-specifier lambda-list options)
     (parse-defgeneric args)
     (parse-lambda-list lambda-list)
@@ -24,12 +24,11 @@
 	(parse-generic-options options lambda-list)
       (let* ((output `(ensure-generic-function ',function-specifier
 		       :delete-methods t ,@option-list)))
-	(if method-list
-	    `(associate-methods-to-gfun ,output
-	      ,@(mapcar #'(lambda (m) `(defmethod ,function-specifier ,@m))
-			method-list))
-	    output))
-      )))
+	(when method-list
+	  (setf method-list (mapcar #'(lambda (m) `(defmethod ,function-specifier ,@m))
+				    method-list)
+		output `(associate-methods-to-gfun ,output ,@method-list)))
+	(ext:register-with-pde whole output)))))
 
 (defun parse-defgeneric (args)
   (declare (si::c-local))

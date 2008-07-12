@@ -1227,11 +1227,9 @@ cl_symbols[] = {
 {SYS_ "*PROFILE-ARRAY*",NULL},
 #endif
 
-#ifdef PDE
-{SYS_ "*RECORD-SOURCE-PATHNAME-P*",NULL},
-{SYS_ "*SOURCE-PATHNAME*",NULL},
-{SYS_ "RECORD-SOURCE-PATHNAME",NULL},
-#endif
+{EXT_ "*SOURCE-LOCATION*",NULL},
+{EXT_ "*REGISTER-WITH-PDE-HOOK*",NULL},
+{EXT_ "REGISTER-WITH-PDE",NULL},
 
 #ifdef PROFILE
 {SYS_ "PROFILE","si_profile"},
@@ -1691,7 +1689,6 @@ cl_symbols[] = {
 
 {"LOG1P","si_log1p"},
 
-{EXT_ "*LOAD-POSITION*",NULL},
 {EXT_ "BC-FILE","si_bc_file"},
 
 {SYS_ "PROPERTY-LIST",NULL},

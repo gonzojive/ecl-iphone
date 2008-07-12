@@ -31,7 +31,7 @@
 ;;; DEFMETHOD
 ;;;
 
-(defmacro defmethod (&rest args &environment env)
+(defmacro defmethod (&whole whole &rest args &environment env)
   (multiple-value-bind (name qualifiers specialized-lambda-list body)
       (parse-defmethod args)
     (multiple-value-bind (lambda-list required-parameters specializers)
@@ -40,20 +40,11 @@
 	  (expand-defmethod name qualifiers lambda-list
 			    required-parameters specializers body env)
 	(declare (ignore required-parameters))
-	`(PROGN
-	  #+PDE
-	  (EVAL-WHEN (LOAD)
-	    (SI:RECORD-SOURCE-PATHNAME
-	     ',name '(DEFMETHOD ',qualifiers ',specializers)))
-	  (INSTALL-METHOD
-	   ',name
-	   ',qualifiers
-	   ,(list 'si::quasiquote specializers)
-	   ',lambda-list
-	   ',doc
-	   ',plist
-	   ,fn-form)
-	  )))))
+	(ext:register-with-pde whole
+			       `(install-method ',name ',qualifiers
+						,(list 'si::quasiquote specializers)
+						',lambda-list ',doc
+						',plist ,fn-form))))))
 
 
 ;;; ----------------------------------------------------------------------

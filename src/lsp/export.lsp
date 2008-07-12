@@ -23,6 +23,17 @@
 
 ;; This is needed only when bootstrapping ECL using ECL-MIN
 (eval-when (eval)
+  (si::fset 'ext:register-with-pde
+	  #'(ext::lambda-block ext:register-with-pde (whole env)
+	       (let* ((definition (second whole))
+		      (output-form (third whole)))
+		 `(if ext:*register-with-pde-hook*
+		      (funcall ext:*register-with-pde-hook*
+			       (copy-tree *source-location*)
+			       ,definition
+			       ,output-form)
+		      ,output-form)))
+	  t)
   (si::fset 'defun
 	  #'(ext::lambda-block defun (def env)
 	      (let* ((name (second def))
@@ -30,7 +41,7 @@
 		(when *dump-defun-definitions*
 		  (print function)
 		  (setq function `(si::bc-disassemble ,function)))
-		`(si::fset ',name ,function)))
+		(ext:register-with-pde def `(si::fset ',name ,function))))
 	  t)
  (si::fset 'in-package
  	  #'(ext::lambda-block in-package (def env)

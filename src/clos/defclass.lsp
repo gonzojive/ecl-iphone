@@ -124,8 +124,10 @@
 		 (list 'quote (rest option)))))
 	(setf options (list* `',option-name option-value options))))
     `(eval-when (compile load eval)
-      (ensure-class ',name :direct-superclasses ',superclasses
-       :direct-slots ,slots ,@options))))
+       ,(ext:register-with-pde form
+			       `(ensure-class ',name :direct-superclasses
+					      ',superclasses
+					      :direct-slots ,slots ,@options)))))
 
 ;;; ----------------------------------------------------------------------
 ;;; ENSURE-CLASS
