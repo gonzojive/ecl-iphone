@@ -68,7 +68,7 @@ macro useful for defining macros."
        ,@(si::expand-set-documentation name 'function doc-string)
        ',name)))
 
-(defmacro defvar (var &optional (form nil form-sp) doc-string)
+(defmacro defvar (&whole whole var &optional (form nil form-sp) doc-string)
   "Syntax: (defvar name [form [doc]])
 Declares the variable named by NAME as a special variable.  If the variable
 does not have a value, then evaluates FORM and assigns the value to the
@@ -80,12 +80,12 @@ as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
 	  `((UNLESS (BOUNDP ',var)
 	      (SETQ ,var ,form))))
     ,@(si::expand-set-documentation var 'variable doc-string)
-    #+PDE (SYS:RECORD-SOURCE-PATHNAME ',var 'defvar)
+    ,(ext:register-with-pde whole)
     (eval-when (:compile-toplevel)
       (si::register-global ',var))
     ',var))
 
-(defmacro defparameter (var form &optional doc-string)
+(defmacro defparameter (&whole whole var form &optional doc-string)
   "Syntax: (defparameter name form [doc])
 Declares the global variable named by NAME as a special variable and assigns
 the value of FORM to the variable.  The doc-string DOC, if supplied, is saved
@@ -94,15 +94,15 @@ as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
     (SYS:*MAKE-SPECIAL ',var)
     (SETQ ,var ,form)
     ,@(si::expand-set-documentation var 'variable doc-string)
-    #+PDE (SYS:RECORD-SOURCE-PATHNAME ',var 'DEFPARAMETER)
+    ,(ext:register-with-pde whole)
     (eval-when (:compile-toplevel)
       (si::register-global ',var))
     ',var))
 
-(defmacro defconstant (var form &optional doc-string)
+(defmacro defconstant (&whole whole var form &optional doc-string)
   `(PROGN (SYS:*MAKE-CONSTANT ',var ,form)
     ,@(si::expand-set-documentation var 'variable doc-string)
-    #+PDE (SYS:RECORD-SOURCE-PATHNAME ',var 'defconstant)
+    ,(ext:register-with-pde whole)
     (eval-when (:compile-toplevel)
       (si::register-global ',var))
     ',var))
@@ -110,7 +110,7 @@ as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
 ;;;
 ;;; This is a no-op unless the compiler is installed
 ;;;
-(defmacro define-compiler-macro (name vl &rest body)
+(defmacro define-compiler-macro (&whole whole name vl &rest body)
   (multiple-value-bind (function pprint doc-string)
       (sys::expand-defmacro name vl body)
     (setq function `(function ,function))
@@ -120,6 +120,7 @@ as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
     `(progn
        (put-sysprop ',name 'sys::compiler-macro ,function)
        ,@(si::expand-set-documentation name 'function doc-string)
+       ,(ext:register-with-pde whole)
        ',name)))
 
 (defun compiler-macro-function (name &optional env)
@@ -317,7 +318,7 @@ SECOND-FORM."
   (declare (ignore type))
   value)
 
-(defmacro define-symbol-macro (symbol expansion)
+(defmacro define-symbol-macro (&whole whole symbol expansion)
   (cond ((not (symbolp symbol))
 	 (error "DEFINE-SYMBOL-MACRO: ~A is not a symbol"
 		symbol))
@@ -327,6 +328,7 @@ SECOND-FORM."
 	(t
 	 `(progn
 	   (put-sysprop ',symbol 'si::symbol-macro (lambda (form env) ',expansion))
+	   ,(ext:register-with-pde whole)
 	   ',symbol))))
 
 (defmacro nth-value (n expr)

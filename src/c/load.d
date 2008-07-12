@@ -393,7 +393,8 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 	}
 	CL_UNWIND_PROTECT_BEGIN {
 		cl_object form_index = MAKE_FIXNUM(0);
-		bds_bind(@'ext::*load-position*', MAKE_FIXNUM(0));
+		cl_object location = CONS(source, form_index);
+		bds_bind(@'ext::*source-location*', location);
 		for (;;) {
 			x = cl_read(3, strm, Cnil, OBJNULL);
 			if (x == OBJNULL)
@@ -404,7 +405,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 				@terpri(0);
 			}
 			form_index = ecl_plus(MAKE_FIXNUM(1),form_index);
-			ECL_SETQ(@'ext::*load-position*', form_index);
+			ECL_RPLACD(location, form_index);
 		}
 		bds_unwind1();
 	} CL_UNWIND_PROTECT_EXIT {

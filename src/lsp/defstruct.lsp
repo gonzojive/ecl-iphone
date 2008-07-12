@@ -326,7 +326,7 @@
 
 ;;; The DEFSTRUCT macro.
 
-(defmacro defstruct (name&opts &rest slots)
+(defmacro defstruct (&whole whole name&opts &rest slots)
   "Syntax: (defstruct
          {name | (name {:conc-name | (:conc-name prefix-string) |
                         :constructor | (:constructor symbol [lambda-list]) |
@@ -504,6 +504,7 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
       `(eval-when (:compile-toplevel :load-toplevel :execute)
 	 (eval-when (:compile-toplevel :load-toplevel)
 	   ,core
+	   ,(si::register-with-pde whole)
 	   ,@(subst `(load-time-value (find-class ',name))
 		    '.structure-constructor-class.
 		    constructors))

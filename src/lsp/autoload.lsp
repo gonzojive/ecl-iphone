@@ -16,30 +16,6 @@
 
 (in-package "SYSTEM")
 
-#+PDE
-(progn
-(setq *record-source-pathname-p* nil)
-(defun record-source-pathname (symbol type)
-  ;; type is either:
-  ;; 1. a symbol, for single entry definitions (defun, defvar, defclass ..)
-  ;; 2. a list (type . spec), for multiple entries (defmethod)
-  (when (and *record-source-pathname-p*
-	     *source-pathname*)
-    (when (sys::setf-namep symbol)
-       (setq symbol (get-sysprop (second symbol) 'setf-symbol)))
-    (if (symbolp type)
-	(put-sysprop symbol *source-pathname* type)
-	(let* ((alist (get-sysprop symbol (car type)))
-	       (spec (cdr type)))
-	  (if alist
-	      (let ((entry (assoc spec alist :test #'equal)))
-		(if entry
-		    (setf (cdr entry) *source-pathname*)
-		    (push (cons spec *source-pathname*) alist)))
-	      (setq alist (list (cons spec *source-pathname*))))
-	  (put-sysprop symbol alist (car type))))))
-)
-
 (defun lisp-implementation-type ()
   "Args: ()
 Returns the string \"ECL\"."
