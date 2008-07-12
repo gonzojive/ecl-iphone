@@ -93,9 +93,6 @@ cl_fmakunbound(cl_object fname)
 	}
 	if (SYMBOLP(fname)) {
 		ecl_clear_compiler_properties(sym);
-#ifdef PDE
-		si_rem_sysprop(fname, @'defun');
-#endif
 		SYM_FUN(sym) = Cnil;
 		ecl_symbol_type_set(sym, ecl_symbol_type(sym) & ~stp_macro);
 	} else {
@@ -115,15 +112,6 @@ ecl_clear_compiler_properties(cl_object sym)
 		funcall(2, @'si::clear-compiler-properties', sym);
 	}
 }
-
-#ifdef PDE
-void
-record_source_pathname(cl_object sym, cl_object def)
-{
-  if (ecl_symbol_value(@'si::*record-source-pathname-p*') != Cnil)
-    (void)funcall(3, @'si::record-source-pathname', sym, def);
-}
-#endif /* PDE */
 
 cl_object
 si_get_sysprop(cl_object sym, cl_object prop)

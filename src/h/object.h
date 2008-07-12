@@ -550,9 +550,6 @@ struct ecl_codeblock {
 	const char *data_text;		/*  string with objects to be defined  */
 	int	data_text_size;
 	cl_object next;			/*  next codeblock within same library */
-#ifdef PDE
-	int	source_pathname;
-#endif
 	cl_object name;
 	cl_object links;		/*  list of symbols with linking calls  */
 };
