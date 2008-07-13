@@ -126,14 +126,14 @@ install-base:
 	# Here we would use the option -s but the install program in sourceforge-solaris
 	# is broken.
 	$(mkinstalldirs) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) \
-	  $(DESTDIR)$(ecldir) $(DESTDIR)$(includedir)
+	  $(DESTDIR)$(ecldir) $(DESTDIR)$(includedir) $(DESTDIR)$(includedir)/ecl
 	for i in $(TARGETS); do \
 	  $(INSTALL_PROGRAM) $$i $(DESTDIR)$(bindir); \
 	done;
-	$(mkinstalldirs) $(DESTDIR)$(includedir)/ecl/gc/private
 	sed '/-CUT-/,$$d' ./ecl/config.h > ./ecl/config-install.h
 	$(INSTALL_DATA) ./ecl/*.h $(DESTDIR)$(includedir)/ecl
 	if (echo $(SUBDIRS) | grep gc); then \
+	 $(mkinstalldirs) $(DESTDIR)$(includedir)/ecl/gc/private; \
 	  $(INSTALL_DATA) ./ecl/gc/*.h $(DESTDIR)$(includedir)/ecl/gc; \
 	  $(INSTALL_DATA) ./ecl/gc/private/*.h $(DESTDIR)$(includedir)/ecl/gc/private; \
 	fi
@@ -149,7 +149,10 @@ install-base:
 	  fi \
 	done
 	for i in c/dpp$(EXE) ecl_min$(EXE) `cat MODULES`; do \
-	  $(INSTALL_PROGRAM) $$i $(DESTDIR)$(ecldir); \
+	  case $$i in \
+	    *.fas) $(INSTALL_PROGRAM) $$i $(DESTDIR)$(ecldir);; \
+	    *) $(INSTALL_DATA) $$i $(DESTDIR)$(ecldir);; \
+	  esac \
 	done
 flatinstall: BUILD-STAMP
 	$(MAKE) DESTDIR=$(DESTDIR) bindir=$(prefix) libdir=$(prefix) \
