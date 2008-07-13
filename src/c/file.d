@@ -2811,9 +2811,34 @@ cl_interactive_stream_p(cl_object strm)
 }
 
 cl_object
-ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
+ecl_make_stream_from_FILE(cl_object fname, void *fp, enum ecl_smmode smm)
 {
 	cl_object stream;
+	stream = cl_alloc_object(t_stream);
+	stream->stream.mode = (short)smm;
+	stream->stream.closed = 0;
+	stream->stream.file = fp;
+#if defined (ECL_WSOCK)
+	if ( smm == smm_input_wsock || smm == smm_io_wsock )
+		stream->stream.object0 = Cnil;
+	else
+		stream->stream.object0 = @'base-char';
+#else
+	stream->stream.object0 = @'base-char';
+#endif
+	stream->stream.object1 = fname; /* not really used */
+	stream->stream.int0 = stream->stream.int1 = 0;
+	stream->stream.char_stream_p = 1;
+	stream->stream.byte_size = 8;
+	stream->stream.signed_bytes = 0;
+	stream->stream.last_op = 0;
+	si_set_finalizer(stream, Ct);
+	return(stream);
+}
+
+cl_object
+ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
+{
 	char *mode;			/* file open mode */
 	FILE *fp;			/* file pointer */
 
@@ -2844,27 +2869,7 @@ ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
 #else
 	fp = fdopen(fd, mode);
 #endif
-
-	stream = cl_alloc_object(t_stream);
-	stream->stream.mode = (short)smm;
-	stream->stream.closed = 0;
-	stream->stream.file = fp;
-#if defined (ECL_WSOCK)
-	if ( smm == smm_input_wsock || smm == smm_io_wsock )
-		stream->stream.object0 = Cnil;
-	else
-		stream->stream.object0 = @'base-char';
-#else
-	stream->stream.object0 = @'base-char';
-#endif
-	stream->stream.object1 = fname; /* not really used */
-	stream->stream.int0 = stream->stream.int1 = 0;
-	stream->stream.char_stream_p = 1;
-	stream->stream.byte_size = 8;
-	stream->stream.signed_bytes = 0;
-	stream->stream.last_op = 0;
-	si_set_finalizer(stream, Ct);
-	return(stream);
+	return ecl_make_stream_from_FILE(fname, fp, smm);
 }
 
 int
