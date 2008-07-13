@@ -601,6 +601,7 @@ extern ECL_API cl_object ecl_file_position(cl_object strm);
 extern ECL_API cl_object ecl_file_position_set(cl_object strm, cl_object disp);
 extern ECL_API int ecl_file_column(cl_object strm);
 extern ECL_API cl_object ecl_make_stream_from_fd(cl_object host, int fd, enum ecl_smmode smm);
+extern ECL_API cl_object ecl_make_stream_from_FILE(cl_object host, void *fd, enum ecl_smmode smm);
 extern ECL_API int ecl_stream_to_handle(cl_object s, bool output);
 
 /* finalize.c */
