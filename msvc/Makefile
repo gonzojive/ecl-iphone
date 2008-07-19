@@ -56,11 +56,11 @@ TAR_DIR = %CD%\ecl-$(ECL_VERSION)
 #
 
 CC	= cl
-MFLAGS  = -MD
-CFLAGS  = -EHsc -DGC_DLL -nologo
+MFLAGS  = /MD
+CFLAGS  = /EHsc /DGC_DLL /nologo
 LIBS	= eclgc.lib eclgmp.lib user32.lib ws2_32.lib shell32.lib
-LDFLAGS	= /link /nodefaultlib:libcmt /nodefaultlib:libcmtd /nodefaultlib:libc /nodefaultlib:libd
-SHARED_LDFLAGS = -LD
+LDFLAGS	= /link /nologo /nodefaultlib:libcmt /nodefaultlib:libcmtd /nodefaultlib:libc /nodefaultlib:libd
+SHARED_LDFLAGS = /LD
 GCFLAGS = nodebug=1
 RM	= del
 RMDIR   = rmdir /Q /S
@@ -103,9 +103,9 @@ DEF           = ecl.def
 # Enable debug information
 #
 !if "$(ECL_DEBUG)" != ""
-CFLAGS = -Z7 $(CFLAGS)
-LDFLAGS = -Z7 $(LDFLAGS)
-SHARED_LDFLAGS = -LDd
+CFLAGS = /Z7 $(CFLAGS)
+LDFLAGS = /Z7 $(LDFLAGS)
+SHARED_LDFLAGS = /LDd
 #MFLAGS = -MDd
 GCFLAGS =
 !endif
@@ -178,7 +178,7 @@ BUILD-STAMP: Makefile
 	date /t > $@
 
 ecl-static.lib: $(TARGETS)
-	link -lib -out:$@ eclmin.lib c\all_symbols2.obj lsp.lib eclgmp.lib eclgc.lib
+	link /lib /out:$@ eclmin.lib c\all_symbols2.obj lsp.lib eclgmp.lib eclgc.lib
 
 ecl_min$(EXE): $(LIBRARIES) eclmin.lib
 	$(CC) /Fe$@ cinit.obj c\all_symbols.obj eclmin.lib $(LDFLAGS) $(LIBS)
@@ -335,10 +335,6 @@ windows-nsi:
 	"$(MKNSI)" "$(TAR_DIR)/ecl.nsi"
 	$(MV) $(TAR_DIR)\Setup.exe ecl-$(ECL_VERSION).exe
 	$(RMDIR) $(TAR_DIR)
-
-uninstall:
-	for i in $(TARGETS) ecl-config; do rm -rf $(bindir)/$$i; done
-	rm -rf $(libdir)
 
 clean: clean_ecl clean_lisp
 	-$(RM) .gdbinit cinit.lib ecl_min.lib
