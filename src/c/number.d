@@ -24,10 +24,6 @@
 #include <float.h>
 #include <ecl/internal.h>
 
-#ifndef HAVE_ISNANF
-#define isnanf(x) isnan(x)
-#endif
-
 #ifndef M_PI
 # ifdef PI
 #  define M_PI PI
@@ -161,10 +157,10 @@ ecl_make_singlefloat(float f)
 	ecl_detect_fpe();
 	if (f == (float)0.0)
 		return(cl_core.singlefloat_zero);
-	if (isnanf(f)) {
+	if (isnan(f)) {
 		cl_error(1, @'division-by-zero');
 	}
-	if (!finite(f)) {
+	if (!isfinite(f)) {
 		cl_error(1, @'floating-point-overflow');
 	}
 	x = cl_alloc_object(t_singlefloat);
@@ -183,7 +179,7 @@ ecl_make_doublefloat(double f)
 	if (isnan(f)) {
 		cl_error(1, @'division-by-zero');
 	}
-	if (!finite(f)) {
+	if (!isfinite(f)) {
 		cl_error(1, @'floating-point-overflow');
 	}
 	x = cl_alloc_object(t_doublefloat);
@@ -200,10 +196,10 @@ make_longfloat(long double f)
 	ecl_detect_fpe();
 	if (f == (long double)0.0)
 		return cl_core.longfloat_zero;
-	if (isnanl(f)) {
+	if (isnan(f)) {
 		cl_error(1, @'division-by-zero');
 	}
-	if (!finite(f)) {
+	if (!isfinite(f)) {
 		cl_error(1, @'floating-point-overflow');
 	}
 	x = cl_alloc_object(t_longfloat);
