@@ -529,9 +529,15 @@ ecl_symbol_to_elttype(cl_object x)
 		return(aet_index);
 	else if (x == @'single-float' || x == @'short-float')
 		return(aet_sf);
-	else if (x == @'long-float' || x == @'double-float')
+	else if (x == @'double-float')
 		return(aet_df);
-	else if (x == @'ext::byte8')
+	else if (x == @'long-float') {
+#ifdef ECL_LONG_FLOAT
+		return(aet_object);
+#else
+		return(aet_df);
+#endif
+	} else if (x == @'ext::byte8')
 		return(aet_b8);
 	else if (x == @'ext::integer8')
 		return(aet_i8);
