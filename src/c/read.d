@@ -1383,8 +1383,15 @@ ecl_current_read_default_float_format(void)
 	x = SYM_VAL(@'*read-default-float-format*');
 	if (x == @'single-float' || x == @'short-float')
 		return 'F';
-	if (x == @'double-float' || x == @'long-float')
+	if (x == @'double-float')
 		return 'D';
+	if (x == @'long-float') {
+#ifdef ECL_LONG_FLOAT
+		return 'L';
+#else
+		return 'D';
+#endif
+	}
 	ECL_SETQ(@'*read-default-float-format*', @'single-float');
 	FEerror("The value of *READ-DEFAULT-FLOAT-FORMAT*, ~S, was illegal.",
 		1, x);
