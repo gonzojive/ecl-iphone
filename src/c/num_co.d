@@ -1338,6 +1338,7 @@ cl_imagpart(cl_object x)
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
 		x = cl_core.longfloat_zero;
+		break;
 #endif
 	case t_complex:
 		x = x->complex.imag;
