@@ -191,14 +191,14 @@ AC_ARG_ENABLE(hpack,
 AC_ARG_ENABLE(asmapply,
   AS_HELP_STRING( [--enable-asmapply],
                   [enable optimizations written in assembler]
-                  [(default=NO)]),
-  [enable_asmapply=${enableval}],[enable_asmapply=no])
+                  [(default=YES)]),
+  [enable_asmapply=${enableval}],[enable_asmapply=yes])
 
 AC_ARG_ENABLE(smallcons,
   AS_HELP_STRING( [--enable-smallcons],
                   [use small (2 words) cons types. Requires Boehm-Weiser gc.]
-                  [(default=NO)]),
-  [enable_smallcons=${enableval}],[enable_smallcons=no])
+                  [(default=YES)]),
+  [enable_smallcons=${enableval}],[enable_smallcons=yes])
 
 AC_ARG_ENABLE(gengc,
   AS_HELP_STRING( [--enable-gengc],
@@ -471,7 +471,7 @@ AC_CHECK_FUNCS( [nanosleep alarm times isnanf select setenv putenv] \
 AC_CHECK_FUNCS( [expf logf sqrtf cosf sinf tanf sinhf coshf tanhf] \
 		[floorf ceilf fabsf frexpf ldexpf log1p log1pf log1pl])
 
-AC_CHECK_FUNCS( [sched_yield uname] )
+AC_CHECK_FUNCS( [sched_yield uname fseeko] )
 
 dnl =====================================================================
 dnl Checks for system services

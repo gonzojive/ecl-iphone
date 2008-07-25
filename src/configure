@@ -1338,9 +1338,9 @@ Optional Features:
   --enable-hierarchical-packages
                           hierarchical package names (default=YES)
   --enable-asmapply       enable optimizations written in assembler
-                          (default=NO)
+                          (default=YES)
   --enable-smallcons      use small (2 words) cons types. Requires
-                          Boehm-Weiser gc. (default=NO)
+                          Boehm-Weiser gc. (default=YES)
   --enable-gengc          use generational garbage collection. Requires
                           Boehm-Weiser gc. (no|yes, default=NO)
 
@@ -2110,7 +2110,7 @@ fi
 if test "${enable_asmapply+set}" = set; then
   enableval=$enable_asmapply; enable_asmapply=${enableval}
 else
-  enable_asmapply=no
+  enable_asmapply=yes
 fi
 
 
@@ -2118,7 +2118,7 @@ fi
 if test "${enable_smallcons+set}" = set; then
   enableval=$enable_smallcons; enable_smallcons=${enableval}
 else
-  enable_smallcons=no
+  enable_smallcons=yes
 fi
 
 
@@ -4128,7 +4128,7 @@ case "${host_os}" in
 		LDRPATH='-Wl,--rpath,~A'
 		clibs="-ldl"
 		# Maybe CFLAGS="-D_ISOC99_SOURCE ${CFLAGS}" ???
-		CFLAGS="-D_GNU_SOURCE ${CFLAGS}"
+		CFLAGS="-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 ${CFLAGS}"
 		;;
 	gnu*)
 		thehost='gnu'
@@ -10752,7 +10752,8 @@ done
 
 
 
-for ac_func in sched_yield uname
+
+for ac_func in sched_yield uname fseeko
 do
 as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
 { echo "$as_me:$LINENO: checking for $ac_func" >&5

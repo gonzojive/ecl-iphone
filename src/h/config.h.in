@@ -264,6 +264,8 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_FENV_H
 /* can activate individual traps in floating point environment		*/
 #undef HAVE_FEENABLEEXCEPT
+/* has support for large files						*/
+#undef HAVE_FSEEKO
 /* the tzset() function gets the current time zone			*/
 #undef HAVE_TZSET
 /* several floating point functions (ISO C99)				*/
