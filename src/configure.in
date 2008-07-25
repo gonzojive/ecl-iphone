@@ -464,7 +464,7 @@ AC_CHECK_FUNCS( [floor getcwd gethostbyaddr gethostbyname getpagesize] \
                 [strcasecmp strchr strerror strtol] )
 dnl !!! end autoscan
 
-AC_CHECK_FUNCS( [nanosleep alarm times isnanf select setenv putenv] \
+AC_CHECK_FUNCS( [nanosleep alarm times select setenv putenv] \
                 [lstat mkstemp sigprocmask isatty feenableexcept tzset] \
 		[gettimeofday getrusage] )
 

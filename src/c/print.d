@@ -493,8 +493,6 @@ write_base(int base, cl_object stream)
 #define G_EXP_STRING "Lg"
 #define DBL_TYPE long double
 #define strtod strtold
-#define isnan isnanl
-#define finite finitel
 extern long double strtold(const char *nptr, char **endptr);
 #else
 #define EXP_STRING "e"
@@ -510,8 +508,7 @@ int edit_double(int n, DBL_TYPE d, int *sp, char *s, int *ep)
 	fenv_t env;
 	feholdexcept(&env);
 #endif
-
-	if (isnan(d) || !finite(d))
+	if (isnan(d) || !isfinite(d))
 		FEerror("Can't print a non-number.", 0);
 	if (n < -DBL_MAX_DIGITS)
 		n = DBL_MAX_DIGITS;
