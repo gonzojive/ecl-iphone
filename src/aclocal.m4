@@ -188,7 +188,7 @@ case "${host_os}" in
 		LDRPATH='-Wl,--rpath,~A'
 		clibs="-ldl"
 		# Maybe CFLAGS="-D_ISOC99_SOURCE ${CFLAGS}" ???
-		CFLAGS="-D_GNU_SOURCE ${CFLAGS}"
+		CFLAGS="-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 ${CFLAGS}"
 		;;
 	gnu*)
 		thehost='gnu'
