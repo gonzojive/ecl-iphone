@@ -542,16 +542,11 @@ cl_sin(cl_object x)
 		  z = x + I y
 		  sin(z) = sinh(I z) = sinh(-y + I x)
 		*/
-		double dx = ecl_to_double(x->complex.real);
-		double dy = ecl_to_double(x->complex.imag);
-		double a = sin(dx) * cosh(dy);
-		double b = cos(dx) * sinh(dy);
-		if (type_of(x->complex.real) != t_doublefloat)
-			output = ecl_make_complex(ecl_make_singlefloat(a),
-					      ecl_make_singlefloat(b));
-		else
-			output = ecl_make_complex(ecl_make_doublefloat(a),
-					      ecl_make_doublefloat(b));
+		cl_object dx = x->complex.real;
+		cl_object dy = x->complex.imag;
+		cl_object a = ecl_times(cl_sin(dx), cl_cosh(dy));
+		cl_object b = ecl_times(cl_cos(dx), cl_sinh(dy));
+		output = ecl_make_complex(a, b);
 		break;
 	}
 	default:
@@ -588,16 +583,11 @@ cl_cos(cl_object x)
 		  z = x + I y
 		  cos(z) = cosh(I z) = cosh(-y + I x)
 		*/
-		double dx = ecl_to_double(x->complex.real);
-		double dy = ecl_to_double(x->complex.imag);
-		double a =  cos(dx) * cosh(dy);
-		double b = -sin(dx) * sinh(dy);
-		if (type_of(x->complex.real) != t_doublefloat)
-			output = ecl_make_complex(ecl_make_singlefloat(a),
-					      ecl_make_singlefloat(b));
-		else
-			output = ecl_make_complex(ecl_make_doublefloat(a),
-					      ecl_make_doublefloat(b));
+		cl_object dx = x->complex.real;
+		cl_object dy = x->complex.imag;
+		cl_object a = ecl_times(cl_cos(dx), cl_cosh(dy));
+		cl_object b = ecl_times(ecl_negate(cl_sin(dx)), cl_sinh(dy));
+		output = ecl_make_complex(a, b);
 		break;
 	}
 	default:
@@ -671,16 +661,11 @@ cl_sinh(cl_object x)
 		          = (exp(x)*(cos(y)+Isin(y))-exp(-x)*(cos(y)-Isin(y)))/2
 			  = sinh(x)*cos(y) + Icosh(x)*sin(y);
 		*/
-		double dx = ecl_to_double(x->complex.real);
-		double dy = ecl_to_double(x->complex.imag);
-		double a = sinh(dx) * cos(dy);
-		double b = cosh(dx) * sin(dy);
-		if (type_of(x->complex.real) != t_doublefloat)
-			output = ecl_make_complex(ecl_make_singlefloat(a),
-					      ecl_make_singlefloat(b));
-		else
-			output = ecl_make_complex(ecl_make_doublefloat(a),
-					      ecl_make_doublefloat(b));
+		cl_object dx = x->complex.real;
+		cl_object dy = x->complex.imag;
+		cl_object a = ecl_times(cl_sinh(dx), cl_cos(dy));
+		cl_object b = ecl_times(cl_cosh(dx), cl_sin(dy));
+		output = ecl_make_complex(a, b);
 		break;
 	}
 	default:
@@ -719,16 +704,11 @@ cl_cosh(cl_object x)
 		          = (exp(x)*(cos(y)+Isin(y))+exp(-x)*(cos(y)-Isin(y)))/2
 			  = cosh(x)*cos(y) + Isinh(x)*sin(y);
 		*/
-		double dx = ecl_to_double(x->complex.real);
-		double dy = ecl_to_double(x->complex.imag);
-		double a = cosh(dx) * cos(dy);
-		double b = sinh(dx) * sin(dy);
-		if (type_of(x->complex.real) != t_doublefloat)
-			output = ecl_make_complex(ecl_make_singlefloat(a),
-					      ecl_make_singlefloat(b));
-		else
-			output = ecl_make_complex(ecl_make_doublefloat(a),
-					      ecl_make_doublefloat(b));
+		cl_object dx = x->complex.real;
+		cl_object dy = x->complex.imag;
+		cl_object a = ecl_times(cl_cosh(dx), cl_cos(dy));
+		cl_object b = ecl_times(cl_sinh(dx), cl_sin(dy));
+		output = ecl_make_complex(a, b);
 		break;
 	}
 	default:
@@ -758,7 +738,7 @@ cl_tanh(cl_object x)
 		output = ecl_make_doublefloat(tanh(df(x))); break;
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
-		output = make_longfloat(coshl(ecl_long_float(x))); break;
+		output = make_longfloat(tanhl(ecl_long_float(x))); break;
 #endif
 	case t_complex: {
 		cl_object a = cl_sinh(x);
