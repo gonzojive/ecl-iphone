@@ -253,6 +253,11 @@ ECL 0.9k:
  - When COMPILE-FILE is provided a value of :OUTPUT-FILE, the file extension
    ".fas" was not automatically appended.
 
+ - Increased numerical precision on functions working with long-float =
+   C long double.
+
+ - PI has to be of type LONG-FLOAT
+
 * Optimization and performance:
 
  - TYPEP now can be optimized if the type argument is a constant.
