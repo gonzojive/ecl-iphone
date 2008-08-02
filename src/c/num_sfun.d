@@ -487,6 +487,7 @@ ecl_atan2(cl_object y, cl_object x)
 #else
 	double dy = ecl_to_double(y);
 	double dx = ecl_to_double(x);
+	double dz = ecl_atan2_double(dy, dx);
 	if (type_of(x) == t_doublefloat || type_of(y) == t_doublefloat) {
 		return ecl_make_doublefloat(dz);
 	} else {

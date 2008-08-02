@@ -603,7 +603,11 @@ init_number(void)
 	cl_core.imag_two =
 	    ecl_make_complex(ecl_make_singlefloat(0.0), ecl_make_singlefloat(2.0));
 
+#ifdef ECL_LONG_FLOAT
+	ECL_SET(@'pi', make_longfloat(M_PI));
+#else
 	ECL_SET(@'pi', ecl_make_doublefloat(M_PI));
+#endif
 
 	init_big();
 
