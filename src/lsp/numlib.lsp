@@ -38,17 +38,17 @@
       ,(binary-search #'epsilon+ (coerce 0 'short-float) (coerce 1 'short-float)))
     (defconstant single-float-epsilon
       ,(binary-search #'epsilon+ (coerce 0 'single-float) (coerce 1 'single-float)))
-    (defconstant long-float-epsilon
-      ,(binary-search #'epsilon+ (coerce 0 'double-float) (coerce 1 'double-float)))
     (defconstant double-float-epsilon
+      ,(binary-search #'epsilon+ (coerce 0 'double-float) (coerce 1 'double-float)))
+    (defconstant long-float-epsilon
       ,(binary-search #'epsilon+ (coerce 0 'long-float) (coerce 1 'long-float)))
     (defconstant short-float-negative-epsilon
       ,(binary-search #'epsilon- (coerce 0 'short-float) (coerce 1 'short-float)))
     (defconstant single-float-negative-epsilon
       ,(binary-search #'epsilon- (coerce 0 'single-float) (coerce 1 'single-float)))
-    (defconstant long-float-negative-epsilon
-      ,(binary-search #'epsilon- (coerce 0 'double-float) (coerce 1 'double-float)))
     (defconstant double-float-negative-epsilon
+      ,(binary-search #'epsilon- (coerce 0 'double-float) (coerce 1 'double-float)))
+    (defconstant long-float-negative-epsilon
       ,(binary-search #'epsilon- (coerce 0 'long-float) (coerce 1 'long-float)))))
 
 (defconstant imag-one #C(0.0 1.0))
