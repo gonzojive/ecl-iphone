@@ -89,6 +89,18 @@ Returns a complex number whose realpart and imagpart are the values of (COS
 RADIANS) and (SIN RADIANS) respectively."
   (exp (* imag-one x)))
 
+#-ecl-min
+(eval-when (:compile-toplevel)
+  (defmacro c-num-op (name arg)
+    #+long-float
+    `(ffi::c-inline (,arg) (:long-double) :long-double
+		    ,(format nil "~al(#0)" name)
+		    :one-liner t)
+    #-long-float
+    `(ffi::c-inline (,arg) (:double) :double
+		    ,(format nil "~a(#0)" name)
+		    :one-liner t)))
+
 (defun asin (x)
   "Args: (number)
 Returns the arc sine of NUMBER."
@@ -96,11 +108,10 @@ Returns the arc sine of NUMBER."
       (complex-asin x)
       #-ecl-min
       (let* ((x (float x))
-	     (xr (float x 1d0)))
-	(declare (double-float xr))
+	     (xr (float x 1l0)))
+	(declare (long-float xr))
 	(if (and (<= -1.0 xr) (<= xr 1.0))
-	    (float (ffi::c-inline (xr) (:double) :double "asin(#0)" :one-liner t)
-		   x)
+	    (float (c-num-op "asin" xr) x)
 	    (complex-asin x)))))
 
 ;; Ported from CMUCL
@@ -120,11 +131,10 @@ Returns the arc cosine of NUMBER."
       (complex-acos x)
       #-ecl-min
       (let* ((x (float x))
-	     (xr (float x 1d0)))
-	(declare (double-float xr))
+	     (xr (float x 1l0)))
+	(declare (long-float xr))
 	(if (and (<= -1.0 xr) (<= xr 1.0))
-	    (float (ffi::c-inline (xr) (:double) :double "acos(#0)" :one-liner t)
-		   (float x))
+	    (float (c-num-op "acos" xr) (float x))
 	    (complex-acos x)))))
 
 ;; Ported from CMUCL
@@ -143,6 +153,12 @@ Returns the arc cosine of NUMBER."
   (ffi:clines "double acosh(double x) { return log(x+sqrt((x-1)*(x+1))); }")
   (ffi:clines "double atanh(double x) { return log((1+x)/(1-x))/2; }"))
 
+#+(and long-float (not ecl-min) win32)
+(progn
+  (ffi:clines "double asinhl(long double x) { return logl(x+sqrtl(1.0+x*x)); }")
+  (ffi:clines "double acoshl(long double x) { return logl(x+sqrtl((x-1)*(x+1))); }")
+  (ffi:clines "double atanhl(long double x) { return logl((1+x)/(1-x))/2; }"))
+
 ;; Ported from CMUCL
 (defun asinh (x)
   "Args: (number)
@@ -154,8 +170,7 @@ Returns the hyperbolic arc sine of NUMBER."
 	(complex (imagpart result)
 		 (- (realpart result))))
       #-(or ecl-min)
-      (float (ffi:c-inline (x) (:double) :double "asinh(#0)" :one-liner t)
-	     (float x))))
+      (float (c-num-op "asinh" x) (float x))))
 
 ;; Ported from CMUCL
 (defun acosh (x)
@@ -169,8 +184,7 @@ Returns the hyperbolic arc cosine of NUMBER."
 	     (xr (float x 1d0)))
 	(declare (double-float xr))
 	(if (<= 1.0 xr)
-	    (float (ffi::c-inline (xr) (:double) :double "acosh(#0)" :one-liner t)
-		   (float x))
+	    (float (c-num-op "acosh" xr) (float x))
 	    (complex-acosh x)))))
 
 (defun complex-acosh (z)
@@ -192,12 +206,11 @@ Returns the hyperbolic arc tangent of NUMBER."
 	     (xr (float x 1d0)))
 	(declare (double-float xr))
 	(if (and (<= -1.0 xr) (<= xr 1.0))
-	    (float (ffi::c-inline (xr) (:double) :double "atanh(#0)" :one-liner t)
-		   (float x))
+	    (float (c-num-op "atanh" xr) (float x))
 	    (complex-atanh x)))))
 
 (defun complex-atanh (z)
-  (declare (number x) (si::c-local))
+  (declare (number z) (si::c-local))
   (/ (- (log (1+ z)) (log (- 1 z))) 2))
 
 (defun ffloor (x &optional (y 1))
