@@ -46,7 +46,7 @@
 #ifndef HAVE_FSEEKO
 #define ecl_off_t int
 #define ecl_fseeko fseek
-#defien ecl_ftello ftell
+#define ecl_ftello ftell
 #else
 #define ecl_off_t off_t
 #define ecl_fseeko fseeko
