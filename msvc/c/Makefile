@@ -86,10 +86,11 @@ clean:
 	-for %f in ($(OBJS:.obj=.c) all_symbols.c) do $(RM) %f
 	-for %f in ($(OBJS) all_symbols.obj all_symbols2.obj) do $(RM) %f
 	-$(RM) *.pdb
-	-for %f in (..\ecl\config.h dpp dpp.obj $(DPP)
+	-for %f in (..\ecl\config.h dpp dpp.obj $(DPP) cut.exe cut.obj \
 	            ..\eclmin.lib ..\cinit.obj cinit.c symbols_list2.h) \
 	     do $(RM) %f
 	-for %f in (..\ecl\*.h) do $(RM) %f
+	-for %f in (cut.exe cut.obj dpp.exe dpp.obj) do $(RM) %f
 
 # Build rules
 
