@@ -481,7 +481,7 @@ cl_sin(cl_object x)
 		output = ecl_make_doublefloat(sin(df(x))); break;
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
-		output = make_longfloat(sinf(ecl_long_float(x))); break;
+		output = make_longfloat(sinl(ecl_long_float(x))); break;
 #endif
 	case t_complex: {
 		/*
@@ -609,7 +609,7 @@ cl_sinh(cl_object x)
 		output = ecl_make_doublefloat(sinh(df(x))); break;
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
-		output = make_longfloat(sinhf(ecl_long_float(x))); break;
+		output = make_longfloat(sinhl(ecl_long_float(x))); break;
 #endif
 	case t_complex: {
 		/*
