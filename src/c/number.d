@@ -16,21 +16,12 @@
 */
 
 #include <ecl/ecl.h>
-#include <math.h>
 #include <float.h>
+#include <math.h>
 #ifdef _MSC_VER
 # undef complex
 #endif
-#include <float.h>
 #include <ecl/internal.h>
-
-#ifndef M_PI
-# ifdef PI
-#  define M_PI PI
-# else
-#   define M_PI 3.14159265358979323846
-# endif
-#endif
 
 cl_fixnum
 fixint(cl_object x)
@@ -604,9 +595,9 @@ init_number(void)
 	    ecl_make_complex(ecl_make_singlefloat(0.0), ecl_make_singlefloat(2.0));
 
 #ifdef ECL_LONG_FLOAT
-	ECL_SET(@'pi', make_longfloat(M_PI));
+	ECL_SET(@'pi', make_longfloat((long double)ECL_PI_L));
 #else
-	ECL_SET(@'pi', ecl_make_doublefloat(M_PI));
+	ECL_SET(@'pi', ecl_make_doublefloat((double)ECL_PI_D));
 #endif
 
 	init_big();

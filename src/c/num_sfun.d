@@ -21,13 +21,6 @@
 # undef complex
 #endif
 #include "ecl/internal.h"
-#ifndef M_PI
-# ifdef PI
-#  define M_PI PI
-# else
-#   define M_PI 3.14159265358979323846
-# endif
-#endif
 
 #ifndef HAVE_LOG1P
 double
@@ -414,19 +407,19 @@ ecl_atan2_double(double y, double x)
 		}
 	} else if (x == 0) {
 		if (y > 0) {
-			return M_PI / 2.0;
+			return ECL_PI2_D;
 		} else if (y == 0) {
 			FEerror("Logarithmic singularity.", 0);
 		} else {
-			return -M_PI / 2.0;
+			return -ECL_PI2_D;
 		}
 	} else {
 		if (y > 0) {
-			return M_PI - atan(y / -x);
+			return ECL_PI_D - atan(y / -x);
 		} else if (y == 0) {
-			return M_PI;
+			return ECL_PI_D;
 		} else {
-			return -M_PI + atan(-y / -x);
+			return -ECL_PI_D + atan(-y / -x);
 		}
 	}
 }
@@ -445,19 +438,19 @@ ecl_atan2_long_double(long double y, long double x)
 		}
 	} else if (x == 0) {
 		if (y > 0) {
-			return M_PI / 2.0;
+			return ECL_PI2_L;
 		} else if (y == 0) {
 			FEerror("Logarithmic singularity.", 0);
 		} else {
-			return -M_PI / 2.0;
+			return -ECL_PI2_L;
 		}
 	} else {
 		if (y > 0) {
-			return M_PI - atanl(y / -x);
+			return ECL_PI_L - atanl(y / -x);
 		} else if (y == 0) {
-			return M_PI;
+			return ECL_PI_L;
 		} else {
-			return -M_PI + atanl(-y / -x);
+			return -ECL_PI_L + atanl(-y / -x);
 		}
 	}
 }
