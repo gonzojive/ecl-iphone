@@ -216,6 +216,11 @@ typedef int fenv_t;
 # define fesetenv(bits) _controlfp(*(bits), MCW_EM)
 #endif
 
+#define ECL_PI_D 3.14159265358979323846264338327950288
+#define ECL_PI_L 3.14159265358979323846264338327950288l
+#define ECL_PI2_D 1.57079632679489661923132169163975144
+#define ECL_PI2_L 1.57079632679489661923132169163975144l
+
 /*
  * Fake several ISO C99 mathematical functions
  */
