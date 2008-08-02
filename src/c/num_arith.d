@@ -802,6 +802,9 @@ cl_conjugate(cl_object c)
 	case t_ratio:
 	case t_singlefloat:
 	case t_doublefloat:
+#ifdef ECL_LONG_FLOAT
+	case t_longfloat:
+#endif
 		break;
 	default:
 		FEtype_error_number(c);
