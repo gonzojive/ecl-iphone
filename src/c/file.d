@@ -123,7 +123,7 @@ ecl_integer_to_off_t(cl_object offset)
 #ifdef WITH_GMP
 		if (sizeof(offset->big.big_limbs[0]) == sizeof(cl_index)) {
 			if (offset->big.big_size > 2) {
-				goto ERROR;
+				goto ERR;
 			}
 			if (offset->big.big_size == 2) {
 			    output = offset->big.big_limbs[1];
@@ -132,7 +132,7 @@ ecl_integer_to_off_t(cl_object offset)
 			output += offset->big.big_limbs[0];
 		} else if (sizeof(offset->big.big_limbs[0]) >= sizeof(ecl_off_t)) {
 			if (offset->big.big_size > 1) {
-				goto ERROR;
+				goto ERR;
 			}
 			output = offset->big.big_limbs[0];
 		}
@@ -140,7 +140,7 @@ ecl_integer_to_off_t(cl_object offset)
 		output = offset->big.big_num;
 #endif
 	} else {
-	ERROR:	FEerror("Not a valid file offset: ~S", 1, offset);
+	ERR:	FEerror("Not a valid file offset: ~S", 1, offset);
 	}
 	return output;
 }
