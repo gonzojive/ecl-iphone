@@ -317,7 +317,7 @@ ecl_make_complex(cl_object r, cl_object i)
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
 		if (ti != t_longfloat)
-			r = make_longfloat((long double)ecl_to_double(r));
+			i = make_longfloat((long double)ecl_to_double(i));
 		break;
 #endif
 	default:
