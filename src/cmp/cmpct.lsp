@@ -34,6 +34,9 @@
    ((typep val 'SINGLE-FLOAT)
     (make-c1form* 'LOCATION :type 'SINGLE-FLOAT
 		  :args (list 'SINGLE-FLOAT-VALUE val (add-object val))))
+   ((typep val 'LONG-FLOAT)
+    (make-c1form* 'LOCATION :type 'LONG-FLOAT
+		  :args (list 'LONG-FLOAT-VALUE val (add-object val))))
    (always
     (make-c1form* 'LOCATION :type (object-type val)
 		  :args (list 'VV (add-object val))))

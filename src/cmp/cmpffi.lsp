@@ -30,6 +30,7 @@
     :cl-index ((integer 0 #.most-positive-fixnum) "cl_index")
     :float (single-float "float")
     :double (double-float "double")
+    #+:long-float :long-double #+:long-float (long-float "long double")
     :char (base-char "char")
     :unsigned-char (base-char "char")
     :wchar (character "cl_index")
@@ -104,6 +105,7 @@
 	   (CHARACTER-VALUE (type-of (code-char (second loc))))
 	   (DOUBLE-FLOAT-VALUE 'DOUBLE-FLOAT)
 	   (SINGLE-FLOAT-VALUE 'SINGLE-FLOAT)
+	   (LONG-FLOAT-VALUE 'LONG-FLOAT)
 	   (C-INLINE (let ((type (first (second loc))))
 		       (if (lisp-type-p type) type (rep-type->lisp-type type))))
 	   (BIND (var-type (second loc)))
@@ -121,6 +123,7 @@
 	   (CHARACTER-VALUE (if (<= (second loc) 255) :char :wchar))
 	   (DOUBLE-FLOAT-VALUE :double)
 	   (SINGLE-FLOAT-VALUE :float)
+	   (LONG-FLOAT-VALUE :long-double)
 	   (C-INLINE (let ((type (first (second loc))))
 		       (if (lisp-type-p type) (lisp-type->rep-type type) type)))
 	   (BIND (var-rep-type (second loc)))
@@ -148,7 +151,7 @@
 	((:int :long :byte :fixnum)
 	 (case loc-rep-type
 	   ((:int :unsigned-int :long :unsigned-long :byte :unsigned-byte :fixnum
-		  :float :double)
+		  :float :double :long-double)
 	    (wt "((" (rep-type-name dest-rep-type) ")" loc ")"))
 	   ((:object)
 	    (ensure-valid-object-type dest-type)
@@ -162,7 +165,7 @@
 	((:unsigned-int :unsigned-long :unsigned-byte)
 	 (case loc-rep-type
 	   ((:int :unsigned-int :long :unsigned-long :byte :unsigned-byte :fixnum
-		  :float :double)
+		  :float :double :long-double)
 	    (wt "((" (rep-type-name dest-rep-type) ")" loc ")"))
 	   ((:object)
 	    (ensure-valid-object-type dest-type)
@@ -182,23 +185,26 @@
 	    (wt "ecl_char_code(" loc ")"))
 	   (otherwise
 	    (coercion-error))))
-	((:float :double)
+	((:float :double :long-double)
 	 (case loc-rep-type
 	   ((:int :unsigned-int :long :unsigned-long :byte :unsigned-byte :fixnum
-		  :float :double)
+		  :float :double :long-double)
 	    (wt "((" (rep-type-name dest-rep-type) ")" loc ")"))
 	   ((:object)
 	    ;; We relax the check a bit, because it is valid in C to coerce
 	    ;; between floats of different types.
 	    (ensure-valid-object-type 'FLOAT)
-	    (wt (if (eq loc-rep-type :float) "ecl_to_float(" "ecl_to_double(")
+	    (wt (ecase dest-rep-type
+		  (:float "ecl_to_float(")
+		  (:double "ecl_to_double(")
+		  (:long-double "ecl_to_long_double("))
 		loc ")"))
 	   (otherwise
 	    (coercion-error))))
 	((:bool)
 	 (case loc-rep-type
 	   ((:int :unsigned-int :long :unsigned-long :byte :unsigned-byte :fixnum
-		  :float :double :char :unsigned-char :wchar)
+		  :float :double :long-double :char :unsigned-char :wchar)
 	    (wt "1"))
 	   ((:object)
 	    (wt "(" loc ")!=Cnil"))
@@ -220,6 +226,10 @@
 	    (if (and (consp loc) (eq (first loc) 'DOUBLE-FLOAT-VALUE))
 		(wt (third loc)) ;; VV index
 		(wt "ecl_make_doublefloat(" loc ")")))
+	   ((:long-double)
+	    (if (and (consp loc) (eq (first loc) 'LONG-FLOAT-VALUE))
+		(wt (third loc)) ;; VV index
+		(wt "make_longfloat(" loc ")")))
 	   ((:bool)
 	    (wt "((" loc ")?Ct:Cnil)"))
 	   ((:char :unsigned-char :wchar)
