@@ -319,3 +319,8 @@ typedef unsigned int uint32_t;
 #define sleep _sleep
 
 #include "@ECL_FPE_CODE@"
+
+#include <math.h>
+#ifndef isfinite
+#define isfinite(x) (finite(x))
+#endif
