@@ -38,6 +38,7 @@
 ;;;	( MAKE-CCLOSURE cfun )
 ;;;	( FIXNUM-VALUE fixnum-value )
 ;;;	( CHARACTER-VALUE character-code )
+;;;	( LONG-FLOAT-VALUE long-float-value vv )
 ;;;	( DOUBLE-FLOAT-VALUE double-float-value vv )
 ;;;	( SINGLE-FLOAT-VALUE single-float-value vv )
 ;;;	( STACK-POINTER index )	retrieve a value from the stack
@@ -133,7 +134,7 @@
 (defun last-call-p ()
   (member *exit*
           '(RETURN RETURN-FIXNUM RETURN-CHARACTER RETURN-SINGLE-FLOAT
-            RETURN-DOUBLE-FLOAT RETURN-OBJECT)))
+            RETURN-DOUBLE-FLOAT RETURN-LONG-FLOAT RETURN-OBJECT)))
 
 (defun wt-car (loc) (wt "CAR(" loc ")"))
 
@@ -200,6 +201,7 @@
 (put-sysprop 'CADR 'WT-LOC #'wt-cadr)
 (put-sysprop 'FIXNUM-VALUE 'WT-LOC #'wt-number)
 (put-sysprop 'CHARACTER-VALUE 'WT-LOC #'wt-character)
+(put-sysprop 'LONG-FLOAT-VALUE 'WT-LOC #'wt-number)
 (put-sysprop 'DOUBLE-FLOAT-VALUE 'WT-LOC #'wt-number)
 (put-sysprop 'SINGLE-FLOAT-VALUE 'WT-LOC #'wt-number)
 (put-sysprop 'VALUE 'WT-LOC #'wt-value)

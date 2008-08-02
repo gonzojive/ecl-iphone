@@ -57,6 +57,8 @@
      (princ form *compiler-output1*))
     ((or DOUBLE-FLOAT SINGLE-FLOAT)
      (format *compiler-output1* "~10,,,,,,'eG" form))
+    (LONG-FLOAT
+     (format *compiler-output1* "~,,,,,,'eEl" form))
     (VAR (wt-var form))
     (t (wt-loc form)))
   nil)
