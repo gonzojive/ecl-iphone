@@ -401,39 +401,98 @@ cl_sqrt(cl_object x)
 	@(return z);
 }
 
+static double
+ecl_atan2_double(double y, double x)
+{
+	if (x > 0) {
+		if (y > 0) {
+			return atan(y / x);
+		} else if (y == 0) {
+			return (double)0;
+		} else {
+			return -atan(-y / x);
+		}
+	} else if (x == 0) {
+		if (y > 0) {
+			return M_PI / 2.0;
+		} else if (y == 0) {
+			FEerror("Logarithmic singularity.", 0);
+		} else {
+			return -M_PI / 2.0;
+		}
+	} else {
+		if (y > 0) {
+			return M_PI - atan(y / -x);
+		} else if (y == 0) {
+			return M_PI;
+		} else {
+			return -M_PI + atan(-y / -x);
+		}
+	}
+}
+
+#ifdef ECL_LONG_FLOAT
+static long double
+ecl_atan2_long_double(long double y, long double x)
+{
+	if (x > 0) {
+		if (y > 0) {
+			return atanl(y / x);
+		} else if (y == 0) {
+			return (long double)0;
+		} else {
+			return -atanl(-y / x);
+		}
+	} else if (x == 0) {
+		if (y > 0) {
+			return M_PI / 2.0;
+		} else if (y == 0) {
+			FEerror("Logarithmic singularity.", 0);
+		} else {
+			return -M_PI / 2.0;
+		}
+	} else {
+		if (y > 0) {
+			return M_PI - atanl(y / -x);
+		} else if (y == 0) {
+			return M_PI;
+		} else {
+			return -M_PI + atanl(-y / -x);
+		}
+	}
+}
+#endif
+
 cl_object
 ecl_atan2(cl_object y, cl_object x)
 {
-	cl_object z;
-	double dy, dx, dz;
-
-	dy = ecl_to_double(y);
-	dx = ecl_to_double(x);
-	if (dx > 0.0)
-		if (dy > 0.0)
-			dz = atan(dy / dx);
-		else if (dy == 0.0)
-			dz = 0.0;
-		else
-			dz = -atan(-dy / dx);
-	else if (dx == 0.0)
-		if (dy > 0.0)
-			dz = M_PI / 2.0;
-		else if (dy == 0.0)
-			FEerror("Logarithmic singularity.", 0);
-		else
-			dz = -M_PI / 2.0;
-	else
-		if (dy > 0.0)
-			dz = M_PI - atan(dy / -dx);
-		else if (dy == 0.0)
-			dz = M_PI;
-		else
-			dz = -M_PI + atan(-dy / -dx);
-	if (type_of(x) == t_doublefloat || type_of(y) == t_doublefloat)
+#ifdef ECL_LONG_FLOAT
+	int tx = type_of(x);
+	int ty = type_of(y);
+	if (tx < ty)
+		tx = ty;
+	if (tx == t_longfloat) {
+		return make_longfloat(ecl_atan2_long_double(ecl_to_long_double(y),
+							    ecl_to_long_double(x)));
+	} else {
+		double dx = ecl_to_double(x);
+		double dy = ecl_to_double(y);
+		double dz = ecl_atan2_double(dy, dx);
+		if (tx == t_doublefloat) {
+			return ecl_make_doublefloat(dz);
+		} else {
+			return ecl_make_singlefloat(dz);
+		}
+	}
+#else
+	double dy = ecl_to_double(y);
+	double dx = ecl_to_double(x);
+	if (type_of(x) == t_doublefloat || type_of(y) == t_doublefloat) {
 		return ecl_make_doublefloat(dz);
-	else
+	} else {
 		return ecl_make_singlefloat(dz);
+	}
+#endif
 }
 
 cl_object
