@@ -1438,7 +1438,7 @@ GET-NAME-SERVICE-ERRNO")
 #-(or :sun4sol2 :linux :wsock :cygwin)
 (define-sockopt sockopt-reuse-port "SO_REUSEPORT" bool)
 
-(define-sockopt socket-tcp-nodelay "TCP_NODELAY" bool)
+(define-sockopt sockopt-tcp-nodelay "TCP_NODELAY" bool)
 
 ;; Add sockopts here as you need them...
 
