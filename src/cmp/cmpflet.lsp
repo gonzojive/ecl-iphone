@@ -107,10 +107,9 @@
 	   ;; ...or if it directly calls a function
 	   (dolist (f funs)
 	     ;; .. which has a full closure
-	     (when (not (child-p f fun))
-	       (case (fun-closure fun)
-		 (CLOSURE (setf closure 'CLOSURE))
-		 (LEXICAL (unless closure (setf closure 'LEXICAL))))))
+	     (case (fun-closure f)
+	       (CLOSURE (setf closure 'CLOSURE))
+	       (LEXICAL (unless closure (setf closure 'LEXICAL)))))
 	   ;; ...or the function itself is referred across CB
 	   (when closure
 	     (when (or (fun-ref-ccb fun)
