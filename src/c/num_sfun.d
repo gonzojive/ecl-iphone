@@ -597,6 +597,18 @@ cl_cos(cl_object x)
 	@(return output)
 }
 
+/*
+ * As of 2006-10-13 I found this bug in GLIBC's tanf, which overflows
+ * when the argument is pi/4. It is 2008 and this has not yet been
+ * solved.
+ */
+#if defined(__amd64__) && defined(__GLIBC_)
+# ifdef tanf
+#  undef tanf
+# endif
+# define tanf(x) (float)tan(x)
+#endif
+
 cl_object
 cl_tan(cl_object x)
 {
