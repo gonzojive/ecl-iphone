@@ -602,7 +602,7 @@ cl_cos(cl_object x)
  * when the argument is pi/4. It is 2008 and this has not yet been
  * solved.
  */
-#if defined(__amd64__) && defined(__GLIBC_)
+#if defined(__amd64__) && defined(__GLIBC__)
 # ifdef tanf
 #  undef tanf
 # endif
