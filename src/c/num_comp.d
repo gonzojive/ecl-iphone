@@ -18,34 +18,36 @@
 #include <ecl/ecl.h>
 
 /*
- * Floats may not be large enough to contain all fixnum types.  This
- * means we can have rounding errors when comparing them with integers.
+ * In Common Lisp, comparisons between floats and integers are performed
+ * via an intermediate rationalization of the floating point number. In C,
+ * on the other hand, the comparison is performed by converting the integer
+ * into a floating point number. However, if the double type is too small
+ * this may lead to a loss of precision and two numbers being told equal
+ * when, by Common Lisp standards, would not.
  */
 static int
 double_fix_compare(cl_fixnum n, double d)
 {
-	if (sizeof(double) >= 2*sizeof(cl_fixnum)) {
-		if ((double)n < d) {
-			return -1;
-		} else if ((double)n > d) {
-			return +1;
-		} else {
-			return 0;
-		}
+	if ((double)n < d) {
+		return -1;
+	} else if ((double)n > d) {
+		return +1;
+	} else if (sizeof(double) > sizeof(cl_fixnum)) {
+		return 0;
 	} else {
-		if (MOST_POSITIVE_FIXNUM < d) {
-			return -1;
-		} else if (MOST_NEGATIVE_FIXNUM > d) {
+		/* When we reach here, the double type has no
+		 * significant decimal part. However, as explained
+		 * above, the double type is too small and integers
+		 * may coerce to the same double number giving a false
+		 * positive. Hence we perform the comparison in
+		 * integer space. */
+		cl_fixnum m = d;
+		if (n == m) {
+			return 0;
+		} else if (n > m) {
 			return +1;
 		} else {
-			cl_fixnum m = d;
-			if (n < m) {
-				return -1;
-			} else if (n > m) {
-				return +1;
-			} else {
-				return 0;
-			}
+			return -1;
 		}
 	}
 }
@@ -54,28 +56,20 @@ double_fix_compare(cl_fixnum n, double d)
 static int
 long_double_fix_compare(cl_fixnum n, long double d)
 {
-	if (sizeof(double) >= 2*sizeof(cl_fixnum)) {
-		if ((double)n < d) {
-			return -1;
-		} else if ((double)n > d) {
-			return +1;
-		} else {
-			return 0;
-		}
+	if ((long double)n < d) {
+		return -1;
+	} else if ((long double)n > d) {
+		return +1;
+	} else if (sizeof(long double) > sizeof(cl_fixnum)) {
+		return 0;
 	} else {
-		if (MOST_POSITIVE_FIXNUM < d) {
-			return -1;
-		} else if (MOST_NEGATIVE_FIXNUM > d) {
+		cl_fixnum m = d;
+		if (n == m) {
+			return 0;
+		} else if (n > m) {
 			return +1;
 		} else {
-			cl_fixnum m = d;
-			if (n < m) {
-				return -1;
-			} else if (n > m) {
-				return +1;
-			} else {
-				return 0;
-			}
+			return -1;
 		}
 	}
 }
