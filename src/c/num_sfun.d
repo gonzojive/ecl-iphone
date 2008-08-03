@@ -600,13 +600,13 @@ cl_cos(cl_object x)
 /*
  * As of 2006-10-13 I found this bug in GLIBC's tanf, which overflows
  * when the argument is pi/4. It is 2008 and this has not yet been
- * solved.
+ * solved. Not only that, but if we use tan() on float, GCC automatically
+ * and stupidly forces the use of tanf().
  */
 #if defined(__amd64__) && defined(__GLIBC__)
-# ifdef tanf
-#  undef tanf
-# endif
-# define tanf(x) (float)tan(x)
+static double safe_tanf(double x) { return tan(x); }
+#else
+# define safe_tanf(x) tanf(x)
 #endif
 
 cl_object
@@ -618,13 +618,13 @@ cl_tan(cl_object x)
 	case t_fixnum:
 	case t_bignum:
 	case t_ratio:
-		output = ecl_make_singlefloat(tanf(number_to_float(x))); break;
+		output = ecl_make_singlefloat(safe_tanf(number_to_float(x))); break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
-		output = make_shortfloat(tanf(ecl_short_float(x))); break;
+		output = make_shortfloat(safe_tanf(ecl_short_float(x))); break;
 #endif
 	case t_singlefloat:
-		output = ecl_make_singlefloat(tanf(sf(x))); break;
+		output = ecl_make_singlefloat(safe_tanf(sf(x))); break;
 	case t_doublefloat:
 		output = ecl_make_doublefloat(tan(df(x))); break;
 #ifdef ECL_LONG_FLOAT
