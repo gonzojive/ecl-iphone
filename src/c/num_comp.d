@@ -17,6 +17,70 @@
 
 #include <ecl/ecl.h>
 
+/*
+ * Floats may not be large enough to contain all fixnum types.  This
+ * means we can have rounding errors when comparing them with integers.
+ */
+static int
+double_fix_compare(cl_fixnum n, double d)
+{
+	if (sizeof(double) >= 2*sizeof(cl_fixnum)) {
+		if ((double)n < d) {
+			return -1;
+		} else if ((double)n > d) {
+			return +1;
+		} else {
+			return 0;
+		}
+	} else {
+		if (MOST_POSITIVE_FIXNUM < d) {
+			return -1;
+		} else if (MOST_NEGATIVE_FIXNUM > d) {
+			return +1;
+		} else {
+			cl_fixnum m = d;
+			if (n < m) {
+				return -1;
+			} else if (n > m) {
+				return +1;
+			} else {
+				return 0;
+			}
+		}
+	}
+}
+
+#ifdef ECL_LONG_FLOAT
+static int
+long_double_fix_compare(cl_fixnum n, long double d)
+{
+	if (sizeof(double) >= 2*sizeof(cl_fixnum)) {
+		if ((double)n < d) {
+			return -1;
+		} else if ((double)n > d) {
+			return +1;
+		} else {
+			return 0;
+		}
+	} else {
+		if (MOST_POSITIVE_FIXNUM < d) {
+			return -1;
+		} else if (MOST_NEGATIVE_FIXNUM > d) {
+			return +1;
+		} else {
+			cl_fixnum m = d;
+			if (n < m) {
+				return -1;
+			} else if (n > m) {
+				return +1;
+			} else {
+				return 0;
+			}
+		}
+	}
+}
+#endif
+
 @(defun = (num &rest nums)
 	int i;
 @
@@ -47,15 +111,15 @@ ecl_number_equalp(cl_object x, cl_object y)
 			return 0;
 #ifdef ECL_SHORT_FLOAT
 		case t_shortfloat:
-			return fix(x) == ecl_short_float(y);
+			return double_fix_compare(fix(x), ecl_short_float(y)) == 0;
 #endif
 		case t_singlefloat:
-			return fix(x) == (double)sf(y);
+			return double_fix_compare(fix(x), sf(y)) == 0;
 		case t_doublefloat:
-			return fix(x) == df(y);
+			return double_fix_compare(fix(x), df(y)) == 0;
 #ifdef ECL_LONG_FLOAT
 		case t_longfloat:
-			return fix(x) == ecl_long_float(y);
+			return long_double_fix_compare(fix(x), ecl_long_float(y)) == 0;
 #endif
 		case t_complex:
 			goto Y_COMPLEX;
@@ -121,7 +185,7 @@ ecl_number_equalp(cl_object x, cl_object y)
 	FLOAT:
 		switch (type_of(y)) {
 		case t_fixnum:
-			return dx == fix(y);
+			return double_fix_compare(fix(y), dx) == 0;
 		case t_bignum:
 		case t_ratio:
 			x = cl_rational(x);
@@ -148,7 +212,7 @@ ecl_number_equalp(cl_object x, cl_object y)
 		long double dx = ecl_long_float(x);
 		switch (type_of(y)) {
 		case t_fixnum:
-			return dx == fix(y);
+			return long_double_fix_compare(fix(y), dx) == 0;
 		case t_bignum:
 		case t_ratio:
 			x = cl_rational(x);
@@ -228,23 +292,15 @@ ecl_number_compare(cl_object x, cl_object y)
 			return(ecl_number_compare(x, y));
 #ifdef ECL_SHORT_FLOAT
 		case t_shortfloat:
-			dx = (double)(ix);
-			dy = (double)(ecl_short_float(y));
-			goto DOUBLEFLOAT;
+			return double_fix_compare(ix, ecl_short_float(y));
 #endif
 		case t_singlefloat:
-			dx = (double)(ix);
-			dy = (double)(sf(y));
-			goto DOUBLEFLOAT;
+			return double_fix_compare(ix, sf(y));
 		case t_doublefloat:
-			dx = (double)(ix);
-			dy = df(y);
-			goto DOUBLEFLOAT;
+			return double_fix_compare(ix, df(y));
 #ifdef ECL_LONG_FLOAT
 		case t_longfloat:
-			ldx = (long double)(ix);
-			ldy = ecl_long_float(y);
-			goto LONGFLOAT;
+			return long_double_fix_compare(ix, ecl_long_float(y));
 #endif
 		default:
 			FEtype_error_real(y);
@@ -310,8 +366,7 @@ ecl_number_compare(cl_object x, cl_object y)
 	DOUBLEFLOAT0:
 		switch (ty) {
 		case t_fixnum:
-			dy = (double)(fix(y));
-			break;
+			return -double_fix_compare(fix(y), dx);
 		case t_bignum:
 		case t_ratio:
 			x = cl_rational(x);
@@ -343,8 +398,7 @@ ecl_number_compare(cl_object x, cl_object y)
 		ldx = ecl_long_float(x);
 		switch (ty) {
 		case t_fixnum:
-			ldy = (long double)fix(y);
-			break;
+			return -long_double_fix_compare(fix(y), ldx);
 		case t_bignum:
 		case t_ratio:
 			x = cl_rational(x);
