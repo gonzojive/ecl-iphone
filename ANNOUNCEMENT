@@ -1,5 +1,5 @@
-Announcement of ECL v0.9j-p1
-============================
+Announcement of ECL v0.9l
+=========================
 
 ECL stands for Embeddable Common-Lisp. The ECL project aims to produce
 an implementation of the Common-Lisp language which complies to the ANSI
@@ -24,13 +24,15 @@ find source code releases, a CVS tree and some useful documentation.
 Notes for this release
 ======================
 
-This is mostly a bugfix release, but it includes several interesting
-new features, such as the SERVE-EVENT package, ported from SBCL by
-Steve Smith, finalization of lisp objects and installation of ECL
-on standard unix paths
+This release is relevant for various reasons. First of all, several
+important bugs have been fixed which now allow Maxima to be built
+using ECL. Second, there have been serious improvements in performance
+coming mainly from a better garbage collector scheme (incremental
+with generations) and a threaded interpreter. In some cases this results
+in a factor 2 reduction in execution speed.
 
 
-Changes since 0.9i
+Changes since 0.9j
 ==================
 
 See file src/CHANGELOG or browse it online
