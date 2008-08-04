@@ -379,6 +379,22 @@ ecl_extend_hashtable(cl_object hashtable)
 				     lockable))
 @)
 
+static void
+do_clrhash(cl_object ht)
+{
+	/*
+	 * Fill a hash with null pointers and ensure it does not have
+	 * any entry. We separate this routine because it is needed
+	 * both by clrhash and hash table initialization.
+	 */
+	cl_index i;
+	ht->hash.entries = 0;
+	for(i = 0; i < ht->hash.size; i++) {
+		ht->hash.data[i].key = OBJNULL;
+		ht->hash.data[i].value = OBJNULL;
+	}
+}
+
 cl_object
 cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 		    cl_object rehash_threshold, cl_object lockable)
@@ -438,26 +454,29 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 	h = cl_alloc_object(t_hashtable);
 	h->hash.test = htt;
 	h->hash.size = hsize;
+        h->hash.entries = 0;
+	h->hash.data = NULL;	/* for GC sake */
+	h->hash.data = (struct ecl_hashtable_entry *)
+		cl_alloc(hsize * sizeof(struct ecl_hashtable_entry));
+	do_clrhash(h);
+
 	h->hash.rehash_size = rehash_size;
 	h->hash.threshold = rehash_threshold;
 	h->hash.factor = ecl_to_double(rehash_threshold);
 	if (h->hash.factor < 0.1) {
 		h->hash.factor = 0.1;
 	}
-        h->hash.entries = 0;
-	h->hash.data = NULL;	/* for GC sake */
-	h->hash.data = (struct ecl_hashtable_entry *)
-		cl_alloc(hsize * sizeof(struct ecl_hashtable_entry));
 	h->hash.lockable = !Null(lockable);
 #ifdef ECL_THREADS
-	if (h->hash.lockable)
+	if (h->hash.lockable) {
 #if defined(_MSC_VER) || defined(mingw32)
 		h->hash.lock = CreateMutex(NULL, FALSE, NULL);
 #else
 		pthread_mutex_init(&h->hash.lock, NULL);
 #endif
+	}
 #endif
-	return cl_clrhash(h);
+	return h;
 }
 
 cl_object
@@ -518,16 +537,12 @@ cl_remhash(cl_object key, cl_object ht)
 cl_object
 cl_clrhash(cl_object ht)
 {
-	cl_index i;
-
 	assert_type_hash_table(ht);
-	HASH_TABLE_LOCK(ht);
-	for(i = 0; i < ht->hash.size; i++) {
-		ht->hash.data[i].key = OBJNULL;
-		ht->hash.data[i].value = OBJNULL;
+	if (ht->hash.entries) {
+		HASH_TABLE_LOCK(ht);
+		do_clrhash(ht);
+		HASH_TABLE_UNLOCK(ht);
 	}
-	ht->hash.entries = 0;
-	HASH_TABLE_UNLOCK(ht);
 	@(return ht)
 }
 
