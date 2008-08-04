@@ -125,7 +125,7 @@
   #+(or mingw32)
   (safe-system
    (format nil
-	   "dllwrap -o ~A --export-all-symbols -L~S ~{~S ~} ~@?"
+	   "dllwrap --quiet -o ~A --export-all-symbols -L~S ~{~S ~} ~@?"
 	   (si::coerce-to-filename o-pathname)
 	   (fix-for-mingw (ecl-library-directory))
 	   options
