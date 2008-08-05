@@ -31,6 +31,10 @@ APPLY(cl_narg n, cl_objectfn fn, cl_object *x)
 	"andl	$-16, %%esp\n\t"
 	"movl	%%ecx, (%%esp)\n\t"	/* Then ESP[0] is the number of arguments */
 	"leal	4(%%esp), %%edi\n\t"	/* and the other arguments are copied from ESP[4] on */
+	"cmpl	$63, %%ecx\n\t"		/* Copy at most 63 arguments onto the stack */
+	"jle	FOO1\n\t"
+	"movl	$63, %%ecx\n\t"
+"FOO1:\n"
 	"rep\n\t"
         "movsl\n\t"
 	"call	*%%eax\n\t"		/* At this point the stack must be aligned */
@@ -55,6 +59,10 @@ APPLY_fixed(cl_narg n, cl_object (*fn)(), cl_object *x)
 	"leal	(%%esp,%%edx,4), %%esp\n\t"
 	"andl	$-16, %%esp\n\t"
 	"movl	%%esp, %%edi\n\t"	/* then the arguments are copied from ESP[0] on */
+	"cmpl	$63, %%ecx\n\t"		/* Copy at most 63 arguments onto the stack */
+	"jle	FOO2\n\t"
+	"movl	$63, %%ecx\n\t"
+"FOO2:\n"
 	"rep\n\t"
         "movsl\n\t"
 	"call	*%%eax\n\t"		/* At this point the stack must be aligned */
@@ -81,6 +89,10 @@ APPLY_closure(cl_narg n, cl_objectfn fn, cl_object cl, cl_object *x)
 	"movl	%%ecx, (%%esp)\n\t"	/* Then ESP[0] is the number of arguments */
 	"movl	%%edi, 4(%%esp)\n\t"	/* ESP[4] is the closure environment */
 	"leal	8(%%esp), %%edi\n\t"	/* and the other arguments are copied from ESP[8] on */
+	"cmpl	$63, %%ecx\n\t"		/* Copy at most 63 arguments onto the stack */
+	"jle	FOO3\n\t"
+	"movl	$63, %%ecx\n\t"
+"FOO3:\n"
 	"rep\n\t"
         "movsl\n\t"
 	"call	*%%eax\n\t"		/* At this point the stack must be aligned */
