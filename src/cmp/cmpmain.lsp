@@ -102,7 +102,7 @@
   (let ((lib-file (compile-file-pathname o-pathname :type :lib)))
     (safe-system
      (format nil
-	     "dllwrap --quiet -o ~S -L~S ~{~S ~} ~@?"
+	     "gcc -shared -o ~S -L~S ~{~S ~} ~@?"
 	     (si::coerce-to-filename o-pathname)
 	     (fix-for-mingw (ecl-library-directory))
 	     options
@@ -125,7 +125,7 @@
   #+(or mingw32)
   (safe-system
    (format nil
-	   "dllwrap --quiet -o ~A --export-all-symbols -L~S ~{~S ~} ~@?"
+	   "gcc -shared -o ~A -Wl,--export-all-symbols -L~S ~{~S ~} ~@?"
 	   (si::coerce-to-filename o-pathname)
 	   (fix-for-mingw (ecl-library-directory))
 	   options

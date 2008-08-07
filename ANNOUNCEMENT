@@ -29,7 +29,7 @@ important bugs have been fixed which now allow Maxima to be built
 using ECL. Second, there have been serious improvements in performance
 coming mainly from a better garbage collector scheme (incremental
 with generations) and a threaded interpreter. In some cases this results
-in a factor 2 reduction in execution speed.
+in a factor 2 reduction in execution time.
 
 
 Changes since 0.9j
