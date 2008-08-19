@@ -3001,6 +3001,7 @@ init_file(void)
 	null_stream->stream.char_stream_p = 1;
 	null_stream->stream.byte_size = 8;
 	null_stream->stream.signed_bytes = 0;
+	null_stream = cl_make_two_way_stream(null_stream, cl_make_broadcast_stream(0));
 	cl_core.null_stream = null_stream;
 
 	standard_input = cl_alloc_object(t_stream);
