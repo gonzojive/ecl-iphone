@@ -190,9 +190,9 @@ AC_ARG_ENABLE(hpack,
 
 AC_ARG_ENABLE(asmapply,
   AS_HELP_STRING( [--enable-asmapply],
-                  [enable optimizations written in assembler]
-                  [(default=YES)]),
-  [enable_asmapply=${enableval}],[enable_asmapply=yes])
+                  [enable optimizations written in assembler, EXPERIMENTAL]
+                  [(default=NO)]),
+  [enable_asmapply=${enableval}],[enable_asmapply=no])
 
 AC_ARG_ENABLE(smallcons,
   AS_HELP_STRING( [--enable-smallcons],
