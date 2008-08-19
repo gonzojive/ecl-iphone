@@ -14,9 +14,9 @@ ECL 0.9l-p1:
 
  - In compiled files, externalize package objects using FIND-PACKAGE.
 
- - In RUN-PROGRAM, there were two bugs: first, the keyword :WAIT was not defined
-   in the C core and caused an error when used; second, the input/output streams
-   were not properly arranged.
+ - In RUN-PROGRAM, there were two bugs: first, the keyword :WAIT was not
+   defined in the C core and caused an error when used; second, if the output
+   stream was missing or directed to the standard output, it would fail.
 
 ;;; Local Variables: ***
 ;;; mode:text ***
