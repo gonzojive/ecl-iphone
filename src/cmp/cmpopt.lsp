@@ -188,8 +188,9 @@
 ;;; lisp form. We use a LET form to avoid evaluating twice the same
 ;;; form.
 ;;;
-(defvar +coercion-table+
-  '((float . (float x))
+(defparameter +coercion-table+
+  '((integer . (check-type x 'integer))
+    (float . (float x))
     (short-float  . (float x 0.0s0))
     (single-float . (float x 0.0f0))
     (double-float . (float x 0.0d0))
@@ -284,16 +285,17 @@
 	  ;;
 	  ;; (INTEGER * *), etc We have to signal an error if the type
 	  ;; does not match. However, if safety settings are low, we
-	  ;; skip this test.
+	  ;; skip the interval test.
 	  ((member first '(INTEGER RATIONAL FLOAT REAL SINGLE-FLOAT
 			   DOUBLE-FLOAT #+long-float LONG-FLOAT
 			   #+short-float SHORT-FLOAT))
 	   (let ((unchecked (expand-coerce form value `',first env)))
 	     (if (< safety 1)
-		 default
+		 unchecked
 		 `(let ((x ,unchecked))
 		    (declare (,first x))
-		    (check-type x ',type "coerced value")
+		    (unless (and ,@(expand-in-interval-p 'x (rest type)))
+		      (si::do-check-type x ',type nil "coerced value"))
 		    x))))
 	  ;;
 	  ;; We did not find a suitable expansion.
@@ -303,3 +305,5 @@
 
 (define-compiler-macro coerce (&whole form value type &environment env)
   (expand-coerce form value type env))
+
+(trace c::expand-coerce)
