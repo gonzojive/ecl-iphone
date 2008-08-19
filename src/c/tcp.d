@@ -137,7 +137,11 @@ int connect_to_server(char *host, int port)
 #endif
   start_critical_section();
   if (connect(fd, addr, addrlen) == -1) {
+#if defined(_MSC_VER) || defined(mingw32)
+    closesocket(fd);
+#else
     (void) close (fd);
+#endif
     end_critical_section();
     return(0);		/* errno set by system call. */
   }
