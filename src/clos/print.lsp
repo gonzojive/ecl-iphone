@@ -118,6 +118,9 @@ printer and we should rather use MAKE-LOAD-FORM."
 	`(find-class ',name)
 	(error "Cannot externalize anonymous class ~A" class))))
 
+(defmethod make-load-form ((package package) &optional environment)
+  `(find-package ,(package-name package)))
+
 ;;; ----------------------------------------------------------------------
 ;;; Printing
 ;;; ----------------------------------------------------------------------
