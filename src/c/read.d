@@ -1173,22 +1173,22 @@ do_patch_sharp(cl_object x)
 		} while (CONSP(y));
 		break;
 	}
-	case t_vector: {
-		cl_index i;
-
-		for (i = 0;  i < x->vector.fillp;  i++)
-			x->vector.self.t[i] = do_patch_sharp(x->vector.self.t[i]);
+	case t_vector:
+		if (x->vector.elttype == aet_object) {
+			cl_index i;
+			for (i = 0;  i < x->vector.fillp;  i++)
+				x->vector.self.t[i] = do_patch_sharp(x->vector.self.t[i]);
+		}
 		break;
-	}
-	case t_array: {
-		cl_index i, j;
-
-		for (i = 0, j = 1;  i < x->array.rank;  i++)
-			j *= x->array.dims[i];
-		for (i = 0;  i < j;  i++)
-			x->array.self.t[i] = do_patch_sharp(x->array.self.t[i]);
+	case t_array:
+		if (x->vector.elttype == aet_object) {
+			cl_index i, j;
+			for (i = 0, j = 1;  i < x->array.rank;  i++)
+				j *= x->array.dims[i];
+			for (i = 0;  i < j;  i++)
+				x->array.self.t[i] = do_patch_sharp(x->array.self.t[i]);
+		}
 		break;
-	}
 	case t_complex: {
 		cl_object r = do_patch_sharp(x->complex.real);
 		cl_object i = do_patch_sharp(x->complex.imag);
