@@ -297,7 +297,7 @@
 		     :args used-vars (nreverse used-forms) body))
     (let* ((var (first vs))
 	   (form (and-form-type (var-type var) (car fs) (cadar args)
-				:unsafe "~&;;; In LET* body"))
+				:unsafe "In LET* body"))
 	   (form-type (c1form-primary-type form))
 	   (rest-forms (cons body (rest fs))))
       ;; Automatic treatement for READ-ONLY variables:

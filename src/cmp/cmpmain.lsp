@@ -60,7 +60,7 @@
 (defun cmp-delete-file (file)
   (cond ((null *delete-files*))
 	(*debug-compiler*
-	 (format t "~%Postponing deletion of ~A" file)
+	 (cmpprogress "~%Postponing deletion of ~A" file)
 	 (push file *files-to-be-deleted*))
 	(t
 	 (delete-file file))))
@@ -471,7 +471,6 @@ static cl_object VV[VM];
                            (*compiler-in-use* *compiler-in-use*)
                            (*package* *package*)
 			   (*print-pretty* nil)
-                           (*error-count* 0)
 			   (*compile-file-pathname* nil)
 			   (*compile-file-truename* nil)
 			   (*compile-verbose* verbose)
@@ -515,9 +514,7 @@ Cannot compile ~a."
   (setq *error-p* nil
 	*compiler-in-use* t)
 
-  (when *compile-verbose*
-    (format t "~&;;; Compiling ~a."
-            (namestring input-pathname)))
+  (cmpprogress "~&;;; Compiling ~a." (namestring input-pathname))
 
   (let* ((eof '(NIL))
 	 (*load-time-values* nil) ;; Load time values are compiled
@@ -532,8 +529,9 @@ Cannot compile ~a."
 	 (shared-data-pathname (get-output-pathname o-pathname shared-data-file
 						    :sdata)))
 
-    (with-lock (+load-compile-lock+)
-      (init-env)
+    (with-compiler-env (*error-p*)
+
+      (print-compiler-info)
 
       (when (probe-file "./cmpinit.lsp")
 	(load "./cmpinit.lsp" :verbose *compile-verbose*))
@@ -548,13 +546,14 @@ Cannot compile ~a."
       (with-open-file (*compiler-input* *compile-file-pathname*)
 	(do ((ext:*source-location* (cons *compile-file-pathname* 0))
 	     (form (read *compiler-input* nil eof)
-		   (read *compiler-input* nil eof)))
+		   (read *compiler-input* nil eof))
+	     (*compile-file-position* 0 (1+ *compile-file-position*)))
 	    ((eq form eof))
 	  (t1expr form)
 	  (incf (cdr ext:*source-location*))))
 
-      (when (zerop *error-count*)
-	(when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
+      (unless *error-p*
+	(cmpprogress "~&;;; End of Pass 1.")
 	(setf init-name (guess-init-name output-file :kind
 					 (if system-p :object :fasl)))
 	(compiler-pass2 c-pathname h-pathname data-pathname system-p
@@ -565,58 +564,50 @@ Cannot compile ~a."
 	  (data-dump shared-data-pathname t)
 	  (data-dump data-pathname))
 
-      (init-env)
-      );; with-lock
-
-    (if (zerop *error-count*)
-        (progn
-          (cond (output-file
-		 (when *compile-verbose*
-		   (format t "~&;;; Calling the C compiler... "))
-                 (compiler-cc c-pathname o-pathname)
-		 #+dlopen
-		 (unless system-p (bundle-cc (si::coerce-to-filename so-pathname)
-					     init-name
-					     (si::coerce-to-filename o-pathname)))
-                 (cond #+dlopen
-		       ((and (not system-p) (probe-file so-pathname))
-                        (when load (load so-pathname))
-                        (when *compile-verbose*
-			  (print-compiler-info)
-			  (format t "~&;;; Finished compiling ~a.~%"
-				  (namestring input-pathname))))
-		       ((and system-p (probe-file o-pathname))
-                        (when *compile-verbose*
-			  (print-compiler-info)
-			  (format t "~&;;; Finished compiling ~a.~%"
-				  (namestring input-pathname))))
-                       (t (format t "~&;;; The C compiler failed to compile the intermediate file.~%")
-                          (setq *error-p* t))))
-		(*compile-verbose*
-		 (print-compiler-info)
-		 (format t "~&;;; Finished compiling ~a.~%"
-			 (namestring input-pathname))))
-          (unless c-file (cmp-delete-file c-pathname))
-          (unless h-file (cmp-delete-file h-pathname))
-          (unless (or data-file shared-data-file)
-	    (cmp-delete-file data-pathname))
-	  #+dlopen
-	  (unless system-p (cmp-delete-file o-pathname))
-	  (values (truename #+dlopen (if system-p o-pathname so-pathname)
-			    #-dlopen o-pathname)
-		  nil nil))
-        (progn
-          (when (probe-file c-pathname) (cmp-delete-file c-pathname))
-          (when (probe-file h-pathname) (cmp-delete-file h-pathname))
-          (when (probe-file data-pathname) (cmp-delete-file data-pathname))
-          (when (probe-file shared-data-pathname) (cmp-delete-file shared-data-pathname))
-	  (when (probe-file o-pathname) (cmp-delete-file o-pathname))
-          (format t "~&;;; Due to errors in the compilation process, no FASL was generated.
+      (if (null *error-p*)
+	  (progn
+	    (cond (output-file
+		   (compiler-cc c-pathname o-pathname)
+		   #+dlopen
+		   (unless system-p (bundle-cc (si::coerce-to-filename so-pathname)
+					       init-name
+					       (si::coerce-to-filename o-pathname)))
+		   (cond #+dlopen
+			 ((and (not system-p) (probe-file so-pathname))
+			  (when load (load so-pathname))
+			  (cmpprogress "~&;;; Finished compiling ~a.~%"
+				       (namestring input-pathname)))
+			 ((and system-p (probe-file o-pathname))
+			  (cmpprogress "~&;;; Finished compiling ~a.~%"
+				       (namestring input-pathname)))
+			 (t
+			  (cmpprogress "~&;;; The C compiler failed to compile the intermediate file.~%")
+			  (setq *error-p* t))))
+		  (*compile-verbose*
+		   (cmpprogress "~&;;; Finished compiling ~a.~%"
+				(namestring input-pathname))))
+	    (unless c-file (cmp-delete-file c-pathname))
+	    (unless h-file (cmp-delete-file h-pathname))
+	    (unless (or data-file shared-data-file)
+	      (cmp-delete-file data-pathname))
+	    #+dlopen
+	    (unless system-p (cmp-delete-file o-pathname))
+	    (values (truename #+dlopen (if system-p o-pathname so-pathname)
+			      #-dlopen o-pathname)
+		    nil nil))
+	  (progn
+	    (when (probe-file c-pathname) (cmp-delete-file c-pathname))
+	    (when (probe-file h-pathname) (cmp-delete-file h-pathname))
+	    (when (probe-file data-pathname) (cmp-delete-file data-pathname))
+	    (when (probe-file shared-data-pathname) (cmp-delete-file shared-data-pathname))
+	    (when (probe-file o-pathname) (cmp-delete-file o-pathname))
+	    (cmpprogress "~&;;; Due to errors in the compilation process, no FASL was generated.
 ;;; Search above for the \"Error:\" tag to find the error messages.~%")
-          (setq *error-p* t)
-	  (values nil t t))
-        ))
-  )
+	    (setq *error-p* t)
+	    (values nil t t))
+	  ))
+    )
+)
 
 #-dlopen
 (defun compile (name &optional (def nil supplied-p))
@@ -639,8 +630,7 @@ Cannot compile ~a."
                       (*package* *package*)
                       (*compile-print* nil)
 		      (*print-pretty* nil)
-		      (*compiler-constants* t)
-                      (*error-count* 0))
+		      (*compiler-constants* t))
 
   (unless (symbolp name) (error "~s is not a symbol." name))
 
@@ -688,55 +678,49 @@ Cannot compile ~a."
 	(so-pathname (compile-file-pathname data-pathname))
 	(init-name (guess-init-name so-pathname :kind :fasl)))
 
-    (with-lock (+load-compile-lock+)
-      (init-env)
+    (with-compiler-env (*error-p*)
+      (print-compiler-info)
       (data-init)
       (t1expr form)
-      (when (zerop *error-count*)
-	(when *compile-verbose* (format t "~&;;; End of Pass 1.  "))
+      (unless *error-p*
+	(cmpprogress "~&;;; End of Pass 1.")
 	(let (#+(or mingw32 msvc cygwin)(*self-destructing-fasl* t))
 	  (compiler-pass2 c-pathname h-pathname data-pathname nil
 			  init-name nil)))
       (setf *compiler-constants* (data-dump data-pathname))
-      (init-env)
-      )
 
-    (if (zerop *error-count*)
-        (progn
-          (when *compile-verbose*
-	    (format t "~&;;; Calling the C compiler... "))
-          (compiler-cc c-pathname o-pathname)
-	  (bundle-cc (si::coerce-to-filename so-pathname)
-		     init-name
-		     (si::coerce-to-filename o-pathname))
-          (cmp-delete-file c-pathname)
-          (cmp-delete-file h-pathname)
-	  (cmp-delete-file o-pathname)
-	  (cmp-delete-file data-pathname)
-          (cond ((probe-file so-pathname)
-                 (load so-pathname :verbose nil)
-		 #-(or mingw32 msvc cygwin)(cmp-delete-file so-pathname)
-		 #+msvc (delete-msvc-generated-files so-pathname)
-                 (when *compile-verbose* (print-compiler-info))
-		 (setf name (or name (symbol-value 'GAZONK)))
-		 ;; By unsetting GAZONK we avoid spurious references to the
-		 ;; loaded code.
-		 (set 'GAZONK nil)
-		 (si::gc t)
-		 (values name nil nil))
-		(t (format t "~&;;; The C compiler failed to compile~
-			~the intermediate code for ~s.~%" name)
-                   (setq *error-p* t)
-		   (values name t t))))
-        (progn
-          (when (probe-file c-pathname) (cmp-delete-file c-pathname))
-          (when (probe-file h-pathname) (cmp-delete-file h-pathname))
-          (when (probe-file so-pathname) (cmp-delete-file so-pathname))
-          (when (probe-file data-pathname) (cmp-delete-file data-pathname))
-	  #+msvc (delete-msvc-generated-files so-pathname)
-          (format t "~&;;; Failed to compile ~s.~%" name)
-          (setq *error-p* t)
-          (values name t t)))))
+      (if (null *error-p*)
+	  (progn
+	    (compiler-cc c-pathname o-pathname)
+	    (bundle-cc (si::coerce-to-filename so-pathname)
+		       init-name
+		       (si::coerce-to-filename o-pathname))
+	    (cmp-delete-file c-pathname)
+	    (cmp-delete-file h-pathname)
+	    (cmp-delete-file o-pathname)
+	    (cmp-delete-file data-pathname)
+	    (cond ((probe-file so-pathname)
+		   (load so-pathname :verbose nil)
+		   #-(or mingw32 msvc cygwin)(cmp-delete-file so-pathname)
+		   #+msvc (delete-msvc-generated-files so-pathname)
+		   (setf name (or name (symbol-value 'GAZONK)))
+		   ;; By unsetting GAZONK we avoid spurious references to the
+		   ;; loaded code.
+		   (set 'GAZONK nil)
+		   (si::gc t)
+		   (values name nil nil))
+		  (t (cmpprogress "~&;;; The C compiler failed to compile the intermediate code for ~s.~%" name)
+		     (setq *error-p* t)
+		     (values name t t))))
+	  (progn
+	    (when (probe-file c-pathname) (cmp-delete-file c-pathname))
+	    (when (probe-file h-pathname) (cmp-delete-file h-pathname))
+	    (when (probe-file so-pathname) (cmp-delete-file so-pathname))
+	    (when (probe-file data-pathname) (cmp-delete-file data-pathname))
+	    #+msvc (delete-msvc-generated-files so-pathname)
+	    (cmpprogress "~&;;; Failed to compile ~s.~%" name)
+	    (setq *error-p* t)
+	    (values name t t))))))
 
 (defun disassemble (thing &key (h-file nil) (data-file nil)
 		    &aux def disassembled-form
@@ -766,8 +750,7 @@ Cannot compile ~a."
 		:format-control "DISASSEMBLE cannot accept ~A"
 		:format-arguments (list thing))))
   (when *compiler-in-use*
-    (format t "~&;;; The compiler was called recursively.~
-                   ~%Cannot disassemble ~a." thing)
+    (cmpprogress "~&;;; The compiler was called recursively.~%Cannot disassemble ~a." thing)
     (setq *error-p* t)
     (return-from disassemble nil))
   (setq *error-p* nil
@@ -778,27 +761,21 @@ Cannot compile ~a."
          (*compiler-output2* (if h-file
 				 (open h-file :direction :output)
 				 null-stream))
-         (*error-count* 0)
          (t3local-fun (symbol-function 'T3LOCAL-FUN)))
-    (with-lock (+load-compile-lock+)
+    (with-compiler-env (*error-p*)
       (unwind-protect
 	   (progn
 	     (setf (symbol-function 'T3LOCAL-FUN)
 		   #'(lambda (&rest args)
 		       (let ((*compiler-output1* *standard-output*))
 			 (apply t3local-fun args))))
-	     (init-env)
 	     (data-init)
 	     (t1expr disassembled-form)
-	     (if (zerop *error-count*)
-		 (catch *cmperr-tag*
-		   (ctop-write (guess-init-name "foo" :kind :fasl)
-			       (if h-file h-file "")
-			       (if data-file data-file "")))
-		 (setq *error-p* t))
-	     (data-dump data-file)
-	     (init-env)
-	     )
+	     (unless *error-p*
+	       (ctop-write (guess-init-name "foo" :kind :fasl)
+			   (if h-file h-file "")
+			   (if data-file data-file "")))
+	     (data-dump data-file))
 	(setf (symbol-function 'T3LOCAL-FUN) t3local-fun)
 	(when h-file (close *compiler-output2*)))))
   nil
@@ -856,8 +833,8 @@ Cannot compile ~a."
    ))
 
 (defun print-compiler-info ()
-  (format t "~&;;; OPTIMIZE levels: Safety=~d, Space=~d, Speed=~d, Debug=~d~%"
-	  *safety* *space* *speed* *debug*))
+  (cmpprogress "~&;;; OPTIMIZE levels: Safety=~d, Space=~d, Speed=~d, Debug=~d~%"
+	       *safety* *space* *speed* *debug*))
 
 (defmacro with-compilation-unit (options &rest body)
   `(progn ,@body))
