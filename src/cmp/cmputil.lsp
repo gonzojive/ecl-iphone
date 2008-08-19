@@ -42,18 +42,28 @@
   (push c *compiler-conditions*)
   (abort))
 
+(defun print-compiler-message (c stream &optional (header "Error"))
+  (let ((position (compiler-message-file-position c)))
+    (if position
+	(let ((*print-length* 3)
+	      (*print-level* 2))
+	  (format stream "~&;;; ~A: in file ~A, position ~D, and form ~%;;;   ~A~%~@<;;; ~@;~A~:>"
+		  header (compiler-message-file c)
+		  position (compiler-message-form c) c))
+	(format stream "~&~@<;;; ~@;~A: ~A~:>" header c))))
+
 (defun handle-note (c)
-  (when *suppress-compiler-notes*
-    (muffle-warning c)))
+  (unless *suppress-compiler-notes*
+    (print-compiler-message c t "Note")))
 
 (defun handle-warning (c)
   (push c *compiler-conditions*)
-  (when *suppress-compiler-warnings*
-    (muffle-warning c)))
+  (unless *suppress-compiler-warnings*
+    (print-compiler-message c t "Warning")))
 
 (defun handle-error (c)
   (push c *compiler-conditions*)
-  (format t "~&~@<;;; ~@;Error:~%~A~:>" c)
+  (print-compiler-message c t)
   (invoke-restart (find-restart-never-fail 'abort-form c)))
 
 (defmacro with-compiler-env ((error-flag) &body body)
@@ -117,27 +127,26 @@
           lower-bound
           n))
 
-(defun warn-or-note (message &rest args)
+(defun do-cmpwarn (&rest args)
   (declare (si::c-local))
   (let ((condition (apply #'make-condition args)))
     (restart-case (signal condition)
       (muffle-warning ()
 	:REPORT "Skip warning"
-	(return-from warn-or-note nil)))
-    (format *error-output* "~&;;; ~A: ~A~%" message condition)))
+	(return-from do-cmpwarn nil)))))
 
 (defun cmpwarn (string &rest args)
-  (warn-or-note "Warning" 'compiler-warning
-		:format-control string
-		:format-arguments args))
+  (do-cmpwarn 'compiler-warning
+    :format-control string
+    :format-arguments args))
 
 (defun cmpnote (string &rest args)
-  (warn-or-note "Note" 'compiler-note
-		:format-control string
-		:format-arguments args))
+  (do-cmpwarn 'compiler-note
+    :format-control string
+    :format-arguments args))
 
 (defun print-current-form ()
-  (unless *suppress-compiler-notes*
+  (when *compile-verbose*
     (let ((*print-length* 2)
 	  (*print-level* 2))
       (format t "~&;;; Compiling ~s.~%" *current-form*)))
@@ -147,7 +156,7 @@
   (let* ((name (fun-name f)))
     (unless name
       (setf name (fun-description f)))
-    (when (and name (not *suppress-compiler-notes*))
+    (when (and name *compile-verbose*)
       (format t "~&;;; Emitting code for ~s.~%" name))))
 
 (defun undefined-variable (sym)
