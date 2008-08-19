@@ -100,7 +100,9 @@ as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
     ',var))
 
 (defmacro defconstant (&whole whole var form &optional doc-string)
-  `(PROGN (SYS:*MAKE-CONSTANT ',var ,form)
+  `(PROGN
+    (eval-when (:compile-toplevel :load-toplevel :execute)
+      (SYS:*MAKE-CONSTANT ',var ,form))
     ,@(si::expand-set-documentation var 'variable doc-string)
     ,(ext:register-with-pde whole)
     (eval-when (:compile-toplevel)
