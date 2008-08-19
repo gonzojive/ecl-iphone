@@ -1337,8 +1337,8 @@ Optional Features:
   --enable-c99complex     include support for C complex type (default=NO)
   --enable-hierarchical-packages
                           hierarchical package names (default=YES)
-  --enable-asmapply       enable optimizations written in assembler
-                          (default=YES)
+  --enable-asmapply       enable optimizations written in assembler, EXPERIMENTAL
+                          (default=NO)
   --enable-smallcons      use small (2 words) cons types. Requires
                           Boehm-Weiser gc. (default=YES)
   --enable-gengc          use generational garbage collection. Requires
@@ -2110,7 +2110,7 @@ fi
 if test "${enable_asmapply+set}" = set; then
   enableval=$enable_asmapply; enable_asmapply=${enableval}
 else
-  enable_asmapply=yes
+  enable_asmapply=no
 fi
 
 
