@@ -1,10 +1,16 @@
-ECL 0.9m:
-=========
+ECL 0.9l-p1:
+============
 
-* Implementation changes:
+* Bugs fixed:
 
- - Given that people are used to it, DEFCONSTANT now has compile-time side
-   effects.
+ - The optimizer for COERCE might enter an infinite loop for certain
+   type intervals.
+
+ - The sharp macros #n# and #n=... did not work well with arrays of an
+   specialized type.
+
+ - Deactivate --enable-asmapply by default, because it is still an experimental
+   feature.
 
 ;;; Local Variables: ***
 ;;; mode:text ***
