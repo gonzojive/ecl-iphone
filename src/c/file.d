@@ -2992,7 +2992,7 @@ init_file(void)
 
 	null_stream = cl_alloc_object(t_stream);
 	null_stream->stream.mode = (short)smm_io;
-	null_stream->stream.closed = 0;
+	null_stream->stream.closed = 1;
 	null_stream->stream.file = NULL;
 	null_stream->stream.object0 = @'base-char';
 	null_stream->stream.object1 = make_constant_base_string("/dev/null");
