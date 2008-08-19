@@ -2987,7 +2987,21 @@ init_file(void)
 	cl_object standard_output;
 	cl_object error_output;
 	cl_object standard;
+	cl_object null_stream;
 	cl_object x;
+
+	null_stream = cl_alloc_object(t_stream);
+	null_stream->stream.mode = (short)smm_io;
+	null_stream->stream.closed = 0;
+	null_stream->stream.file = NULL;
+	null_stream->stream.object0 = @'base-char';
+	null_stream->stream.object1 = make_constant_base_string("/dev/null");
+	null_stream->stream.int0 = 0;
+	null_stream->stream.int1 = 0;
+	null_stream->stream.char_stream_p = 1;
+	null_stream->stream.byte_size = 8;
+	null_stream->stream.signed_bytes = 0;
+	cl_core.null_stream = null_stream;
 
 	standard_input = cl_alloc_object(t_stream);
 	standard_input->stream.mode = (short)smm_input;

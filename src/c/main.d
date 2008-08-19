@@ -331,7 +331,7 @@ cl_boot(int argc, char **argv)
 
 	cl_core.null_string = make_constant_base_string("");
 
-	cl_core.null_stream = @make_broadcast_stream(0);
+	cl_core.null_stream = Cnil; /* Filled in file.d */
 
 	cl_core.system_properties =
 	    cl__make_hash_table(@'equal', MAKE_FIXNUM(1024), /* size */
