@@ -12,6 +12,8 @@ ECL 0.9l-p1:
  - Deactivate --enable-asmapply by default, because it is still an experimental
    feature.
 
+ - In compiled files, externalize package objects using FIND-PACKAGE.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
