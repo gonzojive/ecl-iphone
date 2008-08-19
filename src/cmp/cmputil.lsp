@@ -14,6 +14,61 @@
 
 (in-package "COMPILER")
 
+(define-condition compiler-message (condition)
+  ((file :initarg :file :initform *compile-file-pathname*
+	 :accessor compiler-message-file)
+   (position :initarg :file :initform *compile-file-position*
+	     :accessor compiler-message-file-position)
+   (form :initarg :form :initform *current-form* :accessor compiler-message-form)))
+
+(define-condition compiler-note (compiler-message simple-condition warning) ())
+
+(define-condition compiler-warning (compiler-message simple-condition style-warning) ())
+
+(define-condition compiler-error (compiler-message simple-error) ())
+
+(define-condition compiler-fatal-error (compiler-error) ())
+
+(define-condition compiler-internal-error (compiler-fatal-error) ())
+
+(define-condition compiler-undefined-variable (compiler-message warning)
+  ((variable :initarg :name :initform nil))
+  (:report
+   (lambda (condition stream)
+     (format stream "Variable ~A was undefined. Compiler assumes it is a global."
+	     (slot-value condition 'variable)))))
+
+(defun handle-fatal-error (c)
+  (push c *compiler-conditions*)
+  (abort))
+
+(defun handle-note (c)
+  (when *suppress-compiler-notes*
+    (muffle-warning c)))
+
+(defun handle-warning (c)
+  (push c *compiler-conditions*)
+  (when *suppress-compiler-warnings*
+    (muffle-warning c)))
+
+(defun handle-error (c)
+  (push c *compiler-conditions*)
+  (format t "~&~@<;;; ~@;Error:~%~A~:>" c)
+  (invoke-restart (find-restart-never-fail 'abort-form c)))
+
+(defmacro with-compiler-env ((error-flag) &body body)
+  `(with-lock (+load-compile-lock+)
+     (restart-case
+	 (handler-bind ((compiler-note #'handle-note)
+			(compiler-warning #'handle-warning)
+			(compiler-error #'handle-error)
+			(compiler-fatal-error #'handle-fatal-error))
+	   (let ,+init-env-form+
+	     (setf ,error-flag nil)
+	     ,@body))
+       (abort (c) (setf ,error-flag t))
+       (abort-form (c) (setf ,error-flag t)))))
+
 (defvar *c1form-level* 0)
 (defun print-c1forms (form)
   (cond ((consp form)
@@ -34,12 +89,14 @@
 (defun print-var (var-object stream)
   (format stream "#<a VAR: ~A KIND: ~A>" (var-name var-object) (var-kind var-object)))
 
-(defun cmperr (string &rest args &aux (*print-case* :upcase))
-  (print-current-form)
-  (format t "~&;;; Error: ")
-  (apply #'format t string args)
-  (incf *error-count*)
-  (throw *cmperr-tag* '*cmperr-tag*))
+(defun cmpprogress (&rest args)
+  (when *compile-verbose*
+    (apply #'format t args)))
+
+(defun cmperr (string &rest args)
+  (signal 'compiler-error
+	  :format-control string
+	  :format-arguments args))
 
 (defun check-args-number (operator args &optional (min 0) (max nil))
   (let ((l (length args)))
@@ -49,41 +106,35 @@
       (too-many-args operator max l))))
 
 (defun too-many-args (name upper-bound n &aux (*print-case* :upcase))
-  (print-current-form)
-  (format t
-          "~&;;; ~S requires at most ~R argument~:p, ~
-          but ~R ~:*~[were~;was~:;were~] supplied.~%"
+  (cmperr "~S requires at most ~R argument~:p, but ~R ~:*~[were~;was~:;were~] supplied.~%"
           name
           upper-bound
-          n)
-  (incf *error-count*)
-  (throw *cmperr-tag* '*cmperr-tag*))
+          n))
 
-(defun too-few-args (name lower-bound n &aux (*print-case* :upcase))
-  (print-current-form)
-  (format t
-          "~&;;; ~S requires at least ~R argument~:p, ~
-          but only ~R ~:*~[were~;was~:;were~] supplied.~%"
+(defun too-few-args (name lower-bound n)
+  (cmperr "~S requires at least ~R argument~:p, but only ~R ~:*~[were~;was~:;were~] supplied.~%"
           name
           lower-bound
-          n)
-  (incf *error-count*)
-  (throw *cmperr-tag* '*cmperr-tag*))
+          n))
 
-(defun cmpwarn (string &rest args &aux (*print-case* :upcase))
-  (unless *suppress-compiler-warnings*
-    (print-current-form)
-    (format t "~&;;; Warning: ")
-    (apply #'format t string args)
-    (terpri))
-  nil)
+(defun warn-or-note (message &rest args)
+  (declare (si::c-local))
+  (let ((condition (apply #'make-condition args)))
+    (restart-case (signal condition)
+      (muffle-warning ()
+	:REPORT "Skip warning"
+	(return-from warn-or-note nil)))
+    (format *error-output* "~&;;; ~A: ~A~%" message condition)))
 
-(defun cmpnote (string &rest args &aux (*print-case* :upcase))
-  (unless *suppress-compiler-notes* 
-    (format t "~&;;; Note: ")
-    (apply #'format t string args)
-    (terpri))
-  nil)
+(defun cmpwarn (string &rest args)
+  (warn-or-note "Warning" 'compiler-warning
+		:format-control string
+		:format-arguments args))
+
+(defun cmpnote (string &rest args)
+  (warn-or-note "Note" 'compiler-note
+		:format-control string
+		:format-arguments args))
 
 (defun print-current-form ()
   (unless *suppress-compiler-notes*
@@ -99,19 +150,14 @@
     (when (and name (not *suppress-compiler-notes*))
       (format t "~&;;; Emitting code for ~s.~%" name))))
 
-(defun undefined-variable (sym &aux (*print-case* :upcase))
-  (print-current-form)
-  (format t
-          "~&;;; The variable ~s is undefined.~
-           ~%;;; The compiler will assume this variable is a global.~%"
-          sym)
-  nil)
-
+(defun undefined-variable (sym)
+  (signal 'compiler-undefined-variable :name sym))
+  
 (defun baboon (&aux (*print-case* :upcase))
-  (print-current-form)
-  (incf *error-count*)
-  (error "~&;;; A bug was found in the compiler.  Contact jjgarcia@users.sourceforge.net.~%"))
-
+  (signal 'compiler-internal-error
+	  :format-control "A bug was found in the compiler.  Contact jjgarcia@users.sourceforge.net"
+	  :format-arguments nil))
+  
 (defmacro with-cmp-protection (main-form error-form)
   `(let* ((si::*break-enable* *compiler-break-enable*)
           (throw-flag t))
@@ -125,12 +171,12 @@
     (cmperr "~&;;; The form ~s was not evaluated successfully.~
              ~%;;; You are recommended to compile again.~%"
 	    form)))
-
+  
 (defun cmp-macroexpand (form &optional (env *cmp-env*))
   (with-cmp-protection (macroexpand form env)
     (cmperr "~&;;; The macro form ~S was not expanded successfully.~
              ~%;;; You are recommended to compile again.~%" form)))
-
+  
 (defun cmp-expand-macro (fd form &optional (env *cmp-env*))
   (with-cmp-protection
     (let ((new-form (funcall *macroexpand-hook* fd form env)))

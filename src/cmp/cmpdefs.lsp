@@ -247,10 +247,13 @@
 ;;; Variables and constants for error handling
 ;;;
 (defvar *current-form* '|compiler preprocess|)
+(defvar *compile-file-position* nil)
 (defvar *first-error* t)
-(defvar *error-count* 0)
 (defvar *error-p* nil)
 (defconstant *cmperr-tag* (cons nil nil))
+
+(defvar *compiler-conditions* '()
+  "This variable determines whether conditions are printed or just accumulated.")
 
 (defvar *compile-print* t
   "This variable controls whether the compiler displays messages about
@@ -323,6 +326,8 @@ The default value is NIL.")
 
 (defvar *next-cmacro* 0)	; holds the last cmacro number used.
 (defvar *next-cfun* 0)		; holds the last cfun used.
+
+(defvar *max-stack* 0)		; maximum space used in lisp stack
 
 ;;;
 ;;; *tail-recursion-info* holds NIL, if tail recursion is impossible.

@@ -1,6 +1,11 @@
 ECL 0.9l-p1:
 ============
 
+* Visible changes:
+
+ - The compiler now signals compiler-error, compiler-warning and compiler-note
+   for errors, warnings and notes, respectively.
+
 * Bugs fixed:
 
  - The optimizer for COERCE might enter an infinite loop for certain

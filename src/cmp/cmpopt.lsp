@@ -189,7 +189,7 @@
 ;;; form.
 ;;;
 (defparameter +coercion-table+
-  '((integer . (check-type x 'integer))
+  '((integer . (let ((y x)) (check-type y integer) x))
     (float . (float x))
     (short-float  . (float x 0.0s0))
     (single-float . (float x 0.0f0))
@@ -305,5 +305,3 @@
 
 (define-compiler-macro coerce (&whole form value type &environment env)
   (expand-coerce form value type env))
-
-(trace c::expand-coerce)
