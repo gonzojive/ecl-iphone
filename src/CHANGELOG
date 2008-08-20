@@ -11,15 +11,18 @@ ECL 0.9l-p1:
    recommended procedure is to use HANDLER-BIND and _NOT_ to transfer control
    out of the handler, but to defer to the default ones.
 	(use-package :c)
-	(let ((messages nil))
+	(let ((warnings nil))
 	  (with-compilation-unit ()
 	    (handler-bind ((compiler-error #'(lambda (c)
-					       (push c messages)
+					       (push c warnings)
 					       (abort)))
-			   (compiler-message #'(lambda (c) (push c messages))))
-	      (compile-file "foo.lsp")))
-	  (format t "~&;;; Printing messages")
-	  (loop for m in (nreverse messages)
+			   (compiler-message #'(lambda (c)
+						 (push c warnings)
+						 (muffle-warning))))
+	      (let ((*compile-verbose* nil))
+		(compile-file "foo.lsp"))))
+	  (format t "~&;;; Printing compiler messages")
+	  (loop for m in (nreverse warnings)
 	     for i from 0
 	     do (format t "~&~@<;;; ~@;Message #~D~%~A~:>" i m)))
 

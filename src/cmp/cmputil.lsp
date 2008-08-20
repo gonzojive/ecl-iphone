@@ -180,7 +180,7 @@
       (format t "~&;;; Emitting code for ~s.~%" name))))
 
 (defun undefined-variable (sym)
-  (signal 'compiler-undefined-variable :name sym))
+  (do-cmpwarn 'compiler-undefined-variable :name sym))
   
 (defun baboon (&aux (*print-case* :upcase))
   (signal 'compiler-internal-error
