@@ -6,6 +6,23 @@ ECL 0.9l-p1:
  - The compiler now signals compiler-error, compiler-warning and compiler-note
    for errors, warnings and notes, respectively.
 
+ - WITH-COMPILATION-UNIT allows the user to set up handlers for different
+   compiler conditions, including errors, warnings and simple notes. The
+   recommended procedure is to use HANDLER-BIND and _NOT_ to transfer control
+   out of the handler, but to defer to the default ones.
+	(use-package :c)
+	(let ((messages nil))
+	  (with-compilation-unit ()
+	    (handler-bind ((compiler-error #'(lambda (c)
+					       (push c messages)
+					       (abort)))
+			   (compiler-message #'(lambda (c) (push c messages))))
+	      (compile-file "foo.lsp")))
+	  (format t "~&;;; Printing messages")
+	  (loop for m in (nreverse messages)
+	     for i from 0
+	     do (format t "~&~@<;;; ~@;Message #~D~%~A~:>" i m)))
+
 * Bugs fixed:
 
  - The optimizer for COERCE might enter an infinite loop for certain
