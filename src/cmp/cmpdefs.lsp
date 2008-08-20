@@ -28,6 +28,16 @@
            "BUILD-FASL"
 	   "BUILD-STATIC-LIBRARY"
 	   "BUILD-SHARED-LIBRARY"
+	   "COMPILER-WARNING"
+	   "COMPILER-NOTE"
+	   "COMPILER-MESSAGE"
+	   "COMPILER-ERROR"
+	   "COMPILER-FATAL-ERROR"
+	   "COMPILER-INTERNAL-ERROR"
+	   "COMPILER-UNDEFINED-VARIABLE"
+	   "COMPILER-MESSAGE-FILE"
+	   "COMPILER-MESSAGE-FILE-POSITION"
+	   "COMPILER-MESSAGE-FORM"
 	   "*SUPPRESS-COMPILER-WARNINGS*"
 	   "*SUPPRESS-COMPILER-NOTES*")
   (:import-from "SI" "GET-SYSPROP" "PUT-SYSPROP" "REM-SYSPROP" "MACRO"
@@ -251,6 +261,10 @@
 (defvar *first-error* t)
 (defvar *error-p* nil)
 (defconstant *cmperr-tag* (cons nil nil))
+
+(defvar *active-handlers* nil)
+(defvar *active-protection* nil)
+(defvar *pending-actions* nil)
 
 (defvar *compiler-conditions* '()
   "This variable determines whether conditions are printed or just accumulated.")

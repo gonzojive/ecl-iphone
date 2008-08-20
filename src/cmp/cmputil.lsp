@@ -66,18 +66,38 @@
   (print-compiler-message c t)
   (invoke-restart (find-restart-never-fail 'abort-form c)))
 
+(defun do-compilation-unit (closure &key override)
+  (cond (override
+	 (let* ((*active-handlers* nil)
+		(*active-protection* nil))
+	   (do-compilation-unit closure)))
+	((null *active-protection*)
+	 (let* ((*active-protection* t)
+		(*pending-actions* nil))
+	   (unwind-protect (do-compilation-unit closure)
+	     (loop for action in *pending-actions*
+		do (funcall action)))))
+	((null *active-handlers*)
+	 (let ((*active-handlers* t))
+	   (handler-bind ((compiler-note #'handle-note)
+			  (compiler-warning #'handle-warning)
+			  (compiler-error #'handle-error)
+			  (compiler-fatal-error #'handle-fatal-error))
+	     (funcall closure))))
+	(t
+	 (funcall closure))))
+
+(defmacro with-compilation-unit ((&rest options) &body body)
+ `(do-compilation-unit #'(lambda () ,@body) ,@options))
+
 (defmacro with-compiler-env ((error-flag) &body body)
   `(with-lock (+load-compile-lock+)
      (restart-case
-	 (handler-bind ((compiler-note #'handle-note)
-			(compiler-warning #'handle-warning)
-			(compiler-error #'handle-error)
-			(compiler-fatal-error #'handle-fatal-error))
-	   (let ,+init-env-form+
-	     (setf ,error-flag nil)
+	 (let ,+init-env-form+
+	   (setf ,error-flag nil)
+	   (with-compilation-unit ()
 	     ,@body))
-       (abort (c) (setf ,error-flag t))
-       (abort-form (c) (setf ,error-flag t)))))
+       (abort (c) (setf ,error-flag t)))))
 
 (defvar *c1form-level* 0)
 (defun print-c1forms (form)
