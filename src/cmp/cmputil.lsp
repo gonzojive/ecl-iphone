@@ -56,16 +56,13 @@
 	     (slot-value condition 'variable)))))
 
 (defun print-compiler-message (c stream)
-  (format stream "~&~@<;;; ~@;~A~:>" c))
+  (unless (typep c *suppress-compiler-messages*)
+    (format stream "~&~@<;;; ~@;~A~:>" c)))
 
 (defun handle-note (c)
   nil)
 
-(defun handle-warning (c)
-  (push c *compiler-conditions*)
-  nil)
-
-(defun handle-error (c)
+(defun handle-warning/error (c)
   (push c *compiler-conditions*)
   nil)
 
@@ -103,8 +100,8 @@
      (declare (special *compiler-conditions*))
      (restart-case
 	 (handler-bind ((compiler-note #'handle-note)
-			(warning #'handle-warning)
-			(compiler-error #'handle-error))
+			(warning #'handle-warning/error)
+			(compiler-error #'handle-warning/error))
 	   (handler-bind ((error #'handle-internal-error))
 	     (if *compiler-in-use*
 		 (error "The compiler was called recursively.")
@@ -165,43 +162,36 @@
           lower-bound
           n))
 
-(defun do-cmpwarn (suppress &rest args)
+(defun do-cmpwarn (&rest args)
   (declare (si::c-local))
   (let ((condition (apply #'make-condition args)))
     (restart-case (signal condition)
       (muffle-warning ()
 	:REPORT "Skip warning"
 	(return-from do-cmpwarn nil)))
-    (unless suppress
-      (print-compiler-message condition t))))
+    (print-compiler-message condition t)))
 
 (defun cmpwarn (string &rest args)
-  (do-cmpwarn *suppress-compiler-warnings* 'compiler-warning
-    :format-control string
-    :format-arguments args))
+  (do-cmpwarn 'compiler-warning :format-control string :format-arguments args))
 
 (defun cmpnote (string &rest args)
-  (do-cmpwarn *suppress-compiler-notes* 'compiler-note
-    :format-control string
-    :format-arguments args))
+  (do-cmpwarn 'compiler-note :format-control string :format-arguments args))
 
 (defun print-current-form ()
-  (when *compile-verbose*
+  (when *compile-print*
     (let ((*print-length* 2)
 	  (*print-level* 2))
       (format t "~&;;; Compiling ~s.~%" *current-form*)))
   nil)
 
 (defun print-emitting (f)
-  (let* ((name (fun-name f)))
-    (unless name
-      (setf name (fun-description f)))
-    (when (and name *compile-verbose*)
-      (format t "~&;;; Emitting code for ~s.~%" name))))
+  (when *compile-print*
+    (let* ((name (or (fun-name f) (fun-description f))))
+      (when name
+	(format t "~&;;; Emitting code for ~s.~%" name)))))
 
 (defun undefined-variable (sym)
-  (do-cmpwarn *suppress-compiler-warnings*
-    'compiler-undefined-variable :name sym))
+  (do-cmpwarn 'compiler-undefined-variable :name sym))
   
 (defun baboon (&aux (*print-case* :upcase))
   (signal 'compiler-internal-error

@@ -27,8 +27,7 @@
   (catch *cmperr-tag*
     (when (consp form)
       (let ((fun (car form)) (args (cdr form)) fd)
-	(when (and *compile-print*
-		   (member fun *toplevel-forms-to-print*))
+	(when (member fun *toplevel-forms-to-print*)
 	  (print-current-form))
 	(cond
             ((consp fun) (t1ordinary form))
@@ -525,7 +524,7 @@
                               (lambda-list (c1form-arg 0 lambda-expr))
                               (requireds (car lambda-list)))
   (declare (fixnum level nenvs))
-  (when *compile-print* (print-emitting fun))
+  (print-emitting fun)
   (wt-comment (cond ((fun-global fun) "function definition for ")
 		    ((eq (fun-closure fun) 'CLOSURE) "closure ")
 		    (t "local function "))
