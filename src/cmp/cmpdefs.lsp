@@ -259,7 +259,6 @@
 (defvar *current-form* '|compiler preprocess|)
 (defvar *compile-file-position* nil)
 (defvar *first-error* t)
-(defvar *error-p* nil)
 (defconstant *cmperr-tag* (cons nil nil))
 
 (defvar *active-handlers* nil)
