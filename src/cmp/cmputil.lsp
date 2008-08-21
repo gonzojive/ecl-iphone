@@ -14,22 +14,39 @@
 
 (in-package "COMPILER")
 
-(define-condition compiler-message (condition)
-  ((file :initarg :file :initform *compile-file-pathname*
+(define-condition compiler-message (simple-condition)
+  ((prefix :initform "Note" :accessor compiler-message-prefix)
+   (file :initarg :file :initform *compile-file-pathname*
 	 :accessor compiler-message-file)
    (position :initarg :file :initform *compile-file-position*
 	     :accessor compiler-message-file-position)
-   (form :initarg :form :initform *current-form* :accessor compiler-message-form)))
+   (form :initarg :form :initform *current-form* :accessor compiler-message-form))
+  (:REPORT
+   (lambda (c stream)
+     (let ((position (compiler-message-file-position c)))
+       (if position
+	   (let ((*print-length* 3)
+		 (*print-level* 2))
+	     (format stream "~A: in file ~A, position ~D, and form ~%  ~A~%"
+		     (compiler-message-prefix c)
+		     (compiler-message-file c) position (compiler-message-form c)))
+	   (format stream "~A: " (compiler-message-prefix c)))
+       (format stream "~?"
+	       (simple-condition-format-control c)
+	       (simple-condition-format-arguments c))))))
 
-(define-condition compiler-note (compiler-message simple-condition warning) ())
+(define-condition compiler-note (compiler-message) ())
 
-(define-condition compiler-warning (compiler-message simple-condition style-warning) ())
+(define-condition compiler-warning (compiler-message simple-condition style-warning)
+  ((prefix :initform "Warning")))
 
-(define-condition compiler-error (compiler-message simple-error) ())
+(define-condition compiler-error (compiler-message simple-error)
+  ((prefix :initform "Error")))
 
 (define-condition compiler-fatal-error (compiler-error) ())
 
-(define-condition compiler-internal-error (compiler-fatal-error) ())
+(define-condition compiler-internal-error (compiler-fatal-error)
+  ((prefix :initform "Internal error")))
 
 (define-condition compiler-undefined-variable (compiler-message warning)
   ((variable :initarg :name :initform nil))
@@ -38,38 +55,31 @@
      (format stream "Variable ~A was undefined. Compiler assumes it is a global."
 	     (slot-value condition 'variable)))))
 
-(defun handle-fatal-error (c)
-  (push c *compiler-conditions*)
-  (abort))
-
-(defun print-compiler-message (c stream &optional (header "Error"))
-  (let ((position (compiler-message-file-position c)))
-    (if position
-	(let ((*print-length* 3)
-	      (*print-level* 2))
-	  (format stream "~&;;; ~A: in file ~A, position ~D, and form ~%;;;   ~A~%~@<;;; ~@;~A~:>"
-		  header (compiler-message-file c)
-		  position (compiler-message-form c) c))
-	(format stream "~&~@<;;; ~@;~A: ~A~:>" header c))))
+(defun print-compiler-message (c stream)
+  (format stream "~&~@<;;; ~@;~A~:>" c))
 
 (defun handle-note (c)
-  (unless *suppress-compiler-notes*
-    (print-compiler-message c t "Note")))
+  nil)
 
 (defun handle-warning (c)
   (push c *compiler-conditions*)
-  (unless *suppress-compiler-warnings*
-    (print-compiler-message c t "Warning")))
+  nil)
 
 (defun handle-error (c)
   (push c *compiler-conditions*)
-  (print-compiler-message c t)
-  (invoke-restart (find-restart-never-fail 'abort-form c)))
+  nil)
+
+(defun handle-internal-error (c)
+  (unless (typep c 'compiler-error)
+    (signal 'compiler-internal-error
+	    :format-control "~A"
+	    :format-arguments (list c))
+    (print-compiler-message c t)
+    (abort)))
 
 (defun do-compilation-unit (closure &key override)
   (cond (override
-	 (let* ((*active-handlers* nil)
-		(*active-protection* nil))
+	 (let* ((*active-protection* nil))
 	   (do-compilation-unit closure)))
 	((null *active-protection*)
 	 (let* ((*active-protection* t)
@@ -77,27 +87,33 @@
 	   (unwind-protect (do-compilation-unit closure)
 	     (loop for action in *pending-actions*
 		do (funcall action)))))
-	((null *active-handlers*)
-	 (let ((*active-handlers* t))
-	   (handler-bind ((compiler-note #'handle-note)
-			  (compiler-warning #'handle-warning)
-			  (compiler-error #'handle-error)
-			  (compiler-fatal-error #'handle-fatal-error))
-	     (funcall closure))))
 	(t
 	 (funcall closure))))
 
 (defmacro with-compilation-unit ((&rest options) &body body)
  `(do-compilation-unit #'(lambda () ,@body) ,@options))
 
-(defmacro with-compiler-env ((error-flag) &body body)
-  `(with-lock (+load-compile-lock+)
+(defun compiler-debugger (condition old-hook)
+  (when *compiler-break-enable*
+    (si::default-debugger condition))
+  (abort))
+
+(defmacro with-compiler-env ((compiler-conditions) &body body)
+  `(let ((*compiler-conditions* nil))
+     (declare (special *compiler-conditions*))
      (restart-case
-	 (let ,+init-env-form+
-	   (setf ,error-flag nil)
-	   (with-compilation-unit ()
-	     ,@body))
-       (abort (c) (setf ,error-flag t)))))
+	 (handler-bind ((compiler-note #'handle-note)
+			(warning #'handle-warning)
+			(compiler-error #'handle-error))
+	   (handler-bind ((error #'handle-internal-error))
+	     (if *compiler-in-use*
+		 (error "The compiler was called recursively.")
+		 (with-lock (+load-compile-lock+)
+		   (let ,+init-env-form+
+		     (with-compilation-unit ()
+		     ,@body))))))
+       (abort ()))
+     (setf ,compiler-conditions *compiler-conditions*)))
 
 (defvar *c1form-level* 0)
 (defun print-c1forms (form)
@@ -126,7 +142,9 @@
 (defun cmperr (string &rest args)
   (signal 'compiler-error
 	  :format-control string
-	  :format-arguments args))
+	  :format-arguments args)
+  (print-compiler-message c t)
+  (abort))
 
 (defun check-args-number (operator args &optional (min 0) (max nil))
   (let ((l (length args)))
@@ -147,21 +165,23 @@
           lower-bound
           n))
 
-(defun do-cmpwarn (&rest args)
+(defun do-cmpwarn (suppress &rest args)
   (declare (si::c-local))
   (let ((condition (apply #'make-condition args)))
     (restart-case (signal condition)
       (muffle-warning ()
 	:REPORT "Skip warning"
-	(return-from do-cmpwarn nil)))))
+	(return-from do-cmpwarn nil)))
+    (unless suppress
+      (print-compiler-message condition t))))
 
 (defun cmpwarn (string &rest args)
-  (do-cmpwarn 'compiler-warning
+  (do-cmpwarn *suppress-compiler-warnings* 'compiler-warning
     :format-control string
     :format-arguments args))
 
 (defun cmpnote (string &rest args)
-  (do-cmpwarn 'compiler-note
+  (do-cmpwarn *suppress-compiler-notes* 'compiler-note
     :format-control string
     :format-arguments args))
 
@@ -180,7 +200,8 @@
       (format t "~&;;; Emitting code for ~s.~%" name))))
 
 (defun undefined-variable (sym)
-  (do-cmpwarn 'compiler-undefined-variable :name sym))
+  (do-cmpwarn *suppress-compiler-warnings*
+    'compiler-undefined-variable :name sym))
   
 (defun baboon (&aux (*print-case* :upcase))
   (signal 'compiler-internal-error

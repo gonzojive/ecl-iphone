@@ -19,7 +19,8 @@
 ;;; included in the compiled code.  The default value is OFF.
 
 (defconstant +init-env-form+
-  '((*compiler-phase* 't1)
+  '((*compiler-in-use* t)
+    (*compiler-phase* 't1)
     (*callbacks* nil)
     (*max-stack* 0)
     (*max-temp* 0)
@@ -44,7 +45,8 @@
     (*clines-string-list* '())
     (*inline-functions* nil)
     (*inline-blocks* 0)
-    (*notinline* nil)))
+    (*notinline* nil)
+    (*debugger-hook* 'compiler-debugger)))
 
 (defun next-lcl () (list 'LCL (incf *lcl*)))
 
