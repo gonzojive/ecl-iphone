@@ -6,6 +6,14 @@ ECL 0.9l-p1:
  - The compiler now signals compiler-error, compiler-warning and compiler-note
    for errors, warnings and notes, respectively.
 
+ - Printing of compiler messages is now ruled by *COMPILE-PRINT*, *COMPILE-VERBOSE*
+   and *SUPPRESS-COMPILER-MESSAGES*. The latter is either NIL or a valid lisp type
+   which denotes which compiler messages are suppressed. If *SUPPRESS-COMPILER-MESSAGES*
+   is NIL and *COMPILE-VERBOSE* is NIL, then no messages are shown.
+
+ - *SUPPRESS-COMPILER-NOTES* and *SUPPRES-COMPILER-WARNINGS* are deprecated and
+   will be removed in next release.
+
  - ECL allows the user to set up handlers for different compiler conditions,
    including errors, warnings and simple notes. The recommended procedure is to
    use HANDLER-BIND and _NOT_ to transfer control out of the compilation
@@ -13,17 +21,12 @@ ECL 0.9l-p1:
    and MUFFLE-WARNING.
 
 	(use-package :c)
-	(let ((messages nil))
-	  (handler-bind ((compiler-error #'(lambda (c)
-					     (push c messages)
-					     (abort c)))
-			 (compiler-message #'(lambda (c)
-					       (push c messages)
-					       (muffle-warning))))
-	    (let ((*compile-verbose* nil))
-	      (compile-file "foo.lsp")))
+	(let ((warnings nil))
+	  (handler-bind ((compiler-message #'(lambda (c)
+					       (push c warnings))))
+	    (compile-file "foo.lsp" :verbose nil :print nil))
 	  (format t "~&;;; Printing compiler messages")
-	  (loop for m in (nreverse messages)
+	  (loop for m in (nreverse warnings)
 	     for i from 0
 	     do (format t "~&~@<;;; ~@;Message #~D~%~A~:>" i m)))
 

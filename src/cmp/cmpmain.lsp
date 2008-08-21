@@ -302,8 +302,16 @@ filesystem or in the database of ASDF modules."
 		(epilogue-code (when (eq target :program) '(SI::TOP-LEVEL)))
 		#+:win32 (system :console)
 		&aux
-		(*suppress-compiler-notes* (or *suppress-compiler-notes* (not *compile-verbose*)))
-		(*suppress-compiler-warnings* (or *suppress-compiler-warnings* (not *compile-verbose*))))
+		(*suppress-compiler-messages* (or *suppress-compiler-messages*
+						  (not *compile-verbose*))))
+  ;; Deprecated, to be removed in next release
+  (when *suppress-compiler-notes*
+    (setf *suppress-compiler-messages*
+	  `(or ,*suppress-compiler-messages* compiler-note)))
+  (when *suppress-compiler-warnings*
+    (setf *suppress-compiler-messages*
+	  `(or ,*suppress-compiler-messages* compiler-warning)))
+
   ;;
   ;; The epilogue-code can be either a string made of C code, or a
   ;; lisp form.  In the latter case we add some additional C code to
@@ -458,8 +466,8 @@ static cl_object VV[VM];
 
 (defun compile-file (input-pathname
                       &key
-		      (verbose *compile-verbose*)
-		      (print *compile-print*)
+		      ((:verbose *compile-verbose*) *compile-verbose*)
+		      ((:print *compile-print*) *compile-print*)
 		      (c-file nil)
 		      (h-file nil)
 		      (data-file nil)
@@ -474,11 +482,18 @@ static cl_object VV[VM];
 			   (*print-pretty* nil)
 			   (*compile-file-pathname* nil)
 			   (*compile-file-truename* nil)
-			   (*compile-verbose* verbose)
-			   (*suppress-compiler-notes* (or *suppress-compiler-notes* (not verbose)))
-			   (*suppress-compiler-warnings* (or *suppress-compiler-warnings* (not verbose)))
+			   (*suppress-compiler-messages*
+			    (or *suppress-compiler-messages* (not *compile-verbose*)))
 			   init-name)
   (declare (notinline compiler-cc))
+
+  ;; Deprecated, to be removed in next release
+  (when *suppress-compiler-notes*
+    (setf *suppress-compiler-messages*
+	  `(or ,*suppress-compiler-messages* compiler-note)))
+  (when *suppress-compiler-warnings*
+    (setf *suppress-compiler-messages*
+	  `(or ,*suppress-compiler-messages* compiler-warning)))
 
   #-dlopen
   (unless system-p
@@ -500,8 +515,6 @@ static cl_object VV[VM];
 
   (when (eq output-file 'T)
     (setf output-file *compile-file-truename*))
-  (setf output-file (compile-file-pathname output-file :type (if system-p :object :fasl)))
-
   (when (and system-p load)
     (error "Cannot load system files."))
 
@@ -510,11 +523,8 @@ static cl_object VV[VM];
   (let* ((eof '(NIL))
 	 (*compiler-in-use* *compiler-in-use*)
 	 (*load-time-values* nil) ;; Load time values are compiled
-	 (o-pathname (or #+dlopen (and system-p output-file)
-			 #-dlopen output-file
-			 (compile-file-pathname (or output-file input-pathname) :type :object)))
-	 #+dlopen
-	 (so-pathname (unless system-p output-file))
+	 (o-pathname (compile-file-pathname output-file :type :object))
+	 (so-pathname (compile-file-pathname output-file :type :fasl))
          (c-pathname (get-output-pathname o-pathname c-file :c))
          (h-pathname (get-output-pathname o-pathname h-file :h))
          (data-pathname (get-output-pathname o-pathname data-file :data))
@@ -523,6 +533,8 @@ static cl_object VV[VM];
 	 (compiler-conditions nil))
 
     (with-compiler-env (compiler-conditions)
+
+      (setf output-file (if system-p o-pathname so-pathname))
 
       (print-compiler-info)
 
@@ -562,12 +574,13 @@ static cl_object VV[VM];
 	(unless system-p (bundle-cc (si::coerce-to-filename so-pathname)
 				    init-name
 				    (si::coerce-to-filename o-pathname)))
-	(unless (if system-p
-		    (probe-file o-pathname)
-		    (probe-file so-pathname))
+	(unless (setf output-file (probe-file output-file))
 	  (cmperr "The C compiler failed to compile the intermediate file.")))
       (cmpprogress "~&;;; Finished compiling ~a.~%" (namestring input-pathname))
-      
+
+      (when (and load output-file (not system-p))
+	(load output-file :verbose *compile-verbose*))
+
       ) ; with-compiler-env
 
     (unless c-file (cmp-delete-file c-pathname))
@@ -576,9 +589,7 @@ static cl_object VV[VM];
       (cmp-delete-file data-pathname))
     #+dlopen
     (unless system-p (cmp-delete-file o-pathname))
-    (compiler-output-values (truename #+dlopen (if system-p o-pathname so-pathname)
-				      #-dlopen o-pathname)
-			    compiler-conditions)))
+    (compiler-output-values output-file compiler-conditions)))
 
 (defun compiler-output-values (main-value conditions)
   (loop for i in conditions
@@ -603,8 +614,8 @@ static cl_object VV[VM];
 #+dlopen
 (defun compile (name &optional (def nil supplied-p)
                       &aux form data-pathname
-                      (*suppress-compiler-warnings* (or *suppress-compiler-warnings* (not *compile-verbose*)))
-                      (*suppress-compiler-notes* (or *suppress-compiler-notes* (not *compile-verbose*)))
+                      (*suppress-compiler-messages* (or *suppress-compiler-messages*
+							(not *compile-verbose*)))
                       (*compiler-in-use* *compiler-in-use*)
                       (*standard-output* *standard-output*)
                       (*error-output* *error-output*)
@@ -614,6 +625,14 @@ static cl_object VV[VM];
 		      (*compiler-constants* t))
 
   (unless (symbolp name) (error "~s is not a symbol." name))
+
+  ;; Deprecated, to be removed in next release
+  (when *suppress-compiler-notes*
+    (setf *suppress-compiler-messages*
+	  `(or ,*suppress-compiler-messages* compiler-note)))
+  (when *suppress-compiler-warnings*
+    (setf *suppress-compiler-messages*
+	  `(or ,*suppress-compiler-messages* compiler-warning)))
 
   (cond ((and supplied-p def)
 	 (when (functionp def)

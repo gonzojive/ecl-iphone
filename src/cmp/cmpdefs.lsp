@@ -39,7 +39,8 @@
 	   "COMPILER-MESSAGE-FILE-POSITION"
 	   "COMPILER-MESSAGE-FORM"
 	   "*SUPPRESS-COMPILER-WARNINGS*"
-	   "*SUPPRESS-COMPILER-NOTES*")
+	   "*SUPPRESS-COMPILER-NOTES*"
+	   "*SUPPRESS-COMPILER-MESSAGES*")
   (:import-from "SI" "GET-SYSPROP" "PUT-SYSPROP" "REM-SYSPROP" "MACRO"
 		"*COMPILER-CONSTANTS*" "REGISTER-GLOBAL" "CMP-ENV-REGISTER-MACROLET"
 		"COMPILER-LET"))
@@ -276,13 +277,11 @@ each form it processes. The default value is NIL.")
   "This variable controls whether the compiler should display messages about its
 progress. The default value is T.")
 
-(defvar *suppress-compiler-warnings* nil
-  "This variable controls whether the compiler should issue warnings.
-The default value is NIL.")
+(defvar *suppress-compiler-messages* nil
+  "A type denoting which compiler messages and conditions are _not_ displayed.")
 
-(defvar *suppress-compiler-notes* nil
-  "This variable controls whether the compiler displays compilation notices.
-The default value is NIL.")
+(defvar *suppress-compiler-notes* nil) ; Deprecated
+(defvar *suppress-compiler-warnings* nil) ; Deprecated
 
 (defvar *compiler-break-enable* nil)
 
