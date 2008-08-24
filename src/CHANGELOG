@@ -47,6 +47,10 @@ ECL 0.9l-p1:
    defined in the C core and caused an error when used; second, if the output
    stream was missing or directed to the standard output, it would fail.
 
+ - SI:LOAD-FOREIGN-MODULE does not coerce the library name to a truename
+   before loading. Instead, it leaves this task to the appropriate routine,
+   dlopen or similar.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
