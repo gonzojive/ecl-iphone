@@ -48,7 +48,7 @@
 (define-condition compiler-internal-error (compiler-fatal-error)
   ((prefix :initform "Internal error")))
 
-(define-condition compiler-undefined-variable (compiler-message warning)
+(define-condition compiler-undefined-variable (compiler-message style-warning)
   ((variable :initarg :name :initform nil))
   (:report
    (lambda (condition stream)
