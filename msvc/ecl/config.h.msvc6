@@ -91,7 +91,11 @@ typedef unsigned int cl_hashkey;
 /*
  * The character type
  */
-#define	CHAR_CODE_LIMIT		256
+#ifdef ECL_UNICODE
+#define	CHAR_CODE_LIMIT	1114112	/*  unicode character code limit  */
+#else
+#define	CHAR_CODE_LIMIT	256	/*  unicode character code limit  */
+#endif
 
 /*
  * Array limits
@@ -114,7 +118,7 @@ typedef unsigned int cl_hashkey;
 #define CALL_ARGUMENTS_LIMIT 65536
 
 /*	Maximum number of required arguments				*/
-#define LAMBDA_PARAMETERS_LIMIT 64
+#define LAMBDA_PARAMETERS_LIMIT CALL_ARGUMENTS_LIMIT
 
 /*	Numb. of args. which can be passed using the C stack		*/
 /*	See cmplam.lsp if you change this value				*/
@@ -168,9 +172,6 @@ typedef unsigned int uint32_t;
 /* Program Development Environment					*/
 /* #undef PDE */
 
-/* Tcl/Tk library							*/
-/* #undef TK */
-
 /* Allow loading dynamically linked code				*/
 #define ENABLE_DLOPEN 1
 
@@ -188,6 +189,9 @@ typedef unsigned int uint32_t;
 
 /* We have non-portable implementation of FFI calls			*/
 #define ECL_DYNAMIC_FFI 1
+
+/* We use hierarchical package names, like in Allegro CL                */
+#define ECL_RELATIVE_PACKAGE_NAMES 1
 
 /* Assembler implementation of APPLY and friends			*/
 /* #undef ECL_ASM_APPLY */

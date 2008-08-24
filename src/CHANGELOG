@@ -61,7 +61,9 @@ ECL 0.9l-p1:
 	#<codeblock "libm.dylib">
 
  - In reading functions, the value of :RECURSIVE-P should not interfere with
-   that of :EOF-ERROR-P
+   that of :EOF-ERROR-P.
+
+ - The MSVC port can be built with support for unicode characters.
 
 ;;; Local Variables: ***
 ;;; mode:text ***

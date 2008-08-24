@@ -27,6 +27,9 @@ GMP_TYPE      = gc
 # Set it to non-empty to include Win32 thread support
 ECL_THREADS   =
 
+# Set it to non-empty to include support for Unicode characters
+ECL_UNICODE   =
+
 # Set it to non-empty to enable Win32 debug support
 #ECL_DEBUG   = 1
 
@@ -118,6 +121,13 @@ ENV_EXPORT = cl_env,DATA
 ENV_EXPORT = ecl_process_env
 CFLAGS     = $(CFLAGS) -DECL_THREADS
 DEF        = ecl-threads.def
+!endif
+
+# Additional configuration for Unicode support
+#
+!if "$(ECL_UNICODE)" != ""
+!else
+CFLAGS     = $(CFLAGS) -DECL_UNICODE
 !endif
 
 # Additional modules
