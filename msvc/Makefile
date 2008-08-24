@@ -126,7 +126,6 @@ DEF        = ecl-threads.def
 # Additional configuration for Unicode support
 #
 !if "$(ECL_UNICODE)" != ""
-!else
 CFLAGS     = $(CFLAGS) -DECL_UNICODE
 !endif
 
