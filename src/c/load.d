@@ -78,15 +78,30 @@ copy_object_file(cl_object original)
 }
 
 #ifdef ENABLE_DLOPEN
-cl_object
-ecl_library_find(cl_object filename)
+static cl_object
+ecl_library_find_by_name(cl_object filename)
 {
 	cl_object libraries = cl_core.libraries;
 	cl_index i;
 	for (i = 0; i < libraries->vector.fillp; i++) {
-		cl_object name = libraries->vector.self.t[i]->cblock.name;
+		cl_object other = libraries->vector.self.t[i];
+		cl_object name = other->cblock.name;
 		if (!Null(name) && ecl_string_eq(name, filename)) {
-			return libraries->vector.self.t[i];
+			return other;
+		}
+	}
+	return Cnil;
+}
+
+static cl_object
+ecl_library_find_by_handle(void *handle)
+{
+	cl_object libraries = cl_core.libraries;
+	cl_index i;
+	for (i = 0; i < libraries->vector.fillp; i++) {
+		cl_object other = libraries->vector.self.t[i];
+		if (handle == other->cblock.handle) {
+			return other;
 		}
 	}
 	return Cnil;
@@ -103,7 +118,7 @@ ecl_library_open(cl_object filename, bool force_reload) {
 		 * so, it cannot contain any executable top level
 		 * code. In that case force_reload=0 and there is no
 		 * need to reload it if it has already been loaded. */
-		block = ecl_library_find(filename);
+		block = ecl_library_find_by_name(filename);
 		if (!Null(block)) {
 			return block;
 		}
@@ -120,7 +135,7 @@ ecl_library_open(cl_object filename, bool force_reload) {
 #if defined(mingw32) || defined(_MSC_VER)
 		filename = copy_object_file(filename);
 #else
-		block = ecl_library_find(filename);
+		block = ecl_library_find_by_name(filename);
 		if (!Null(block)) {
 			filename = copy_object_file(filename);
 			self_destruct = 1;
@@ -152,11 +167,25 @@ ecl_library_open(cl_object filename, bool force_reload) {
 #if defined(mingw32) || defined(_MSC_VER)
 	block->cblock.handle = LoadLibrary(filename->base_string.self);
 #endif
-	/* INV: We can modify "libraries" in a multithread
-	   environment because we have already taken the
-	   +load-compile-lock+ */
-	si_set_finalizer(block, Ct);
-	cl_vector_push_extend(2, block, libraries);
+	/*
+	 * A second pass to ensure that the dlopen routine has not
+	 * returned a library that we had already loaded. If this is
+	 * the case, we close the new copy to ensure we do refcounting
+	 * right.
+	 *
+	 * INV: We can modify "libraries" in a multithread environment
+	 * because we have already taken the +load-compile-lock+
+	 */
+	{
+	cl_object other = ecl_library_find_by_handle(block->cblock.handle);
+	if (other != Cnil) {
+		ecl_library_close(block);
+		block = other;
+	} else {
+		si_set_finalizer(block, Ct);
+		cl_vector_push_extend(2, block, libraries);
+	}
+	}
 	return block;
 }
 
