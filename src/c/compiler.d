@@ -161,6 +161,7 @@ asm_end(cl_index beginning) {
 	code_size = current_pc() - beginning;
 	data_size = ecl_length(ENV->constants);
 	bytecodes = cl_alloc_object(t_bytecodes);
+	bytecodes->bytecodes.name = @'si::bytecodes';
 	bytecodes->bytecodes.code_size = code_size;
 	bytecodes->bytecodes.data_size = data_size;
 	bytecodes->bytecodes.code = cl_alloc_atomic(code_size * sizeof(cl_opcode));
@@ -2741,7 +2742,6 @@ si_make_lambda(cl_object name, cl_object rest)
 		compile_form(form, FLAG_VALUES);
 		asm_op(OP_EXIT);
 		bytecodes = asm_end(handle);
-		bytecodes->bytecodes.name = @'si::bytecodes';
 		bytecodes->bytecodes.definition = form;
 	} CL_UNWIND_PROTECT_EXIT {
 		/* Clear up */
