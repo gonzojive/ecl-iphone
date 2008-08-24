@@ -113,6 +113,11 @@ ecl_library_open(cl_object filename, bool force_reload) {
 	cl_object libraries = cl_core.libraries;
 	bool self_destruct = 0;
 	cl_index i;
+
+	/* Coerces to a file name but does not merge with cwd */
+	filename = coerce_to_physical_pathname(filename);
+	filename = cl_namestring(filename);
+
 	if (!force_reload) {
 		/* When loading a foreign library, such as a dll or a
 		 * so, it cannot contain any executable top level
