@@ -1533,7 +1533,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 		ecl_string_push_extend(token, c);
 	} while(1);
 	if (c == EOF && token->base_string.fillp == 0) {
-		if (!Null(eof_errorp) || !Null(recursivep))
+		if (!Null(eof_errorp))
 			FEend_of_file(strm);
 		value0 = eof_value;
 		value1 = Ct;
@@ -1561,7 +1561,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 	c = ecl_read_char(strm);
 	if (c != EOF)
 		output = CODE_CHAR(c);
-	else if (Null(eof_errorp) && Null(recursivep))
+	else if (Null(eof_errorp))
 		output = eof_value;
 	else
 		FEend_of_file(strm);
@@ -1643,7 +1643,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 	}
 	/* We reach here if there was an EOF */
   END_OF_FILE:
-	if (Null(eof_errorp) && Null(recursivep))
+	if (Null(eof_errorp))
 		@(return eof_value)
 	else
 		FEend_of_file(strm);
