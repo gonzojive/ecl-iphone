@@ -60,6 +60,9 @@ ECL 0.9l-p1:
 	> (si::load-foreign-module "/usr/lib/libm.dylib")
 	#<codeblock "libm.dylib">
 
+ - In reading functions, the value of :RECURSIVE-P should not interfere with
+   that of :EOF-ERROR-P
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
