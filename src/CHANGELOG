@@ -55,10 +55,10 @@ ECL 0.9l-p1:
 
  - SI:LOAD-FOREIGN-MODULE now relies on dlopen/LibraryLoad/... to find the
    foreign libraries. Nevertheless, duplicate libraries are still identified
-	> (si:load-foreign-module "libm.dylib")
-	#<codeblock "/Users/jjgarcia/src/ecl/build/libm.dylib">
-	> (si:load-foreign-module "/usr/lib/libm.dylib")
-	#<codeblock "/Users/jjgarcia/src/ecl/build/libm.dylib">
+	> (si::load-foreign-module "libm.dylib")
+	#<codeblock "libm.dylib">
+	> (si::load-foreign-module "/usr/lib/libm.dylib")
+	#<codeblock "libm.dylib">
 
 ;;; Local Variables: ***
 ;;; mode:text ***

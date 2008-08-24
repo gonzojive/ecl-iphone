@@ -418,19 +418,10 @@ si_load_foreign_module(cl_object filename)
 	cl_object output;
 	int i;
 
-	filename = si_coerce_to_filename(filename);
-
 #ifdef ECL_THREADS
 	mp_get_lock(1, ecl_symbol_value(@'mp::+load-compile-lock+'));
 	CL_UNWIND_PROTECT_BEGIN {
 #endif
-	libraries = cl_core.libraries;
-	for (i=0; i<libraries->vector.fillp; i++)
-		if (cl_stringE(2, libraries->vector.self.t[i]->cblock.name, filename) != Cnil)
-		{
-			output = libraries->vector.self.t[i];
-			goto OUTPUT;
-		}
 	output = ecl_library_open(filename, 0);
 	if (output->cblock.handle == NULL)
 	{
@@ -447,9 +438,9 @@ OUTPUT:
 	if (type_of(output) == t_codeblock) {
 		output->cblock.locked |= 1;
 		@(return output)
-	}
-	else
+	} else {
 		FEerror("LOAD-FOREIGN-MODULE: Could not load foreign module ~S (Error: ~S)", 2, filename, output);
+	}
 #endif
 }
 
