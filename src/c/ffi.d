@@ -418,7 +418,7 @@ si_load_foreign_module(cl_object filename)
 	cl_object output;
 	int i;
 
-	filename = cl_coerce_to_filename(filename);
+	filename = si_coerce_to_filename(filename);
 
 #ifdef ECL_THREADS
 	mp_get_lock(1, ecl_symbol_value(@'mp::+load-compile-lock+'));
