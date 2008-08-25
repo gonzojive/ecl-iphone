@@ -483,12 +483,8 @@ ecl_homedir_pathname(cl_object user)
 {
 	cl_index i;
 	cl_object namestring;
-
-	if (Null(user)) {
-		char *h = getenv("HOME");
-		namestring = (h == NULL)? make_constant_base_string("/")
-			: make_base_string_copy(h);
-	} else {
+	const char *h, *d;
+	If (!Null(user)) {
 #ifdef HAVE_PWD_H
 		struct passwd *pwent = NULL;
 #endif
@@ -511,6 +507,17 @@ ecl_homedir_pathname(cl_object user)
 		namestring = make_base_string_copy(pwent->pw_dir);
 #endif
 		FEerror("Unknown user ~S.", 1, p);
+	} else if ((h = getenv("HOME"))) {
+		namestring = make_base_string_copy(h);
+#ifdef _MSC_VER
+	} else if ((h = getenv("HOMEPATH")) && (d = getenv("HOMEDRIVE"))) {
+		namestring =
+			si_base_string_concatenate(2,
+						   make_constant_base_string(h),
+						   make_constant_base_string(d));
+#endif
+	} else {
+		namestring = make_constant_base_string("/");
 	}
 	if (namestring->base_string.self[0] == '~') {
 		FEerror("Not a valid home pathname ~S", 1, namestring);
