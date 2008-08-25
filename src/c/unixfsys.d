@@ -484,7 +484,7 @@ ecl_homedir_pathname(cl_object user)
 	cl_index i;
 	cl_object namestring;
 	const char *h, *d;
-	If (!Null(user)) {
+	if (!Null(user)) {
 #ifdef HAVE_PWD_H
 		struct passwd *pwent = NULL;
 #endif
