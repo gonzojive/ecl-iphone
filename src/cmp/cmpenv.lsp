@@ -169,10 +169,10 @@
 	(and (symbolp fname) (get-sysprop fname 'CMP-NOTINLINE)))))
 
 #-:CCL
-(defun proclaim (decl)
+(defun proclaim (decl &aux decl-name)
   (unless (listp decl)
 	  (error "The proclamation specification ~s is not a list" decl))
-  (case (car decl)
+  (case (setf decl-name (car decl))
     (SPECIAL
      (dolist (var (cdr decl))
        (if (symbolp var)
@@ -219,7 +219,7 @@
      ;; FIXME! IGNORED!
      (dolist (var (cdr decl))
        (unless (si::valid-function-name-p var)
-	 (error "Not a valid function name ~s in ~s proclamation" fun (car decl)))))
+	 (error "Not a valid function name ~s in ~s proclamation" fun decl-name))))
     (DECLARATION
      (do-declaration (rest decl) #'error))
     (SI::C-EXPORT-FNAME
@@ -243,16 +243,20 @@
       READTABLE SEQUENCE SHORT-FLOAT SIMPLE-ARRAY SIMPLE-BIT-VECTOR
       SIMPLE-STRING SIMPLE-VECTOR SINGLE-FLOAT STANDARD-CHAR STREAM STRING
       SYMBOL T VECTOR SIGNED-BYTE UNSIGNED-BYTE FUNCTION)
-     (proclaim-var (car decl) (cdr decl)))
+     (proclaim-var decl-name (cdr decl)))
     (otherwise
-     (unless (member (car decl) si:*alien-declarations*)
-       (warn "The declaration specifier ~s is unknown." (car decl)))
-     (and (functionp (get-sysprop (car decl) :proclaim))
-	  (dolist (v (cdr decl))
-		    (funcall (get-sysprop (car decl) :proclaim) v))))
-    )
-  nil
-  )
+     (cond ((member (car decl) si:*alien-declarations*))
+	   ((multiple-value-bind (ok type)
+		(valid-type-specifier decl-name)
+	      (when ok
+		(proclaim-var type (rest decl))
+		t)))
+	   ((let ((proclaimer (get-sysprop (car decl) :proclaim)))
+	      (when (functionp proclaimer)
+		(mapc proclaimer (rest decl))
+		t)))
+	   (t
+	    (warn "The declaration specifier ~s is unknown." decl-name))))))
 
 (defun type-name-p (name)
   (or (get-sysprop name 'SI::DEFTYPE-DEFINITION)
