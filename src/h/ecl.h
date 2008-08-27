@@ -57,6 +57,7 @@ typedef unsigned short uint16_t;
 
 #ifdef ECL_THREADS
 # if defined(_MSC_VER) || defined(mingw32)
+#  define WIN32_LEAN_AND_MEAN 1 /* Do not include winsock.h */
 #  include <windows.h>
    typedef HANDLE pthread_t;
    typedef HANDLE pthread_mutex_t;
