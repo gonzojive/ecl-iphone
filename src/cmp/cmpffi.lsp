@@ -148,31 +148,22 @@
 	(wt loc)
 	(return-from wt-coerce-loc))
       (case dest-rep-type
-	((:int :long :byte :fixnum)
+	((:byte :unsigned-byte :short :unsigned-short :int :unsigned-int
+	  :long :unsigned-long :fixnum :cl-index)
 	 (case loc-rep-type
-	   ((:int :unsigned-int :long :unsigned-long :byte :unsigned-byte :fixnum
-		  :float :double :long-double)
+	   (#1=(:byte :unsigned-byte :short :unsigned-short :int :unsigned-int
+		:long :unsigned-long :fixnum :cl-index
+		:float :double :long-double) ; number types
 	    (wt "((" (rep-type-name dest-rep-type) ")" loc ")"))
 	   ((:object)
 	    (ensure-valid-object-type dest-type)
-	    (wt (if (or (subtypep (loc-type loc) 'fixnum)
+	    (wt (cond ((or (subtypep (loc-type loc) 'fixnum)
 			(not (policy-check-all-arguments-p)))
-		    "fix("
-		    "ecl_to_fixnum(")
-		loc ")"))
-	   (otherwise
-	    (coercion-error))))
-	((:unsigned-int :unsigned-long :unsigned-byte)
-	 (case loc-rep-type
-	   ((:int :unsigned-int :long :unsigned-long :byte :unsigned-byte :fixnum
-		  :float :double :long-double)
-	    (wt "((" (rep-type-name dest-rep-type) ")" loc ")"))
-	   ((:object)
-	    (ensure-valid-object-type dest-type)
-	    (wt (if (or (subtypep (loc-type loc) 'fixnum)
-			(not (policy-check-all-arguments-p)))
-		    "fix("
-		    "ecl_to_unsigned_integer(")
+		       "fix(")
+		      ((member dest-rep-type '(:unsigned-short :unsigned-long :cl-index))
+		       "ecl_to_unsigned_integer(")
+		      (t
+		       "ecl_to_fixnum("))
 		loc ")"))
 	   (otherwise
 	    (coercion-error))))
@@ -187,8 +178,7 @@
 	    (coercion-error))))
 	((:float :double :long-double)
 	 (case loc-rep-type
-	   ((:int :unsigned-int :long :unsigned-long :byte :unsigned-byte :fixnum
-		  :float :double :long-double)
+	   (#1# ; number type
 	    (wt "((" (rep-type-name dest-rep-type) ")" loc ")"))
 	   ((:object)
 	    ;; We relax the check a bit, because it is valid in C to coerce
@@ -203,8 +193,7 @@
 	    (coercion-error))))
 	((:bool)
 	 (case loc-rep-type
-	   ((:int :unsigned-int :long :unsigned-long :byte :unsigned-byte :fixnum
-		  :float :double :long-double :char :unsigned-char :wchar)
+	   (#1# ; number type
 	    (wt "1"))
 	   ((:object)
 	    (wt "(" loc ")!=Cnil"))
@@ -212,9 +201,9 @@
 	    (coercion-error))))
 	((:object)
 	 (case loc-rep-type
-	   ((:int :long)
+	   ((:short :int :long)
 	    (wt "ecl_make_integer(" loc ")"))
-	   ((:unsigned-int :unsigned-long)
+	   ((:unsigned-short :unsigned-int :unsigned-long)
 	    (wt "ecl_make_unsigned_integer(" loc ")"))
 	   ((:byte :unsigned-byte :fixnum)
 	    (wt "MAKE_FIXNUM(" loc ")"))
