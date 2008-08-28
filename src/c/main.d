@@ -20,7 +20,8 @@
 #include <ecl/ecl.h>
 #include <limits.h>
 #ifdef _MSC_VER
-#define MAXPATHLEN 512
+# include <shellapi.h>
+# define MAXPATHLEN 512
 #endif
 #ifndef MAXPATHLEN
 # ifdef PATH_MAX
