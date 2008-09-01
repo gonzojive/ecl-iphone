@@ -166,7 +166,7 @@
   (not (or ; (compiler-<push-events)
 	;(>= *debug* 2) Breaks compilation of STACK-PUSH-VALUES
 	(member fname *notinline* :test #'same-fname-p)
-	(and (symbolp fname) (get-sysprop fname 'CMP-NOTINLINE)))))
+	(get-sysprop fname 'CMP-NOTINLINE))))
 
 #-:CCL
 (defun proclaim (decl &aux decl-name)
@@ -401,13 +401,13 @@
       (INLINE
        (push decl dl)
        (dolist (fun (cdr decl))
-	 (if (symbolp fun)
+	 (if (si::valid-function-name-p fun)
 	   (setq *notinline* (remove fun *notinline*))
 	   (cmperr "Not a valid function name ~s in declaration ~s" fun decl))))
       (NOTINLINE
        (push decl dl)
        (dolist (fun (cdr decl))
-	 (if (symbolp fun)
+	 (if (si::valid-function-name-p fun)
 	   (push fun *notinline*)
 	   (cmperr "Not a valid function name ~s in declaration ~s" fun decl))))
       (DECLARATION
