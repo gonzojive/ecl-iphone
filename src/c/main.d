@@ -19,7 +19,7 @@
 
 #include <ecl/ecl.h>
 #include <limits.h>
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(mingw32)
 # include <shellapi.h>
 # define MAXPATHLEN 512
 #endif
