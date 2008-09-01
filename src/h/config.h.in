@@ -24,7 +24,7 @@
 #if defined(mingw32) || defined(_MSC_VER) || defined(cygwin)
 # define ECL_DLLEXPORT __declspec(dllexport)
 # ifdef ECL_API
-#  undef ECL_API
+#  undef ECL_API /* Avoid autoconf removing this */
 #  define ECL_API __declspec(dllexport)
 # else
 #  define ECL_API __declspec(dllimport)
@@ -32,7 +32,7 @@
 #else
 # define ECL_DLLEXPORT
 # ifdef ECL_API
-#  undef ECL_API
+#  undef ECL_API /* Avoid autoconf removing this */
 # endif
 # define ECL_API
 #endif
