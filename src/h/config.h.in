@@ -395,7 +395,7 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 # endif
 #endif
 
-#if defined(mingw32) || defined(_MSC_VER) || defined(cygwin)
+#if defined(mingw32) || defined(_MSC_VER) || defined(cygwin) || defined(sparc)
 # include <math.h>
 # ifndef isfinite
 #  define isfinite(x) (finite(x))
