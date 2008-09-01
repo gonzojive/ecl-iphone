@@ -129,36 +129,44 @@
 (defun get-arg-types (fname)
   (let ((x (assoc fname *function-declarations*)))
     (if x
-	(second x)
+	(values (second x) t)
 	(get-sysprop fname 'PROCLAIMED-ARG-TYPES))))
 
 (defun get-return-type (fname)
   (let ((x (assoc fname *function-declarations*)))
     (if x
-	(third x)
+	(values (third x) t)
 	(get-sysprop fname 'PROCLAIMED-RETURN-TYPE))))
 
 (defun get-local-arg-types (fun &aux x)
   (if (setq x (assoc fun *function-declarations*))
-      (second x)
-      nil))
+      (values (second x) t)
+      (values nil nil)))
 
 (defun get-local-return-type (fun &aux x)
   (if (setq x (assoc fun *function-declarations*))
-      (caddr x)
-      nil))
+      (values (caddr x) t)
+      (values nil nil)))
 
 (defun get-proclaimed-narg (fun)
-  (multiple-value-bind (x found)
-      (get-sysprop fun 'PROCLAIMED-ARG-TYPES)
+  (multiple-value-bind (arg-list found)
+      (get-arg-types fun)
     (if found
-      (let* ((minarg (length x))
-	     (maxarg call-arguments-limit))
-	(if (eq (first (last x)) '*)
-	  (setf minarg (1- minarg))
-	  (setf maxarg minarg))
-	(values minarg maxarg))
-      (values 0 call-arguments-limit))))
+	(loop for type in arg-list
+	   with minarg = 0
+	   and maxarg = 0
+	   and in-optionals = nil
+	   do (cond ((member type '(* &rest &key &allow-other-keys))
+		     (return (values minarg call-arguments-limit)))
+		    ((eq type '&optional)
+		     (setf in-optionals t maxarg minarg))
+		    (in-optionals
+		     (incf maxarg))
+		    (t
+		     (incf minarg)
+		     (incf maxarg)))
+	   finally (return (values minarg maxarg)))
+	(values 0 call-arguments-limit))))
 
 ;;; Proclamation and declaration handling.
 
