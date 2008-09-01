@@ -388,22 +388,35 @@
 	     fname
 	     forms)
     (when arg-types
-      (do ((fl forms (rest fl))
-	   (al lisp-forms (rest al))
-	   (i 1 (1+ i)))
-	  ((endp fl))
-	(unless (endp arg-types)
-	  ;; Check the type of the arguments.
+      (do* ((types arg-types (rest types))
+	    (fl forms (rest fl))
+	    (al lisp-forms (rest al))
+	    (i 1 (1+ i))
+	    (in-optionals nil))
+	   ((endp types)
+	    (when types
+	      (cmpwarn "Too many arguments passed to ~A" fname)))
+	(let ((expected-type (first types)))
+	  (when (member expected-type '(* &rest &key &allow-other-keys) :test #'eq)
+	    (return))
+	  (when (eq expected-type '&optional)
+	    (when in-optionals
+	      (cmpwarn "Syntax error in type proclamation for function ~A.~&~A"
+		       fname arg-types))
+	    (setf in-optionals t))
+	  (when (endp fl)
+	    (unless in-optionals
+	      (cmpwarn "Too few arguments for proclaimed function ~A" fname))
+	    (return))
 	  (let* ((form (first fl))
 		 (lisp-form (first al))
-		 (expected-type (pop arg-types))
-                 (old-type (c1form-type form)))
+		 (old-type (c1form-type form)))
 	    (and-form-type expected-type form lisp-form
 			   :safe "In the argument ~d of a call to ~a" i fname)
 	    ;; In safe mode, we cannot assume that the type of the
 	    ;; argument is going to be the right one.
 	    (unless (zerop (cmp-env-optimization 'safety))
-              (setf (c1form-type form) old-type))))))
+	      (setf (c1form-type form) old-type))))))
     return-type))
 
 (defmacro def-type-propagator (fname lambda-list &body body)
