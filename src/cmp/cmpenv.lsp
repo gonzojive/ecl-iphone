@@ -152,10 +152,10 @@
   (multiple-value-bind (x found)
       (get-sysprop fun 'PROCLAIMED-ARG-TYPES)
     (if found
-      (let ((minarg (length x)))
+      (let* ((minarg (length x))
+	     (maxarg call-arguments-limit))
 	(if (eq (first (last x)) '*)
-	  (setf minarg (1- minarg)
-		maxarg call-arguments-limit)
+	  (setf minarg (1- minarg))
 	  (setf maxarg minarg))
 	(values minarg maxarg))
       (values 0 call-arguments-limit))))
