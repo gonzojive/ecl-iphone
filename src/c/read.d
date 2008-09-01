@@ -1037,7 +1037,7 @@ sharp_dot_reader(cl_object in, cl_object c, cl_object d)
 {
 	if (d != Cnil && !read_suppress)
 		extra_argument('.', in, d);
-	c = ecl_read_object(in);
+	c = ecl_read_object_non_recursive(in);
 	if (c == OBJNULL)
 		FEend_of_file(in);
 	if (read_suppress)
