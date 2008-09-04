@@ -337,7 +337,6 @@
 	 coerced-arguments)
     ;; If the expression begins with @[0-9a-z]*, this means we are
     ;; saving some variables.
-    (print c-expression)
     (when (and (> (length c-expression) 1)
 	       (eq (char c-expression 0) #\@))
       (do ((ndx 1 (1+ ndx)))
