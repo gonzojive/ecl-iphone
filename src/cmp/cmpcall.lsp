@@ -253,10 +253,10 @@
 	  (if (and (symbolp fname)
 		   (not (eql (symbol-package fname) (find-package "CL"))))
 	      (progn
-		(cmpnote "Emiting FUNCALL for ~S" fname)
+		(cmpnote "Emitting FUNCALL for ~S" fname)
 		(add-symbol fname))
 	      (progn
-		(cmpnote "Emiting FDEFINITION for ~S" fname)
+		(cmpnote "Emitting FDEFINITION for ~S" fname)
 		(setq loc (list 'FDEFINITION fname))))))
   (do ((i 0 (1+ i))
        (l args (cdr l)))

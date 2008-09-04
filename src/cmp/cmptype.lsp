@@ -173,10 +173,10 @@
 		 (t
 		  `(OR ,t1 ,t2))))
 	  ((null tag1)
-	   (cmpwarn "Unkonwn type ~S" t1)
+	   (cmpwarn "Unknown type ~S" t1)
 	   'T)
 	  (t
-	   (cmpwarn "Unkonwn type ~S" t2)
+	   (cmpwarn "Unknown type ~S" t2)
 	   'T))))
 
 (defun type>= (type1 type2)
