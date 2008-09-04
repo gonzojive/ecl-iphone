@@ -335,13 +335,21 @@
 			   c-expression side-effects one-liner)
   (let* (args-to-be-saved
 	 coerced-arguments)
+    ;; If the expression begins with @[0-9a-z]*, this means we are
+    ;; saving some variables.
+    (print c-expression)
     (when (and (> (length c-expression) 1)
 	       (eq (char c-expression 0) #\@))
       (do ((ndx 1 (1+ ndx)))
-	  ((or (>= ndx (length c-expression))
-	       (eq (char c-expression ndx) #\;)))
-	(push (- (char-code (char c-expression ndx)) (char-code #\0))
-	      args-to-be-saved)))
+	  ((>= ndx (length c-expression)))
+	(let ((c (char c-expression ndx)))
+	  (when (eq c #\;)
+	    (setf c-expression (subseq c-expression (1+ c))))
+	  (unless (alphanumericp c)
+	    (setf args-to-be-saved nil)
+	    (return))
+	  (push (- (char-code c) (char-code #\0))
+		args-to-be-saved))))
 
     (setf coerced-arguments (coerce-locs inlined-arguments arg-types args-to-be-saved))
     ;;(setf output-rep-type (lisp-type->rep-type output-rep-type))
@@ -418,12 +426,7 @@
       (setf (first l) loc))))
 
 (defun wt-c-inline-loc (output-rep-type c-expression coerced-arguments side-effects output-vars)
-  (with-input-from-string (s c-expression
-			     :start
-			     (if (eq (char c-expression 0) #\@)
-				 (1+ (or (position #\; c-expression)
-					 -1))
-				 0))
+  (with-input-from-string (s c-expression)
     (when output-vars
       (wt-nl))
     (do ((c (read-char s nil nil)
