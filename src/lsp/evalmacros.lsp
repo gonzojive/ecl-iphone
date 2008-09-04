@@ -12,7 +12,7 @@
 
 (in-package "SYSTEM")
 
-(defmacro defun (name vl &body body &aux doc-string)
+(defmacro defun (&whole whole name vl &body body &aux doc-string)
   "Syntax: (defun name lambda-list {decl | doc}* {form}*)
 Defines a global function named by NAME.
 The complete syntax of a lambda-list is:
@@ -36,7 +36,7 @@ retrieved by (documentation 'NAME 'function)."
      (eval-when (:execute)
        (si::fset ',name ,function))
      (eval-when (:load-toplevel)
-       (si::fset ',name ,global-function))
+       ,(ext:register-with-pde whole `(si::fset ',name ,global-function)))
     ,@(si::expand-set-documentation name 'function doc-string)
     ',name)))
 
