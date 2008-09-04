@@ -132,7 +132,7 @@ Does not check if the third gang is a single-element list."
 			    (setf-structure-access (car all) (car f) (cdr f) store))
 			   ((setq f (get-sysprop (car form) 'SETF-LAMBDA))
 			    (apply f store all))
-			   ((and (setq f (macroexpand-1 f env)) (not (equal f form)))
+			   ((and (setq f (macroexpand-1 form env)) (not (equal f form)))
 			    (return-from get-setf-expansion
 			      (get-setf-expansion f env)))
 			   (t
