@@ -53,6 +53,7 @@
       "@SHARED_LDFLAGS@ @LDFLAGS@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @LIBS@ @FASL_LIBS@"
       c::*ld-bundle-flags*
       "@BUNDLE_LDFLAGS@ @LDFLAGS@ @SHAREDPREFIX@ecl.@SHAREDEXT@ @LIBS@ @FASL_LIBS@")
+;;; FIXME: The nonstop platform does not support soname
 #+(and :wants-dlopen nonstop)
 (setf c::*ld-flags*
       "@LDFLAGS@ -Wld=-l@SHAREDPREFIX@ecl.@SHAREDEXT@ @LIBS@"
@@ -102,13 +103,10 @@
 ;;;
 ;;; We do not need the -rpath flag for the library, nor -lecl.
 ;;;
-(let* ((c::*ld-shared-flags* #-msvc "@SHARED_LDFLAGS@ @LDFLAGS@ @CORE_LIBS@ @LIBS@ @FASL_LIBS@"
+(let* ((c::*ld-shared-flags* #-msvc "@SHARED_LDFLAGS@ @LDFLAGS@ @SONAME_LDFLAGS@ @CORE_LIBS@ @LIBS@ @FASL_LIBS@"
 			     #+msvc "@SHARED_LDFLAGS@ @LDFLAGS@ @STATICLIBS@ @CLIBS@")
        (c::*cc-flags* (concatenate 'string "-DECL_API -I@true_builddir@/c " c::*cc-flags*))
        (extra-args nil))
-  #+darwin
-  (push "-Wl,-install_name,@libdir\@/@SHAREDPREFIX@ecl.@SHAREDEXT@"
-	extra-args)
   #+(or mingw32 cygwin)
   (progn
     ;; We need these two to force dllwrap to export the symbols

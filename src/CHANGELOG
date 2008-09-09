@@ -1,5 +1,5 @@
-ECL 0.9l-p1:
-============
+ECL 8.9.0:
+==========
 
 * Visible changes:
 
@@ -32,6 +32,12 @@ ECL 0.9l-p1:
 
  - In windows, ECL recognizes the environment variables HOMEDRIVE and HOMEPATH
    and uses them to construct the output of user-homedir-pathname.
+
+ - We switch to an Ubuntu-like versioning system, based on $(year).$(month).x
+   where "x" is 0 for a release or any higher number for a patched version.
+
+ - In Unix-type systems, ECL now installs with a "soname" and using versioned
+   directory names, such as /usr/lib/ecl-8.9.0, /usr/lib/libecl.so.8.9, etc
 
 * Bugs fixed:
 

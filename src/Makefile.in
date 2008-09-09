@@ -148,6 +148,12 @@ install-base:
 	   $(INSTALL_PROGRAM) $$i $(DESTDIR)$(libdir); \
 	  fi \
 	done
+	if [ "x@SONAME@" != "x" ]; then \
+	  mv $(DESTDIR)$(libdir)/@SONAME@ $(DESTDIR)$(libdir)/@SONAME3@; \
+	  $(LN_S) $(DESTDIR)$(libdir)/@SONAME3@ $(DESTDIR)$(libdir)/@SONAME2@; \
+	  $(LN_S) $(DESTDIR)$(libdir)/@SONAME3@ $(DESTDIR)$(libdir)/@SONAME1@; \
+	  $(LN_S) $(DESTDIR)$(libdir)/@SONAME3@ $(DESTDIR)$(libdir)/@SONAME@; \
+	fi
 	for i in c/dpp$(EXE) ecl_min$(EXE) `cat MODULES`; do \
 	  case $$i in \
 	    *.fas) $(INSTALL_PROGRAM) $$i $(DESTDIR)$(ecldir);; \
