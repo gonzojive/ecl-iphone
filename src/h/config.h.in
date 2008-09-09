@@ -266,6 +266,8 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_FENV_H
 /* can activate individual traps in floating point environment		*/
 #undef HAVE_FEENABLEEXCEPT
+/* do we want to deactivate all support for floating point exceptions   */
+#undef ECL_AVOID_FPE_H
 /* has support for large files						*/
 #undef HAVE_FSEEKO
 /* the tzset() function gets the current time zone			*/
@@ -380,7 +382,11 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 
 #define ECL_ARCHITECTURE "@ARCHITECTURE@"
 
-#include "@ECL_FPE_CODE@"
+#ifdef ECL_AVOID_FPE_H
+# define ecl_detect_fpe()
+#else
+# include "@ECL_FPE_CODE@"
+#endif
 
 #if defined(ECL_THREADS)
 # if defined(darwin) || defined(freebsd) || defined(gnu)
