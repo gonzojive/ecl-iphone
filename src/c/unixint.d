@@ -16,7 +16,7 @@
 */
 
 #include <ecl/ecl.h>
-#if defined(HAVE_FENV_H)
+#if defined(HAVE_FENV_H) && !defined(ECL_AVOID_FENV_H)
 # define _GNU_SOURCE
 # include <fenv.h>
 # ifndef FE_UNDERFLOW
@@ -88,7 +88,7 @@ handle_signal(int sig)
 		break;
 	case SIGFPE: {
 		cl_object condition = @'arithmetic-error';
-#if defined(HAVE_FENV_H)
+#if defined(HAVE_FENV_H) & !defined(ECL_AVOID_FENV_H)
 		int bits = fetestexcept(FE_ALL_EXCEPT);
 		if (bits & FE_DIVBYZERO)
 			condition = @'division-by-zero';
@@ -298,7 +298,7 @@ BOOL WINAPI W32_console_ctrl_handler(DWORD type)
 cl_object
 si_trap_fpe(cl_object condition, cl_object flag)
 {
-#if (defined(HAVE_FENV_H) && defined(HAVE_FEENABLEEXCEPT)) || defined(_MSC_VER) || defined(mingw32)
+#if (defined(HAVE_FENV_H) && defined(HAVE_FEENABLEEXCEPT) && !defined(ECL_AVOID_FENV_H)) || defined(_MSC_VER) || defined(mingw32)
 	static int last_bits = 0;
 	int bits = 0;
 	if (condition == @'division-by-zero')

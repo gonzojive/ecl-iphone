@@ -786,6 +786,7 @@ with_defsystem
 with_cmp
 with_rt
 with_profile
+with_fpe
 enable_unicode
 enable_longdouble
 enable_c99complex
@@ -1488,6 +1489,7 @@ Optional Packages:
   --with-rt               include MIT-RT testing environment (default=YES)
   --with-profile          include CMUCL's simple profiler (default=YES if
                           Boehm-Weiser garbage collector used)
+  --with-fpe              detect floating point exceptions (default=YES)
   --with-x                use the X Window System
 
 Some influential environment variables:
@@ -2212,6 +2214,15 @@ if test "${with_profile+set}" = set; then
   withval=$with_profile;
 else
   with_profile=yes
+fi
+
+
+
+# Check whether --with-fpe was given.
+if test "${with_fpe+set}" = set; then
+  withval=$with_fpe;
+else
+  with_fpe=yes
 fi
 
 
@@ -5169,6 +5180,13 @@ fi
 
 
 
+
+if test "${with_fpe}" != yes; then
+   cat >>confdefs.h <<\_ACEOF
+#define ECL_AVOID_FPE_H 1
+_ACEOF
+
+fi
 
 
 
