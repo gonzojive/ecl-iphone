@@ -8,7 +8,7 @@ dnl  AUTOCONF configuration for ECL
 dnl  Giuseppe Attardi 25.1.1994
 dnl
 
-AC_INIT([ecl],[0.9l],[])
+AC_INIT([ecl],[8.9.0],[])
 AC_REVISION([$Revision$])
 AC_CONFIG_SRCDIR([bare.lsp.in])
 AC_CONFIG_AUX_DIR([${srcdir}/gmp])
@@ -49,6 +49,12 @@ AC_ARG_ENABLE(slow-config,
 		  [use GMP to guess compiler/linker flags]
 		  [(no|yes, default=NO)]),
   [], [enable_slow_config=no] )
+
+AC_ARG_ENABLE(soname,
+  AS_HELP_STRING( [--enable-soname],
+		  [link and install the library using version numbers]
+		  [(no|yes, default=yes)]),
+  [], [enable_soname=yes] )
 
 AC_ARG_WITH(system-boehm,
   AS_HELP_STRING( [--with-system-boehm], [Deprecated! See --enable-boehm] ),
@@ -208,9 +214,9 @@ AC_ARG_ENABLE(gengc,
 
 dnl -----------------------------------------------------------------------
 dnl Installation directories
-ecldir="${libdir}/ecl"
+ecldir="${libdir}/ecl-${PACKAGE_VERSION}"
 AC_SUBST([ecldir])
-test -z "${docdir}" && docdir="${datadir}/doc/ecl"
+test -z "${docdir}" && docdir="${datadir}/doc/ecl-${PACKAGE_VERSION}"
 AC_SUBST([docdir])
 
 dnl -----------------------------------------------------------------------
@@ -374,7 +380,39 @@ if test "x${with_gmp}" != "xno"; then
       LIBRARIES="${LIBRARIES} ${LIBPREFIX}eclgmp.${LIBEXT}"
     fi
   fi
-fi  
+fi
+
+dnl ----------------------------------------------------------------------
+dnl SONAME is only active when SONAME_LDFLAGS and SONAME are non nil
+dnl
+AC_MSG_CHECKING(for soname flags)
+if test "${enable_soname}" != yes; then
+   SONAME=''
+   SONAME1=''
+   SONAME2=''
+   SONAME3=''
+   SONAME_ALIASES=''
+   SONAME_LDFLAGS=''
+   AC_MSG_RESULT([none])
+else
+   PACKAGE_MAJOR=`echo ${PACKAGE_VERSION} | sed -e 's,\(.*\)\..*\..*,\1,g'`
+   PACKAGE_MINOR=`echo ${PACKAGE_VERSION} | sed -e 's,.*\.\(.*\)\..*,\1,g'`
+   PACKAGE_LEAST=`echo ${PACKAGE_VERSION} | sed -e 's,.*\..*\.\(.*\),\1,g'`
+   i="${PACKAGE_MAJOR}.${PACKAGE_MINOR}.${PACKAGE_LEAST}"
+   SONAME3=`echo $SONAME | sed "s,.SOVERSION,.$i,g"`
+   i="${PACKAGE_MAJOR}.${PACKAGE_MINOR}"
+   SONAME2=`echo $SONAME | sed "s,.SOVERSION,.$i,g"`
+   i="${PACKAGE_MAJOR}"
+   SONAME1=`echo $SONAME | sed "s,.SOVERSION,.$i,g"`
+   SONAME=`echo $SONAME | sed "s,.SOVERSION,,g"`
+   SONAME_LDFLAGS=`echo $SONAME_LDFLAGS | sed "s,SONAME,$SONAME2,g"`
+   AC_MSG_RESULT([${SONAME_LDFLAGS}])
+fi
+AC_SUBST(SONAME3)
+AC_SUBST(SONAME2)
+AC_SUBST(SONAME1)
+AC_SUBST(SONAME)
+AC_SUBST(SONAME_LDFLAGS)
 
 dnl =====================================================================
 dnl Checks for header files
@@ -506,6 +544,7 @@ if test ${enable_shared} = "yes"; then
   LSP_LIBRARIES="${SHAREDPREFIX}ecl.${SHAREDEXT}"
   ECL_ADD_FEATURE([wants-dlopen])
 else
+  enable_soname=no
   LSP_LIBRARIES="${LIBPREFIX}ecl.${LIBEXT}"
   LDRPATH='~*'
 fi

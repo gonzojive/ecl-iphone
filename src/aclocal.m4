@@ -177,6 +177,8 @@ THREAD_GC_FLAGS='--enable-threads=posix'
 INSTALL_TARGET='install'
 THREAD_OBJ='threads'
 clibs=''
+SONAME=''
+SONAME_LDFLAGS=''
 case "${host_os}" in
 	# libdir may have a dollar expression inside
 	linux*)
@@ -189,6 +191,8 @@ case "${host_os}" in
 		clibs="-ldl"
 		# Maybe CFLAGS="-D_ISOC99_SOURCE ${CFLAGS}" ???
 		CFLAGS="-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 ${CFLAGS}"
+		SONAME="${SHAREDPREFIX}ecl.${SHAREDEXT}.SOVERSION"
+		SONAME_LDFLAGS="-Wl,-soname,SONAME"
 		;;
 	gnu*)
 		thehost='gnu'
@@ -199,6 +203,8 @@ case "${host_os}" in
 		LDRPATH='-Wl,--rpath,~A'
 		clibs="-ldl"
 		CFLAGS="-D_GNU_SOURCE ${CFLAGS}"
+		SONAME="${SHAREDPREFIX}ecl.${SHAREDEXT}.SOVERSION"
+		SONAME_LDFLAGS="-Wl,-soname,SONAME"
 		;;
 	kfreebsd*-gnu)
 		thehost='kfreebsd'
@@ -209,6 +215,8 @@ case "${host_os}" in
 		LDRPATH='-Wl,--rpath,~A'
 		clibs="-ldl"
 		CFLAGS="-D_GNU_SOURCE ${CFLAGS}"
+		SONAME="${SHAREDPREFIX}ecl.${SHAREDEXT}.SOVERSION"
+		SONAME_LDFLAGS="-Wl,-soname,SONAME"
 		;;
 	freebsd*)
 		thehost='freebsd'
@@ -217,6 +225,8 @@ case "${host_os}" in
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH="-Wl,--rpath,~A"
 		clibs=""
+		SONAME="${SHAREDPREFIX}ecl.${SHAREDEXT}.SOVERSION"
+		SONAME_LDFLAGS="-Wl,-soname,SONAME"
 		;;
 	netbsd*)
 		thehost='netbsd'
@@ -224,6 +234,8 @@ case "${host_os}" in
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH="-Wl,--rpath,~A"
 		clibs=""
+		SONAME="${SHAREDPREFIX}ecl.${SHAREDEXT}.SOVERSION"
+		SONAME_LDFLAGS="-Wl,-soname,SONAME"
 		;;
 	openbsd*)
 		thehost='openbsd'
@@ -231,6 +243,8 @@ case "${host_os}" in
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH="-Wl,--rpath,~A"
 		clibs=""
+		SONAME="${SHAREDPREFIX}ecl.${SHAREDEXT}.SOVERSION"
+		SONAME_LDFLAGS="-Wl,-soname,SONAME"
 		;;
 	solaris*)
 		thehost='sun4sol2'
@@ -284,6 +298,8 @@ case "${host_os}" in
 		fi
 		# ECL, due to some of the libraries, does not build on
 		# 64 bit mode on OSX. We prevent GMP using that mode.
+		SONAME="${SHAREDPREFIX}ecl.SOVERSION.${SHAREDEXT}"
+		SONAME_LDFLAGS="-Wl,-install_name,SONAME -Wl,-compatibility_version,${PACKAGE_VERSION}"
 		;;
 	nsk*)
 		# HP Non-Stop platform
