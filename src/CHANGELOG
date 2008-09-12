@@ -93,6 +93,9 @@ ECL 8.9.0:
 
  - When a SETF place is a macro, it has to be expanded with MACROEXPAND-1.
 
+ - In FTYPE proclamations and declarations, the type may now be a user defined
+   function type (Josh Elsasser).
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
