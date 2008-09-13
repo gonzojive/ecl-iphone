@@ -392,7 +392,7 @@ static cl_object VV[VM];
     (when (or (symbolp output-name) (stringp output-name))
       (setf output-name (compile-file-pathname output-name :type target)))
     (unless init-name
-      (setf init-name (guess-init-name output-name :kind target)))
+      (setf init-name (compute-init-name output-name :kind target)))
     (ecase target
       (:program
        (format c-file +lisp-program-init+ init-name "" shared-data-file
@@ -558,8 +558,8 @@ static cl_object VV[VM];
 	  (incf (cdr ext:*source-location*))))
 
       (cmpprogress "~&;;; End of Pass 1.")
-      (setf init-name (guess-init-name output-file :kind
-				       (if system-p :object :fasl)))
+      (setf init-name (compute-init-name output-file :kind
+					 (if system-p :object :fasl)))
       (compiler-pass2 c-pathname h-pathname data-pathname system-p
 		      init-name
 		      shared-data-file)
@@ -668,7 +668,7 @@ the environment variable TMPDIR to a different value." template)
 	(h-pathname (compile-file-pathname data-pathname :type :h))
 	(o-pathname (compile-file-pathname data-pathname :type :object))
 	(so-pathname (compile-file-pathname data-pathname))
-	(init-name (guess-init-name so-pathname :kind :fasl))
+	(init-name (compute-init-name so-pathname :kind :fasl))
 	(compiler-conditions nil))
 
     (with-compiler-env (compiler-conditions)
@@ -757,7 +757,7 @@ the environment variable TMPDIR to a different value." template)
 			 (apply t3local-fun args))))
 	     (data-init)
 	     (t1expr disassembled-form)
-	     (ctop-write (guess-init-name "foo" :kind :fasl)
+	     (ctop-write (compute-init-name "foo" :kind :fasl)
 			 (if h-file h-file "")
 			 (if data-file data-file ""))
 	     (data-dump data-file))

@@ -99,12 +99,17 @@ the function name it precedes."
       name))
 
 (defun guess-init-name (pathname &key (kind (guess-kind pathname)))
+  (if (eq kind :object)
+    (or (and (probe-file pathname)
+	     (find-init-name pathname))
+	(error "Cannot find out entry point for binary file" pathname))
+    (compute-init-name pathname kind)))
+
+(defun compute-init-name (pathname &key (kind (guess-kind pathname)))
   (let ((filename (pathname-name pathname)))
     (case kind
       ((:object :c)
-       (or (and (probe-file pathname)
-		(find-init-name pathname))
-	   (unique-init-name pathname)))
+       (unique-init-name pathname))
       ((:fasl :fas)
        (init-function-name "CODE" :kind :fas))
       ((:static-library :lib)
