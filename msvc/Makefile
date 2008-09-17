@@ -59,12 +59,7 @@ TAR_DIR = %CD%\ecl-$(ECL_VERSION)
 #
 
 CC	= cl
-MFLAGS  = /MD
-CFLAGS  = /EHsc /DGC_DLL /nologo
 LIBS	= eclgc.lib eclgmp.lib user32.lib ws2_32.lib shell32.lib
-LDFLAGS	= /link /nologo /nodefaultlib:libcmt /nodefaultlib:libcmtd /nodefaultlib:libc /nodefaultlib:libd
-SHARED_LDFLAGS = /LD
-GCFLAGS = nodebug=1
 RM	= del
 RMDIR   = rmdir /Q /S
 MKDIR   = mkdir
@@ -73,6 +68,48 @@ CP      = copy /Y
 MV      = move /Y
 MSDEV   = msdev
 MKNSI   = makensis.exe
+
+# ==================== Flags ====================
+
+#
+# Configuration-specific (Debug/Release) options
+#
+!if "$(ECL_DEBUG)" != ""
+CFLAGS_OPTIMIZE = /Od
+CFLAGS_CONFIG = /Zi /D_DEBUG /MDd $(CFLAGS_OPTIMIZE)
+LDFLAGS_CONFIG = /debug /nodefaultlib:msvcrt.lib
+SHARED_LDFLAGS = /LDd
+GCFLAGS =
+!else
+CFLAGS_OPTIMIZE = /O2
+CFLAGS_CONFIG = /DNDEBUG /MD $(CFLAGS_OPTIMIZE)
+LDFLAGS_CONFIG = /nodefaultlib:msvcrtd.lib
+SHARED_LDFLAGS = /LD
+GCFLAGS = nodebug=1
+!endif
+
+CFLAGS  = /EHsc /DGC_DLL /nologo /D_CRT_SECURE_NO_DEPRECATE $(CFLAGS_CONFIG)
+LDFLAGS	= /link /nologo /verbose:lib /nodefaultlib:libcmt /nodefaultlib:libcmtd /nodefaultlib:libc /nodefaultlib:libcd $(LDFLAGS_CONFIG)
+
+
+# Additional configuration for thread support
+#
+!if "$(ECL_THREADS)" == ""
+ENV_EXPORT = cl_env,DATA
+!else
+ENV_EXPORT = ecl_process_env
+CFLAGS     = $(CFLAGS) /DECL_THREADS
+DEF        = ecl-threads.def
+!endif
+
+# Additional configuration for Unicode support
+#
+!if "$(ECL_UNICODE)" != ""
+CFLAGS     = $(CFLAGS) /DECL_UNICODE
+!endif
+
+!MESSAGE C++ compiler flags: $(CFLAGS)
+!MESSAGE C++ linker flags: $(LDFLAGS)
 
 # ==================== Where To Install Things ====================
 
@@ -102,32 +139,6 @@ SUBDIR        = c gc gmp
 LIBRARIES     =
 TARGETS       = ecl2$(EXE)
 DEF           = ecl.def
-
-# Enable debug information
-#
-!if "$(ECL_DEBUG)" != ""
-CFLAGS = /Z7 $(CFLAGS)
-LDFLAGS = /Z7 $(LDFLAGS)
-SHARED_LDFLAGS = /LDd
-#MFLAGS = -MDd
-GCFLAGS =
-!endif
-
-# Additional configuration for thread support
-#
-!if "$(ECL_THREADS)" == ""
-ENV_EXPORT = cl_env,DATA
-!else
-ENV_EXPORT = ecl_process_env
-CFLAGS     = $(CFLAGS) -DECL_THREADS
-DEF        = ecl-threads.def
-!endif
-
-# Additional configuration for Unicode support
-#
-!if "$(ECL_UNICODE)" != ""
-CFLAGS     = $(CFLAGS) -DECL_UNICODE
-!endif
 
 # Additional modules
 # 
@@ -162,11 +173,8 @@ ECL_MODULES  = $(ECL_MODULES) profile
 ECL_FEATURES = (cons :wants-profile $(ECL_FEATURES))
 !endif
 
-!MESSAGE $(ECL_MODULES)
-!MESSAGE $(ECL_FEATURES)
-
-CFLAGS  = $(MFLAGS) $(CFLAGS)
-LDFLAGS = $(MFLAGS) $(LDFLAGS)
+!MESSAGE ECL Modules: $(ECL_MODULES)
+!MESSAGE ECL Features: $(ECL_FEATURES)
 
 # Build rules
 # 
@@ -248,6 +256,7 @@ cmp/load.lsp: $(srcdir)/cmp/load.lsp.in
 cmp/cmpdefs.lsp: $(srcdir)/cmp/cmpdefs.lsp Makefile
 	c\cut "@ECL_CC@" "$(CC)" \
 	    "@CFLAGS@" "$(CFLAGS)" \
+        "@CFLAGS_OPTIMIZE@" "$(CFLAGS_OPTIMIZE)" \
 	    "@ECL_CFLAGS@" "" \
 	    "@CPPFLAGS@" "" \
 	    "@LDRPATH@" "" \
@@ -290,7 +299,7 @@ eclmin.lib: eclgmp.lib eclgc.lib lsp/config.lsp
 	cd ..
 eclgc.lib:
 	cd gc
-	$(MAKE) $(GCFLAGS) ECL_THREADS=$(ECL_THREADS) "MFLAGS=$(MFLAGS)" gc.lib
+	$(MAKE) $(GCFLAGS) ECL_THREADS=$(ECL_THREADS) "CFLAGS_CONFIG=$(CFLAGS_CONFIG)" gc.lib
 	$(CP) gc.lib ..\eclgc.lib
 	cd ..
 	if not exist ecl\gc $(MKDIR) ecl\gc
@@ -301,7 +310,7 @@ eclgc.lib:
 	    do $(CP) $(srcdir)\gc\include\%h ecl\gc\%h
 eclgmp.lib:
 	cd gmp
-	$(MAKE) "MPN_TYPE = $(GMP_TYPE)" "MFLAGS = $(MFLAGS)"
+	$(MAKE) "MPN_TYPE = $(GMP_TYPE)" "CFLAGS_CONFIG=$(CFLAGS_CONFIG)"
 	$(CP) gmp.lib ..\eclgmp.lib
 	$(CP) gmp.h ..\ecl\gmp.h
 	cd ..

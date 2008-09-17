@@ -17,17 +17,15 @@ THREADS_OBJ=
 THREADS_FLAGS= -DGC_DLL -DGC_BUILD
 !endif
 
-MFLAGS = /MD
-
 OBJS= alloc.obj reclaim.obj allchblk.obj misc.obj mach_dep.obj os_dep.obj mark_rts.obj headers.obj mark.obj obj_map.obj blacklst.obj finalize.obj new_hblk.obj dbg_mlc.obj malloc.obj stubborn.obj dyn_load.obj typd_mlc.obj ptr_chck.obj gc_cpp.obj mallocx.obj $(THREADS_OBJ)
 
 all: gc.lib
 
 {$(srcdir)}.c{}.obj:
-	$(cc) $(MFLAGS) $(cdebug) $(cflags) $(cvars) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -D__STDC__ -DGC_DLL -DGC_BUILD -DLARGE_CONFIG $(THREADS_FLAGS) $< /Fo$*.obj
+	$(cc) $(cflags) $(CFLAGS_CONFIG) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -D__STDC__ -DGC_DLL -DGC_BUILD -DLARGE_CONFIG $(THREADS_FLAGS) $< /Fo$*.obj
 
 {$(srcdir)\tests}.c{tests}.obj:
-	$(cc) $(MFLAGS) $(cdebug) $(cflags) $(cvars) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -D__STDC__ -DGC_DLL -DGC_BUILD -DLARGE_CONFIG $(THREADS_FLAGS) $< /Fo$*.obj
+	$(cc) $(cflags) $(CFLAGS_CONFIG) -I$(srcdir)\include -DSILENT -DALL_INTERIOR_POINTERS -D__STDC__ -DGC_DLL -DGC_BUILD -DLARGE_CONFIG $(THREADS_FLAGS) $< /Fo$*.obj
 
 #.c.obj:
 #	$(cc) $(cdebug) $(cflags) $(cvars) -Iinclude -DSILENT -DALL_INTERIOR_POINTERS -D__STDC__ -DGC_NOT_DLL -DGC_BUILD $*.c /Fo$*.obj

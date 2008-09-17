@@ -42,6 +42,9 @@ ECL 8.9.0:
  - New configuration flag, --without-fpe, to disable floating point exception
    code in platforms that have buggy implementations of feenableexcept().
 
+ - Changes in the build process of the Microsoft Visual C++ port contributed
+   by Muhammad Haggag.
+
 * Bugs fixed:
 
  - The optimizer for COERCE might enter an infinite loop for certain
