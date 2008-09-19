@@ -414,7 +414,8 @@ because it contains a reference to the undefined class~%  ~A"
 	 (error "~a is not a valid class specifier." class-or-symbol))
 	((find-class class-or-symbol fail))
 	(t
-	 (warn "Class ~A has been forward referenced." class-or-symbol)
+	 (warn 'style-warning
+	       "Class ~A has been forward referenced." class-or-symbol)
 	 (ensure-class class-or-symbol
 		       :metaclass 'forward-referenced-class
 		       :direct-superclasses (list (find-class 'standard-object))
