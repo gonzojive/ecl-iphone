@@ -527,6 +527,8 @@ returns with NIL."
 
 (define-condition style-warning (warning) ())
 
+(define-condition simple-style-warning (style-warning simple-condition) ())
+
 (define-condition simple-error (simple-condition error) ())
 
 (define-condition storage-condition (serious-condition) ())
