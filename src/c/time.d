@@ -43,7 +43,7 @@
 #undef HAVE_NANOSLEEP
 #endif
 
-#if !defined(HAVE_GETTIMEOFDAY) && !defined(HAVE_GETRUSAGE) && !defined(mingw32)
+#if !defined(HAVE_GETTIMEOFDAY) && !defined(HAVE_GETRUSAGE) && !defined(mingw32) && !defined(_MSC_VER)
 struct timeval {
 	long tv_sec;
 	long tv_usec;
