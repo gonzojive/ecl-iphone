@@ -20,6 +20,7 @@
 #include <ecl/ecl.h>
 #include <limits.h>
 #if defined(_MSC_VER) || defined(mingw32)
+# include <windows.h>
 # include <shellapi.h>
 # define MAXPATHLEN 512
 #endif
@@ -613,9 +614,6 @@ si_pointer(cl_object x)
 }
 
 #if defined(_MSC_VER) || defined(mingw32)
-#if !defined(ECL_THREADS)
-#include <windows.h>
-#endif
 void
 ecl_get_commandline_args(int* argc, char*** argv) {
 	LPWSTR *wArgs;
