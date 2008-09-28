@@ -1030,22 +1030,29 @@ cl_float_radix(cl_object x)
 	@(return MAKE_FIXNUM(FLT_RADIX))
 }
 
-@(defun float_sign (x &optional (y x))
+#ifndef signbit
+# define signbit(x) ((x) < 0)
+#endif
+
+@(defun float_sign (x &optional (y x yp))
 	int negativep;
 @
+	if (!yp) {
+		y = cl_float(2, MAKE_FIXNUM(1), x);
+	}
   AGAIN:
 	switch (type_of(x)) {
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
-		negativep = ecl_short_float(x) < 0; break;
+		negativep = signbit(ecl_short_float(x)); break;
 #endif
 	case t_singlefloat:
-		negativep = sf(x) < 0; break;
+		negativep = signbit(sf(x)); break;
 	case t_doublefloat:
-		negativep = df(x) < 0; break;
+		negativep = signbit(df(x)); break;
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
-		negativep = ecl_long_float(x) < 0; break;
+		negativep = signbit(ecl_long_float(x)); break;
 #endif
 	default:
 		x = ecl_type_error(@'float-sign',"argument",x,@'float');

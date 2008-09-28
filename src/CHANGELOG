@@ -105,6 +105,8 @@ ECL 8.9.0:
  - On overflow, binding stack signals a correctable error with STACK-OVERFLOW
    condition.
 
+ - FLOAT-SIGN returns the right value on negative zeros.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
