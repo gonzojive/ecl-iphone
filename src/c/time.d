@@ -37,6 +37,7 @@
 #include <ecl/internal.h>
 #if defined(mingw32) || defined(_MSC_VER)
 #include <windows.h>
+#include <WinSock.h>
 #endif
 
 #ifdef darwin
