@@ -109,6 +109,8 @@ ECL 8.9.0:
 
  - The reader and the printer now understand negative zeros.
 
+ - Negative and nonnegative zeros are not EQL.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

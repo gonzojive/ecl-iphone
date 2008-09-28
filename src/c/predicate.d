@@ -16,6 +16,7 @@
 */
 
 #include <ecl/ecl.h>
+#include <math.h>
 
 cl_object
 cl_identity(cl_object x)
@@ -254,6 +255,12 @@ cl_eq(cl_object x, cl_object y)
 	@(return ((x == y) ? Ct : Cnil))
 }
 
+#ifdef signbit
+# define float_eql(a,b) (((a) == (b)) && (signbit((a)) == signbit((b))))
+#else
+# define float_eql(a,b) (((a) == (b)))
+#endif
+
 bool
 ecl_eql(cl_object x, cl_object y)
 {
@@ -272,15 +279,15 @@ ecl_eql(cl_object x, cl_object y)
 			ecl_eql(x->ratio.den, y->ratio.den));
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
-		return ecl_short_float(x) == ecl_short_float(y);
+		return float_eql(ecl_short_float(x),ecl_short_float(y));
 #endif
 	case t_singlefloat:
-		return (sf(x) == sf(y));
+		return float_eql(sf(x),sf(y));
 	case t_doublefloat:
-		return (df(x) == df(y));
+		return float_eql(df(x),df(y));
 #ifdef ECL_LONG_FLOAT
 	case t_longfloat:
-		return ecl_long_float(x) == ecl_long_float(y);
+		return float_eql(ecl_long_float(x),ecl_long_float(y));
 #endif
 	case t_complex:
 		return (ecl_eql(x->complex.real, y->complex.real) &&
