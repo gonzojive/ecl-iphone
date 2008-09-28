@@ -707,7 +707,7 @@ returns with NIL."
 					cases)))
 	  `(block ,tag
 	     (let ((,var nil))
-	       (declare (ignore ,var))
+	       (declare (ignorable ,var))
 	       (tagbody
 		 (handler-bind ,(mapcar #'(lambda (annotated-case)
 					    (list (cadr annotated-case)
