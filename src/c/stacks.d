@@ -119,6 +119,24 @@ bds_unwind_n(int n)
 	while (n--) bds_unwind1();
 }
 
+static void
+bds_set_size(cl_index size)
+{
+	cl_index limit = (cl_env.bds_top - cl_env.bds_org);
+	if (size <= limit) {
+		FEerror("Cannot shrink the binding stack below ~D.", 1,
+			ecl_make_unsigned_integer(limit));
+	} else {
+		bds_ptr org;
+		org = cl_alloc_atomic(size * sizeof(*org));
+		memcpy(org, cl_env.bds_org, (cl_env.bds_top - cl_env.bds_org) * sizeof(*org));
+		cl_env.bds_top = org + (cl_env.bds_top - cl_env.bds_org);
+		cl_env.bds_org = org;
+		cl_env.bds_limit = org + (size - 2*BDSGETA);
+		cl_env.bds_size = size;
+	}
+}
+
 void
 bds_overflow(void)
 {
@@ -129,14 +147,10 @@ bds_overflow(void)
 		ecl_internal_error("Bind stack overflow, cannot grow larger.");
 	}
 	cl_env.bds_limit += BDSGETA;
-	cl_cerror(4, Ct, @'si::stack-overflow', @':size', MAKE_FIXNUM(size));
-	size += size / 2;
-	org = cl_alloc_atomic(size * sizeof(*org));
-	memcpy(org, cl_env.bds_org, (cl_env.bds_top - cl_env.bds_org) * sizeof(*org));
-	cl_env.bds_top = org + (cl_env.bds_top - cl_env.bds_org);
-	cl_env.bds_org = org;
-	cl_env.bds_limit = org + (size - 2*BDSGETA);
-	cl_env.bds_size = size;
+	cl_cerror(6, make_constant_base_string("Extend stack size"),
+		  @'ext::stack-overflow', @':size', MAKE_FIXNUM(size),
+		  @':type', @'ext::binding-stack');
+	bds_set_size(size + (size / 2));
 }
 
 void
@@ -271,21 +285,48 @@ new_frame_id(void)
   return(MAKE_FIXNUM(frame_id++));
 }
 
-int
+static void
+frs_set_size(cl_index size)
+{
+	cl_index limit = (cl_env.frs_top - cl_env.frs_org);
+	if (size <= limit) {
+		FEerror("Cannot shrink frame stack below ~D.", 1,
+			ecl_make_unsigned_integer(limit));
+	} else {
+		ecl_frame_ptr org;
+		org = cl_alloc_atomic(size * sizeof(*org));
+		memcpy(org, cl_env.frs_org, (cl_env.frs_top - cl_env.frs_org) * sizeof(*org));
+		cl_env.frs_top = org + (cl_env.frs_top - cl_env.frs_org);
+		cl_env.frs_org = org;
+		cl_env.frs_limit = org + (size - 2*FRSGETA);
+		cl_env.frs_size = size;
+	}
+}
+
+static void
 frs_overflow(void)		/* used as condition in list.d */
 {
-	--cl_env.frs_top;
-	if (cl_env.frs_limit > cl_env.frs_org + cl_env.frs_size)
-		ecl_internal_error("frame stack overflow.");
+	cl_index size = cl_env.frs_size;
+	ecl_frame_ptr org = cl_env.frs_org;
+	ecl_frame_ptr last = org + size;
+	if (cl_env.frs_limit >= last) {
+		ecl_internal_error("Frame stack overflow, cannot grow larger.");
+	}
 	cl_env.frs_limit += FRSGETA;
-	FEerror("Frame stack overflow.", 0);
+	cl_cerror(6, make_constant_base_string("Extend stack size"),
+		  @'ext::stack-overflow', @':size', MAKE_FIXNUM(size),
+		  @':type', @'ext::frame-stack');
+	frs_set_size(size + size / 2);
 }
 
 ecl_frame_ptr
 _frs_push(register cl_object val)
 {
 	ecl_frame_ptr output = ++cl_env.frs_top;
-	if (output >= cl_env.frs_limit) frs_overflow();
+	if (output >= cl_env.frs_limit) {
+		frs_overflow();
+		output = cl_env.frs_top;
+	}
 	output->frs_bds_top_index = cl_env.bds_top - cl_env.bds_org;
 	output->frs_val = val;
 	output->frs_ihs = cl_env.ihs_top;
@@ -392,6 +433,20 @@ si_reset_stack_limits()
 		ecl_internal_error("can't reset cl_env.cs_limit.");
 
 	@(return Cnil)
+}
+
+cl_object
+si_set_stack_size(cl_object type, cl_object size)
+{
+	cl_index the_size = fixnnint(size);
+	if (type == @'ext::frame-stack') {
+		frs_set_size(the_size);
+	} else if (type == @'ext::binding-stack') {
+		bds_set_size(the_size);
+	} else {
+		cl_stack_set_size(the_size);
+	}
+	@(return)
 }
 
 void

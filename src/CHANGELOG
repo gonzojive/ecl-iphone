@@ -102,8 +102,21 @@ ECL 8.9.0:
  - COMPILE would create an extra empty file which would not get deleted after
    finishing compilation (Josh Elsasser).
 
- - On overflow, binding stack signals a correctable error with STACK-OVERFLOW
-   condition.
+ - On overflow, binding and frame stack signal a correctable error with
+   STACK-OVERFLOW condition.
+	(block faa
+	      (labels ((foo (x)
+			 (catch 'foo (foo (1+ x))))
+		       (handle-overflow (c)
+			 (let ((s (ext:stack-overflow-size c)))
+				   (if (< s 2304)
+			       (continue)
+			       (return-from faa (ext::stack-overflow-type c))))))
+		(handler-bind ((ext:stack-overflow #'handle-overflow))
+		  (foo 1))))
+
+ - New function (EXT:SET-STACK-SIZE type size) can resize type =
+   EXT:BINDING-STACK, EXT:LISP-STACK and EXT:FRAME-STACK.
 
  - FLOAT-SIGN returns the right value on negative zeros.
 
