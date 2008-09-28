@@ -576,7 +576,12 @@ write_double(DBL_TYPE d, int e, int n, cl_object stream)
 		d = -d;
 	}
 	if (d == 0.0) {
-		write_str("0.0", stream);
+#ifdef signbit
+		if (signbit(d))
+			write_str("-0.0", stream);
+		else
+#endif
+			write_str("0.0", stream);
 		exp = 0;
 	} else if (d < 1e-3 || d > 1e7) {
 		int sign;

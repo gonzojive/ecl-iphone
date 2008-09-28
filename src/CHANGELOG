@@ -107,6 +107,8 @@ ECL 8.9.0:
 
  - FLOAT-SIGN returns the right value on negative zeros.
 
+ - The reader and the printer now understand negative zeros.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
