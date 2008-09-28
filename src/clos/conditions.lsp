@@ -533,7 +533,11 @@ returns with NIL."
 
 (define-condition storage-condition (serious-condition) ())
 
-(define-condition stack-overflow    (storage-condition) ())
+(define-condition stack-overflow (storage-condition)
+  ((stack-size :initarg :size :initform 0))
+  (:REPORT
+   (lambda (condition stream)
+     (format stream "Stack overflow at size ~D." (slot-value condition 'stack-size)))))
 
 (define-condition storage-exhausted (storage-condition) ())
 

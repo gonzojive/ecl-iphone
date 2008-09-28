@@ -1010,7 +1010,7 @@ c_catch(cl_object args, int flags) {
 static int
 c_compiler_let(cl_object args, int flags) {
 	cl_object bindings;
-	bds_ptr old_bds_top = cl_env.bds_top;
+	cl_index old_bds_top_index = cl_env.bds_top - cl_env.bds_org;
 
 	for (bindings = pop(&args); !ecl_endp(bindings); ) {
 		cl_object form = pop(&bindings);
@@ -1019,7 +1019,7 @@ c_compiler_let(cl_object args, int flags) {
 		bds_bind(var, value);
 	}
 	flags = compile_body(args, flags);
-	bds_unwind(old_bds_top);
+	bds_unwind(old_bds_top_index);
 	return flags;
 }
 

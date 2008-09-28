@@ -28,14 +28,12 @@ typedef struct bds_bd {
 } *bds_ptr;
 
 #define	bds_check  \
-	if (cl_env.bds_top >= cl_env.bds_limit)  \
-		bds_overflow()
+	((cl_env.bds_top >= cl_env.bds_limit)? bds_overflow() : (void)0)
 
 #ifdef ECL_THREADS
 extern ECL_API void bds_bind(cl_object symbol, cl_object value);
 extern ECL_API void bds_push(cl_object symbol);
 extern ECL_API void bds_unwind1();
-extern ECL_API void bds_unwind_n(int n);
 extern ECL_API cl_object *ecl_symbol_slot(cl_object s);
 #define SYM_VAL(s) (*ecl_symbol_slot(s))
 #if 0
@@ -51,19 +49,17 @@ extern ECL_API cl_object ecl_set_symbol(cl_object s, cl_object v);
 #define ECL_SET(s,v) ((s)->symbol.value=(v))
 #define ECL_SETQ(s,v) ((s)->symbol.value=(v))
 #define	bds_bind(sym, val)  \
-	((++cl_env.bds_top)->symbol = (sym),  \
+	(bds_check,(++cl_env.bds_top)->symbol = (sym),  \
 	cl_env.bds_top->value = SYM_VAL(sym),  \
 	SYM_VAL(sym) = (val))
 
 #define bds_push(sym) \
-	((++cl_env.bds_top)->symbol = (sym), cl_env.bds_top->value = SYM_VAL(sym))
+	(bds_check,(++cl_env.bds_top)->symbol = (sym), cl_env.bds_top->value = SYM_VAL(sym))
 
 #define	bds_unwind1()  \
 	(SYM_VAL(cl_env.bds_top->symbol) = cl_env.bds_top->value, --cl_env.bds_top)
-
-#define bds_unwind_n(n) \
-	bds_unwind(cl_env.bds_top - (n))
 #endif /* ECL_THREADS */
+extern ECL_API void bds_unwind_n(int n);
 
 /****************************
  * INVOCATION HISTORY STACK
@@ -115,7 +111,7 @@ extern ECL_API cl_object ihs_top_function_name(void);
 typedef struct ecl_frame {
 	jmp_buf		frs_jmpbuf;
 	cl_object	frs_val;
-	bds_ptr		frs_bds_top;
+	bds_ptr		frs_bds_top_index;
 	ihs_ptr		frs_ihs;
 	cl_index	frs_sp;
 } *ecl_frame_ptr;

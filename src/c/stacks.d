@@ -16,6 +16,7 @@
 */
 
 #include <ecl/ecl.h>
+#include <string.h>
 #ifdef HAVE_SYS_RESOURCE_H
 # include <sys/time.h>
 # include <sys/resource.h>
@@ -29,6 +30,10 @@ bds_bind(cl_object s, cl_object value)
 {
 	struct ecl_hashtable_entry *h = ecl_search_hash(s, cl_env.bindings_hash);
 	struct bds_bd *slot = ++cl_env.bds_top;
+	if (slot >= cl_env.bds_limit) {
+		bds_overflow();
+		slot = cl_env.bds_top;
+	}
 	if (h->key == OBJNULL) {
 		/* The previous binding was at most global */
 		slot->symbol = s;
@@ -48,6 +53,10 @@ bds_push(cl_object s)
 {
 	struct ecl_hashtable_entry *h = ecl_search_hash(s, cl_env.bindings_hash);
 	struct bds_bd *slot = ++cl_env.bds_top;
+	if (slot >= cl_env.bds_limit) {
+		bds_overflow();
+		slot = cl_env.bds_top;
+	}
 	if (h->key == OBJNULL) {
 		/* The previous binding was at most global */
 		slot->symbol = s;
@@ -78,12 +87,6 @@ bds_unwind1(void)
 	}
 }
 
-void
-bds_unwind_n(int n)
-{
-	while (n--) bds_unwind1();
-}
-
 cl_object *
 ecl_symbol_slot(cl_object s)
 {
@@ -111,19 +114,36 @@ ecl_set_symbol(cl_object s, cl_object value)
 #endif
 
 void
-bds_overflow(void)
+bds_unwind_n(int n)
 {
-	--cl_env.bds_top;
-	if (cl_env.bds_limit > cl_env.bds_org + cl_env.bds_size)
-		ecl_internal_error("bind stack overflow.");
-	cl_env.bds_limit += BDSGETA;
-	FEerror("Bind stack overflow.", 0);
+	while (n--) bds_unwind1();
 }
 
 void
-bds_unwind(bds_ptr new_bds_top)
+bds_overflow(void)
 {
-	register bds_ptr bds = cl_env.bds_top;
+	cl_index size = cl_env.bds_size;
+	bds_ptr org = cl_env.bds_org;
+	bds_ptr last = org + size;
+	if (cl_env.bds_limit >= last) {
+		ecl_internal_error("Bind stack overflow, cannot grow larger.");
+	}
+	cl_env.bds_limit += BDSGETA;
+	cl_cerror(4, Ct, @'si::stack-overflow', @':size', MAKE_FIXNUM(size));
+	size += size / 2;
+	org = cl_alloc_atomic(size * sizeof(*org));
+	memcpy(org, cl_env.bds_org, (cl_env.bds_top - cl_env.bds_org) * sizeof(*org));
+	cl_env.bds_top = org + (cl_env.bds_top - cl_env.bds_org);
+	cl_env.bds_org = org;
+	cl_env.bds_limit = org + (size - 2*BDSGETA);
+	cl_env.bds_size = size;
+}
+
+void
+bds_unwind(cl_index new_bds_top_index)
+{
+	bds_ptr new_bds_top = new_bds_top_index + cl_env.bds_org;
+	bds_ptr bds = cl_env.bds_top;
 	for (;  bds > new_bds_top;  bds--)
 #ifdef ECL_THREADS
 		bds_unwind1();
@@ -139,9 +159,9 @@ get_bds_ptr(cl_object x)
 	bds_ptr p;
 
 	if (FIXNUMP(x)) {
-	  p = cl_env.bds_org + fix(x);
-	  if (cl_env.bds_org <= p && p <= cl_env.bds_top)
-	    return(p);
+		p = cl_env.bds_org + fix(x);
+		if (cl_env.bds_org <= p && p <= cl_env.bds_top)
+			return(p);
 	}
 	FEerror("~S is an illegal bds index.", 1, x);
 }
@@ -266,7 +286,7 @@ _frs_push(register cl_object val)
 {
 	ecl_frame_ptr output = ++cl_env.frs_top;
 	if (output >= cl_env.frs_limit) frs_overflow();
-	output->frs_bds_top = cl_env.bds_top;
+	output->frs_bds_top_index = cl_env.bds_top - cl_env.bds_org;
 	output->frs_val = val;
 	output->frs_ihs = cl_env.ihs_top;
 	output->frs_sp = cl_stack_index();
@@ -280,7 +300,7 @@ ecl_unwind(ecl_frame_ptr fr)
 	while (cl_env.frs_top != fr && cl_env.frs_top->frs_val != ECL_PROTECT_TAG)
 		--cl_env.frs_top;
 	cl_env.ihs_top = cl_env.frs_top->frs_ihs;
-	bds_unwind(cl_env.frs_top->frs_bds_top);
+	bds_unwind(cl_env.frs_top->frs_bds_top_index);
 	cl_stack_set_index(cl_env.frs_top->frs_sp);
 	ecl_longjmp(cl_env.frs_top->frs_jmpbuf, 1);
 	/* never reached */
@@ -319,7 +339,7 @@ si_frs_top()
 cl_object
 si_frs_bds(cl_object arg)
 {
-	@(return MAKE_FIXNUM(get_frame_ptr(arg)->frs_bds_top - cl_env.bds_org))
+	@(return MAKE_FIXNUM(get_frame_ptr(arg)->frs_bds_top_index))
 }
 
 cl_object

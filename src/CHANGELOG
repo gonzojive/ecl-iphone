@@ -102,6 +102,9 @@ ECL 8.9.0:
  - COMPILE would create an extra empty file which would not get deleted after
    finishing compilation (Josh Elsasser).
 
+ - On overflow, binding stack signals a correctable error with STACK-OVERFLOW
+   condition.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

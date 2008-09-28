@@ -1702,5 +1702,7 @@ cl_symbols[] = {
 
 {EXT_ "INTERACTIVE-INTERRUPT",NULL},
 
+{SYS_ "STACK-OVERFLOW",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};

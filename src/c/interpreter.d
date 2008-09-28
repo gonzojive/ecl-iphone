@@ -504,7 +504,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	ECL_OFFSET_TABLE
 	typedef struct cl_env_struct *cl_env_ptr;
 	const cl_env_ptr the_env = &cl_env;
-	volatile bds_ptr old_bds_top = cl_env.bds_top;
+	volatile cl_index old_bds_top_index = cl_env.bds_top - cl_env.bds_org;
 	cl_opcode *vector = (cl_opcode*)bytecodes->bytecodes.code + offset;
 	cl_object *data = bytecodes->bytecodes.data;
 	cl_object reg0, reg1, lex_env = env;
@@ -788,7 +788,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	*/
 	CASE(OP_EXIT); {
 		ihs_pop();
-		bds_unwind(old_bds_top);
+		bds_unwind(old_bds_top_index);
 		return reg0;
 	}
 	/* OP_FLET	nfun{arg}, fun1{object}
@@ -1296,7 +1296,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		THREAD_NEXT;
 	}
 	CASE(OP_PROTECT_NORMAL); {
-		bds_unwind(the_env->frs_top->frs_bds_top);
+		bds_unwind(the_env->frs_top->frs_bds_top_index);
 		frs_pop(the_env);
 		STACK_POP(the_env);
 		lex_env = STACK_POP(the_env);

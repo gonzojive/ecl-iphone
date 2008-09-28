@@ -1295,7 +1295,7 @@ extern ECL_API cl_object si_sch_frs_base(cl_object fr, cl_object ihs);
 extern ECL_API cl_object si_reset_stack_limits(void);
 
 extern ECL_API void bds_overflow(void) /*__attribute__((noreturn))*/;
-extern ECL_API void bds_unwind(bds_ptr new_bds_top);
+extern ECL_API void bds_unwind(cl_index new_bds_top_index);
 extern ECL_API int frs_overflow(void) /*__attribute__((noreturn))*/;
 extern ECL_API void ecl_unwind(ecl_frame_ptr fr) /*__attribute__((noreturn))*/;
 extern ECL_API ecl_frame_ptr frs_sch(cl_object frame_id);
