@@ -39,8 +39,8 @@ extern void init_GC(void);
 extern void init_macros(void);
 extern void init_number(void);
 extern void init_read(void);
-extern void init_stacks(int *);
-extern void init_unixint(void);
+extern void init_stacks(struct cl_env_struct *, int *);
+extern void init_unixint(int pass);
 extern void init_unixtime(void);
 #ifdef mingw32
 extern void init_compiler(void);

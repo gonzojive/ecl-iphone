@@ -107,6 +107,10 @@ struct cl_env_struct {
 
 	/* foreign function interface */
 	void *fficall;
+
+	/* Alternative stack for processing signals */
+	void *altstack;
+	cl_index altstack_size;
 };
 
 #ifndef __GNUC__
@@ -831,8 +835,18 @@ extern ECL_API cl_object si_setenv(cl_object var, cl_object value);
 extern ECL_API cl_object si_pointer(cl_object x);
 extern ECL_API cl_object si_quit _ARGS((cl_narg narg, ...)) /*__attribute__((noreturn))*/;
 
+typedef enum {
+	ECL_TRAP_SIGSEGV = 1,
+	ECL_TRAP_SIGFPE = 2,
+	ECL_TRAP_SIGINT = 4,
+	ECL_TRAP_SIGILL = 8,
+	ECL_TRAP_SIGBUS = 16,
+	ECL_INCREMENTAL_GC = 128
+} ecl_option;
 extern ECL_API bool ecl_booted;
 extern ECL_API const char *ecl_self;
+extern ECL_API void ecl_set_option(int option, int value);
+extern ECL_API int ecl_get_option(int option);
 extern ECL_API int cl_boot(int argc, char **argv);
 extern ECL_API int cl_shutdown(void);
 #if defined(_MSC_VER) || defined(mingw32)
@@ -1519,8 +1533,7 @@ extern ECL_API cl_object si_get_library_pathname(void);
 
 /* unixint.c */
 
-extern ECL_API cl_object si_catch_bad_signals(void);
-extern ECL_API cl_object si_uncatch_bad_signals(void);
+extern ECL_API cl_object si_catch_signal(cl_object signal, cl_object state);
 extern ECL_API cl_object si_check_pending_interrupts(void);
 extern ECL_API cl_object si_trap_fpe(cl_object condition, cl_object flag);
 

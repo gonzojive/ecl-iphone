@@ -45,6 +45,15 @@ ECL 8.9.0:
  - Changes in the build process of the Microsoft Visual C++ port contributed
    by Muhammad Haggag.
 
+ - All known C signals are now exported by ECL as constants in the EXT package,
+   such as EXT:+SIGINT+, EXT:+SIGFPE+, etc.
+
+ - Function (EXT:CATCH-SIGNAL signal-code boolean) can be used to tell ECL to
+   trap or ignore certain signals. In a near future a function can be provided.
+
+ - In platforms that support sigaltstack(), ECL may detect stack overflows and
+   gracefully quit.
+
 * Bugs fixed:
 
  - The optimizer for COERCE might enter an infinite loop for certain

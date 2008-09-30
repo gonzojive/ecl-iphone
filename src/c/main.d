@@ -50,13 +50,45 @@ const char *ecl_self;
 
 /************************ GLOBAL INITIALIZATION ***********************/
 
-static int	ARGC;
-static char	**ARGV;
+static int ARGC;
+static char **ARGV;
+static cl_index boot_options = ECL_TRAP_SIGSEGV
+	| ECL_TRAP_SIGFPE
+	| ECL_TRAP_SIGINT
+	| ECL_TRAP_SIGILL
+#ifdef GBC_BOEHM_GENGC
+	| ECL_INCREMENTAL_GC
+#endif
+	| ECL_TRAP_SIGBUS;
 
 #if !defined(GBC_BOEHM)
 static char stdin_buf[BUFSIZ];
 static char stdout_buf[BUFSIZ];
 #endif
+
+int
+ecl_get_option(int option)
+{
+	if (option > ECL_INCREMENTAL_GC || option < 0) {
+		FEerror("Invalid boot option ~D", 0, MAKE_FIXNUM(option));
+	}
+	return (boot_options >> option) & 1;
+}
+
+void
+ecl_set_option(int option, int value)
+{
+	if (option > ECL_INCREMENTAL_GC || option < 0) {
+		FEerror("Invalid boot option ~D", 0, MAKE_FIXNUM(option));
+	} else {
+		cl_index mask = 1 << option;
+		if (value) {
+			boot_options |= mask;
+		} else {
+			boot_options &= ~mask;
+		}
+	}
+}
 
 void
 ecl_init_env(struct cl_env_struct *env)
@@ -104,8 +136,7 @@ ecl_init_env(struct cl_env_struct *env)
 	env->method_hash_clear_list = Cnil;
 #endif
 #endif
-
-	init_stacks(&i);
+	init_stacks(env, &i);
 }
 
 static const struct {
@@ -198,6 +229,7 @@ cl_boot(int argc, char **argv)
 	ARGV = argv;
 	ecl_self = argv[0];
 
+	init_unixint(0);
 	init_alloc();
 	GC_disable();
 #ifdef ECL_THREADS
@@ -523,8 +555,7 @@ cl_boot(int argc, char **argv)
 
 	/* Jump to top level */
 	ECL_SET(@'*package*', cl_core.user_package);
-	init_unixint();
-	si_catch_bad_signals();
+	init_unixint(1);
 	return 1;
 }
 

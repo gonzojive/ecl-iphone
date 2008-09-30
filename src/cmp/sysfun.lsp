@@ -396,8 +396,7 @@
 
 ;; file unixint.d
 
-(proclaim-function si:catch-bad-signals (*) t)
-(proclaim-function si:uncatch-bad-signals (*) t)
+(proclaim-function ext:catch-signal (t t) t)
 
 ;; file format.d
 

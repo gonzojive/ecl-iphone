@@ -533,14 +533,19 @@ returns with NIL."
 
 (define-condition storage-condition (serious-condition) ())
 
+(define-condition ext:segmentation-violation (storage-condition) ())
+
 (define-condition ext:stack-overflow (storage-condition)
   ((size :initarg :size :initform 0 :reader ext:stack-overflow-size)
    (type :initarg :type :initform nil :reader ext:stack-overflow-type))
   (:REPORT
    (lambda (condition stream)
-     (format stream "~A overflow at size ~D. Stack can probably be resized."
-	     (ext:stack-overflow-type condition)
-	     (ext:stack-overflow-size condition)))))
+     (let ((type (ext::stack-overflow-type condition)))
+       (if (eq type 'ext:c-stack)
+	   (format stream "Machine stack overflow. Stack cannot grow any further. Either exit
+or return to an outer frame, undoing all the function calls so far.")
+	   (format stream "~A overflow at size ~D. Stack can probably be resized."
+		   type (ext:stack-overflow-size condition)))))))
 
 (define-condition storage-exhausted (storage-condition) ())
 

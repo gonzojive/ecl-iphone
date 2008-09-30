@@ -45,6 +45,109 @@ void handle_fpe_signal(int,int);
 #endif
 #include <ecl/internal.h>
 
+static struct {
+	int code;
+	char *text;
+} known_signals[] = {
+#ifdef SIGHUP
+	{ SIGHUP, "+SIGHUP+" },
+#endif
+#ifdef SIGINT
+	{ SIGINT, "+SIGINT+" },
+#endif
+#ifdef SIGQUIT
+	{ SIGQUIT, "+SIGQUIT+" },
+#endif
+#ifdef SIGILL
+	{ SIGILL, "+SIGILL+" },
+#endif
+#ifdef SIGTRAP
+	{ SIGTRAP, "+SIGTRAP+" },
+#endif
+#ifdef SIGABRT
+	{ SIGABRT, "+SIGABRT+" },
+#endif
+#ifdef SIGEMT
+	{ SIGEMT, "+SIGEMT+" },
+#endif
+#ifdef SIGFPE
+	{ SIGFPE, "+SIGFPE+" },
+#endif
+#ifdef SIGKILL
+	{ SIGKILL, "+SIGKILL+" },
+#endif
+#ifdef SIGBUS
+	{ SIGBUS, "+SIGBUS+" },
+#endif
+#ifdef SIGSEGV
+	{ SIGSEGV, "+SIGSEGV+" },
+#endif
+#ifdef SIGSYS
+	{ SIGSYS, "+SIGSYS+" },
+#endif
+#ifdef SIGPIPE
+	{ SIGPIPE, "+SIGPIPE+" },
+#endif
+#ifdef SIGALRM
+	{ SIGALRM, "+SIGALRM+" },
+#endif
+#ifdef SIGTERM
+	{ SIGTERM, "+SIGTERM+" },
+#endif
+#ifdef SIGURG
+	{ SIGURG, "+SIGURG+" },
+#endif
+#ifdef SIGSTOP
+	{ SIGSTOP, "+SIGSTOP+" },
+#endif
+#ifdef SIGTSTP
+	{ SIGTSTP, "+SIGTSTP+" },
+#endif
+#ifdef SIGCONT
+	{ SIGCONT, "+SIGCONT+" },
+#endif
+#ifdef SIGCHLD
+	{ SIGCHLD, "+SIGCHLD+" },
+#endif
+#ifdef SIGTTIN
+	{ SIGTTIN, "+SIGTTIN+" },
+#endif
+#ifdef SIGTTOU
+	{ SIGTTOU, "+SIGTTOU+" },
+#endif
+#ifdef SIGIO
+	{ SIGIO, "+SIGIO+" },
+#endif
+#ifdef SIGXCPU
+	{ SIGXCPU, "+SIGXCPU+" },
+#endif
+#ifdef SIGXFSZ
+	{ SIGXFSZ, "+SIGXFSZ+" },
+#endif
+#ifdef SIGVTALRM
+	{ SIGVTALRM, "+SIGVTALRM+" },
+#endif
+#ifdef SIGPROF
+	{ SIGPROF, "+SIGPROF+" },
+#endif
+#ifdef SIGWINCH
+	{ SIGWINCH, "+SIGWINCH+" },
+#endif
+#ifdef SIGINFO
+	{ SIGINFO, "+SIGINFO+" },
+#endif
+#ifdef SIGUSR1
+	{ SIGUSR1, "+SIGUSR1+" },
+#endif
+#ifdef SIGUSR2
+	{ SIGUSR2, "+SIGUSR2+" },
+#endif
+#ifdef SIGTHR
+	{ SIGTHR, "+SIGTHR+" },
+#endif
+	{ -1, "" }
+};
+
 /******************************* ------- ******************************/
 
 bool ecl_interrupt_enable;
@@ -54,11 +157,13 @@ static void
 mysignal(int code, void *handler)
 {
 	struct sigaction new_action, old_action;
-
 #ifdef SA_SIGINFO
 	new_action.sa_sigaction = handler;
 	sigemptyset(&new_action.sa_mask);
 	new_action.sa_flags = SA_SIGINFO;
+	if (code == SIGSEGV) {
+		new_action.sa_flags |= SA_ONSTACK;
+	}
 #else
 	new_action.sa_handler = handler;
 	sigemptyset(&new_action.sa_mask);
@@ -116,7 +221,13 @@ handle_signal(int sig)
 		break;
 	}
 	case SIGSEGV:
-		FEerror("Segmentation violation.", 0);
+#ifdef SA_SIGINFO
+		if (sbrk(0) < info->si_addr) {
+			GC_disable();
+			cl_error(3, @'ext::stack-overflow', @':type', @'ext::c-stack');
+		}
+#endif
+		cl_error(1, @'ext::segmentation-violation');
 		break;
 	default:
 		FEerror("Serious signal ~D caught.", 1, MAKE_FIXNUM(sig));
@@ -134,6 +245,9 @@ signal_catcher(int sig, siginfo_t *siginfo, void *data)
 signal_catcher(int sig)
 #endif
 {
+#ifdef GBC_BOEHM
+	int old_GC_enabled = GC_enabled();
+#endif
 	if (!ecl_interrupt_enable ||
 	    ecl_symbol_value(@'si::*interrupt-enable*') == Cnil) {
 		mysignal(sig, signal_catcher);
@@ -157,6 +271,7 @@ signal_catcher(int sig)
 #else
 		sigprocmask(SIG_UNBLOCK, &block_mask, NULL);
 #endif
+		if (old_GC_enabled) GC_enable() else GC_disable();
 	} CL_UNWIND_PROTECT_END;
 #else
 #if defined (_MSC_VER)
@@ -184,45 +299,29 @@ si_check_pending_interrupts(void)
 }
 
 cl_object
-si_catch_bad_signals()
+si_catch_signal(cl_object code, cl_object boolean)
 {
-	mysignal(SIGILL, signal_catcher);
-#ifndef GBC_BOEHM
-	mysignal(SIGBUS, signal_catcher);
+	int code_int = fixnnint(signal);
+	int i;
+#ifdef GBC_BOEHM
+	if ((code_int == SIGSEGV && ecl_get_option(ECL_INCREMENTAL_GC)) ||
+	    (code_int == SIGBUS)) {
+		FEerror("It is not allowed to change the behavior of SIGBUS/SEGV.",
+			0);
+	}
 #endif
-#ifndef GBC_BOEHM_GENGC
-	mysignal(SIGSEGV, signal_catcher);
+#if defined(ECL_THREADS) && !defined(_MSC_VER) && !defined(mingw32)
+	if (code_int == SIGUSR1) {
+		FEerror("It is not allowed to change the behavior of SIGUSR1", 0);
+	}
 #endif
-#ifdef SIGIOT
-	mysignal(SIGIOT, signal_catcher);
-#endif
-#ifdef SIGEMT
-	mysignal(SIGEMT, signal_catcher);
-#endif
-#ifdef SIGSYS
-	mysignal(SIGSYS, signal_catcher);
-#endif
-	@(return Ct)
-}
-
-cl_object
-si_uncatch_bad_signals()
-{
-	mysignal(SIGILL, SIG_DFL);
-#ifndef GBC_BOEHM
-	mysignal(SIGBUS, SIG_DFL);
-#endif
-	mysignal(SIGSEGV, SIG_DFL);
-#ifdef SIGIOT
-	mysignal(SIGIOT, SIG_DFL);
-#endif
-#ifdef SIGEMT
-	mysignal(SIGEMT, SIG_DFL);
-#endif
-#ifdef SIGSYS
-	mysignal(SIGSYS, SIG_DFL);
-#endif
-	@(return Ct)
+	for (i = 0; known_signals[i].code >= 0; i++) {
+		if (known_signals[i].code == code) {
+			mysignal(code, Null(boolean)? SIG_DFL : signal_catcher);
+			@(return Ct)
+		}
+	}
+	@(return Cnil)
 }
 
 #ifdef _MSC_VER
@@ -328,18 +427,40 @@ si_trap_fpe(cl_object condition, cl_object flag)
 }	
 
 void
-init_unixint(void)
+init_unixint(int pass)
 {
-	mysignal(SIGFPE, signal_catcher);
-	si_trap_fpe(Ct, Ct);
-	mysignal(SIGINT, signal_catcher);
+	if (pass == 0) {
+		if (ecl_get_option(ECL_TRAP_SIGSEGV)) {
+			mysignal(SIGSEGV, signal_catcher);
+		}
+#ifndef GBC_BOEHM
+		if (ecl_get_option(ECL_TRAP_SIGBUS)) {
+			mysignal(SIGBUS, signal_catcher);
+		}
+#endif
+		if (ecl_get_option(ECL_TRAP_SIGINT)) {
+			mysignal(SIGINT, signal_catcher);
+		}
+		if (ecl_get_option(ECL_TRAP_SIGFPE)) {
+			mysignal(SIGFPE, signal_catcher);
+			si_trap_fpe(Ct, Ct);
+		}
 #if defined(ECL_THREADS) && !defined(_MSC_VER) && !defined(mingw32)
-	mysignal(SIGUSR1, signal_catcher);
+		mysignal(SIGUSR1, signal_catcher);
 #endif
 #ifdef _MSC_VER
-	SetUnhandledExceptionFilter(W32_exception_filter);
-	SetConsoleCtrlHandler(W32_console_ctrl_handler, TRUE);
+		SetUnhandledExceptionFilter(W32_exception_filter);
+		SetConsoleCtrlHandler(W32_console_ctrl_handler, TRUE);
 #endif
+	} else {
+		int i;
+		for (i = 0; known_signals[i].code >= 0; i++) {
+			cl_object name =
+				_ecl_intern(known_signals[i].text,
+					    cl_core.system_package);
+			si_Xmake_constant(name, MAKE_FIXNUM(known_signals[i].code));
+		}
+	}
 	ECL_SET(@'si::*interrupt-enable*', Ct);
 	ecl_interrupt_enable = 1;
 }

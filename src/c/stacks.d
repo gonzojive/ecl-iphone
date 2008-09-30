@@ -16,6 +16,7 @@
 */
 
 #include <ecl/ecl.h>
+#include <signal.h>
 #include <string.h>
 #ifdef HAVE_SYS_RESOURCE_H
 # include <sys/time.h>
@@ -450,46 +451,58 @@ si_set_stack_size(cl_object type, cl_object size)
 }
 
 void
-init_stacks(int *new_cs_org)
+init_stacks(struct cl_env_struct *env, int *new_cs_org)
 {
 	static struct ihs_frame ihs_org = { NULL, NULL, NULL, 0};
 	cl_index size;
 
-	cl_env.frs_size = size = FRSSIZE + 2*FRSGETA;
-	cl_env.frs_org = (ecl_frame_ptr)cl_alloc_atomic(size * sizeof(*cl_env.frs_org));
-	cl_env.frs_top = cl_env.frs_org-1;
-	cl_env.frs_limit = &cl_env.frs_org[size - 2*FRSGETA];
-	cl_env.bds_size = size = BDSSIZE + 2*BDSGETA;
-	cl_env.bds_org = (bds_ptr)cl_alloc_atomic(size * sizeof(*cl_env.bds_org));
-	cl_env.bds_top = cl_env.bds_org-1;
-	cl_env.bds_limit = &cl_env.bds_org[size - 2*BDSGETA];
+	env->frs_size = size = FRSSIZE + 2*FRSGETA;
+	env->frs_org = (ecl_frame_ptr)cl_alloc_atomic(size * sizeof(*env->frs_org));
+	env->frs_top = env->frs_org-1;
+	env->frs_limit = &env->frs_org[size - 2*FRSGETA];
+	env->bds_size = size = BDSSIZE + 2*BDSGETA;
+	env->bds_org = (bds_ptr)cl_alloc_atomic(size * sizeof(*env->bds_org));
+	env->bds_top = env->bds_org-1;
+	env->bds_limit = &env->bds_org[size - 2*BDSGETA];
 
-	cl_env.ihs_top = &ihs_org;
+	env->ihs_top = &ihs_org;
 	ihs_org.function = @'si::top-level';
 	ihs_org.lex_env = Cnil;
 	ihs_org.index = 0;
 
-	cl_env.cs_org = new_cs_org;
+	env->cs_org = new_cs_org;
 #if defined(HAVE_SYS_RESOURCE_H) && defined(RLIMIT_STACK)
 	{
 	  struct rlimit rl;
 	  getrlimit(RLIMIT_STACK, &rl);
-	  cl_env.cs_size = rl.rlim_cur/4 - 4*CSGETA;
+	  env->cs_size = rl.rlim_cur/4 - 4*CSGETA;
 	}
 #else
-	cl_env.cs_size = CSSIZE;
+	env->cs_size = CSSIZE;
 #endif
 #ifdef DOWN_STACK
 	/* Sanity check - in case rlimit is set too high */
-	if (cl_env.cs_org - cl_env.cs_size > cl_env.cs_org) {
-	  cl_env.cs_size = CSSIZE;
+	if (env->cs_org - env->cs_size > env->cs_org) {
+		env->cs_size = CSSIZE;
 	}
-	cl_env.cs_limit = cl_env.cs_org - cl_env.cs_size; /* in THREADS I'm assigning to the main thread clwp */
+	env->cs_limit = env->cs_org - env->cs_size; /* in THREADS I'm assigning to the main thread clwp */
 #else
 	/* Sanity check - in case rlimit is set too high */
-	if (cl_env.cs_org + cl_env.cs_size < cl_env.cs_org) {
-	  cl_env.cs_size = CSSIZE;
+	if (env->cs_org + env->cs_size < env->cs_org) {
+	  env->cs_size = CSSIZE;
 	}
-	cl_env.cs_limit = cl_env.cs_org + cl_env.cs_size;
+	env->cs_limit = env->cs_org + env->cs_size;
+#endif
+#if defined(HAVE_SIGPROCMASK) && defined(SA_SIGINFO)
+	{
+	stack_t new_stack;
+	env->altstack_size = SIGSTKSZ + (sizeof(double)*16) + (sizeof(cl_object)*4);
+	env->altstack = cl_alloc_atomic(env->altstack_size);
+	memset(&new_stack, 0, sizeof(new_stack));
+	new_stack.ss_size = env->altstack_size;
+	new_stack.ss_sp = env->altstack;
+	new_stack.ss_flags = 0;
+	sigaltstack(&new_stack, NULL);
+	}
 #endif
 }
