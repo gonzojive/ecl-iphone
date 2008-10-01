@@ -661,6 +661,10 @@ struct ecl_process {
 	pthread_t thread;
 	struct cl_env_struct *env;
 	cl_object interrupt;
+	/*void *stack;*/
+	/*cl_index stack_size;*/
+	void *altstack;
+	cl_index altstack_size;
 };
 
 struct ecl_lock {

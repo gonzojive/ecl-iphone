@@ -103,7 +103,7 @@ the function name it precedes."
     (or (and (probe-file pathname)
 	     (find-init-name pathname))
 	(error "Cannot find out entry point for binary file" pathname))
-    (compute-init-name pathname kind)))
+    (compute-init-name pathname :kind kind)))
 
 (defun compute-init-name (pathname &key (kind (guess-kind pathname)))
   (let ((filename (pathname-name pathname)))

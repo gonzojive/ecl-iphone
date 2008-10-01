@@ -662,8 +662,6 @@ the environment variable TMPDIR to a different value." template)
       (return-from compile (values nil t t))))
 
   (let*((*load-time-values* 'values) ;; Only the value is kept
-	(template (format nil "TMP:ECL~3,'0x" (incf *gazonk-counter*)))
-	(data-pathname (or (si::mkstemp template) "foo"))
 	(c-pathname (compile-file-pathname data-pathname :type :c))
 	(h-pathname (compile-file-pathname data-pathname :type :h))
 	(o-pathname (compile-file-pathname data-pathname :type :object))

@@ -1244,8 +1244,7 @@ cl_symbols[] = {
 {SYS_ "LOOKUP-HOST-ENTRY","si_lookup_host_entry"},
 #endif
 
-{SYS_ "CATCH-BAD-SIGNALS","si_catch_bad_signals"},
-{SYS_ "UNCATCH-BAD-SIGNALS","si_uncatch_bad_signals"},
+{SYS_ "CATCH-SIGNAL","si_catch_signal"},
 
 /* KEYWORD PACKAGE */
 {KEY_ "ADJUSTABLE",NULL},
@@ -1701,6 +1700,16 @@ cl_symbols[] = {
 {SYS_ "HASH-EQUALP","si_hash_equalp"},
 
 {EXT_ "INTERACTIVE-INTERRUPT",NULL},
+
+{EXT_ "STACK-OVERFLOW",NULL},
+{EXT_ "STACK-OVERFLOW-SIZE",NULL},
+{EXT_ "STACK-OVERFLOW-TYPE",NULL},
+{EXT_ "BINDING-STACK",NULL},
+{EXT_ "FRAME-STACK",NULL},
+{EXT_ "LISP-STACK",NULL},
+{EXT_ "C-STACK",NULL},
+{EXT_ "SET-STACK-SIZE","si_set_stack_size"},
+{EXT_ "SEGMENTATION-VIOLATION",NULL},
 
 /* Tag for end of list */
 {NULL,NULL}};

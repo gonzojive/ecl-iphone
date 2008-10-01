@@ -42,6 +42,18 @@ ECL 8.9.0:
  - New configuration flag, --without-fpe, to disable floating point exception
    code in platforms that have buggy implementations of feenableexcept().
 
+ - Changes in the build process of the Microsoft Visual C++ port contributed
+   by Muhammad Haggag.
+
+ - All known C signals are now exported by ECL as constants in the EXT package,
+   such as EXT:+SIGINT+, EXT:+SIGFPE+, etc.
+
+ - Function (EXT:CATCH-SIGNAL signal-code boolean) can be used to tell ECL to
+   trap or ignore certain signals. In a near future a function can be provided.
+
+ - In platforms that support sigaltstack(), ECL may detect stack overflows and
+   gracefully quit.
+
 * Bugs fixed:
 
  - The optimizer for COERCE might enter an infinite loop for certain
@@ -92,6 +104,31 @@ ECL 8.9.0:
 
  - In FTYPE proclamations and declarations, the type may now be a user defined
    function type (Josh Elsasser).
+
+ - COMPILE would create an extra empty file which would not get deleted after
+   finishing compilation (Josh Elsasser).
+
+ - On overflow, binding and frame stack signal a correctable error with
+   STACK-OVERFLOW condition.
+	(block faa
+	      (labels ((foo (x)
+			 (catch 'foo (foo (1+ x))))
+		       (handle-overflow (c)
+			 (let ((s (ext:stack-overflow-size c)))
+				   (if (< s 2304)
+			       (continue)
+			       (return-from faa (ext::stack-overflow-type c))))))
+		(handler-bind ((ext:stack-overflow #'handle-overflow))
+		  (foo 1))))
+
+ - New function (EXT:SET-STACK-SIZE type size) can resize type =
+   EXT:BINDING-STACK, EXT:LISP-STACK and EXT:FRAME-STACK.
+
+ - FLOAT-SIGN returns the right value on negative zeros.
+
+ - The reader and the printer now understand negative zeros.
+
+ - Negative and nonnegative zeros are not EQL.
 
 ;;; Local Variables: ***
 ;;; mode:text ***

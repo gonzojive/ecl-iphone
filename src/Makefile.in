@@ -149,10 +149,11 @@ install-base:
 	  fi \
 	done
 	if [ "x@SONAME@" != "x" ]; then \
-	  mv $(DESTDIR)$(libdir)/@SONAME@ $(DESTDIR)$(libdir)/@SONAME3@; \
-	  $(LN_S) $(DESTDIR)$(libdir)/@SONAME3@ $(DESTDIR)$(libdir)/@SONAME2@; \
-	  $(LN_S) $(DESTDIR)$(libdir)/@SONAME3@ $(DESTDIR)$(libdir)/@SONAME1@; \
-	  $(LN_S) $(DESTDIR)$(libdir)/@SONAME3@ $(DESTDIR)$(libdir)/@SONAME@; \
+	  ( cd $(DESTDIR)$(libdir) && rm -f @SONAME3@ @SONAME2@ @SONAME1@ && \
+	    mv @SONAME@ @SONAME3@ && \
+	    $(LN_S) @SONAME3@ @SONAME2@ && \
+	    $(LN_S) @SONAME3@ @SONAME1@ && \
+	    $(LN_S) @SONAME3@ @SONAME@ ) \
 	fi
 	for i in c/dpp$(EXE) ecl_min$(EXE) `cat MODULES`; do \
 	  case $$i in \

@@ -441,7 +441,7 @@ coprocessor).")
 (defvar *cc-flags* "@CPPFLAGS@ @CFLAGS@ @ECL_CFLAGS@")
 
 (defvar *cc-optimize* #-msvc "-O"
-                      #+msvc "-O2")
+                      #+msvc "@CFLAGS_OPTIMIZE@")
 
 (defvar *ld-format* #-msvc "~A -o ~S -L~S ~{~S ~} ~@?"
                     #+msvc "~A -Fe~S~* ~{~S ~} ~@?")

@@ -336,7 +336,7 @@
          (sym-loc (make-lcl-var))
          (val-loc (make-lcl-var)))
     (wt-nl "{cl_object " sym-loc "," val-loc ";")
-    (wt-nl "bds_ptr " lcl "=cl_env.bds_top;")
+    (wt-nl "cl_index " lcl " = cl_env.bds_top - cl_env.bds_org;")
     (push lcl *unwind-exit*)
     
     (let ((*destination* sym-loc)) (c2expr* symbols))

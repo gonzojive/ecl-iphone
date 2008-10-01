@@ -408,8 +408,7 @@ mpn_p4.lib: msvc-build $(MPN_P4_OBJS)
 gmp.lib: mpn_$(MPN_TYPE).lib $(GMP_ALL_OBJS)
 	link -lib /NOLOGO /OUT:$@ *.obj mpf\*.obj mpz\*.obj mpq\*.obj $(PRINTF_OBJS) $(SCANF_OBJS) mpn_$(MPN_TYPE).lib
 
-MFLAGS = /MD
-CFLAGS = /nologo $(MFLAGS) /W3 /EHsc /I "." /I $(srcdir) /I "$(srcdir)\mpn\generic" /D "WIN32" /D "NDEBUG" /D "_LIB" /D "_WIN32" /D "_MBCS"
+CFLAGS = $(CFLAGS_CONFIG) /nologo /W3 /EHsc /I "." /I $(srcdir) /I "$(srcdir)\mpn\generic" /D "WIN32" /D "_LIB" /D "_WIN32" /D "_MBCS"
 
 {.\mpn\generic}.c{.\mpn\generic}.obj:
 	cl -c $(CFLAGS) /Fo$@ $?

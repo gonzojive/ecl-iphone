@@ -16,6 +16,8 @@
 */
 
 #include <ecl/ecl.h>
+#include <signal.h>
+#include <string.h>
 #ifdef HAVE_SYS_RESOURCE_H
 # include <sys/time.h>
 # include <sys/resource.h>
@@ -29,6 +31,10 @@ bds_bind(cl_object s, cl_object value)
 {
 	struct ecl_hashtable_entry *h = ecl_search_hash(s, cl_env.bindings_hash);
 	struct bds_bd *slot = ++cl_env.bds_top;
+	if (slot >= cl_env.bds_limit) {
+		bds_overflow();
+		slot = cl_env.bds_top;
+	}
 	if (h->key == OBJNULL) {
 		/* The previous binding was at most global */
 		slot->symbol = s;
@@ -48,6 +54,10 @@ bds_push(cl_object s)
 {
 	struct ecl_hashtable_entry *h = ecl_search_hash(s, cl_env.bindings_hash);
 	struct bds_bd *slot = ++cl_env.bds_top;
+	if (slot >= cl_env.bds_limit) {
+		bds_overflow();
+		slot = cl_env.bds_top;
+	}
 	if (h->key == OBJNULL) {
 		/* The previous binding was at most global */
 		slot->symbol = s;
@@ -78,12 +88,6 @@ bds_unwind1(void)
 	}
 }
 
-void
-bds_unwind_n(int n)
-{
-	while (n--) bds_unwind1();
-}
-
 cl_object *
 ecl_symbol_slot(cl_object s)
 {
@@ -111,19 +115,50 @@ ecl_set_symbol(cl_object s, cl_object value)
 #endif
 
 void
-bds_overflow(void)
+bds_unwind_n(int n)
 {
-	--cl_env.bds_top;
-	if (cl_env.bds_limit > cl_env.bds_org + cl_env.bds_size)
-		ecl_internal_error("bind stack overflow.");
-	cl_env.bds_limit += BDSGETA;
-	FEerror("Bind stack overflow.", 0);
+	while (n--) bds_unwind1();
+}
+
+static void
+bds_set_size(cl_index size)
+{
+	cl_index limit = (cl_env.bds_top - cl_env.bds_org);
+	if (size <= limit) {
+		FEerror("Cannot shrink the binding stack below ~D.", 1,
+			ecl_make_unsigned_integer(limit));
+	} else {
+		bds_ptr org;
+		org = cl_alloc_atomic(size * sizeof(*org));
+		memcpy(org, cl_env.bds_org, (cl_env.bds_top - cl_env.bds_org) * sizeof(*org));
+		cl_env.bds_top = org + (cl_env.bds_top - cl_env.bds_org);
+		cl_env.bds_org = org;
+		cl_env.bds_limit = org + (size - 2*BDSGETA);
+		cl_env.bds_size = size;
+	}
 }
 
 void
-bds_unwind(bds_ptr new_bds_top)
+bds_overflow(void)
 {
-	register bds_ptr bds = cl_env.bds_top;
+	cl_index size = cl_env.bds_size;
+	bds_ptr org = cl_env.bds_org;
+	bds_ptr last = org + size;
+	if (cl_env.bds_limit >= last) {
+		ecl_internal_error("Bind stack overflow, cannot grow larger.");
+	}
+	cl_env.bds_limit += BDSGETA;
+	cl_cerror(6, make_constant_base_string("Extend stack size"),
+		  @'ext::stack-overflow', @':size', MAKE_FIXNUM(size),
+		  @':type', @'ext::binding-stack');
+	bds_set_size(size + (size / 2));
+}
+
+void
+bds_unwind(cl_index new_bds_top_index)
+{
+	bds_ptr new_bds_top = new_bds_top_index + cl_env.bds_org;
+	bds_ptr bds = cl_env.bds_top;
 	for (;  bds > new_bds_top;  bds--)
 #ifdef ECL_THREADS
 		bds_unwind1();
@@ -139,9 +174,9 @@ get_bds_ptr(cl_object x)
 	bds_ptr p;
 
 	if (FIXNUMP(x)) {
-	  p = cl_env.bds_org + fix(x);
-	  if (cl_env.bds_org <= p && p <= cl_env.bds_top)
-	    return(p);
+		p = cl_env.bds_org + fix(x);
+		if (cl_env.bds_org <= p && p <= cl_env.bds_top)
+			return(p);
 	}
 	FEerror("~S is an illegal bds index.", 1, x);
 }
@@ -251,22 +286,49 @@ new_frame_id(void)
   return(MAKE_FIXNUM(frame_id++));
 }
 
-int
+static void
+frs_set_size(cl_index size)
+{
+	cl_index limit = (cl_env.frs_top - cl_env.frs_org);
+	if (size <= limit) {
+		FEerror("Cannot shrink frame stack below ~D.", 1,
+			ecl_make_unsigned_integer(limit));
+	} else {
+		ecl_frame_ptr org;
+		org = cl_alloc_atomic(size * sizeof(*org));
+		memcpy(org, cl_env.frs_org, (cl_env.frs_top - cl_env.frs_org) * sizeof(*org));
+		cl_env.frs_top = org + (cl_env.frs_top - cl_env.frs_org);
+		cl_env.frs_org = org;
+		cl_env.frs_limit = org + (size - 2*FRSGETA);
+		cl_env.frs_size = size;
+	}
+}
+
+static void
 frs_overflow(void)		/* used as condition in list.d */
 {
-	--cl_env.frs_top;
-	if (cl_env.frs_limit > cl_env.frs_org + cl_env.frs_size)
-		ecl_internal_error("frame stack overflow.");
+	cl_index size = cl_env.frs_size;
+	ecl_frame_ptr org = cl_env.frs_org;
+	ecl_frame_ptr last = org + size;
+	if (cl_env.frs_limit >= last) {
+		ecl_internal_error("Frame stack overflow, cannot grow larger.");
+	}
 	cl_env.frs_limit += FRSGETA;
-	FEerror("Frame stack overflow.", 0);
+	cl_cerror(6, make_constant_base_string("Extend stack size"),
+		  @'ext::stack-overflow', @':size', MAKE_FIXNUM(size),
+		  @':type', @'ext::frame-stack');
+	frs_set_size(size + size / 2);
 }
 
 ecl_frame_ptr
 _frs_push(register cl_object val)
 {
 	ecl_frame_ptr output = ++cl_env.frs_top;
-	if (output >= cl_env.frs_limit) frs_overflow();
-	output->frs_bds_top = cl_env.bds_top;
+	if (output >= cl_env.frs_limit) {
+		frs_overflow();
+		output = cl_env.frs_top;
+	}
+	output->frs_bds_top_index = cl_env.bds_top - cl_env.bds_org;
 	output->frs_val = val;
 	output->frs_ihs = cl_env.ihs_top;
 	output->frs_sp = cl_stack_index();
@@ -280,7 +342,7 @@ ecl_unwind(ecl_frame_ptr fr)
 	while (cl_env.frs_top != fr && cl_env.frs_top->frs_val != ECL_PROTECT_TAG)
 		--cl_env.frs_top;
 	cl_env.ihs_top = cl_env.frs_top->frs_ihs;
-	bds_unwind(cl_env.frs_top->frs_bds_top);
+	bds_unwind(cl_env.frs_top->frs_bds_top_index);
 	cl_stack_set_index(cl_env.frs_top->frs_sp);
 	ecl_longjmp(cl_env.frs_top->frs_jmpbuf, 1);
 	/* never reached */
@@ -319,7 +381,7 @@ si_frs_top()
 cl_object
 si_frs_bds(cl_object arg)
 {
-	@(return MAKE_FIXNUM(get_frame_ptr(arg)->frs_bds_top - cl_env.bds_org))
+	@(return MAKE_FIXNUM(get_frame_ptr(arg)->frs_bds_top_index))
 }
 
 cl_object
@@ -374,47 +436,73 @@ si_reset_stack_limits()
 	@(return Cnil)
 }
 
+cl_object
+si_set_stack_size(cl_object type, cl_object size)
+{
+	cl_index the_size = fixnnint(size);
+	if (type == @'ext::frame-stack') {
+		frs_set_size(the_size);
+	} else if (type == @'ext::binding-stack') {
+		bds_set_size(the_size);
+	} else {
+		cl_stack_set_size(the_size);
+	}
+	@(return)
+}
+
 void
-init_stacks(int *new_cs_org)
+init_stacks(struct cl_env_struct *env, int *new_cs_org)
 {
 	static struct ihs_frame ihs_org = { NULL, NULL, NULL, 0};
 	cl_index size;
 
-	cl_env.frs_size = size = FRSSIZE + 2*FRSGETA;
-	cl_env.frs_org = (ecl_frame_ptr)cl_alloc_atomic(size * sizeof(*cl_env.frs_org));
-	cl_env.frs_top = cl_env.frs_org-1;
-	cl_env.frs_limit = &cl_env.frs_org[size - 2*FRSGETA];
-	cl_env.bds_size = size = BDSSIZE + 2*BDSGETA;
-	cl_env.bds_org = (bds_ptr)cl_alloc_atomic(size * sizeof(*cl_env.bds_org));
-	cl_env.bds_top = cl_env.bds_org-1;
-	cl_env.bds_limit = &cl_env.bds_org[size - 2*BDSGETA];
+	env->frs_size = size = FRSSIZE + 2*FRSGETA;
+	env->frs_org = (ecl_frame_ptr)cl_alloc_atomic(size * sizeof(*env->frs_org));
+	env->frs_top = env->frs_org-1;
+	env->frs_limit = &env->frs_org[size - 2*FRSGETA];
+	env->bds_size = size = BDSSIZE + 2*BDSGETA;
+	env->bds_org = (bds_ptr)cl_alloc_atomic(size * sizeof(*env->bds_org));
+	env->bds_top = env->bds_org-1;
+	env->bds_limit = &env->bds_org[size - 2*BDSGETA];
 
-	cl_env.ihs_top = &ihs_org;
+	env->ihs_top = &ihs_org;
 	ihs_org.function = @'si::top-level';
 	ihs_org.lex_env = Cnil;
 	ihs_org.index = 0;
 
-	cl_env.cs_org = new_cs_org;
+	env->cs_org = new_cs_org;
 #if defined(HAVE_SYS_RESOURCE_H) && defined(RLIMIT_STACK)
 	{
 	  struct rlimit rl;
 	  getrlimit(RLIMIT_STACK, &rl);
-	  cl_env.cs_size = rl.rlim_cur/4 - 4*CSGETA;
+	  env->cs_size = rl.rlim_cur/4 - 4*CSGETA;
 	}
 #else
-	cl_env.cs_size = CSSIZE;
+	env->cs_size = CSSIZE;
 #endif
 #ifdef DOWN_STACK
 	/* Sanity check - in case rlimit is set too high */
-	if (cl_env.cs_org - cl_env.cs_size > cl_env.cs_org) {
-	  cl_env.cs_size = CSSIZE;
+	if (env->cs_org - env->cs_size > env->cs_org) {
+		env->cs_size = CSSIZE;
 	}
-	cl_env.cs_limit = cl_env.cs_org - cl_env.cs_size; /* in THREADS I'm assigning to the main thread clwp */
+	env->cs_limit = env->cs_org - env->cs_size; /* in THREADS I'm assigning to the main thread clwp */
 #else
 	/* Sanity check - in case rlimit is set too high */
-	if (cl_env.cs_org + cl_env.cs_size < cl_env.cs_org) {
-	  cl_env.cs_size = CSSIZE;
+	if (env->cs_org + env->cs_size < env->cs_org) {
+	  env->cs_size = CSSIZE;
 	}
-	cl_env.cs_limit = cl_env.cs_org + cl_env.cs_size;
+	env->cs_limit = env->cs_org + env->cs_size;
+#endif
+#if defined(HAVE_SIGPROCMASK) && defined(SA_SIGINFO)
+	{
+	stack_t new_stack;
+	env->altstack_size = SIGSTKSZ + (sizeof(double)*16) + (sizeof(cl_object)*4);
+	env->altstack = cl_alloc_atomic(env->altstack_size);
+	memset(&new_stack, 0, sizeof(new_stack));
+	new_stack.ss_size = env->altstack_size;
+	new_stack.ss_sp = env->altstack;
+	new_stack.ss_flags = 0;
+	sigaltstack(&new_stack, NULL);
+	}
 #endif
 }
