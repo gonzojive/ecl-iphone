@@ -33,13 +33,14 @@ cs_set_size(cl_index new_size)
 	new_size += 2*safety_area;
 #ifdef ECL_DOWN_STACK
 	if (&foo > cl_env.cs_org - new_size + 16)
-		cl_env.cs_limit = cl_env.cs_org - new_size;
+		cl_env.cs_limit = cl_env.cs_org - new_size + 2*safety_area;
 #else
 	if (&foo < cl_env.cs_org + new_size - 16)
-		cl_env.cs_limit = cl_env.cs_org + new_size;
+		cl_env.cs_limit = cl_env.cs_org + new_size - 2*safety_area;
 #endif
 	else
 		ecl_internal_error("can't reset cl_env.cs_limit.");
+	cl_env.cs_size = new_size;
 }
 
 void
@@ -48,10 +49,10 @@ ecl_cs_overflow(void)
 	cl_index safety_area = ecl_get_option(ECL_OPT_C_STACK_SAFETY_AREA);
 	cl_index size = cl_env.cs_size;
 #ifdef ECL_DOWN_STACK
-	if (cl_env.cs_limit < cl_env.cs_org - size)
+	if (cl_env.cs_limit > cl_env.cs_org - size)
 		cl_env.cs_limit -= safety_area;
 #else
-	if (cl_env.cs_limit > cl_env.cs_org + size)
+	if (cl_env.cs_limit < cl_env.cs_org + size)
 		cl_env.cs_limit += safety_area;
 #endif
 	else
@@ -505,7 +506,7 @@ init_stacks(struct cl_env_struct *env, int *new_cs_org)
 	  cl_index size;
 	  getrlimit(RLIMIT_STACK, &rl);
 	  size = rl.rlim_cur / sizeof(int) / 4;
-	  if (size < ecl_get_option(ECL_OPT_C_STACK_SIZE))
+	  if (size > ecl_get_option(ECL_OPT_C_STACK_SIZE))
 		  ecl_set_option(ECL_OPT_C_STACK_SIZE, size);
 	}
 #endif
