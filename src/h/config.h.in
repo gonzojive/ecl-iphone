@@ -327,10 +327,10 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 /*
  * The lisp environment has several stacks. These are their limits:
  */
-#define BDSSIZE	2048		/* Size of Binding Stack		*/
-#define	BDSGETA	16		/* Safety zone of BDS			*/
-#define FRSSIZE	1024		/* Size of Frame Stack			*/
-#define	FRSGETA	16		/* Safety zone of FRS			*/
+#define BDSSIZE	8192		/* Size of Binding Stack		*/
+#define	BDSGETA	128		/* Safety zone of BDS			*/
+#define FRSSIZE	2048		/* Size of Frame Stack			*/
+#define	FRSGETA	128		/* Safety zone of FRS			*/
 #ifdef THREADS
 #define	CSSIZE	7500		/* Size of C Stack of each thread	*/
 #define	CSGETA	500
