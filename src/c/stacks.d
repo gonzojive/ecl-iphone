@@ -31,7 +31,7 @@ cs_set_size(cl_index new_size)
 	volatile int foo = 0;
 	cl_index safety_area = ecl_get_option(ECL_OPT_C_STACK_SAFETY_AREA);
 	new_size += 2*safety_area;
-#ifdef DOWN_STACK
+#ifdef ECL_DOWN_STACK
 	if (&foo > cl_env.cs_org - new_size + 16)
 		cl_env.cs_limit = cl_env.cs_org - new_size;
 #else
@@ -47,7 +47,7 @@ ecl_cs_overflow(void)
 {
 	cl_index safety_area = ecl_get_option(ECL_OPT_C_STACK_SAFETY_AREA);
 	cl_index size = cl_env.cs_size;
-#ifdef DOWN_STACK
+#ifdef ECL_DOWN_STACK
 	if (cl_env.cs_limit < cl_env.cs_org - size)
 		cl_env.cs_limit -= safety_area;
 #else
@@ -465,6 +465,8 @@ si_set_stack_size(cl_object type, cl_object size)
 		frs_set_size(the_size);
 	} else if (type == @'ext::binding-stack') {
 		bds_set_size(the_size);
+	} else if (type == @'ext::c-stack') {
+		cs_set_size(the_size);
 	} else {
 		cl_stack_set_size(the_size);
 	}
@@ -500,8 +502,11 @@ init_stacks(struct cl_env_struct *env, int *new_cs_org)
 #if defined(HAVE_SYS_RESOURCE_H) && defined(RLIMIT_STACK)
 	{
 	  struct rlimit rl;
+	  cl_index size;
 	  getrlimit(RLIMIT_STACK, &rl);
-	  ecl_set_option(ECL_OPT_C_STACK_SIZE, rl.rlim_cur/4);
+	  size = rl.rlim_cur / sizeof(int) / 4;
+	  if (size < ecl_get_option(ECL_OPT_C_STACK_SIZE))
+		  ecl_set_option(ECL_OPT_C_STACK_SIZE, size);
 	}
 #endif
 	cs_set_size(ecl_get_option(ECL_OPT_C_STACK_SIZE));
