@@ -18,6 +18,16 @@
 extern "C" {
 #endif
 
+/***********
+ * C STACK
+ ***********/
+
+#ifdef ECL_DOWN_STACK
+#define ecl_cs_check(var) if ((int*)(&var) <= cl_env.cs_limit) ecl_cs_overflow()
+#else
+#define ecl_cs_check(var) if ((int*)(&var) >= cl_env.cs_limit) ecl_cs_overflow()
+#endif
+
 /**************
  * BIND STACK
  **************/

@@ -539,11 +539,11 @@ mark_cl_env(struct cl_env_struct *env)
 /* We should mark the stacks of the threads somehow!!! */
 #error "The old garbage collector does not support threads"
 #else
-# if DOWN_STACK
+# ifdef ECL_DOWN_STACK
 	mark_stack_conservative((cl_ptr)(&where), (cl_ptr)env->cs_org);
 # else
 	mark_stack_conservative((cl_ptr)env->cs_org, (cl_ptr)(&where));
-# endif /* DOWN_STACK */
+# endif /* ECL_DOWN_STACK */
 #endif /* THREADS */
 
 #ifdef ECL_FFICALL

@@ -400,7 +400,7 @@ int main() {
 ]])],[ECL_STACK_DIR=down],[ECL_STACK_DIR=up],[])
 fi
 case "${ECL_STACK_DIR}" in
-  down|DOWN) AC_MSG_RESULT(yes); AC_DEFINE(DOWN_STACK, [1], [Stack grows downwards]) ;;
+  down|DOWN) AC_MSG_RESULT(yes); AC_DEFINE(ECL_DOWN_STACK, [1], [Stack grows downwards]) ;;
   up|UP) AC_MSG_RESULT(no) ;;
   *) AC_MSG_ERROR(Unable to determine stack growth direction)
 esac])

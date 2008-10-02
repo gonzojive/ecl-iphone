@@ -79,6 +79,9 @@
 /* Support for Unicode strings */
 #undef ECL_UNICODE
 
+/* Stack grows downwards						*/
+#undef ECL_DOWN_STACK
+
 /*
  * C TYPES AND SYSTEM LIMITS
  */
@@ -214,8 +217,6 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
  * SYSTEM FEATURES:
  */
 
-/* Stack grows downwards						*/
-#undef DOWN_STACK
 /* Argument list can be access as an array				*/
 #undef ECL_USE_VARARG_AS_POINTER
 /* Most significant byte first						*/
