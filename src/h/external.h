@@ -55,8 +55,8 @@ struct cl_env_struct {
 	 * memory. They will eventually disappear, because most operating
 	 * systems already take care of this.
 	 */
-	int *cs_org;
-	int *cs_limit;
+	cl_fixnum *cs_org;
+	cl_fixnum *cs_limit;
 	cl_index cs_size;
 
 	/* Array where values are returned by functions. */
