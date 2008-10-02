@@ -505,9 +505,11 @@ init_stacks(struct cl_env_struct *env, int *new_cs_org)
 	  struct rlimit rl;
 	  cl_index size;
 	  getrlimit(RLIMIT_STACK, &rl);
-	  size = rl.rlim_cur / sizeof(int) / 4;
-	  if (size > ecl_get_option(ECL_OPT_C_STACK_SIZE))
-		  ecl_set_option(ECL_OPT_C_STACK_SIZE, size);
+	  if (rl.rlim_cur != RLIM_INFINITY) {
+		  size = rl.rlim_cur / sizeof(cl_fixnum) / 2;
+		  if (size > ecl_get_option(ECL_OPT_C_STACK_SIZE))
+			  ecl_set_option(ECL_OPT_C_STACK_SIZE, size);
+	  }
 	}
 #endif
 	cs_set_size(ecl_get_option(ECL_OPT_C_STACK_SIZE));
