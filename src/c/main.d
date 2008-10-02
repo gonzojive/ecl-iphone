@@ -72,7 +72,7 @@ ecl_get_option(int option)
 	if (option > ECL_INCREMENTAL_GC || option < 0) {
 		FEerror("Invalid boot option ~D", 0, MAKE_FIXNUM(option));
 	}
-	return (boot_options >> option) & 1;
+	return (boot_options & option);
 }
 
 void
@@ -81,7 +81,7 @@ ecl_set_option(int option, int value)
 	if (option > ECL_INCREMENTAL_GC || option < 0) {
 		FEerror("Invalid boot option ~D", 0, MAKE_FIXNUM(option));
 	} else {
-		cl_index mask = 1 << option;
+		cl_index mask = option;
 		if (value) {
 			boot_options |= mask;
 		} else {
