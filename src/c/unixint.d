@@ -301,14 +301,20 @@ si_check_pending_interrupts(void)
 cl_object
 si_catch_signal(cl_object code, cl_object boolean)
 {
-	int code_int = fixnnint(signal);
+	int code_int = fixnnint(code);
 	int i;
 #ifdef GBC_BOEHM
-	if ((code_int == SIGSEGV && ecl_get_option(ECL_INCREMENTAL_GC)) ||
-	    (code_int == SIGBUS)) {
-		FEerror("It is not allowed to change the behavior of SIGBUS/SEGV.",
+	int error = 0;
+#ifdef SIGSEGV
+	if ((code_int == SIGSEGV) && ecl_get_option(ECL_INCREMENTAL_GC))
+		FEerror("It is not allowed to change the behavior of SIGSEGV.",
 			0);
-	}
+#endif
+#ifdef SIGBUS
+	if (code_int == SIGBUS)
+		FEerror("It is not allowed to change the behavior of SIGBUS.",
+			0);
+#endif
 #endif
 #if defined(ECL_THREADS) && !defined(_MSC_VER) && !defined(mingw32)
 	if (code_int == SIGUSR1) {
@@ -316,8 +322,9 @@ si_catch_signal(cl_object code, cl_object boolean)
 	}
 #endif
 	for (i = 0; known_signals[i].code >= 0; i++) {
-		if (known_signals[i].code == code) {
-			mysignal(code, Null(boolean)? SIG_DFL : signal_catcher);
+		if (known_signals[i].code == code_int) {
+			mysignal(code_int,
+				 Null(boolean)? SIG_DFL : signal_catcher);
 			@(return Ct)
 		}
 	}
@@ -430,21 +437,27 @@ void
 init_unixint(int pass)
 {
 	if (pass == 0) {
+#ifdef SIGSEGV
 		if (ecl_get_option(ECL_TRAP_SIGSEGV)) {
 			mysignal(SIGSEGV, signal_catcher);
 		}
-#ifndef GBC_BOEHM
+#endif
+#if defined(SIGBUS) && !defined(GBC_BOEHM)
 		if (ecl_get_option(ECL_TRAP_SIGBUS)) {
 			mysignal(SIGBUS, signal_catcher);
 		}
 #endif
+#ifdef SIGINT
 		if (ecl_get_option(ECL_TRAP_SIGINT)) {
 			mysignal(SIGINT, signal_catcher);
 		}
+#endif
+#ifdef SIGFPE
 		if (ecl_get_option(ECL_TRAP_SIGFPE)) {
 			mysignal(SIGFPE, signal_catcher);
 			si_trap_fpe(Ct, Ct);
 		}
+#endif
 #if defined(ECL_THREADS) && !defined(_MSC_VER) && !defined(mingw32)
 		mysignal(SIGUSR1, signal_catcher);
 #endif
