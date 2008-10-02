@@ -540,12 +540,14 @@ returns with NIL."
    (type :initarg :type :initform nil :reader ext:stack-overflow-type))
   (:REPORT
    (lambda (condition stream)
-     (let ((type (ext::stack-overflow-type condition)))
-       (if (eq type 'ext:c-stack)
-	   (format stream "Machine stack overflow. Stack cannot grow any further. Either exit
-or return to an outer frame, undoing all the function calls so far.")
+     (let* ((type (ext::stack-overflow-type condition))
+	    (size (ext::stack-overflow-size condition)))
+       (if size
 	   (format stream "~A overflow at size ~D. Stack can probably be resized."
-		   type (ext:stack-overflow-size condition)))))))
+		   type size)
+	   (format stream "~A stack overflow. Stack cannot grow any further. Either exit
+or return to an outer frame, undoing all the function calls so far."
+		   type))))))
 
 (define-condition storage-exhausted (storage-condition) ())
 
