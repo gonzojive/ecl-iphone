@@ -39,7 +39,6 @@ extern int GC_dont_gc;
 
 /******************************* EXPORTS ******************************/
 
-bool ecl_booted = 0;
 #if !defined(ECL_THREADS)
 struct cl_env_struct cl_env;
 #elif defined(WITH___THREAD)
@@ -52,41 +51,61 @@ const char *ecl_self;
 
 static int ARGC;
 static char **ARGV;
-static cl_index boot_options = ECL_TRAP_SIGSEGV
-	| ECL_TRAP_SIGFPE
-	| ECL_TRAP_SIGINT
-	| ECL_TRAP_SIGILL
+static cl_fixnum option_values[ECL_OPT_LIMIT] = {
 #ifdef GBC_BOEHM_GENGC
-	| ECL_INCREMENTAL_GC
+	1,	/* ECL_OPT_INCREMENTAL_GC */
+#else
+	0,	/* ECL_OPT_INCREMENTAL_GC */
 #endif
-	| ECL_TRAP_SIGBUS;
+	1,	/* ECL_OPT_TRAP_SIGSEGV */
+	1,	/* ECL_OPT_TRAP_SIGFPE */
+	1,	/* ECL_OPT_TRAP_SIGINT */
+	1,	/* ECL_OPT_TRAP_SIGILL */
+	1,	/* ECL_OPT_TRAP_SIGBUS */
+	0,	/* ECL_OPT_BOOTED */
+	8192,	/* ECL_OPT_BIND_STACK_SIZE */
+	128,	/* ECL_OPT_BIND_STACK_SAFETY_AREA */
+	2048,	/* ECL_OPT_FRAME_STACK_SIZE */
+	128,	/* ECL_OPT_FRAME_STACK_SAFETY_AREA */
+	32768,	/* ECL_OPT_LISP_STACK_SIZE */
+	128,	/* ECL_OPT_LISP_STACK_SAFETY_AREA */
+#ifdef THREADS
+	7500,	/* ECL_OPT_C_STACK_SIZE */
+	500,	/* ECL_OPT_C_STACK_SAFETY_AREA */
+#else
+	20000,	/* ECL_OPT_C_STACK_SIZE */
+	4000,	/* ECL_OPT_C_STACK_SAFETY_AREA */
+#endif
+	1,	/* ECL_OPT_SIGALTSTACK_SIZE */
+	0};
 
 #if !defined(GBC_BOEHM)
 static char stdin_buf[BUFSIZ];
 static char stdout_buf[BUFSIZ];
 #endif
 
-int
+cl_fixnum
 ecl_get_option(int option)
 {
-	if (option > ECL_INCREMENTAL_GC || option < 0) {
-		FEerror("Invalid boot option ~D", 0, MAKE_FIXNUM(option));
+	if (option >= ECL_OPT_LIMIT || option < 0) {
+		FEerror("Invalid boot option ~D", 1, MAKE_FIXNUM(option));
+	} else {
+		return option_values[option];
 	}
-	return (boot_options & option);
 }
 
 void
-ecl_set_option(int option, int value)
+ecl_set_option(int option, cl_fixnum value)
 {
-	if (option > ECL_INCREMENTAL_GC || option < 0) {
-		FEerror("Invalid boot option ~D", 0, MAKE_FIXNUM(option));
+	if (option > ECL_OPT_LIMIT || option < 0) {
+		FEerror("Invalid boot option ~D", 1, MAKE_FIXNUM(option));
 	} else {
-		cl_index mask = option;
-		if (value) {
-			boot_options |= mask;
-		} else {
-			boot_options &= ~mask;
+		if (option > ECL_OPT_BOOTED &&
+		    option_values[ECL_OPT_BOOTED]) {
+			FEerror("Cannot change option ~D while ECL is running",
+				1, MAKE_FIXNUM(option));
 		}
+		option_values[option] = value;
 	}
 }
 
@@ -103,7 +122,7 @@ ecl_init_env(struct cl_env_struct *env)
 	env->stack_top = NULL;
 	env->stack_limit = NULL;
 	env->stack_size = 0;
-	cl_stack_set_size(16*LISP_PAGESIZE);
+	cl_stack_set_size(ecl_get_option(ECL_OPT_LISP_STACK_SIZE));
 
 #if !defined(ECL_CMU_FORMAT)
 	env->print_pretty = FALSE;
@@ -185,7 +204,7 @@ static const struct {
 int
 cl_shutdown(void)
 {
-	if (ecl_booted > 0) {
+	if (ecl_get_option(ECL_OPT_BOOTED) > 0) {
 		cl_object l = SYM_VAL(@'si::*exit-hooks*');
 		cl_object form = cl_list(2, @'funcall', Cnil);
 		while (CONSP(l)) {
@@ -201,7 +220,7 @@ cl_shutdown(void)
 		ecl_tcp_close_all();
 #endif
 	}
-	ecl_booted = -1;
+	ecl_set_option(ECL_OPT_BOOTED, -1);
 	return 1;
 }
 
@@ -212,10 +231,11 @@ cl_boot(int argc, char **argv)
 	cl_object features;
 	int i;
 
-	if (ecl_booted) {
-		if (ecl_booted < 0) {
+	i = ecl_get_option(ECL_OPT_BOOTED);
+	if (i) {
+		if (i < 0) {
 			/* We have called cl_shutdown and want to use ECL again. */
-			ecl_booted = 1;
+			ecl_set_option(ECL_OPT_BOOTED, 1);
 		}
 		return 1;
 	}
@@ -549,7 +569,7 @@ cl_boot(int argc, char **argv)
 
 	/* This has to come before init_LSP/CLOS, because we need
 	 * ecl_clear_compiler_properties() to work in init_CLOS(). */
-	ecl_booted = 1;
+	ecl_set_option(ECL_OPT_BOOTED, 1);
 
 	read_VV(OBJNULL,init_lib_LSP);
 

@@ -23,12 +23,12 @@
 /* -------------------- INTERPRETER STACK -------------------- */
 
 void
-cl_stack_set_size(cl_index new_size)
+cl_stack_set_size(cl_index tentative_new_size)
 {
 	cl_index top = cl_env.stack_top - cl_env.stack;
 	cl_object *new_stack;
-
-	/*printf("*+*+*+\n");*/
+	cl_index safety_area = ecl_get_option(ECL_OPT_LISP_STACK_SAFETY_AREA);
+	cl_index new_size = tentative_new_size + 2*safety_area;
 
 	if (top > new_size)
 		FEerror("Internal error: cannot shrink stack that much.",0);
@@ -46,7 +46,7 @@ cl_stack_set_size(cl_index new_size)
 	cl_env.stack_size = new_size;
 	cl_env.stack = new_stack;
 	cl_env.stack_top = cl_env.stack + top;
-	cl_env.stack_limit = cl_env.stack + (new_size - 2);
+	cl_env.stack_limit = cl_env.stack + (new_size - 2*safety_area);
 
 	/* A stack always has at least one element. This is assumed by cl__va_start
 	 * and friends, which take a sp=0 to have no arguments.

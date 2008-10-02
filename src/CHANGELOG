@@ -54,6 +54,32 @@ ECL 8.9.0:
  - In platforms that support sigaltstack(), ECL may detect stack overflows and
    gracefully quit.
 
+* Embedding:
+
+ - ECL now implements a more transparent interface for setting and querying
+   options related to signal trapping, stack sizes and general behavior. These
+   are options that should be set before calling cl_boot() to customize later
+   behavior. It does not make sense to change them at run time. The current
+   list of options is set with ecl_set_option(code, value) and queried with
+   ecl_get_option(code):
+	ECL_OPT_INCREMENTAL_GC,
+	ECL_OPT_TRAP_SIGSEGV,
+	ECL_OPT_TRAP_SIGFPE,
+	ECL_OPT_TRAP_SIGINT,
+	ECL_OPT_TRAP_SIGILL,
+	ECL_OPT_TRAP_SIGBUS,
+	ECL_OPT_BOOTED, /* read only */
+	ECL_OPT_BIND_STACK_SIZE,
+	ECL_OPT_BIND_STACK_SAFETY_AREA,
+	ECL_OPT_FRAME_STACK_SIZE,
+	ECL_OPT_FRAME_STACK_SAFETY_AREA,
+	ECL_OPT_LISP_STACK_SIZE,
+	ECL_OPT_LISP_STACK_SAFETY_AREA,
+	ECL_OPT_C_STACK_SIZE,
+	ECL_OPT_C_STACK_SAFETY_AREA,
+	ECL_OPT_SIGALTSTACK_SIZE,
+	ECL_OPT_LIMIT
+
 * Bugs fixed:
 
  - The optimizer for COERCE might enter an infinite loop for certain

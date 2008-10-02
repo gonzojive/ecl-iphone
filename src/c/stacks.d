@@ -23,6 +23,47 @@
 # include <sys/resource.h>
 #endif
 
+/************************ C STACK ***************************/
+
+static void
+cs_set_size(cl_index new_size)
+{
+	volatile int foo = 0;
+	cl_index safety_area = ecl_get_option(ECL_OPT_C_STACK_SAFETY_AREA);
+	new_size += 2*safety_area;
+#ifdef DOWN_STACK
+	if (&foo > cl_env.cs_org - new_size + 16)
+		cl_env.cs_limit = cl_env.cs_org - new_size;
+#else
+	if (&foo < cl_env.cs_org + new_size - 16)
+		cl_env.cs_limit = cl_env.cs_org + new_size;
+#endif
+	else
+		ecl_internal_error("can't reset cl_env.cs_limit.");
+}
+
+void
+ecl_cs_overflow(void)
+{
+	cl_index safety_area = ecl_get_option(ECL_OPT_C_STACK_SAFETY_AREA);
+	cl_index size = cl_env.cs_size;
+#ifdef DOWN_STACK
+	if (cl_env.cs_limit < cl_env.cs_org - size)
+		cl_env.cs_limit -= safety_area;
+#else
+	if (cl_env.cs_limit > cl_env.cs_org + size)
+		cl_env.cs_limit += safety_area;
+#endif
+	else
+		ecl_internal_error("Cannot grow stack size.");
+	cl_cerror(6, make_constant_base_string("Extend stack size"),
+		  @'ext::stack-overflow', @':size', MAKE_FIXNUM(size),
+		  @':type', @'ext::c-stack');
+	size += size / 2;
+	cs_set_size(size);
+}
+
+
 /********************* BINDING STACK ************************/
 
 #ifdef ECL_THREADS
@@ -128,12 +169,13 @@ bds_set_size(cl_index size)
 		FEerror("Cannot shrink the binding stack below ~D.", 1,
 			ecl_make_unsigned_integer(limit));
 	} else {
+		cl_index margin = ecl_get_option(ECL_OPT_BIND_STACK_SAFETY_AREA);
 		bds_ptr org;
 		org = cl_alloc_atomic(size * sizeof(*org));
-		memcpy(org, cl_env.bds_org, (cl_env.bds_top - cl_env.bds_org) * sizeof(*org));
-		cl_env.bds_top = org + (cl_env.bds_top - cl_env.bds_org);
+		memcpy(org, cl_env.bds_org, (limit + 1) * sizeof(*org));
+		cl_env.bds_top = org + limit;
 		cl_env.bds_org = org;
-		cl_env.bds_limit = org + (size - 2*BDSGETA);
+		cl_env.bds_limit = org + (size - 2*margin);
 		cl_env.bds_size = size;
 	}
 }
@@ -141,13 +183,14 @@ bds_set_size(cl_index size)
 void
 bds_overflow(void)
 {
+	cl_index margin = ecl_get_option(ECL_OPT_BIND_STACK_SAFETY_AREA);
 	cl_index size = cl_env.bds_size;
 	bds_ptr org = cl_env.bds_org;
 	bds_ptr last = org + size;
 	if (cl_env.bds_limit >= last) {
 		ecl_internal_error("Bind stack overflow, cannot grow larger.");
 	}
-	cl_env.bds_limit += BDSGETA;
+	cl_env.bds_limit += margin;
 	cl_cerror(6, make_constant_base_string("Extend stack size"),
 		  @'ext::stack-overflow', @':size', MAKE_FIXNUM(size),
 		  @':type', @'ext::binding-stack');
@@ -294,12 +337,14 @@ frs_set_size(cl_index size)
 		FEerror("Cannot shrink frame stack below ~D.", 1,
 			ecl_make_unsigned_integer(limit));
 	} else {
+		cl_index margin = ecl_get_option(ECL_OPT_FRAME_STACK_SAFETY_AREA);
 		ecl_frame_ptr org;
+		size += 2*margin;
 		org = cl_alloc_atomic(size * sizeof(*org));
-		memcpy(org, cl_env.frs_org, (cl_env.frs_top - cl_env.frs_org) * sizeof(*org));
-		cl_env.frs_top = org + (cl_env.frs_top - cl_env.frs_org);
+		memcpy(org, cl_env.frs_org, (limit + 1) * sizeof(*org));
+		cl_env.frs_top = org + limit;
 		cl_env.frs_org = org;
-		cl_env.frs_limit = org + (size - 2*FRSGETA);
+		cl_env.frs_limit = org + (size - 2*margin);
 		cl_env.frs_size = size;
 	}
 }
@@ -307,13 +352,14 @@ frs_set_size(cl_index size)
 static void
 frs_overflow(void)		/* used as condition in list.d */
 {
+	cl_index margin = ecl_get_option(ECL_OPT_FRAME_STACK_SAFETY_AREA);
 	cl_index size = cl_env.frs_size;
 	ecl_frame_ptr org = cl_env.frs_org;
 	ecl_frame_ptr last = org + size;
 	if (cl_env.frs_limit >= last) {
 		ecl_internal_error("Frame stack overflow, cannot grow larger.");
 	}
-	cl_env.frs_limit += FRSGETA;
+	cl_env.frs_limit += margin;
 	cl_cerror(6, make_constant_base_string("Extend stack size"),
 		  @'ext::stack-overflow', @':size', MAKE_FIXNUM(size),
 		  @':type', @'ext::frame-stack');
@@ -412,31 +458,6 @@ si_sch_frs_base(cl_object fr, cl_object ihs)
 /********************* INITIALIZATION ***********************/
 
 cl_object
-si_reset_stack_limits()
-{
-	volatile int foo = 0;
-	if (cl_env.bds_top < cl_env.bds_org + (cl_env.bds_size - 2*BDSGETA))
-		cl_env.bds_limit = cl_env.bds_org + (cl_env.bds_size - 2*BDSGETA);
-	else
-		ecl_internal_error("can't reset bds_limit.");
-	if (cl_env.frs_top < cl_env.frs_org + (cl_env.frs_size - 2*FRSGETA))
-		cl_env.frs_limit = cl_env.frs_org + (cl_env.frs_size - 2*FRSGETA);
-	else
-		ecl_internal_error("can't reset frs_limit.");
-#ifdef DOWN_STACK
-	if (&foo > cl_env.cs_org - cl_env.cs_size + 16)
-		cl_env.cs_limit = cl_env.cs_org - cl_env.cs_size;
-#else
-	if (&foo < cl_env.cs_org + cl_env.cs_size - 16)
-		cl_env.cs_limit = cl_env.cs_org + cl_env.cs_size;
-#endif
-	else
-		ecl_internal_error("can't reset cl_env.cs_limit.");
-
-	@(return Cnil)
-}
-
-cl_object
 si_set_stack_size(cl_object type, cl_object size)
 {
 	cl_index the_size = fixnnint(size);
@@ -454,16 +475,21 @@ void
 init_stacks(struct cl_env_struct *env, int *new_cs_org)
 {
 	static struct ihs_frame ihs_org = { NULL, NULL, NULL, 0};
-	cl_index size;
+	cl_index size, margin;
 
-	env->frs_size = size = FRSSIZE + 2*FRSGETA;
+	margin = ecl_get_option(ECL_OPT_FRAME_STACK_SAFETY_AREA);
+	size = ecl_get_option(ECL_OPT_FRAME_STACK_SIZE) + 2 * margin;
+	env->frs_size = size;
 	env->frs_org = (ecl_frame_ptr)cl_alloc_atomic(size * sizeof(*env->frs_org));
 	env->frs_top = env->frs_org-1;
-	env->frs_limit = &env->frs_org[size - 2*FRSGETA];
-	env->bds_size = size = BDSSIZE + 2*BDSGETA;
+	env->frs_limit = &env->frs_org[size - 2*margin];
+
+	margin = ecl_get_option(ECL_OPT_BIND_STACK_SAFETY_AREA);
+	size = ecl_get_option(ECL_OPT_BIND_STACK_SIZE) + 2 * margin;
+	env->bds_size = size;
 	env->bds_org = (bds_ptr)cl_alloc_atomic(size * sizeof(*env->bds_org));
 	env->bds_top = env->bds_org-1;
-	env->bds_limit = &env->bds_org[size - 2*BDSGETA];
+	env->bds_limit = &env->bds_org[size - 2*margin];
 
 	env->ihs_top = &ihs_org;
 	ihs_org.function = @'si::top-level';
@@ -475,34 +501,26 @@ init_stacks(struct cl_env_struct *env, int *new_cs_org)
 	{
 	  struct rlimit rl;
 	  getrlimit(RLIMIT_STACK, &rl);
-	  env->cs_size = rl.rlim_cur/4 - 4*CSGETA;
+	  ecl_set_option(ECL_OPT_C_STACK_SIZE, rl.rlim_cur/4);
 	}
-#else
-	env->cs_size = CSSIZE;
 #endif
-#ifdef DOWN_STACK
-	/* Sanity check - in case rlimit is set too high */
-	if (env->cs_org - env->cs_size > env->cs_org) {
-		env->cs_size = CSSIZE;
-	}
-	env->cs_limit = env->cs_org - env->cs_size; /* in THREADS I'm assigning to the main thread clwp */
-#else
-	/* Sanity check - in case rlimit is set too high */
-	if (env->cs_org + env->cs_size < env->cs_org) {
-	  env->cs_size = CSSIZE;
-	}
-	env->cs_limit = env->cs_org + env->cs_size;
-#endif
+	cs_set_size(ecl_get_option(ECL_OPT_C_STACK_SIZE));
+
 #if defined(HAVE_SIGPROCMASK) && defined(SA_SIGINFO)
-	{
-	stack_t new_stack;
-	env->altstack_size = SIGSTKSZ + (sizeof(double)*16) + (sizeof(cl_object)*4);
-	env->altstack = cl_alloc_atomic(env->altstack_size);
-	memset(&new_stack, 0, sizeof(new_stack));
-	new_stack.ss_size = env->altstack_size;
-	new_stack.ss_sp = env->altstack;
-	new_stack.ss_flags = 0;
-	sigaltstack(&new_stack, NULL);
+	if (ecl_get_option(ECL_OPT_SIGALTSTACK_SIZE)) {
+		stack_t new_stack;
+		cl_index size = ecl_get_option(ECL_OPT_SIGALTSTACK_SIZE);
+		if (size < SIGSTKSZ) {
+			size = SIGSTKSZ + (sizeof(double)*16) +
+				(sizeof(cl_object)*4);
+		}
+		env->altstack_size = size;
+		env->altstack = cl_alloc_atomic(size);
+		memset(&new_stack, 0, sizeof(new_stack));
+		new_stack.ss_size = env->altstack_size;
+		new_stack.ss_sp = env->altstack;
+		new_stack.ss_flags = 0;
+		sigaltstack(&new_stack, NULL);
 	}
 #endif
 }

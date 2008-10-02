@@ -836,17 +836,28 @@ extern ECL_API cl_object si_pointer(cl_object x);
 extern ECL_API cl_object si_quit _ARGS((cl_narg narg, ...)) /*__attribute__((noreturn))*/;
 
 typedef enum {
-	ECL_TRAP_SIGSEGV = 1,
-	ECL_TRAP_SIGFPE = 2,
-	ECL_TRAP_SIGINT = 4,
-	ECL_TRAP_SIGILL = 8,
-	ECL_TRAP_SIGBUS = 16,
-	ECL_INCREMENTAL_GC = 128
+	ECL_OPT_INCREMENTAL_GC = 0,
+	ECL_OPT_TRAP_SIGSEGV,
+	ECL_OPT_TRAP_SIGFPE,
+	ECL_OPT_TRAP_SIGINT,
+	ECL_OPT_TRAP_SIGILL,
+	ECL_OPT_TRAP_SIGBUS,
+	ECL_OPT_BOOTED,
+	ECL_OPT_BIND_STACK_SIZE,
+	ECL_OPT_BIND_STACK_SAFETY_AREA,
+	ECL_OPT_FRAME_STACK_SIZE,
+	ECL_OPT_FRAME_STACK_SAFETY_AREA,
+	ECL_OPT_LISP_STACK_SIZE,
+	ECL_OPT_LISP_STACK_SAFETY_AREA,
+	ECL_OPT_C_STACK_SIZE,
+	ECL_OPT_C_STACK_SAFETY_AREA,
+	ECL_OPT_SIGALTSTACK_SIZE,
+	ECL_OPT_LIMIT
 } ecl_option;
-extern ECL_API bool ecl_booted;
+
 extern ECL_API const char *ecl_self;
-extern ECL_API void ecl_set_option(int option, int value);
-extern ECL_API int ecl_get_option(int option);
+extern ECL_API void ecl_set_option(int option, cl_fixnum value);
+extern ECL_API cl_fixnum ecl_get_option(int option);
 extern ECL_API int cl_boot(int argc, char **argv);
 extern ECL_API int cl_shutdown(void);
 #if defined(_MSC_VER) || defined(mingw32)

@@ -1159,7 +1159,6 @@ cl_symbols[] = {
 {SYS_ "REM-F","si_rem_f"},
 {SYS_ "REM-SYSPROP","si_rem_sysprop"},
 {SYS_ "REPLACE-ARRAY","si_replace_array"},
-{SYS_ "RESET-STACK-LIMITS","si_reset_stack_limits"},
 {SYS_ "ROW-MAJOR-ASET","si_row_major_aset"},
 {EXT_ "RUN-PROGRAM","si_run_program"},
 {SYS_ "SAFE-EVAL","si_safe_eval"},

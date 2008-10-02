@@ -650,7 +650,6 @@
 (proclaim-function si:argc (*) t)
 (proclaim-function si:argv (*) t)
 (proclaim-function si:getenv (*) t)
-(proclaim-function si:reset-stack-limits (*) t)
 (proclaim-function si:pointer (*) t)
 
 ;; file mapfun.d

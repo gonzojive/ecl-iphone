@@ -107,7 +107,7 @@ cl_fmakunbound(cl_object fname)
 void
 ecl_clear_compiler_properties(cl_object sym)
 {
-	if (ecl_booted) {
+	if (ecl_get_option(ECL_OPT_BOOTED)) {
 		si_unlink_symbol(sym);
 		funcall(2, @'si::clear-compiler-properties', sym);
 	}

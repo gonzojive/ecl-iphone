@@ -306,7 +306,7 @@ si_catch_signal(cl_object code, cl_object boolean)
 #ifdef GBC_BOEHM
 	int error = 0;
 #ifdef SIGSEGV
-	if ((code_int == SIGSEGV) && ecl_get_option(ECL_INCREMENTAL_GC))
+	if ((code_int == SIGSEGV) && ecl_get_option(ECL_OPT_INCREMENTAL_GC))
 		FEerror("It is not allowed to change the behavior of SIGSEGV.",
 			0);
 #endif
@@ -438,22 +438,22 @@ init_unixint(int pass)
 {
 	if (pass == 0) {
 #ifdef SIGSEGV
-		if (ecl_get_option(ECL_TRAP_SIGSEGV)) {
+		if (ecl_get_option(ECL_OPT_TRAP_SIGSEGV)) {
 			mysignal(SIGSEGV, signal_catcher);
 		}
 #endif
 #if defined(SIGBUS) && !defined(GBC_BOEHM)
-		if (ecl_get_option(ECL_TRAP_SIGBUS)) {
+		if (ecl_get_option(ECL_OPT_TRAP_SIGBUS)) {
 			mysignal(SIGBUS, signal_catcher);
 		}
 #endif
 #ifdef SIGINT
-		if (ecl_get_option(ECL_TRAP_SIGINT)) {
+		if (ecl_get_option(ECL_OPT_TRAP_SIGINT)) {
 			mysignal(SIGINT, signal_catcher);
 		}
 #endif
 #ifdef SIGFPE
-		if (ecl_get_option(ECL_TRAP_SIGFPE)) {
+		if (ecl_get_option(ECL_OPT_TRAP_SIGFPE)) {
 			mysignal(SIGFPE, signal_catcher);
 			si_trap_fpe(Ct, Ct);
 		}

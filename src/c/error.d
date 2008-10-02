@@ -27,19 +27,6 @@
 #include <ecl/internal.h>
 
 void
-ecl_cs_overflow(void)
-{
-#ifdef DOWN_STACK
-	if (cl_env.cs_limit < cl_env.cs_org - cl_env.cs_size)
-	  cl_env.cs_limit -= CSGETA;
-#else
-	if (cl_env.cs_limit > cl_env.cs_org + cl_env.cs_size)
-	  cl_env.cs_limit += CSGETA;
-#endif
-	FEerror("Control stack overflow.", 0);
-}
-
-void
 ecl_internal_error(const char *s)
 {
 	printf("\nInternal or unrecoverable error in:\n%s\n", s);

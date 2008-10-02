@@ -398,8 +398,6 @@ under certain conditions; see file 'Copyright' for details.")
       (break-where))
     (loop
      (setq +++ ++ ++ + + -)
-     (when (zerop *tpl-level*)
-	   (reset-stack-limits))
      (when (catch *quit-tag*
 	     (tpl-prompt)
 	     (setq - (locally (declare (notinline tpl-read)) (tpl-read)))
