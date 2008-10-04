@@ -260,6 +260,7 @@ Sunday is the *last* day of the week!!"
 	      (wild-pathname-p a-pathname :host)
 	      (wild-pathname-p a-pathname :device))
       (error 'file-error :pathname a-pathname))
+    (setf a-pathname (merge-pathnames a-pathname))
     (dolist (item (pathname-directory a-pathname))
       (setf d (nconc d (list item)))
       (let ((p (make-pathname :name nil :type nil :directory d

@@ -156,6 +156,8 @@ ECL 8.9.0:
 
  - Negative and nonnegative zeros are not EQL.
 
+ - ENSURE-DIRECTORIES first has to merge the path with *DEFAULT-PATH...*
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
