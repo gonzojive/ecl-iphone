@@ -1080,7 +1080,7 @@ and			 E
 where B is the radix used to represent FLOAT.  S and F are floats of the same
 float format as FLOAT, and E is an integer.")
 
-(docfun defcbody macro "(defcbody symbol ({arg-type}*) value-type body)" "
+(docfun ffi:defcbody macro "(defcbody symbol ({arg-type}*) value-type body)" "
 ECL specific.
 The compiler defines a Lisp function named by SYMBOL whose body consists of the
 C code of the string BODY. In the BODY one can reference the arguments of the
@@ -1088,25 +1088,12 @@ function as \"#0\", \"#1\", etc.
 The interpreter ignores this form.  ARG-TYPEs are argument types of the
 defined Lisp function and VALUE-TYPE is its the return type.")
 
-(docfun defcfun macro "(defcfun header n {element}*)" "
-ECL specific.
-Defines a C-language function which calls Lisp functions and/or handles Lisp
-objects.  HEADER gives the header of the C function as a string.  N is the
-number of the main stack entries used by the C function, primarily for
-protecting Lisp objects from being garbage-collected.  Each ELEMENT may give
-a C code fragment as a string, or it may be a list
-	((symbol {arg}*) {place}*)
-which, when executed, calls the Lisp function named by SYMBOL with the
-specified arguments and saves all values to the specified places.  The DEFCFUN
-form has the above meanings only after compiled;  The ECL interpreter simply
-ignores this form.")
-
 (docfun defconstant macro "(defconstant symbol form [doc])" "
 Declares that the global variable named by SYMBOL is a constant with the value
 of FORM as its constant value.  The doc-string DOC, if supplied, is saved as a
 VARIABLE doc and can be retrieved by (DOCUMENTATION 'SYMBOL 'VARIABLE).")
 
-(docfun defentry macro "(defentry symbol ({arg-type}*) (value-type function-name))" "
+(docfun ffi:defentry macro "(defentry symbol ({arg-type}*) (value-type function-name))" "
 ECL specific.
 The compiler defines a Lisp function named by SYMBOL whose body consists of a
 calling sequence to the C language function named by FUNCTION-NAME.  The
@@ -1114,29 +1101,17 @@ interpreter ignores this form.  ARG-TYPEs are argument types of the C function
 and VALUE-TYPE is the return type of the C function.  Symbols OBJECT, INT,
 CHAR, CHAR*, FLOAT, DOUBLE are allowed for these types.")
 
-(docfun definline macro "(definline symbol ({arg-type}*) value-type body)" "
+(docfun ffi:definline macro "(definline symbol ({arg-type}*) value-type body)" "
 ECL specific.
 DEFINLINE behaves like a DEFCBODY (see), but also instructs the LISP compiler
 to expand inline any call to function SYMBOL into code corresponding
 to the C language expression BODY, whenever it can determine that
 the actual arguments are of the specified type.")
 
-(docfun defla macro "(defla name lambda-list {decl | doc}* {form}*)" "
+(docfun ffi:defla macro "(defla name lambda-list {decl | doc}* {form}*)" "
 ECL specific.
 Used to DEFine Lisp Alternative.  For the interpreter, DEFLA is equivalent to
 DEFUN, but the compiler ignores this form.")
-
-(docfun defunc macro "(defunc symbol lambda-list {string}*)" "
-ECL specific.
-The compiler defines a Lisp function named by SYMBOL whose body consists of the
-C code from STRINGs. LAMBDA-LIST is similar to the lambda list of DEFUN, except
-that default values for optional, keyword or auxiliary variables are discarded.
-Lowercase symbols from LAMBDA-LIST can be used to refer to the arguments of
-the function within STRINGs. Therefore symbols should not contain characters
-which are considered as delimiters in C (-, +, *, etc.).
-Results are returned by storing them in vs_base[0], ..., vs_base[n] and setting
-vs_top=vs_base+n.
-The interpreter ignores this form.")
 
 (docfun delete function (item sequence
        &key (key '#'identity) (test '#'eql) test-not
