@@ -16,18 +16,25 @@
 (in-package "SYSTEM")
 
 (defmacro docfun (symbol kind args doc)
+  (do-docfun symbol kind args doc))
+
+(defun do-docfun (symbol kind args doc)
   ;(print symbol)
   (si::set-documentation
    symbol 'function
    (format nil "~A in ~A package:~%~A: ~A~A~%"
-	   (cond ((special-operator-p symbol) "Special Form")
-		 ((macro-function symbol) "Macro")
-		 ((fboundp symbol) "Function")
-		 (t ""))
-	   (package-name (symbol-package symbol))
-	   (if (macro-function symbol) "Syntax" "Args") args doc)))
+	   (ecase kind
+	     (special "Special Form")
+	     (macro "Macro")
+	     (function "Function")
+	     (method "Generic function"))
+	   (package-name (symbol-package (si::function-block-name symbol)))
+	   (if (eq kind 'macro) "Syntax" "Args") args doc)))
 
 (defmacro docvar (symbol kind doc)
+  (do-docvar symbol kind doc))
+
+(defun do-docvar (symbol kind doc)
   ;(print symbol)
   (si::set-documentation
    symbol 'variable
@@ -35,8 +42,46 @@
 	   kind (package-name (symbol-package symbol)) doc)))
 
 (defmacro doctype (symbol doc)
+  (do-doctype symbol doc))
+
+(defun do-doctype (symbol doc)
   ;(print symbol)
   (si::set-documentation symbol 'type doc))
+
+(defun tree-search (tree x)
+  (cond ((eq tree x)
+	 t)
+	((atom tree)
+	 nil)
+	((tree-search (car tree) x)
+	 t)
+	(t
+	 (tree-search (cdr tree) x))))
+
+(defun our-pde-hook (location definition output-form)
+  (when (consp definition)
+    (handler-case
+	(let* ((documentation nil)
+	       (name (second definition)))
+	  (loop for i in (cddr definition)
+	     do (cond ((stringp i)
+		       (setf documentation i)
+		       (return))
+		      ((and (consp i) (eq (first i) 'DECLARE))
+		       ;; Produce no documentation for si::c-local functions
+		       (when (tree-search i 'si::c-local)
+			 (return-from our-pde-hook output-form)))
+		      (t (return))))
+	  (case (first definition)
+	    (defun (do-docfun name 'function (third definition) documentation))
+	    (defmacro (do-docfun name 'macro (third definition) documentation))
+	    ((defvar defparameter) (when documentation (do-docvar name 'variable documentation)))
+	    (defconstant (when documentation (do-docvar name 'constant documentation)))
+	    (deftype (when documentation (do-doctype name documentation)))))
+      (error (c) (princ c) (quit))))
+  output-form)
+
+(setf ext:*register-with-pde-hook* #'our-pde-hook)
 
 #|
 (defmacro docfun (symbol kind args string)
@@ -177,7 +222,7 @@ ECL specific.
 Declares that the global variable named by SYMBOL is a constant with VALUE as
 its constant value.")
 
-(docfun si::*make-special function symbol ")
+(docfun si::*make-special function symbol "
 ECL specific.
 Declares the variable named by NAME as a special variable.")
 
@@ -2586,7 +2631,7 @@ The following syntax is also available for radix 2, 8, 10, and 16.
 	# {o | O} [sign] {digit}+ / {digit}+
 	# {x | X} [sign] {digit}+ / {digit}+")
 
-(docfun rational fnction (real) "
+(docfun rational function (real) "
 Converts REAL into rational accurately and returns the result.")
 
 (docfun rationalize function (real) "

@@ -54,6 +54,9 @@ ECL 8.9.0:
  - In platforms that support sigaltstack(), ECL may detect stack overflows and
    gracefully quit.
 
+ - The help file now contains all functions in the library, including
+   internal ones.
+
 * Embedding:
 
  - ECL now implements a more transparent interface for setting and querying
