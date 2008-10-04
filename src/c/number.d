@@ -146,11 +146,12 @@ ecl_make_singlefloat(float f)
 	cl_object x;
 
 	ecl_detect_fpe();
-#ifdef signbit
-	if ((f == (float)0.0) && !signbit(f)) {
-		return(cl_core.singlefloat_zero);
-	}
+	if (f == (float)0.0) {
+#if defined(ECL_SIGNED_ZERO) && defined(signbit)
+		if (!signbit(f))
 #endif
+			return(cl_core.singlefloat_zero);
+	}
 	if (isnan(f)) {
 		cl_error(1, @'division-by-zero');
 	}
@@ -168,11 +169,12 @@ ecl_make_doublefloat(double f)
 	cl_object x;
 
 	ecl_detect_fpe();
-#ifdef signbit
-	if ((f == (double)0.0) && !signbit(f)) {
-		return(cl_core.doublefloat_zero);
-	}
+	if (f == (double)0.0) {
+#if defined(ECL_SIGNED_ZERO) && defined(signbit)
+		if (!signbit(f))
 #endif
+			return(cl_core.doublefloat_zero);
+	}
 	if (isnan(f)) {
 		cl_error(1, @'division-by-zero');
 	}
@@ -191,11 +193,12 @@ make_longfloat(long double f)
 	cl_object x;
 
 	ecl_detect_fpe();
-#ifdef signbit
-	if ((f == (long double)0.0) && !signbit(f)) {
-		return cl_core.longfloat_zero;
-	}
+	if (f == (long double)0.0) {
+#if defined(ECL_SIGNED_ZERO) && defined(signbit)
+		if (!signbit(f))
 #endif
+			return cl_core.longfloat_zero;
+	}
 	if (isnan(f)) {
 		cl_error(1, @'division-by-zero');
 	}

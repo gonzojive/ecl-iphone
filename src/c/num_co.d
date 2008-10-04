@@ -1030,7 +1030,7 @@ cl_float_radix(cl_object x)
 	@(return MAKE_FIXNUM(FLT_RADIX))
 }
 
-#ifndef signbit
+#if !defined(ECL_SIGNED_ZERO) || !defined(signbit)
 # define signbit(x) ((x) < 0)
 #endif
 

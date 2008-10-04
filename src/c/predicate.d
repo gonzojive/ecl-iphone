@@ -255,7 +255,7 @@ cl_eq(cl_object x, cl_object y)
 	@(return ((x == y) ? Ct : Cnil))
 }
 
-#ifdef signbit
+#if defined(ECL_SIGNED_ZERO) && defined(signbit)
 # define float_eql(a,b) (((a) == (b)) && (signbit((a)) == signbit((b))))
 #else
 # define float_eql(a,b) (((a) == (b)))

@@ -576,7 +576,7 @@ write_double(DBL_TYPE d, int e, int n, cl_object stream)
 		d = -d;
 	}
 	if (d == 0.0) {
-#ifdef signbit
+#if defined(ECL_SIGNED_ZERO) && defined(signbit)
 		if (signbit(d))
 			write_str("-0.0", stream);
 		else

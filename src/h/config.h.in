@@ -269,6 +269,8 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_FEENABLEEXCEPT
 /* do we want to deactivate all support for floating point exceptions   */
 #undef ECL_AVOID_FPE_H
+/* do we want to have signed zeros					*/
+#undef ECL_SIGNED_ZERO
 /* has support for large files						*/
 #undef HAVE_FSEEKO
 /* the tzset() function gets the current time zone			*/
@@ -297,6 +299,8 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_SCHED_YIELD
 /* uname() for system identification					*/
 #undef HAVE_UNAME
+#undef HAVE_UNISTD_H
+#undef HAVE_SYS_WAIT_H
 
 /*
  * we do not manage to get proper signal handling of floating point

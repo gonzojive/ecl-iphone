@@ -177,6 +177,11 @@ AC_ARG_WITH(fpe,
                   [(default=YES)]),
   [], [with_fpe=yes])
 
+AC_ARG_WITH(signed-zero,
+  AS_HELP_STRING( [--with-signed-zero={yes|no}],
+                  [allow for IEEE signed zeros (default=YES).]),
+  [], [with_signed_zero="yes"])
+
 AC_ARG_ENABLE(unicode,
   AS_HELP_STRING( [--enable-unicode],
                   [enable support for unicode (default=NO)]),
@@ -425,6 +430,9 @@ dnl Deactivate floating point exceptions if asked to
 if test "${with_fpe}" != yes; then
    AC_DEFINE(ECL_AVOID_FPE_H)
 fi
+if test "${with_signed_zero}" == yes; then
+   AC_DEFINE(ECL_SIGNED_ZERO)
+fi
 
 dnl =====================================================================
 dnl Checks for header files
@@ -441,7 +449,8 @@ AC_CHECK_HEADERS( [fcntl.h inttypes.h limits.h netdb.h netinet/in.h] \
 dnl !!! end autoscan
 
 AC_CHECK_HEADERS( [sys/resource.h sys/utsname.h float.h pwd.h dlfcn.h link.h] \
-                  [mach-o/dyld.h ulimit.h dirent.h sys/ioctl.h sys/select.h])
+                  [mach-o/dyld.h ulimit.h dirent.h sys/ioctl.h sys/select.h] \
+                  [sys/wait.h] )
 
 dnl =====================================================================
 dnl Checks for typedefs, structures, and compiler characteristics.

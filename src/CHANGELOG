@@ -30,7 +30,7 @@ ECL 8.9.0:
 	     for i from 0
 	     do (format t "~&~@<;;; ~@;Message #~D~%~A~:>" i m)))
 
- - In windows, ECL recognizes the environment variables HOMEDRIVE and HOMEPATH
+ - On Windows, ECL recognizes the environment variables HOMEDRIVE and HOMEPATH
    and uses them to construct the output of user-homedir-pathname.
 
  - We switch to an Ubuntu-like versioning system, based on $(year).$(month).x
@@ -56,6 +56,12 @@ ECL 8.9.0:
 
  - The help file now contains all functions in the library, including
    internal ones.
+
+ - A new configuration flag, --with-signed-zero, determines whether ECL supports
+   IEEE 754 signed zeros
+
+ - EXT:RUN-PROGRAM now returns two values: the two way stream and the exit code
+   of the process if :WAIT is T (Josh Elsasser)
 
 * Embedding:
 
@@ -138,7 +144,7 @@ ECL 8.9.0:
    finishing compilation (Josh Elsasser).
 
  - On overflow, binding and frame stack signal a correctable error with
-   STACK-OVERFLOW condition.
+   STACK-OVERFLOW condition.<
 	(block faa
 	      (labels ((foo (x)
 			 (catch 'foo (foo (1+ x))))

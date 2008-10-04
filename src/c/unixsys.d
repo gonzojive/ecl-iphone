@@ -29,6 +29,12 @@
 #ifdef _MSC_VER
 #include <windows.h>
 #endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
 
 cl_object
 si_system(cl_object cmd_string)
@@ -77,6 +83,7 @@ si_make_pipe()
 	int child_pid;
 	cl_object stream_write;
 	cl_object stream_read;
+	cl_object exit_status = Cnil;
 @{
 	command = si_copy_to_simple_base_string(command);
 	argv = cl_mapcar(2, @'si::copy-to-simple-base-string', argv);
@@ -235,10 +242,14 @@ si_make_pipe()
 	if (child_stdout) CloseHandle(child_stdout);
 	if (child_stderr) CloseHandle(child_stderr);
 	if (ok) {
+		DWORD exitcode;
 		CloseHandle(pr_info.hThread);
 		child_pid = pr_info.dwProcessId;
 		if (wait != Cnil) {
 			  WaitForSingleObject(pr_info.hProcess, INFINITE);
+			  if (GetExitCodeProcess(pr_info.hProcess, &exitcode) &&
+			      STILL_ACTIVE != exitcode) {
+				  exit_status = MAKE_FIXNUM(exitcode);
 		}
 		CloseHandle(pr_info.hProcess);
 	} else {
@@ -328,6 +339,7 @@ si_make_pipe()
 	if (child_pid > 0 && wait != Cnil) {
 	   	int status[0];
 		waitpid(child_pid, status, 0);
+		exit_status = MAKE_FIXNUM(WEXITSTATUS(status));
 	}
 }
 #endif /* mingw */
@@ -354,5 +366,6 @@ si_make_pipe()
 	}
 	@(return ((parent_read || parent_write)?
 		  cl_make_two_way_stream(stream_read, stream_write) :
-		  Cnil))
+		  Cnil)
+		 exit_status)
 @)
