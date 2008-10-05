@@ -20,16 +20,24 @@
 
 (defun do-docfun (symbol kind args doc)
   ;(print symbol)
+  (cond ((and doc (search "Syntax:" doc))
+	 (setf args nil))
+	((and doc (search "Args:" doc))
+	 (setf args nil))
+	((eq kind 'macro)
+	 (setf args (format nil "Syntax: ~A" args)))
+	(t
+	 (setf args (format nil "Syntax: ~A" args))))
   (si::set-documentation
    symbol 'function
-   (format nil "~A in ~A package:~%~A: ~A~A~%"
+   (format nil "~A in ~A package:~@[~%~A~]~@[~%~A~]~%"
 	   (ecase kind
 	     (special "Special Form")
 	     (macro "Macro")
 	     (function "Function")
 	     (method "Generic function"))
 	   (package-name (symbol-package (si::function-block-name symbol)))
-	   (if (eq kind 'macro) "Syntax" "Args") args doc)))
+	   args doc)))
 
 (defmacro docvar (symbol kind doc)
   (do-docvar symbol kind doc))
