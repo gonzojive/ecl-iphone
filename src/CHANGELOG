@@ -63,6 +63,9 @@ ECL 8.9.0:
  - EXT:RUN-PROGRAM now returns two values: the two way stream and the exit code
    of the process if :WAIT is T (Josh Elsasser)
 
+ - Some symbols now belong in the EXT package: EXT:GETENV, EXT:SETENV,
+   EXT:GETCWD, EXT:CHDIR.
+
 * Embedding:
 
  - ECL now implements a more transparent interface for setting and querying

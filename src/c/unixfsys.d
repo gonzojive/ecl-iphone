@@ -844,7 +844,7 @@ si_get_library_pathname(void)
 }
 #endif
 
-@(defun si::chdir (directory &optional change_d_p_d)
+@(defun ext::chdir (directory &optional change_d_p_d)
 	cl_object previous = si_getcwd();
 	cl_object namestring;
 @

@@ -51,7 +51,7 @@ const char *ecl_self;
 
 static int ARGC;
 static char **ARGV;
-static cl_fixnum option_values[ECL_OPT_LIMIT] = {
+static cl_fixnum option_values[ECL_OPT_LIMIT+1] = {
 #ifdef GBC_BOEHM_GENGC
 	1,	/* ECL_OPT_INCREMENTAL_GC */
 #else
@@ -607,7 +607,7 @@ si_getenv(cl_object var)
 {
 	const char *value;
 
-	var = ecl_check_cl_type(@'si::getenv', var, t_base_string);
+	var = ecl_check_cl_type(@'ext::getenv', var, t_base_string);
 	value = getenv(var->base_string.self);
 	@(return ((value == NULL)? Cnil : make_base_string_copy(value)))
 }
@@ -618,7 +618,7 @@ si_setenv(cl_object var, cl_object value)
 {
 	cl_fixnum ret_val;
 
-	var = ecl_check_cl_type(@'si::setenv', var, t_base_string);
+	var = ecl_check_cl_type(@'ext::setenv', var, t_base_string);
 	if (value == Cnil) {
 #ifdef HAVE_SETENV
 		/* Remove the variable when setting to nil, so that

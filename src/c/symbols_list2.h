@@ -1077,7 +1077,7 @@ cl_symbols[] = {
 {SYS_ "BIT-ARRAY-OP","si_bit_array_op"},
 {SYS_ "C-ARGUMENTS-LIMIT",NULL},
 {SYS_ "CHAR-SET","si_char_set"},
-{SYS_ "CHDIR","si_chdir"},
+{EXT_ "CHDIR","si_chdir"},
 {SYS_ "CLEAR-COMPILER-PROPERTIES","cl_identity"},
 {SYS_ "COERCE-TO-BASE-STRING","si_coerce_to_base_string"},
 {SYS_ "COERCE-TO-EXTENDED-STRING","si_coerce_to_extended_string"},
@@ -1113,8 +1113,8 @@ cl_symbols[] = {
 {SYS_ "GET-LIBRARY-PATHNAME","si_get_library_pathname"},
 #endif
 {SYS_ "GET-SYSPROP","si_get_sysprop"},
-{SYS_ "GETENV","si_getenv"},
-{SYS_ "GETCWD","si_getcwd"},
+{EXT_ "GETENV","si_getenv"},
+{EXT_ "GETCWD","si_getcwd"},
 {SYS_ "GETPID","si_getpid"},
 {SYS_ "HASH-SET","si_hash_set"},
 {SYS_ "HASH-TABLE-ITERATOR","si_hash_table_iterator"},
@@ -1140,7 +1140,7 @@ cl_symbols[] = {
 {SYS_ "MKDIR","si_mkdir"},
 {SYS_ "MKSTEMP","si_mkstemp"},
 {SYS_ "RMDIR","si_rmdir"},
-{SYS_ "MAKE-PIPE","si_make_pipe"},
+{EXT_ "MAKE-PIPE","si_make_pipe"},
 {SYS_ "PACKAGE-LOCK","si_package_lock"},
 {SYS_ "PACKAGE-HASH-TABLES","si_package_hash_tables"},
 {SYS_ "PATHNAME-TRANSLATIONS","si_pathname_translations"},
@@ -1169,7 +1169,7 @@ cl_symbols[] = {
 {SYS_ "SELECT-PACKAGE","si_select_package"},
 {SYS_ "SET-SYMBOL-PLIST","si_set_symbol_plist"},
 #if defined(HAVE_PUTENV) || defined(HAVE_SETENV)
-{SYS_ "SETENV","si_setenv"},
+{EXT_ "SETENV","si_setenv"},
 #endif
 {SYS_ "SETF-LAMBDA",NULL},
 {SYS_ "SETF-METHOD",NULL},
@@ -1204,7 +1204,6 @@ cl_symbols[] = {
 #ifndef CLOS
 {SYS_ "STRUCTURE-INCLUDE",NULL},
 #else
-{SYS_ "CHANGE-INSTANCE",NULL},
 {SYS_ "COPY-INSTANCE","si_copy_instance"},
 {SYS_ "GENERIC-FUNCTION-P","si_generic_function_p"},
 {SYS_ "INSTANCE-REF-SAFE","si_instance_ref_safe"},

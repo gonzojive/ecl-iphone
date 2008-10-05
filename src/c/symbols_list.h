@@ -1169,7 +1169,7 @@ cl_symbols[] = {
 {SYS_ "SELECT-PACKAGE", SI_ORDINARY, si_select_package, 1, OBJNULL},
 {SYS_ "SET-SYMBOL-PLIST", SI_ORDINARY, si_set_symbol_plist, 2, OBJNULL},
 #if defined(HAVE_PUTENV) || defined(HAVE_SETENV)
-{SYS_ "SETENV", SI_ORDINARY, si_setenv, 2, OBJNULL},
+{EXT_ "SETENV", SI_ORDINARY, si_setenv, 2, OBJNULL},
 #endif
 {SYS_ "SETF-LAMBDA", SI_ORDINARY, NULL, -1, OBJNULL},
 {SYS_ "SETF-METHOD", SI_ORDINARY, NULL, -1, OBJNULL},
