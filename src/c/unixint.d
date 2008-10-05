@@ -249,7 +249,8 @@ signal_catcher(int sig)
 	int old_GC_enabled = GC_enabled();
 #endif
 	if (!ecl_interrupt_enable ||
-	    ecl_symbol_value(@'si::*interrupt-enable*') == Cnil) {
+	    (ecl_get_option(ECL_OPT_BOOTED) &&
+	     ecl_symbol_value(@'si::*interrupt-enable*') == Cnil)) {
 		mysignal(sig, signal_catcher);
 		cl_env.interrupt_pending = sig;
 		return;
@@ -473,7 +474,7 @@ init_unixint(int pass)
 					    cl_core.system_package);
 			si_Xmake_constant(name, MAKE_FIXNUM(known_signals[i].code));
 		}
+		ECL_SET(@'si::*interrupt-enable*', Ct);
 	}
-	ECL_SET(@'si::*interrupt-enable*', Ct);
 	ecl_interrupt_enable = 1;
 }
