@@ -122,8 +122,14 @@ can be represented with N bits."
       '(INTEGER 0 *)
       `(INTEGER 0 ,(1- (expt 2 s)))))
 
-(deftype null () '(MEMBER NIL))
-(deftype sequence () '(OR CONS NULL (ARRAY * (*))))
+(deftype null ()
+  "The type to which only NIL belongs."
+  '(MEMBER NIL))
+
+(deftype sequence ()
+  "A sequence is either a list or a vector."
+  '(OR CONS NULL (ARRAY * (*))))
+
 (deftype list ()
   "As a type specifier, LIST is used to specify the type consisting of NIL and
 cons objects.  In our ordinary life with Lisp, however, a list is either NIL
@@ -160,6 +166,7 @@ may be adjustable.  Other vectors are called simple-vectors."
   `(array ,element-type (,size)))
 
 (deftype extended-char ()
+  "A character which is not of type BASE-CHAR."
   '(and character (not base-char)))
 
 (deftype string (&optional size)
@@ -176,8 +183,15 @@ called simple-strings."
       '(or (array base-char (*)) (array character (*)))))
 
 (deftype base-string (&optional size)
+  "A string which is made of BASE-CHAR."
   (if size `(array base-char (,size)) '(array base-char (*))))
+
 (deftype bit-vector (&optional size)
+  "A bit-vector is a vector of bits.  A bit-vector is notated by '#*' followed
+by its elements (0 or 1).  Bit-vectors may be displaced to another array, may
+have a fill-pointer, or may be adjustable.  Other bit-vectors are called
+simple-bit-vectors.  Only simple-bit-vectors can be input in the above format
+using '#*'."
   (if size `(array bit (,size)) '(array bit (*))))
 
 (deftype simple-vector (&optional size)
@@ -199,11 +213,12 @@ fill-pointer, and is not adjustable."
       '(or (simple-array base-char (*)) (simple-array character (*)))))
 
 (deftype simple-base-string (&optional size)
+  "A base-string which cannot be adjusted nor displaced."
   (if size `(simple-array base-char (,size)) '(simple-array base-char (*))))
 
 (deftype simple-bit-vector (&optional size)
-  "A simple-bit-vector is a bit-vector that is not displaced to another array,
-has no fill-pointer, and is not adjustable."
+  "A bit-vector that is not displaced to another array, has no fill-pointer,
+and is not adjustable."
   (if size `(simple-array bit (,size)) '(simple-array bit (*))))
 
 ;;************************************************************

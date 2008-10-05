@@ -1077,7 +1077,7 @@ cl_symbols[] = {
 {SYS_ "BIT-ARRAY-OP", SI_ORDINARY, si_bit_array_op, 4, OBJNULL},
 {SYS_ "C-ARGUMENTS-LIMIT", SI_ORDINARY, NULL, -1, MAKE_FIXNUM(C_ARGUMENTS_LIMIT)},
 {SYS_ "CHAR-SET", SI_ORDINARY, si_char_set, 3, OBJNULL},
-{SYS_ "CHDIR", SI_ORDINARY, si_chdir, -1, OBJNULL},
+{EXT_ "CHDIR", SI_ORDINARY, si_chdir, -1, OBJNULL},
 {SYS_ "CLEAR-COMPILER-PROPERTIES", SI_ORDINARY, cl_identity, 1, OBJNULL},
 {SYS_ "COERCE-TO-BASE-STRING", SI_ORDINARY, si_coerce_to_base_string, 1, OBJNULL},
 {SYS_ "COERCE-TO-EXTENDED-STRING", SI_ORDINARY, si_coerce_to_extended_string, 1, OBJNULL},
@@ -1113,8 +1113,8 @@ cl_symbols[] = {
 {SYS_ "GET-LIBRARY-PATHNAME", SI_ORDINARY, si_get_library_pathname, 0, OBJNULL},
 #endif
 {SYS_ "GET-SYSPROP", SI_ORDINARY, si_get_sysprop, 2, OBJNULL},
-{SYS_ "GETENV", SI_ORDINARY, si_getenv, 1, OBJNULL},
-{SYS_ "GETCWD", SI_ORDINARY, si_getcwd, 0, OBJNULL},
+{EXT_ "GETENV", SI_ORDINARY, si_getenv, 1, OBJNULL},
+{EXT_ "GETCWD", SI_ORDINARY, si_getcwd, 0, OBJNULL},
 {SYS_ "GETPID", SI_ORDINARY, si_getpid, 0, OBJNULL},
 {SYS_ "HASH-SET", SI_ORDINARY, si_hash_set, 3, OBJNULL},
 {SYS_ "HASH-TABLE-ITERATOR", SI_ORDINARY, si_hash_table_iterator, 1, OBJNULL},
@@ -1140,7 +1140,7 @@ cl_symbols[] = {
 {SYS_ "MKDIR", SI_ORDINARY, si_mkdir, 2, OBJNULL},
 {SYS_ "MKSTEMP", SI_ORDINARY, si_mkstemp, 1, OBJNULL},
 {SYS_ "RMDIR", SI_ORDINARY, si_rmdir, 1, OBJNULL},
-{SYS_ "MAKE-PIPE", SI_ORDINARY, si_make_pipe, 0, OBJNULL},
+{EXT_ "MAKE-PIPE", SI_ORDINARY, si_make_pipe, 0, OBJNULL},
 {SYS_ "PACKAGE-LOCK", SI_ORDINARY, si_package_lock, 2, OBJNULL},
 {SYS_ "PACKAGE-HASH-TABLES", SI_ORDINARY, si_package_hash_tables, 1, OBJNULL},
 {SYS_ "PATHNAME-TRANSLATIONS", SI_ORDINARY, si_pathname_translations, -1, OBJNULL},
@@ -1204,7 +1204,6 @@ cl_symbols[] = {
 #ifndef CLOS
 {SYS_ "STRUCTURE-INCLUDE", SI_ORDINARY, NULL, -1, OBJNULL},
 #else
-{SYS_ "CHANGE-INSTANCE", SI_ORDINARY, NULL, 4, OBJNULL},
 {SYS_ "COPY-INSTANCE", SI_ORDINARY, si_copy_instance, 1, OBJNULL},
 {SYS_ "GENERIC-FUNCTION-P", SI_ORDINARY, si_generic_function_p, 1, OBJNULL},
 {SYS_ "INSTANCE-REF-SAFE", SI_ORDINARY, si_instance_ref_safe, 2, OBJNULL},

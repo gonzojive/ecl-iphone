@@ -100,6 +100,11 @@ as a VARIABLE doc and can be retrieved by (documentation 'NAME 'variable)."
     ',var))
 
 (defmacro defconstant (&whole whole var form &optional doc-string)
+  "Syntax: (defconstant symbol form [doc])
+
+Declares that the global variable named by SYMBOL is a constant with the value
+of FORM as its constant value.  The doc-string DOC, if supplied, is saved as a
+VARIABLE doc and can be retrieved by (DOCUMENTATION 'SYMBOL 'VARIABLE)."
   `(PROGN
      (SYS:*MAKE-CONSTANT ',var ,form)
     ,@(si::expand-set-documentation var 'variable doc-string)
@@ -242,9 +247,15 @@ SECOND-FORM."
 ; multiple values
 
 (defmacro multiple-value-list (form)
+  "Evaluates FORM and returns a list of all values FORM returns."
   `(MULTIPLE-VALUE-CALL 'LIST ,form))
 
 (defmacro multiple-value-setq (vars form)
+  "Syntax: (multiple-value-setq {var}* form)
+
+Evaluates FORM and binds the N-th VAR to the N-th value of FORM or, if FORM
+returns less than N values, to NIL.  Returns the first value of FORM or, if
+FORM returns no value, NIL."
   (do ((vl vars (cdr vl))
        (sym (gensym))
        (forms nil)
@@ -257,6 +268,11 @@ SECOND-FORM."
 ;; We do not use this macroexpanso, and thus we do not care whether
 ;; it is efficiently compiled by ECL or not.
 (defmacro multiple-value-bind (vars form &rest body)
+  "Syntax: (multiple-value-bind ({var}*) init {decl}* {form}*)
+
+Evaluates INIT and binds the N-th VAR to the N-th value of INIT or, if INIT
+returns less than N values, to NIL.  Then evaluates FORMs, and returns all
+values of the last FORM.  If no FORM is given, returns NIL."
   `(multiple-value-call #'(lambda (&optional ,@(mapcar #'list vars)) ,@body) ,form))
 
 (defun while-until (test body jmp-op)

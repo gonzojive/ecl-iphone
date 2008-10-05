@@ -489,14 +489,6 @@ Returns the first pair in ALIST whose car is equal (in the sense of TEST) to
 ITEM.  Returns NIL if no such pair exists.
 The function KEY is applied to extract the key for comparison.")
 
-(docfun assoc-if function (test alist) "
-Returns the first pair in ALIST whose car satisfies TEST.  Returns NIL if no
-such pair exists.")
-
-(docfun assoc-if-not function (test alist) "
-Returns the first pair in ALIST whose car does not satisfy TEST.  Returns NIL
-if no such pair exists.")
-
 (docfun atan function (x &optional (y 1)) "
 Returns the arc tangent of X/Y.")
 
@@ -513,16 +505,6 @@ Returns the symbol of the N-th entity in the bind stack.")
 
 (doctype bignum "
 A bignum is an integer that is not a fixnum.")
-
-(doctype bit "
-A bit is either integer 0 or 1.")
-
-(doctype bit-vector "
-A bit-vector is a vector of bits.  A bit-vector is notated by '#*' followed
-by its elements (0 or 1).  Bit-vectors may be displaced to another array, may
-have a fill-pointer, or may be adjustable.  Other bit-vectors are called
-simple-bit-vectors.  Only simple-bit-vectors can be input in the above format
-using '#*'.")
 
 (docfun bit-vector-p function (x) "
 Returns T if X is a bit-vector; NIL otherwise.")
@@ -608,13 +590,6 @@ ALPHA-CHAR-P.")
 
 (docfun boundp function (symbol) "
 Returns T if the global variable named SYMBOL has a value; NIL otherwise.")
-
-(docfun break function (&optional (format-string nil) &rest args) "
-Enters a break loop.  The execution of the program can be resumed by typing
-:CONTINUE at the break loop.  Type :HELP to see the break-loop commands list.
-If FORMAT-STRING is non-NIL, it is used as the format string to be output to
-*ERROR-OUTPUT* before entering the break loop.  ARGs are arguments to the
-format string.")
 
 #|
 (docfun compiler:build-ecl function (program-name &rest components) "
@@ -716,16 +691,6 @@ value of the TAG-FORM, then the execution of the CATCH form terminates
 immediately and the values specified by the THROW form are returned as the
 value of the CATCH form.")
 
-#+unix
-(docfun si::catch-bad-signals function () "
-ECL/UNIX specific.
-Installs a signal catcher for bad signals:
-	SIGILL, SIGIOT, SIGEMT, SIGBUS, SIGSEGV, SIGSYS.
-The signal catcher, upon catching the signal, signals an error.  Since the
-internal memory of ECL may have been broken, the user is recommended to exit
-from ECL after checking the signal.  When the signal is caught during garbage
-collection, ECL terminates immediately.")
-
 (docfun cdaaar function (x) "
 Equivalent to (CDR (CAR (CAR (CAR X)))).")
 
@@ -777,12 +742,6 @@ of (- NUMBER (* first-value DIVISOR)) as the second value.")
 
 (docfun cerror function (continue-format-string error-format-string &rest args) "
 Signals a continuable error.")
-
-#+clos
-(docfun si::change-instance function (instance class length) "
-ECL/CLOS specific.
-Updates INSTANCE making it an instance of CLASS with LENGTH slots. These
-have a null value.")
 
 (docfun char function (string index) "
 Returns the INDEX-th character in STRING.")
@@ -914,15 +873,11 @@ Coerces X into a character if possible.  Signals an error if not possible.")
 (docfun characterp function (x) "
 Returns T if X is a character; NIL otherwise.")
 
-(docfun si::getcwd function (&optional update-lisp) "
-ECL specific.
-
+(docfun ext:getcwd function (&optional update-lisp) "
 Returns the current working directory of the C library. When UPDATE-LISP is
 true, *DEFAULT-PATHNAME-DEFAULTS* is set to this value.")
 
-(docfun si::chdir function (filespec &optional update-lisp) "
-ECL specific.
-
+(docfun ext:chdir function (filespec &optional update-lisp) "
 Changes the current working directory of the C library to the one specified by
 FILESPEC.  FILESPEC may be a symbol, a string, or a pathname. UPDATE-LISP
 determines whether the value of *DEFAULT-PATHNAME-DEFAULTS* is also to be
@@ -936,13 +891,8 @@ discarded.")
 Clears the output buffer of STREAM and returns NIL.  Contents of the buffer
 are discarded.")
 
-#+profile
-(docfun si::clear-profile function () "
-ECL specific.
-Clears the profile histogram.")
+(docfun ffi:clines special "(clines {string}*)" "
 
-(docfun clines macro "(clines {string}*)" "
-ECL specific.
 The ECL compiler embeds STRINGs into the intermediate C language code.  The
 interpreter ignores this form.")
 
@@ -978,28 +928,6 @@ COMMON is the type of all Common Lisp data objects.")
 
 (docfun commonp function (x) "
 Returns T if X is a Common Lisp object; NIL otherwise.")
-
-(docfun compile function (name &optional definition) "
-If DEFINITION is NIL, NAME must be the name of a not-yet-compiled function.
-In this case, COMPILE compiles the function, installs the compiled function as
-the global function definition of NAME, and returns NAME.  If DEFINITION is
-non-NIL, it must be a lambda expression and NAME must be a symbol.  COMPILE
-compiles the lambda expression, installs the compiled function as the function
-definition of NAME, and returns NAME.  There is only one exception for this:
-If NAME is NIL, then the compiled function is not installed but is simply
-returned as the value of COMPILE.  In any case, COMPILE creates temporary
-files, whose filenames begin with \"gazonk\", which are automatically deleted
-after compilation.")
-
-(docfun compile-file function (input-pathname &key output-file (load nil)
-		     (o-file t) (c-file nil) (h-file nil) (data-file nil)) "
-Compiles the file specified by INPUT-PATHNAME and generates a fasl file
-specified by OUTPUT-FILE.  If the filetype is not specified in INPUT-PATHNAME,
-then \".lsp\" is used as the default file type for the source file.  LOAD
-specifies whether to load the generated fasl file after compilation.  The
-:O-FILE, :C-FILE, :H-FILE, and :DATA-FILE keyword parameters allow you to
-control the intermediate files generated by the ECL compiler.If the file was
-compiled successfully, returns the pathname of the compiled file")
 
 (doctype compiled-function "
 A compiled function is an object that is created by compiling a function.  A
@@ -1133,39 +1061,6 @@ and			 E
 where B is the radix used to represent FLOAT.  S and F are floats of the same
 float format as FLOAT, and E is an integer.")
 
-(docfun ffi:defcbody macro "(defcbody symbol ({arg-type}*) value-type body)" "
-ECL specific.
-The compiler defines a Lisp function named by SYMBOL whose body consists of the
-C code of the string BODY. In the BODY one can reference the arguments of the
-function as \"#0\", \"#1\", etc.
-The interpreter ignores this form.  ARG-TYPEs are argument types of the
-defined Lisp function and VALUE-TYPE is its the return type.")
-
-(docfun defconstant macro "(defconstant symbol form [doc])" "
-Declares that the global variable named by SYMBOL is a constant with the value
-of FORM as its constant value.  The doc-string DOC, if supplied, is saved as a
-VARIABLE doc and can be retrieved by (DOCUMENTATION 'SYMBOL 'VARIABLE).")
-
-(docfun ffi:defentry macro "(defentry symbol ({arg-type}*) (value-type function-name))" "
-ECL specific.
-The compiler defines a Lisp function named by SYMBOL whose body consists of a
-calling sequence to the C language function named by FUNCTION-NAME.  The
-interpreter ignores this form.  ARG-TYPEs are argument types of the C function
-and VALUE-TYPE is the return type of the C function.  Symbols OBJECT, INT,
-CHAR, CHAR*, FLOAT, DOUBLE are allowed for these types.")
-
-(docfun ffi:definline macro "(definline symbol ({arg-type}*) value-type body)" "
-ECL specific.
-DEFINLINE behaves like a DEFCBODY (see), but also instructs the LISP compiler
-to expand inline any call to function SYMBOL into code corresponding
-to the C language expression BODY, whenever it can determine that
-the actual arguments are of the specified type.")
-
-(docfun ffi:defla macro "(defla name lambda-list {decl | doc}* {form}*)" "
-ECL specific.
-Used to DEFine Lisp Alternative.  For the interpreter, DEFLA is equivalent to
-DEFUN, but the compiler ignores this form.")
-
 (docfun delete function (item sequence
        &key (key '#'identity) (test '#'eql) test-not
             (start 0) (end (length sequence))
@@ -1210,26 +1105,6 @@ FILESPEC may be a symbol, a string, a pathname, or a file stream.")
 ECL specific.
 Returns T if the ARRAY is displaced to another array; NIL otherwise.")
 
-(docfun disassemble function (&optional (thing nil) &key (h-file nil) (data-file nil)) "
-Compiles the form specified by THING and prints the intermediate C language
-code for that form.  But does not install the result of compilation.  If THING
-is NIL, then the previously DISASSEMBLEd form is re-DISASSEMBLEd.  If THING is
-a symbol that names a function not yet compiled, the function definition is
-disassembled.  If THING is a lambda expression, it is disassembled as a
-function definition.  Otherwise, THING itself is disassembled as a top-level
-form.  H-FILE and DATA-FILE specify intermediate files to build a fasl file
-from the C language code.  NIL means \"do not create the file\".")
-
-#+profile
-(docfun si::display-profile function () "
-ECL specific.
-Displays the histogram of accumulated tick counts.
-The ticks are attributed to the compiled Lisp function whose base address is
-closest to the start of the segment.  This may not be totally accurate for
-system functions which invoke some auxiliary function to do the job.  For
-instance, all allocator functions, like CONS, call an internal function
-allocate_object and will be reported collectively under si::save-system.")
-
 (docfun do macro
 	"(do ({(var [init [step]])}*) (test {result}*)
           {decl}* {tag | statement}*)" "
@@ -1265,12 +1140,6 @@ Establishes a NIL block and executes STATEMENTs once for each integer between
 0 (inclusive) and the value of FORM (exclusive), with VAR bound to the
 integer.  Then evaluates RESULT (which defaults to NIL) and returns all
 values.")
-
-(docvar double-float-epsilon constant "
-Same as LONG-FLOAT-EPSILON.")
-
-(docvar double-float-negative-epsilon constant "
-Same as LONG-FLOAT-NEGATIVE-EPSILON.")
 
 (docfun eighth function (x) "
 Equivalent to (CADDDR (CDDDDR X)).")
@@ -1318,15 +1187,6 @@ Returns NIL otherwise.")
 (docfun error function (format-string &rest args) "
 Signals an error.  The args are FORMATed to *error-output*.")
 
-#+nil
-(docfun si::error-set function (form) "
-ECL specific.
-Evaluates the FORM in the null environment.  If the evaluation is successfully
-completed, SI::ERROR-SET returns NIL as the first value and the results of the
-evaluation as the rest of the values.  If, in the course of the evaluation, a
-non-local jump from the FORM is attempted, SI::ERROR-SET traps the jump and
-returns the corresponding jump tag as its value.")
-
 (docfun eval function (form) "
 Evaluates FORM and returns all values.")
 
@@ -1354,17 +1214,6 @@ symbols.")
 
 (docfun expt function (number1 number2) "
 Returns NUMBER1 raised to the power NUMBER2.")
-
-#+nil
-(docfun si::faslink function (filespec string) "
-ECL specific.
-Loads the specified fasl file while linking the object files and libraries as
-specified by STRING.  For example,
-	(faslink \"foo.o\" \"bar.o boo.o -lpixrect\")
-loads foo.o while linking two object files (bar.o and boo.o) and the library
-pixrect.  Usually, foo.o consists of the C language interface for the
-functions defined in the object files or the libraries.  FILESPEC may be a
-symbol, a string, a pathname, or a file stream.")
 
 (docfun fboundp function (symbol) "
 Returns T if SYMBOL names a special form, a global macro, or a global
@@ -1626,15 +1475,10 @@ Searches PLIST for a property that is EQ to one of the members of LIST.
 Returns three values.  If such a property if found, returns the property, the
 value of the property, and the rest of LIST.  If not, returns three NILs.")
 
-(docfun si::get-string-input-stream-index function (string-input-stream) "
-ECL specific.
-Returns the current index of STRING-INPUT-STREAM.")
-
 (docfun get-universal-time function () "
 Returns the current day-and-time as an integer.  See DECODE-UNIVERSAL-TIME.")
 
-#+unix
-(docfun si::getenv function (string) "
+(docfun ext:getenv function (string) "
 ECL/UNIX specific.
 Returns the environment with the name STRING as a string.  Returns NIL, if the
 specified environment is not found.")
@@ -1990,14 +1834,6 @@ Returns the bit-wise EXCLUSIVE OR of the args.")
 (doctype long-float "
 A long-float is a long-precision floating point number.")
 
-(docvar long-float-epsilon constant "
-The smallest positive long-float E that satisfies
-	(not (= (float 1 E) (+ (float 1 E) E)))")
-
-(docvar long-float-negative-epsilon constant "
-The smallest positive long-float E that satisfies
-	(not (= (float 1 E) (- (float 1 E) E)))")
-
 (docfun lower-case-p function (char) "
 Returns T if CHAR is a lower-case character; NIL otherwise.")
 
@@ -2185,14 +2021,6 @@ Searches LIST for an element that is equal to ITEM in the sense of the TEST.
 If found, returns the sublist of LIST that begins with the element.
 Otherwise, returns NIL.")
 
-(docfun member-if function (test list &key (key '#'identity)) "
-Searches LIST for an element that satisfies TEST.  If found, returns the
-sublist of LIST that begins with the element.  If not found, returns NIL.")
-
-(docfun member-if-not function (test list &key (key '#'identity)) "
-Searches LIST for an element that does not satisfy TEST.  If found, returns
-the sublist of LIST that begins with the element.  If not found, returns NIL.")
-
 (docfun merge-pathnames function (filespec
        &optional (defaults *default-pathname-defaults*) default-version) "
 Fills in unspecified slots of the pathname specified by FILESPEC from the
@@ -2240,40 +2068,20 @@ The largest positive short-float.")
 (docvar most-positive-single-float constant "
 Same as MOST-POSITIVE-LONG-FLOAT.")
 
-(docfun multiple-value-bind macro
-	"(multiple-value-bind ({var}*) init {decl}* {form}*)" "
-Evaluates INIT and binds the N-th VAR to the N-th value of INIT or, if INIT
-returns less than N values, to NIL.  Then evaluates FORMs, and returns all
-values of the last FORM.  If no FORM is given, returns NIL.")
-
 (docfun multiple-value-call special
 	"(multiple-value-call function-form {form}*)" "
 Evaluates FUNCTION-FORM, whose value must be a function.  Then evaluates FORMs
 and applies the function to all values of FORMs.  Unlike FUNCALL, all values
 of each FORM are used as arguments.  Returns all values of the function.")
 
-(docfun multiple-value-list macro "(multiple-value-list form)" "
-Evaluates FORM and returns a list of all values FORM returns.")
-
 (docfun multiple-value-prog1 special
 	"(multiple-value-prog1 first-form {form}*)" "
 Evaluates FIRST-FORM, saves all values it returns, and then evaluates FORMs.
 Returns all the saved values of FIRST-FORM.")
 
-(docfun multiple-value-setq macro "(multiple-value-setq {var}* form)" "
-Evaluates FORM and binds the N-th VAR to the N-th value of FORM or, if FORM
-returns less than N values, to NIL.  Returns the first value of FORM or, if
-FORM returns no value, NIL.")
-
 (docvar multiple-values-limit constant "
 The upper bound on the number of values that a function can return.  Actually,
 however, there is no such upper bound in ECL.")
-
-(docfun si::nani function (fixnum) "
-ECL specific.
-Returns the object at the address FIXNUM.  This function is the inverse of
-SI::POINTER.  Although SI::POINTER is a harmless operation, SI::NANI is quite
-dangerous and should be used with care.")
 
 (docfun name-char function (name) "
 Given an argument acceptable to string,
@@ -2324,12 +2132,6 @@ Destructive SUBLIS.  TREE may be destroyed.")
 (docfun nsubst function (new old tree &key (key '#'identity) (test '#'eql) test-not) "
 Destructive SUBST.  TREE may be destroyed.")
 
-(docfun nsubst-if function (new test tree &key (key '#'identity)) "
-Destructive SUBST-IF.  TREE may be destroyed.")
-
-(docfun nsubst-if-not function (new test tree &key (key '#'identity)) "
-Destructive SUBST-IF-NOT.  TREE may be destroyed.")
-
 (docfun nsubstitute function (new old sequence
        &key (key '#'identity) (test '#'eql) test-not
             (start 0) (end (length sequence))
@@ -2353,9 +2155,6 @@ integer.")
 
 (docfun nthcdr function (n list) "
 Returns the N-th cdr of LIST.  N must be a non-negative integer.")
-
-(doctype null "
-The type to which only NIL belongs.")
 
 (docfun null function (x) "
 Returns T if X is NIL; NIL otherwise.")
@@ -2392,20 +2191,9 @@ File streams are notated in one of the following ways:
 	#<probe stream f>
 where F is the file name.")
 
-#+unix
-(docfun si::open-pipe function (command) "
-ECL specific.
-The string COMMAND indicates a Shell command to be executed by the
-operating system.
-This function returns a stream corresponding to the output stream of the Shell
-command, from which one can read its output.")
-
-(docfun si::open-tcp-stream function (host port) "
-ECL specific.
-The string HOST indicates the name of the host,
-while PORT is an integer identifies the port number to which to connect.
-This function returns a two-way stream which can be used in any of the
-stream operations.")
+(docfun ext:make-pipe function ()
+"Creates a pipe in the form of a two-way stream that can be used for
+interprocess and interthread communication.")
 
 (docfun or macro "(or {form}*)" "
 Evaluates FORMs in order from left to right.  If any FORM evaluates to non-
@@ -2414,10 +2202,6 @@ returns whatever values it returns.")
 
 (docfun output-stream-p function (stream) "
 Returns T if STREAM can handle output operations; NIL otherwise.")
-
-(docfun si::output-stream-string function (string-output-stream) "
-ECL specific.
-Returns the string that is the destination of STRING-OUTPUT-STREAM.")
 
 (doctype package "
 A package object serves as a name space of symbols.  A package is notated as
@@ -2572,17 +2356,6 @@ Equivalent to
 Returns the full pathname of the specified file if it exists.  Returns NIL
 otherwise.  FILESPEC may be a symbol, a string, a pathname, or a file stream.")
 
-#+profile
-(docfun si::profile function (grain &optional address) "
-ECL specific.
-This function activates the profiling of subsequent executions.  GRAIN is a
-value between 1 and 16384 which indicates the granularity of code segments to
-consider. There is a counter for each such segment.
-With each clock tick, the current segment is identified and its corresponding
-histogram count is incremented.
-A value of 0 for GRAIN means stop profiling.
-ADDRESS indicates the base address for the code being profiled.")
-
 (docfun progn special "(progn {form}*)" "
 Evaluates FORMs in order, and returns all values of the last FORM.  Returns
 NIL if no FORM is given.")
@@ -2614,14 +2387,6 @@ Returns T if X is a random-state object; NIL otherwise.")
 Returns the first pair in ALIST whose cdr is equal (in the sense of TEST) to
 ITEM.  Returns NIL if no such pair exists.
 The function KEY is applied to extract the key for comparison.")
-
-(docfun rassoc-if function (test alist) "
-Returns the first pair in ALIST whose cdr satisfies TEST.  Returns NIL if no
-such pair exists.")
-
-(docfun rassoc-if-not function (test alist) "
-Returns the first pair in ALIST whose cdr does not satisfy TEST.  Returns NIL
-if no such pair exists.")
 
 (doctype ratio "
 A ratio is notated by its numerator and denominator, separated by a slash '/'.
@@ -2657,14 +2422,6 @@ Reads an object from STREAM and returns the object.")
 
 (docfun read-byte function (stream &optional (eof-error-p t) (eof-value nil)) "
 Reads one byte from STREAM and returns it as an integer.")
-
-(docfun si::read-bytes function (stream string start end) "
-ECL specific.
-Reads from STREAM a series of bytes to be placed into STRING
-starting from position START up to END (exclusive).
-It returns the number of bytes actually transferred, or -1 if the
-operation failed.
-The stream is automatically flushed.")
 
 (docfun read-char function (&optional (stream *standard-input*)
                  (eof-error-p t) (eof-value nil) (recursive-p nil)) "
@@ -2771,12 +2528,6 @@ ECL specific.
 Resets the counter of the garbage collector that records how many times the
 garbage collector has been called for each implementation type.")
 
-(docfun si::reset-stack-limits function () "
-ECL specific.
-Resets the stack limits to the normal state.  When a stack has overflowed, ECL
-extends the limit for the stack in order to execute the error handler.  After
-processing the error, ECL resets the stack limit with this function.")
-
 (docfun rest function (x) "
 Equivalent to CDR.")
 
@@ -2813,14 +2564,6 @@ Saves the current ECL core image into a program file specified by PATHNAME.
 FILESPEC may be a symbol, a string, a pathname, or a file stream.  This
 function depends on the version of ECL.  See ECL Report for details.")
 
-#+nil
-(docfun si::save-system function (pathname) "
-ECL specific.
-Saves the current ECL core image into the specified program file.  This
-function differs from SAVE in that the contiguous areas are
-made permanent in the saved image.  Usually the standard image of ECL
-interpreter/compiler is saved by this function.")
-
 (docfun system function (command) "
 ECL specific.
 Executes a Shell command as if the string COMMAND is an input to the Shell.  
@@ -2836,9 +2579,6 @@ This is faster than CHAR.")
 
 (docfun second function (x) "
 Equivalent to CADR.")
-
-(doctype sequence "
-A sequence is either a list or a vector.")
 
 (docfun set function (symbol object) "
 Assigns OBJECT to the global variable named SYMBOL.  Returns OBJECT.")
@@ -2907,14 +2647,6 @@ list of symbols.")
 (doctype short-float "
 A short-float is a short-precision floating point number.")
 
-(docvar short-float-epsilon constant "
-The smallest positive short-float E that satisfies
-	(not (= (float 1 e) (+ (float 1 e) e))).")
-
-(docvar short-float-negative-epsilon constant "
-The smallest positive short-float E that satisfies
-	(not (= (float 1 e) (- (float 1 e) e))).")
-
 (doctype simple-array "
 A simple-array is an array that is not displaced to another array, has no
 fill-pointer, and is not adjustable.")
@@ -2934,12 +2666,6 @@ Returns the sine of RADIANS.")
 (doctype single-float "
 A single-float is a single-precision floating point number.
 SINGLE-FLOAT as a type specifier is equivalent to LONG-FLOAT in ECL.")
-
-(docvar single-float-epsilon constant "
-Same as LONG-FLOAT-EPSILON.")
-
-(docvar single-float-negative-epsilon constant "
-Same as LONG-FLOAT-NEGATIVE-EPSILON.")
 
 (docfun sinh function (number) "
 Returns the hyperbolic sine of NUMBER.")
@@ -3225,14 +2951,6 @@ END (exclusive).")
 Substitutes NEW for subtrees of TREE that match OLD and returns the result.
 The original TREE is not destroyed.")
 
-(docfun subst-if function (new test tree &key (key '#'identity)) "
-Substitutes NEW for subtrees of TREE that satisfy TEST and returns the result.
-The original TREE is not destroyed.")
-
-(docfun subst-if-not function (new test tree &key (key '#'identity)) "
-Substitutes NEW for subtrees of TREE that do not satisfy TEST and returns the
-result.  The original TREE is not destroyed.")
-
 (docfun substitute function (new old sequence
        &key (key '#'identity) (test '#'eql) test-not
             (start 0) (end (length sequence))
@@ -3279,9 +2997,7 @@ Returns the value of the global variable named SYMBOL.")
 (docfun symbolp function (x) "
 Returns T if X is a symbol; NIL otherwise.")
 
-#+unix
-(docfun system function (string) "
-ECL/UNIX specific.
+(docfun ext:system function (string) "
 Executes a Shell command as if STRING is an input to the Shell.")
 
 (doctype t "
@@ -3340,11 +3056,6 @@ of (- NUMBER (* first-value DIVISOR)) as the second value.")
 (docfun type-of function (x) "
 Returns a type specifier of the type to which X belongs.")
 
-#+unix
-(docfun si::uncatch-bad-signals function () "
-ECL/UNIX specific.
-Undoes the effect of SI::CATCH-BAD-SIGNALS.")
-
 (docfun unexport function (symbol &optional (package *package*)) "
 Undoes the registration of SYMBOL as an external symbol of PACKAGE and makes
 SYMBOL internal to PACKAGE.  SYMBOL may be a list of symbols.")
@@ -3356,10 +3067,6 @@ PACKAGE; NIL otherwise.")
 
 (docfun unread-char function (char &optional (stream *standard-input*)) "
 Puts CHAR back on the front of the input stream STREAM.")
-
-(docfun untrace macro "(untrace {function-name}*)" "
-Ends tracing the specified functions.  With no FUNCTION-NAMEs, ends tracing
-all functions.")
 
 (docfun unuse-package function (package-spec &optional (package *package*)) "
 Causes PACKAGE not to use packages specified by PACKAGE-SPEC.  PACKAGE-SPEC
@@ -3409,14 +3116,6 @@ the mode.")
 
 (docfun write-byte function (integer stream) "
 Outputs INTEGER to the binary stream STREAM.  Returns INTEGER.")
-
-(docfun si::write-bytes function (stream string start end) "
-ECL specific.
-Write onto STREAM a series of bytes from STRING
-starting from position START up to END (exclusive).
-It returns the number of bytes actually transferred, or -1 if the
-operation failed.
-The stream is automatically flushed.")
 
 (docfun write-char function (char &optional (stream *standard-output*)) "
 Outputs CHAR to STREAM.  Returns CHAR.")

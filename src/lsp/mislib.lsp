@@ -17,9 +17,9 @@
 
 (defun load-logical-pathname-translations (host)
   "Search for a logical pathname named host, if not already defined. If already
-   defined no attempt to find or load a definition is attempted and NIL is
-   returned. If host is not already defined, but definition is found and loaded
-   successfully, T is returned, else error."
+defined no attempt to find or load a definition is attempted and NIL is
+returned. If host is not already defined, but definition is found and loaded
+successfully, T is returned, else error."
   (declare (type string host)
            (values (member t nil)))
   (let ((*autoload-translations* nil))
@@ -254,6 +254,10 @@ Sunday is the *last* day of the week!!"
   (decode-universal-time (get-universal-time)))
 
 (defun ensure-directories-exist (a-pathname &key verbose)
+"Args: (ensure-directories pathname &key :verbose)
+Creates tree of directories specified by the given pathname. Outputs
+	(VALUES pathname created)
+where CREATED is true only if we succeeded on creating all directories."
   (let* ((created nil)
 	 d)
     (when (or (wild-pathname-p a-pathname :directory)
@@ -273,6 +277,12 @@ Sunday is the *last* day of the week!!"
     (values a-pathname created)))
 
 (defmacro with-hash-table-iterator ((iterator package) &body body)
+"Syntax: (with-hash-table-iterator (iterator package) &body body)
+Loop over the elements of a hash table. ITERATOR is a lexically bound function
+that outputs three values
+	(VALUES entry-p key value)
+ENTRY-P is true only if KEY and VALUE denote a pair of key and value of the
+hash table; otherwise it signals that we have reached the end of the hash table."
   `(let ((,iterator (hash-table-iterator ,package)))
     (macrolet ((,iterator () (list 'funcall ',iterator)))
       ,@body)))

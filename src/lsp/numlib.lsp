@@ -35,21 +35,37 @@
 	 (/= (float 1 x) (- (float 1 x) x))))
   `(eval-when (compile load eval)
     (defconstant short-float-epsilon
-      ,(binary-search #'epsilon+ (coerce 0 'short-float) (coerce 1 'short-float)))
+      ,(binary-search #'epsilon+ (coerce 0 'short-float) (coerce 1 'short-float))
+      "The smallest postive short-float E that satisfies
+	(not (= (float 1 E) (+ (float 1 E) E)))")
     (defconstant single-float-epsilon
-      ,(binary-search #'epsilon+ (coerce 0 'single-float) (coerce 1 'single-float)))
+      ,(binary-search #'epsilon+ (coerce 0 'single-float) (coerce 1 'single-float))
+      "The smallest postive single-float E that satisfies
+	(not (= (float 1 E) (+ (float 1 E) E)))")
     (defconstant double-float-epsilon
-      ,(binary-search #'epsilon+ (coerce 0 'double-float) (coerce 1 'double-float)))
+      ,(binary-search #'epsilon+ (coerce 0 'double-float) (coerce 1 'double-float))
+      "The smallest postive double-float E that satisfies
+	(not (= (float 1 E) (+ (float 1 E) E)))")
     (defconstant long-float-epsilon
-      ,(binary-search #'epsilon+ (coerce 0 'long-float) (coerce 1 'long-float)))
+      ,(binary-search #'epsilon+ (coerce 0 'long-float) (coerce 1 'long-float))
+      "The smallest postive long-float E that satisfies
+	(not (= (float 1 E) (+ (float 1 E) E)))")
     (defconstant short-float-negative-epsilon
-      ,(binary-search #'epsilon- (coerce 0 'short-float) (coerce 1 'short-float)))
+      ,(binary-search #'epsilon- (coerce 0 'short-float) (coerce 1 'short-float))
+      "The smallest positive short-float E that satisfies
+	(not (= (float 1 E) (- (float 1 E) E)))")
     (defconstant single-float-negative-epsilon
-      ,(binary-search #'epsilon- (coerce 0 'single-float) (coerce 1 'single-float)))
+      ,(binary-search #'epsilon- (coerce 0 'single-float) (coerce 1 'single-float))
+      "The smallest positive single-float E that satisfies
+	(not (= (float 1 E) (- (float 1 E) E)))")
     (defconstant double-float-negative-epsilon
-      ,(binary-search #'epsilon- (coerce 0 'double-float) (coerce 1 'double-float)))
+      ,(binary-search #'epsilon- (coerce 0 'double-float) (coerce 1 'double-float))
+      "The smallest positive double-float E that satisfies
+	(not (= (float 1 E) (- (float 1 E) E)))")
     (defconstant long-float-negative-epsilon
-      ,(binary-search #'epsilon- (coerce 0 'long-float) (coerce 1 'long-float)))))
+      ,(binary-search #'epsilon- (coerce 0 'long-float) (coerce 1 'long-float))
+      "The smallest positive long-float E that satisfies
+	(not (= (float 1 E) (- (float 1 E) E)))")))
 
 (defconstant imag-one #C(0.0 1.0))
 

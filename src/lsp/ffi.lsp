@@ -700,6 +700,12 @@
       (list (list ,@args) ',arg-types ',ret-type ,@others))))
 
 (defmacro definline (fun arg-types type code)
+"Syntax: (definline symbol ({arg-type}*) value-type body)" "
+
+DEFINLINE behaves like a DEFCBODY (see), but also instructs the LISP compiler
+to expand inline any call to function SYMBOL into code corresponding
+to the C language expression BODY, whenever it can determine that
+the actual arguments are of the specified type."
   `(eval-when (:compile-toplevel :load-toplevel :execute)
               ;; defCbody must go first, because it clears symbol-plist of fun
               (defCbody ,fun ,arg-types ,type ,code)
@@ -707,16 +713,34 @@
 	      (def-inline ,fun :always ,arg-types ,type ,code)))
 
 (defmacro defla (&rest body)
+"Syntax: (defla name lambda-list {decl | doc}* {form}*)" "
+
+Used to DEFine Lisp Alternative.  For the interpreter, DEFLA is equivalent to
+DEFUN, but the compiler ignores this form."
   `(eval-when (:execute)
      (defun ,@body)))
 
 (defmacro defcbody (name arg-types result-type C-expr)
+"Syntax: (defcbody symbol ({arg-type}*) value-type body)" "
+
+The compiler defines a Lisp function named by SYMBOL whose body consists of the
+C code of the string BODY. In the BODY one can reference the arguments of the
+function as \"#0\", \"#1\", etc.
+The interpreter ignores this form.  ARG-TYPEs are argument types of the
+defined Lisp function and VALUE-TYPE is its the return type."
   (let ((args (mapcar #'(lambda (x) (gensym)) arg-types)))
   `(defun ,name ,args
      (c-inline ,args ,arg-types ,result-type
 	       ,C-expr :one-liner t))))
 
 (defmacro defentry (name arg-types c-name)
+"Syntax: (defentry symbol ({arg-type}*) (value-type function-name))
+
+The compiler defines a Lisp function named by SYMBOL whose body consists of a
+calling sequence to the C language function named by FUNCTION-NAME.  The
+interpreter ignores this form.  ARG-TYPEs are argument types of the C function
+and VALUE-TYPE is the return type of the C function.  Symbols OBJECT, INT,
+CHAR, CHAR*, FLOAT, DOUBLE are allowed for these types."
   (let ((output-type :object)
 	(args (mapcar #'(lambda (x) (gensym)) arg-types)))
     (if (consp c-name)

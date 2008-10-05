@@ -473,6 +473,11 @@ strings."
 		:FORMAT-ARGUMENTS (list function-name datum)))))
 
 (defun break (&optional (format-control "Break") &rest format-arguments)
+  "Enters a break loop.  The execution of the program can be resumed by typing
+:CONTINUE at the break loop.  Type :HELP to see the break-loop commands list.
+If FORMAT-STRING is non-NIL, it is used as the format string to be output to
+*ERROR-OUTPUT* before entering the break loop.  ARGs are arguments to the
+format string."
   (with-simple-restart (continue "Return from BREAK.")
     (invoke-debugger
       (make-condition 'SIMPLE-CONDITION

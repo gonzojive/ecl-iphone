@@ -115,27 +115,45 @@ otherwise."
     (unless (member1 (car l) list2 test test-not key)
       (return nil))))
 
-(defun rassoc-if (pred arg &key key)
-  (rassoc pred arg :test #'funcall :key key))
-(defun rassoc-if-not (pred arg &key key)
-  (rassoc pred arg :test-not #'funcall :key key))
+(defun rassoc-if (test alist &key key)
+  "Returns the first pair in ALIST whose cdr satisfies TEST. Returns NIL if no
+such pair exists."
+  (rassoc test alist :test #'funcall :key key))
+(defun rassoc-if-not (test alist &key key)
+  "Returns the first pair in ALIST whose cdr does not satisfy TEST.  Returns NIL
+if no such pair exists."
+  (rassoc test alist :test-not #'funcall :key key))
 
-(defun assoc-if (pred arg &key key)
-  (assoc pred arg :test #'funcall :key key))
-(defun assoc-if-not (pred arg &key key)
-  (assoc pred arg :test-not #'funcall :key key))
+(defun assoc-if (test alist &key key)
+  "Returns the first pair in ALIST whose car satisfies TEST.  Returns NIL if no
+such pair exists."
+  (assoc test alist :test #'funcall :key key))
+(defun assoc-if-not (test alist &key key)
+  "Returns the first pair in ALIST whose car does not satisfy TEST.  Returns NIL
+if no such pair exists."
+  (assoc test alist :test-not #'funcall :key key))
 
-(defun member-if (pred arg &key key)
-  (member pred arg :test #'funcall :key key))
-(defun member-if-not (pred arg &key key)
-  (member pred arg :test-not #'funcall :key key))
+(defun member-if (test list &key key)
+  "Searches LIST for an element that satisfies TEST.  If found, returns the
+sublist of LIST that begins with the element.  If not found, returns NIL."
+  (member test list :test #'funcall :key key))
+(defun member-if-not (test list &key key)
+  "Searches LIST for an element that does not satisfy TEST.  If found, returns
+the sublist of LIST that begins with the element.  If not found, returns NIL."
+  (member test list :test-not #'funcall :key key))
 
-(defun subst-if (new old where &key key)
-  (subst new old where :test #'funcall :key key))
-(defun subst-if-not (new old where &key key)
-  (subst new old where :test-not #'funcall :key key))
+(defun subst-if (new test tree &key key)
+  "Substitutes NEW for subtrees of TREE that satisfy TEST and returns the result.
+The original TREE is not destroyed."
+  (subst new test tree :test #'funcall :key key))
+(defun subst-if-not (new test tree &key key)
+  "Substitutes NEW for subtrees of TREE that do not satisfy TEST and returns the
+result.  The original TREE is not destroyed."
+  (subst new test tree :test-not #'funcall :key key))
 
-(defun nsubst-if (new old where &key key)
-  (nsubst new old where :test #'funcall :key key))
-(defun nsubst-if-not (new old where &key key)
-  (nsubst new old where :test-not #'funcall :key key))
+(defun nsubst-if (new test tree &key key)
+  "Destructive SUBST-IF. TREE may be modified."
+  (nsubst new test tree :test #'funcall :key key))
+(defun nsubst-if-not (new test tree &key key)
+  "Destructive SUBST-IF-NOT. TREE may be modified."
+  (nsubst new test tree :test-not #'funcall :key key))

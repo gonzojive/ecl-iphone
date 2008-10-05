@@ -51,6 +51,10 @@ SI::ARGS."
     (mapc #'trace-one r)))
 
 (defmacro untrace (&rest r)
+  "Syntax: (untrace {function-name}*)
+
+Ends tracing the specified functions.  With no FUNCTION-NAMEs, ends tracing
+all functions."
   `(untrace* ',r))
 
 (defun untrace* (r)

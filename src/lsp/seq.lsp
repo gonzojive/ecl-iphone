@@ -305,6 +305,10 @@ PREDICATE; NIL otherwise."
   (not (apply #'every predicate sequence more-sequences)))
 
 (defun map-into (result-sequence function &rest sequences)
+"Fills the output sequence with the values returned by applying FUNCTION to the
+elements of the given sequences. The i-th element of RESULT-SEQUENCE is the output
+of applying FUNCTION to the i-th element of each of the sequences. The map routine
+stops when it reaches the end of one of the given sequences."
   (let ((nel (apply #'min (if (vectorp result-sequence)
 			      (array-dimension result-sequence 0)
 			      (length result-sequence))
