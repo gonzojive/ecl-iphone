@@ -424,7 +424,8 @@ cl_type_of(cl_object x)
 		t = x->pathname.logical? @'logical-pathname' : @'pathname';
 		break;
 	case t_list:
-		return Null(x) ? @'null' : @'cons';
+		t = Null(x) ? @'null' : @'cons';
+		break;
 	default:
 		t = ecl_type_to_symbol(tx);
 	}
