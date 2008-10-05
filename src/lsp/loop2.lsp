@@ -144,20 +144,7 @@
   #-Genera `(copy-list ,l)
   )
 
-
-(defvar *loop-gentemp*
-	nil)
-
-(defun loop-gentemp (&optional (pref 'loopvar-))
-  (declare (si::c-local))
-  (if *loop-gentemp*
-      (gensym (string pref))
-      (gensym)))
-
-
-
 (defvar *loop-real-data-type* 'real)
-
 
 (defun loop-optimization-quantities (env)
   (declare (si::c-local))
@@ -375,8 +362,8 @@ constructed.
     (make-loop-minimax-internal
       :answer-variable answer-variable
       :type type
-      :temp-variable (loop-gentemp 'loop-maxmin-temp-)
-      :flag-variable (and (not infinity-data) (loop-gentemp 'loop-maxmin-flag-))
+      :temp-variable (gensym "LOOP-MAXMIN-TEMP-")
+      :flag-variable (and (not infinity-data) (gensym "LOOP-MAXMIN-FLAG-"))
       :operations nil
       :infinity-data infinity-data)))
 
@@ -386,7 +373,7 @@ constructed.
   (pushnew (the symbol operation) (loop-minimax-operations minimax))
   (when (and (cdr (loop-minimax-operations minimax))
 	     (not (loop-minimax-flag-variable minimax)))
-    (setf (loop-minimax-flag-variable minimax) (loop-gentemp 'loop-maxmin-flag-)))
+    (setf (loop-minimax-flag-variable minimax) (gensym "LOOP-MAXMIN-FLAG-")))
   operation)
 
 
@@ -1016,7 +1003,7 @@ collected result will be returned as the value of the LOOP."
 (defun subst-gensyms-for-nil (tree)
   (declare (special *ignores*))
   (cond
-    ((null tree) (car (push (loop-gentemp) *ignores*)))
+    ((null tree) (car (push (gensym) *ignores*)))
     ((atom tree) tree)
     (t (cons (subst-gensyms-for-nil (car tree))
 	     (subst-gensyms-for-nil (cdr tree))))))
@@ -1268,7 +1255,7 @@ collected result will be returned as the value of the LOOP."
   (declare (si::c-local))
   (cond ((null name)
 	 (cond ((not (null initialization))
-		(push (list (setq name (loop-gentemp 'loop-ignore-))
+		(push (list (setq name (gensym "LOOP-IGNORE-"))
 			    initialization)
 		      *loop-variables*)
 		(push `(ignore ,name) *loop-declarations*))))
@@ -1290,7 +1277,7 @@ collected result will be returned as the value of the LOOP."
 	 (cond (*loop-destructuring-hooks*
 		(loop-declare-variable name dtype)
 		(push (list name initialization) *loop-variables*))
-	       (t (let ((newvar (loop-gentemp 'loop-destructure-)))
+	       (t (let ((newvar (gensym "LOOP-DESTRUCTURE-")))
 		    (loop-declare-variable name dtype)
 		    (push (list newvar initialization) *loop-variables*)
 		    ;; *LOOP-DESETQ-CROCKS* gathered in reverse order.
@@ -1336,7 +1323,7 @@ collected result will be returned as the value of the LOOP."
   (declare (si::c-local))
   (if (loop-constantp form)
       form
-      (loop-make-variable (loop-gentemp 'loop-bind-) form data-type)))
+      (loop-make-variable (gensym "LOOP-BIND-") form data-type)))
 
 
 
@@ -1468,8 +1455,8 @@ collected result will be returned as the value of the LOOP."
     (let ((tempvars (loop-collector-tempvars lc)))
       (unless tempvars
 	(setf (loop-collector-tempvars lc)
-	      (setq tempvars (list* (loop-gentemp 'loop-list-head-)
-				    (loop-gentemp 'loop-list-tail-)
+	      (setq tempvars (list* (gensym "LOOP-LIST-HEAD")
+				    (gensym "LOOP-LIST-TAIL")
 				    (and (loop-collector-name lc)
 					 (list (loop-collector-name lc))))))
 	(push `(with-loop-list-collection-head ,tempvars) *loop-wrappers*)
@@ -1496,7 +1483,7 @@ collected result will be returned as the value of the LOOP."
 	(setf (loop-collector-tempvars lc)
 	      (setq tempvars (list (loop-make-variable
 				     (or (loop-collector-name lc)
-					 (loop-gentemp 'loop-sum-))
+					 (gensym "LOOP-SUM-"))
 				     nil (loop-collector-dtype lc)))))
 	(unless (loop-collector-name lc)
 	  (loop-emit-final-value (car (loop-collector-tempvars lc)))))
@@ -1519,7 +1506,7 @@ collected result will be returned as the value of the LOOP."
       (unless data
 	(setf (loop-collector-data lc)
 	      (setq data (make-loop-minimax
-			   (or (loop-collector-name lc) (loop-gentemp 'loop-maxmin-))
+			   (or (loop-collector-name lc) (gensym "LOOP-MAXMIN-"))
 			   (loop-collector-dtype lc))))
 	(unless (loop-collector-name lc)
 	  (loop-emit-final-value (loop-minimax-answer-variable data))))
@@ -1656,7 +1643,7 @@ collected result will be returned as the value of the LOOP."
   (loop-disallow-conditional :repeat)
   (let ((form (loop-get-form))
 	(type 'real))
-    (let ((var (loop-make-variable (loop-gentemp) form type)))
+    (let ((var (loop-make-variable (gensym) form type)))
       (push `(when (minusp (decf ,var)) (go end-loop)) *loop-before-loop*)
       (push `(when (minusp (decf ,var)) (go end-loop)) *loop-after-body*)
       ;; FIXME: What should
@@ -1672,7 +1659,7 @@ collected result will be returned as the value of the LOOP."
   (declare (si::c-local))
   (or *loop-when-it-variable*
       (setq *loop-when-it-variable*
-	    (loop-make-variable (loop-gentemp 'loop-it-) nil nil))))
+	    (loop-make-variable (gensym "LOOP-IT-") nil nil))))
 
 
 ;;;; Various FOR/AS Subdispatches
@@ -1696,8 +1683,8 @@ collected result will be returned as the value of the LOOP."
 
 (defun loop-for-across (var val data-type)
   (loop-make-iteration-variable var nil data-type)
-  (let ((vector-var (loop-gentemp 'loop-across-vector-))
-	(index-var (loop-gentemp 'loop-across-index-)))
+  (let ((vector-var (gensym "LOOP-ACROSS-VECTOR-"))
+	(index-var (gensym "LOOP-ACROSS-INDEX-")))
     (multiple-value-bind (vector-form constantp vector-value)
 	(loop-constant-fold-if-possible val 'vector)
       (loop-make-variable
@@ -1709,7 +1696,7 @@ collected result will be returned as the value of the LOOP."
       (loop-make-variable index-var 0 'fixnum)
       (let* ((length 0)
 	     (length-form (cond ((not constantp)
-				 (let ((v (loop-gentemp 'loop-across-limit-)))
+				 (let ((v (gensym "LOOP-ACROSS-LIST")))
 				   (push `(setq ,v (length ,vector-var)) *loop-prologue*)
 				   (loop-make-variable v 0 'fixnum)))
 				(t (setq length (length vector-value)))))
@@ -1746,7 +1733,7 @@ collected result will be returned as the value of the LOOP."
 	   (values `(funcall ,stepper ,listvar) nil))
 	  ((and (consp stepper) (eq (car stepper) 'function))
 	   (values (list (cadr stepper) listvar) (cadr stepper)))
-	  (t (values `(funcall ,(loop-make-variable (loop-gentemp 'loop-fn-) stepper 'function)
+	  (t (values `(funcall ,(loop-make-variable (gensym "LOOP-FN") stepper 'function)
 			       ,listvar)
 		     nil)))))
 
@@ -1755,7 +1742,7 @@ collected result will be returned as the value of the LOOP."
   (multiple-value-bind (list constantp list-value) (loop-constant-fold-if-possible val)
     (let ((listvar var))
       (cond ((and var (symbolp var)) (loop-make-iteration-variable var list data-type))
-	    (t (loop-make-variable (setq listvar (loop-gentemp)) list 'list)
+	    (t (loop-make-variable (setq listvar (gensym)) list 'list)
 	       (loop-make-iteration-variable var nil data-type)))
       (multiple-value-bind (list-step step-function) (loop-list-step listvar)
 	(declare #+(and (not LOOP-Prefer-POP) (not CLOE)) (ignore step-function))
@@ -1791,7 +1778,7 @@ collected result will be returned as the value of the LOOP."
 
 (defun loop-for-in (var val data-type)
   (multiple-value-bind (list constantp list-value) (loop-constant-fold-if-possible val)
-    (let ((listvar (loop-gentemp 'loop-list-)))
+    (let ((listvar (gensym "LOOP-LIST")))
       (loop-make-iteration-variable var nil data-type)
       (loop-make-variable listvar list 'list)
       (multiple-value-bind (list-step step-function) (loop-list-step listvar)
@@ -1896,7 +1883,7 @@ collected result will be returned as the value of the LOOP."
   (declare (si::c-local))
   (let ((tem (loop-tassoc name *loop-named-variables*)))
     (declare (list tem))
-    (cond ((null tem) (values (loop-gentemp) nil))
+    (cond ((null tem) (values (gensym) nil))
 	  (t (setq *loop-named-variables* (delete tem *loop-named-variables*))
 	     (values (cdr tem) t)))))
 
@@ -1998,12 +1985,12 @@ collected result will be returned as the value of the LOOP."
 	  (setq endform (if limit-constantp
 			    `',limit-value
 			    (loop-make-variable
-			      (loop-gentemp 'loop-limit-) form indexv-type))))
+			      (gensym "LOOP-LIMIT") form indexv-type))))
 	 (:by
 	   (multiple-value-setq (form stepby-constantp stepby)
 	     (loop-constant-fold-if-possible form indexv-type))
 	   (unless stepby-constantp
-	     (loop-make-variable (setq stepby (loop-gentemp 'loop-step-by-)) form indexv-type)))
+	     (loop-make-variable (setq stepby (gensym "LOOP-STEP-BY")) form indexv-type)))
 	 (t (loop-error
 	      "~S invalid preposition in sequencing or sequence path.~@
 	       Invalid prepositions specified in iteration path descriptor or something?"
@@ -2022,7 +2009,7 @@ collected result will be returned as the value of the LOOP."
      (cond ((member dir '(nil :up))
 	    (when (or limit-given default-top)
 	      (unless limit-given
-		(loop-make-variable (setq endform (loop-gentemp 'loop-seq-limit-))
+		(loop-make-variable (setq endform (gensym "LOOP-SEQ-LIMIT-"))
 				    nil indexv-type)
 		(push `(setq ,endform ,default-top) *loop-prologue*))
 	      (setq testfn (if inclusive-iteration '> '>=)))
@@ -2052,7 +2039,7 @@ collected result will be returned as the value of the LOOP."
 
 (defun loop-for-arithmetic (var val data-type kwd)
   (unless var
-    (setf var (loop-gentemp)))
+    (setf var (gensym)))
   (loop-sequencer
     var (loop-check-data-type data-type *loop-real-data-type*) t
     nil nil nil nil nil nil
@@ -2095,8 +2082,8 @@ collected result will be returned as the value of the LOOP."
   (cond ((or (cdr prep-phrases) (not (member (caar prep-phrases) '(:in :of))))
 	 (loop-error "Too many prepositions!"))
 	((null prep-phrases) (loop-error "Missing OF or IN in ~S iteration path.")))
-  (let ((ht-var (loop-gentemp 'loop-hashtab-))
-	(next-fn (loop-gentemp 'loop-hashtab-next-))
+  (let ((ht-var (gensym "LOOP-HASHTAB-"))
+	(next-fn (gensym "LOOP-HASHTAB-NEXT-"))
 	(dummy-predicate-var nil)
 	(post-steps nil))
     (multiple-value-bind (other-var other-p)
@@ -2110,10 +2097,10 @@ collected result will be returned as the value of the LOOP."
 		     dummy-predicate-var (loop-when-it-variable))
       (let* ((key-var nil)
 	     (val-var nil)
-	     (temp-val-var (loop-gentemp 'loop-hash-val-temp-))
-	     (temp-key-var (loop-gentemp 'loop-hash-key-temp-))
-	     (temp-predicate-var (loop-gentemp 'loop-hash-predicate-var-))
-	     (variable (or variable (loop-gentemp)))
+	     (temp-val-var (gensym "LOOP-HASH-VAL-TEMP-"))
+	     (temp-key-var (gensym "LOOP-HASH-KEY-TEMP-"))
+	     (temp-predicate-var (gensym "LOOP-HASH-PREDICATE-VAR-"))
+	     (variable (or variable (gensym)))
 	     (bindings `((,variable nil ,data-type)
 			 (,ht-var ,(cadar prep-phrases))
 			 ,@(and other-p other-var `((,other-var nil))))))
@@ -2122,11 +2109,11 @@ collected result will be returned as the value of the LOOP."
 	    (setq key-var (and other-p other-var) val-var variable))
 	(push `(with-hash-table-iterator (,next-fn ,ht-var)) *loop-wrappers*)
 	(when (consp key-var)
-	  (setq post-steps `(,key-var ,(setq key-var (loop-gentemp 'loop-hash-key-temp-))
+	  (setq post-steps `(,key-var ,(setq key-var (gensym "LOOP-HASH-KEY-TEMP-"))
 			     ,@post-steps))
 	  (push `(,key-var nil) bindings))
 	(when (consp val-var)
-	  (setq post-steps `(,val-var ,(setq val-var (loop-gentemp 'loop-hash-val-temp-))
+	  (setq post-steps `(,val-var ,(setq val-var (gensym "LOOP-HASH-VAL-TEMP-"))
 			     ,@post-steps))
 	  (push `(,val-var nil) bindings))
 	`(,bindings				;bindings
@@ -2157,9 +2144,9 @@ collected result will be returned as the value of the LOOP."
 	 (loop-error "Unknow preposition ~S" (caar prep-phrases))))
   (unless (symbolp variable)
     (loop-error "Destructuring is not valid for package symbol iteration."))
-  (let ((pkg-var (loop-gentemp 'loop-pkgsym-))
-	(next-fn (loop-gentemp 'loop-pkgsym-next-))
-	(variable (or variable (loop-gentemp)))
+  (let ((pkg-var (gensym "LOOP-PKGSYM-"))
+	(next-fn (gensym "LOOP-PKGSYM-NEXT-"))
+	(variable (or variable (gensym)))
 	(pkg (or (cadar prep-phrases) '*package*)))
     (push `(with-package-iterator (,next-fn ,pkg-var ,@symbol-types)) *loop-wrappers*)
     `(((,variable nil ,data-type) (,pkg-var ,pkg))
