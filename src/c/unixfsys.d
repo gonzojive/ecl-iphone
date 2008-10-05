@@ -251,7 +251,7 @@ ERROR:					FElibc_error("Can't change the current directory to ~S",
 			goto BEGIN;
 		}
 #endif
-		pathname = ecl_merge_pathnames(si_getcwd(), pathname, @':newest');
+		pathname = ecl_merge_pathnames(si_getcwd(0), pathname, @':newest');
 	} CL_UNWIND_PROTECT_EXIT {
 		chdir(previous->base_string.self);
 	} CL_UNWIND_PROTECT_END;
@@ -823,11 +823,14 @@ dir_recursive(cl_object pathname, cl_object directory)
 	@(return output)
 @)
 
-cl_object
-si_getcwd(void)
-{
-	return cl_parse_namestring(3, current_dir(), Cnil, Cnil);
-}
+@(defun ext::getcwd (&optional (change_d_p_d Cnil))
+@
+	cl_object output = cl_parse_namestring(3, current_dir(), Cnil, Cnil);
+	if (!Null(change_d_p_d)) {
+		ECL_SETQ(@'*default-pathname-defaults*', output);
+	}
+	@(return output)
+@)
 
 #if defined(_MSC_VER) || defined(mingw32)
 cl_object
@@ -844,8 +847,8 @@ si_get_library_pathname(void)
 }
 #endif
 
-@(defun ext::chdir (directory &optional change_d_p_d)
-	cl_object previous = si_getcwd();
+@(defun ext::chdir (directory &optional (change_d_p_d Ct))
+	cl_object previous = si_getcwd(0);
 	cl_object namestring;
 @
 	/* This will fail if the new directory does not exist */

@@ -1114,7 +1114,7 @@ cl_symbols[] = {
 #endif
 {SYS_ "GET-SYSPROP", SI_ORDINARY, si_get_sysprop, 2, OBJNULL},
 {EXT_ "GETENV", SI_ORDINARY, si_getenv, 1, OBJNULL},
-{EXT_ "GETCWD", SI_ORDINARY, si_getcwd, 0, OBJNULL},
+{EXT_ "GETCWD", SI_ORDINARY, si_getcwd, -1, OBJNULL},
 {SYS_ "GETPID", SI_ORDINARY, si_getpid, 0, OBJNULL},
 {SYS_ "HASH-SET", SI_ORDINARY, si_hash_set, 3, OBJNULL},
 {SYS_ "HASH-TABLE-ITERATOR", SI_ORDINARY, si_hash_table_iterator, 1, OBJNULL},

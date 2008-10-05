@@ -432,8 +432,8 @@ cl_boot(int argc, char **argv)
 	ECL_SET(@'*print-case*', @':upcase');
 
 	cl_core.pathname_translations = Cnil;
-#if 0
-	ECL_SET(@'*default-pathname-defaults*', si_getcwd());
+#if 1
+	ECL_SET(@'*default-pathname-defaults*', si_getcwd(0));
 #else
 	ECL_SET(@'*default-pathname-defaults*',
 		ecl_make_pathname(Cnil, Cnil, Cnil, Cnil, Cnil, Cnil));

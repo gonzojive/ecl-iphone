@@ -66,6 +66,10 @@ ECL 8.9.0:
  - Some symbols now belong in the EXT package: EXT:GETENV, EXT:SETENV,
    EXT:GETCWD, EXT:CHDIR.
 
+ - EXT:GETCWD by default always update the value of *DEFAULT-PATHNAME-DEFAULTS*
+
+ - *DEFAULT-PATHNAME-DEFAULTS* is initialized to the value of EXT:GETCWD.
+
 * Embedding:
 
  - ECL now implements a more transparent interface for setting and querying

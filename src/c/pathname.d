@@ -509,6 +509,8 @@ ecl_parse_namestring(cl_object s, cl_index start, cl_index end, cl_index *ep,
 		    ECL_CONS_CAR(path) != @':absolute')
 			path = CONS(@':absolute', path);
 		path = destructively_check_directory(path, TRUE);
+	} else {
+		path = CONS(@':absolute', path);
 	}
 	if (path == @':error')
 		return Cnil;
@@ -762,9 +764,7 @@ coerce_to_file_pathname(cl_object pathname)
 #endif
 	if (pathname->pathname.directory == Cnil ||
 	    ECL_CONS_CAR(pathname->pathname.directory) == @':relative') {
-		pathname = cl_merge_pathnames(2, pathname,
-					      si_getcwd());
-
+		pathname = cl_merge_pathnames(2, pathname, si_getcwd(0));
 	}
 	return pathname;
 }

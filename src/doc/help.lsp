@@ -873,11 +873,11 @@ Coerces X into a character if possible.  Signals an error if not possible.")
 (docfun characterp function (x) "
 Returns T if X is a character; NIL otherwise.")
 
-(docfun ext:getcwd function (&optional update-lisp) "
+(docfun ext:getcwd function (&optional (update-lisp t)) "
 Returns the current working directory of the C library. When UPDATE-LISP is
 true, *DEFAULT-PATHNAME-DEFAULTS* is set to this value.")
 
-(docfun ext:chdir function (filespec &optional update-lisp) "
+(docfun ext:chdir function (filespec &optional (update-lisp t)) "
 Changes the current working directory of the C library to the one specified by
 FILESPEC.  FILESPEC may be a symbol, a string, or a pathname. UPDATE-LISP
 determines whether the value of *DEFAULT-PATHNAME-DEFAULTS* is also to be
