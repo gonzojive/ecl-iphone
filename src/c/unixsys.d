@@ -337,8 +337,8 @@ si_make_pipe()
 	close(child_stdout);
 	close(child_stderr);
 	if (child_pid > 0 && wait != Cnil) {
-	   	int status[0];
-		waitpid(child_pid, status, 0);
+	   	int status;
+		waitpid(child_pid, &status, 0);
 		exit_status = MAKE_FIXNUM(WEXITSTATUS(status));
 	}
 }
