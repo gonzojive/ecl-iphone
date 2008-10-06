@@ -336,6 +336,8 @@ extern ECL_API cl_object cl_make_cclosure_va(void *c_function, cl_object env, cl
 extern ECL_API void cl_def_c_function(cl_object sym, void *c_function, int narg);
 extern ECL_API void cl_def_c_macro(cl_object sym, void *c_function, int narg);
 extern ECL_API void cl_def_c_function_va(cl_object sym, void *c_function);
+extern ECL_API void ecl_cmp_defmacro(cl_object data);
+extern ECL_API void ecl_cmp_defun(cl_object data);
 
 
 /* character.c */

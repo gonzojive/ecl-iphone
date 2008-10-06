@@ -552,6 +552,8 @@ struct ecl_codeblock {
 	cl_object next;			/*  next codeblock within same library */
 	cl_object name;
 	cl_object links;		/*  list of symbols with linking calls  */
+	cl_index cfuns_size;		/*  number of functions defined  */
+	const struct ecl_cfun *cfuns;
 };
 
 struct ecl_bytecodes {

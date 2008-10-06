@@ -164,3 +164,15 @@ si_compiled_function_block(cl_object fun)
        }
        @(return output)
 }
+
+void
+ecl_cmp_defmacro(cl_object fun)
+{
+	si_fset(3, fun->cfun.name, fun, Ct);
+}
+
+void
+ecl_cmp_defun(cl_object fun)
+{
+	si_fset(2, fun->cfun.name, fun);
+}

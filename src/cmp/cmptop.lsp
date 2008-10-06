@@ -145,6 +145,8 @@
       (wt-nl "flag->cblock.temp_data_size = VMtemp;")
       (wt-nl "flag->cblock.data_text = compiler_data_text;")
       (wt-nl "flag->cblock.data_text_size = compiler_data_text_size;")
+      (wt-nl "flag->cblock.cfuns_size = compiler_cfuns_size;")
+      (wt-nl "flag->cblock.cfuns = compiler_cfuns;")
       (wt-nl "return;}")
       (wt-nl "#ifdef ECL_DYNAMIC_VV")
       (wt-nl "VV = Cblock->cblock.data;")
@@ -194,6 +196,8 @@
 	  (wt-nl-h "#else")
 	  (wt-nl-h "static cl_object VV[VM];")
 	  (wt-nl-h "#endif"))))
+  (wt-nl-h "#define compiler_cfuns_size " (length *global-cfuns-array*))
+  (wt-nl-h "static const struct ecl_cfun compiler_cfuns[" (length *global-cfuns-array*) "];")
   (dolist (l *linking-calls*)
     (let* ((c-name (fourth l))
 	   (var-name (fifth l)))
@@ -212,6 +216,8 @@
       (wt-nl1 "static cl_object " c-name "(cl_narg narg, ...)"
 	      "{TRAMPOLINK(narg," lisp-name ",&" var-name ",Cblock);}")))
 
+  (output-cfuns *compiler-output1*)
+
   (setq *compiler-phase* 't3)
 
   ;;; Callbacks
@@ -223,7 +229,6 @@
   (wt-nl-h "#ifdef __cplusplus")
   (wt-nl-h "}")
   (wt-nl-h "#endif")
-
 
   (wt-nl top-output-string))
 
@@ -653,11 +658,13 @@
 	      (return-from c1fset
 		(make-c1form* 'SI:FSET :args fun-object nil nil nil nil)))
 	    (when (and (typep macro 'boolean)
-		       (typep pprint '(or integer null)))
+		       (typep pprint '(or integer null))
+		       (consp fname)
+		       (eq (first fname) 'quote))
 	      (return-from c1fset
 		(make-c1form* 'SI:FSET :args
 			      fun-object ;; Function object
-			      (c1expr fname)
+			      (add-object (second fname) :permanent t :duplicate t)
 			      macro
 			      pprint
 			      ;; The c1form, when we do not optimize
@@ -680,22 +687,26 @@
     (return-from c2fset
       (c2call-global 'SI:FSET c1forms 'NIL
 		     (c1form-primary-type (second c1forms)))))
-  (let* ((*inline-blocks* 0)
-	 (fname (first (coerce-locs (inline-args (list fname)))))
-	 (cfun (fun-cfun fun))
-	 (minarg (fun-minarg fun))
-	 (maxarg (fun-maxarg fun))
-	 (narg (if (= minarg maxarg) maxarg nil)))
+  (let ((*inline-blocks* 0)
+	(loc (data-empty-loc)))
+    (push (list loc fname fun) *global-cfuns-array*)
     ;; FIXME! Look at c2function!
     (new-local fun)
-    (if macro
-	(if narg
-	    (wt-nl "cl_def_c_macro(" fname ",(void*)" cfun "," narg ");")
-	    (wt-nl "cl_def_c_macro(" fname ",(void*)" cfun ",-1);"))
-	(if narg
-	    (wt-nl "cl_def_c_function(" fname ",(void*)" cfun "," narg ");")
-	    (wt-nl "cl_def_c_function_va(" fname ",(void*)" cfun ");")))
+    (wt-nl (if macro "ecl_cmp_defmacro(" "ecl_cmp_defun(")
+	   loc ");")
     (close-inline-blocks)))
+
+(defun output-cfuns (stream)
+  (format stream "~%static const struct ecl_cfun compiler_cfuns[] = {~
+~%~t/*t,m,narg,padding,name,entry,block*/");
+  (loop for (loc fname-loc fun) in (nreverse *global-cfuns-array*)
+     do (let* ((cfun (fun-cfun fun))
+	       (minarg (fun-minarg fun))
+	       (maxarg (fun-maxarg fun))
+	       (narg (if (= minarg maxarg) maxarg nil)))
+	  (format stream "~%{0,0,~D,0,MAKE_FIXNUM(~D),(cl_objectfn)~A,MAKE_FIXNUM(~D)},"
+		  (or narg -1) (second loc) cfun (second fname-loc))))
+  (format stream "~%};"))
 
 ;;; ----------------------------------------------------------------------
 

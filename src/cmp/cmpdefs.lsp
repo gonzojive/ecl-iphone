@@ -514,6 +514,7 @@ lines are inserted, but the order is preserved")
 (defvar *global-var-objects* nil)	; var objects for global/special vars
 (defvar *global-vars* nil)		; variables declared special
 (defvar *global-funs* nil)		; holds	{ fun }*
+(defvar *global-cfuns-array* nil)	; holds	{ fun }*
 (defvar *linking-calls* nil)		; holds { ( global-fun-name fun symbol c-fun-name var-name ) }*
 (defvar *local-funs* nil)		; holds { fun }*
 (defvar *top-level-forms* nil)		; holds { top-level-form }*

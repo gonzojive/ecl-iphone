@@ -36,6 +36,7 @@
     (*global-var-objects* nil)
     (*global-vars* nil)
     (*global-funs* nil)
+    (*global-cfuns-array* nil)
     (*linking-calls* nil)
     (*global-entries* nil)
     (*undefined-vars* nil)

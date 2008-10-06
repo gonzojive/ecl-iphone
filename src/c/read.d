@@ -2138,6 +2138,16 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 		if (i < len)
 			FEreader_error("Not enough data while loading binary file", in, 0);
 	NO_DATA_LABEL:
+		for (i = 0; i < block->cblock.cfuns_size; i++) {
+			struct ecl_cfun *prototype = block->cblock.cfuns+i;
+			cl_index fname_location = fix(prototype->block);
+			cl_object fname = VV[fname_location];
+			cl_index location = fix(prototype->name);
+			int narg = prototype->narg;
+			VV[location] = narg<0?
+				cl_make_cfun_va(prototype->entry, fname, block) :
+				cl_make_cfun(prototype->entry, fname, block, narg);
+		}
 		/* Execute top-level code */
 		(*entry_point)(MAKE_FIXNUM(0));
 		x = cl_core.packages_to_be_created;
