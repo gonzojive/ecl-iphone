@@ -512,7 +512,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	struct ecl_stack_frame frame_aux;
 	volatile struct ihs_frame ihs;
 
-	ecl_cs_check(ihs);
+	/*ecl_cs_check(ihs);*/
 
 	if (type_of(bytecodes) != t_bytecodes)
 		FEinvalid_function(bytecodes);

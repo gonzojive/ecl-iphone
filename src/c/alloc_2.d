@@ -206,6 +206,7 @@ init_alloc(void)
 	GC_time_limit = GC_TIME_UNLIMITED;
 	GC_init();
 	if (ecl_get_option(ECL_OPT_INCREMENTAL_GC)) {
+		printf("Enable incremental\n");
 		GC_enable_incremental();
 	}
 	GC_register_displacement(1);

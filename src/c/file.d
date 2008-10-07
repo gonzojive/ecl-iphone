@@ -376,6 +376,8 @@ not_a_character_stream(cl_object s)
 static void
 io_error(cl_object strm)
 {
+	FILE *f = strm->stream.file;
+	if (f) clearerr(f);
 	FElibc_error("Read or write operation to stream ~S signaled an error.",
 		     1, strm);
 }
@@ -1144,12 +1146,21 @@ BEGIN:
 	case smm_io:
 		io_stream_begin_read(strm);
 	case smm_input: {
+		cl_env_ptr the_env = &cl_env;
 		FILE *fp = (FILE*)strm->stream.file;
 		if (!strm->stream.char_stream_p)
 			not_a_character_stream(strm);
 		if (fp == NULL)
 			wrong_file_handler(strm);
+		if (cl_env.disable_interrupts) printf("Cannot disable interrupts twice.\n");
+		ECL_DISABLE_INTERRUPTS(the_env);
 		c = getc(fp);
+		if (the_env->interrupt_pending) {
+			printf("Clearing file errors\n");
+			clearerr(fp);
+		}
+		ECL_ENABLE_INTERRUPTS(the_env);
+		if (cl_env.disable_interrupts) printf("Interrupts are not reenabled.\n");
 		if (c == EOF && ferror(fp))
 			io_error(strm);
 		break;

@@ -39,13 +39,16 @@ extern void init_GC(void);
 extern void init_macros(void);
 extern void init_number(void);
 extern void init_read(void);
-extern void init_stacks(struct cl_env_struct *, int *);
+extern void init_stacks(cl_env_ptr, int *);
 extern void init_unixint(int pass);
 extern void init_unixtime(void);
 #ifdef mingw32
 extern void init_compiler(void);
 #endif
-extern void ecl_init_env(struct cl_env_struct *);
+#ifdef ECL_THREADS
+extern void init_threads(cl_env_ptr);
+#endif
+extern void ecl_init_env(cl_env_ptr);
 extern void init_lib_LSP(cl_object);
 
 /* alloc.d/alloc_2.d */
@@ -192,8 +195,6 @@ extern void cl_write_object(cl_object x, cl_object stream);
 extern cl_fixnum ecl_runtime(void);
 
 /* unixint.d */
-
-extern bool ecl_interrupt_enable;
 
 #if defined(_MSC_VER) || defined(mingw32)
 # include <float.h>

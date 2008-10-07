@@ -32,11 +32,17 @@ cs_set_size(cl_index new_size)
 	cl_index safety_area = ecl_get_option(ECL_OPT_C_STACK_SAFETY_AREA);
 	new_size += 2*safety_area;
 #ifdef ECL_DOWN_STACK
-	if (&foo > cl_env.cs_org - new_size + 16)
+	if (&foo > cl_env.cs_org - new_size + 16) {
 		cl_env.cs_limit = cl_env.cs_org - new_size + 2*safety_area;
+		if (cl_env.cs_limit < cl_env.cs_barrier)
+			cl_env.cs_barrier = cl_env.cs_limit;
+	}
 #else
-	if (&foo < cl_env.cs_org + new_size - 16)
+	if (&foo < cl_env.cs_org + new_size - 16) {
 		cl_env.cs_limit = cl_env.cs_org + new_size - 2*safety_area;
+		if (cl_env.cs_limit > cl_env.cs_barrier)
+			cl_env.cs_barrier = cl_env.cs_limit;
+	}
 #endif
 	else
 		ecl_internal_error("can't reset cl_env.cs_limit.");
@@ -500,16 +506,22 @@ init_stacks(struct cl_env_struct *env, int *new_cs_org)
 	ihs_org.index = 0;
 
 	env->cs_org = new_cs_org;
+	env->cs_barrier = new_cs_org;
 #if defined(HAVE_SYS_RESOURCE_H) && defined(RLIMIT_STACK)
 	{
-	  struct rlimit rl;
-	  cl_index size;
-	  getrlimit(RLIMIT_STACK, &rl);
-	  if (rl.rlim_cur != RLIM_INFINITY) {
-		  size = rl.rlim_cur / sizeof(cl_fixnum) / 2;
-		  if (size > ecl_get_option(ECL_OPT_C_STACK_SIZE))
-			  ecl_set_option(ECL_OPT_C_STACK_SIZE, size);
-	  }
+		struct rlimit rl;
+		cl_index size;
+		getrlimit(RLIMIT_STACK, &rl);
+		if (rl.rlim_cur != RLIM_INFINITY) {
+			size = rl.rlim_cur / sizeof(cl_fixnum) / 2;
+			if (size > ecl_get_option(ECL_OPT_C_STACK_SIZE))
+				ecl_set_option(ECL_OPT_C_STACK_SIZE, size);
+#ifdef ECL_DOWN_STACK
+			env->cs_barrier = env->cs_org - rl.rlim_cur - 1024;
+#else
+			env->cs_barrier = env->cs_org + rl.rlim_cur + 1024;
+#endif
+		}
 	}
 #endif
 	cs_set_size(ecl_get_option(ECL_OPT_C_STACK_SIZE));
@@ -530,5 +542,8 @@ init_stacks(struct cl_env_struct *env, int *new_cs_org)
 		new_stack.ss_flags = 0;
 		sigaltstack(&new_stack, NULL);
 	}
+#endif
+#ifdef SA_SIGINFO
+	env->interrupt_info = cl_alloc_atomic(sizeof(siginfo_t));
 #endif
 }

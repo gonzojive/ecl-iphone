@@ -30,6 +30,9 @@
 #ifdef HAVE_SCHED_YIELD
 # include <sched.h>
 #endif
+#ifdef HAVE_MMAP
+# include <sys/mmap.h>
+#endif
 
 #ifndef WITH___THREAD
 static pthread_key_t cl_env_key;
@@ -489,10 +492,9 @@ mp_condition_variable_broadcast(cl_object cv)
  */
 
 void
-init_threads()
+init_threads(cl_env_ptr env)
 {
 	cl_object process;
-	struct cl_env_struct *env;
 	pthread_mutexattr_t attr;
 
 	cl_core.processes = OBJNULL;
@@ -507,7 +509,7 @@ init_threads()
 	process->process.function = Cnil;
 	process->process.args = Cnil;
 	process->process.thread = pthread_self();
-	process->process.env = env = cl_alloc(sizeof(*env));
+	process->process.env = env;
 
 #ifdef WITH___THREAD
 	cl_env_p = env;

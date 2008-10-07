@@ -9,7 +9,10 @@ extern "C" {
  * Per-thread data.
  */
 
-struct cl_env_struct {
+typedef struct cl_env_struct {
+	/* Flag for disabling interrupts while we call C library functions. */
+	int disable_interrupts;
+
 	/* The four stacks in ECL. */
 
 	/*
@@ -57,6 +60,7 @@ struct cl_env_struct {
 	 */
 	cl_fixnum *cs_org;
 	cl_fixnum *cs_limit;
+	cl_fixnum *cs_barrier;
 	cl_index cs_size;
 
 	/* Array where values are returned by functions. */
@@ -91,6 +95,7 @@ struct cl_env_struct {
 	cl_object own_process;
 #endif
 	int interrupt_pending;
+	void *interrupt_info;
 
 	/* The following is a hash table for caching invocations of
 	   generic functions. In a multithreaded environment we must
@@ -111,21 +116,22 @@ struct cl_env_struct {
 	/* Alternative stack for processing signals */
 	void *altstack;
 	cl_index altstack_size;
-};
+} *cl_env_ptr;
 
 #ifndef __GNUC__
 #define __attribute__(x)
 #endif
 #if defined(ECL_THREADS)
 # ifdef WITH___THREAD
-extern __thread struct cl_env_struct * cl_env_p;
-#define cl_env (*cl_env_p)
+#  define cl_env (*cl_env_p)
+   extern __thread cl_env_ptr cl_env_p;
 # else
-#define cl_env (*ecl_process_env())
-extern ECL_API struct cl_env_struct *ecl_process_env(void) __attribute__((const));
+#  define cl_env (*ecl_process_env())
+   extern ECL_API cl_env_ptr ecl_process_env(void) __attribute__((const));
 # endif
 #else
-extern ECL_API struct cl_env_struct cl_env;
+# define cl_env (*cl_env_p)
+  extern cl_env_ptr cl_env_p;
 #endif
 
 /*
@@ -647,7 +653,7 @@ extern ECL_API void ecl_register_root(cl_object *p);
 /* gfun.c */
 
 #ifdef CLOS
-extern ECL_API void _ecl_set_method_hash_size(struct cl_env_struct *env, cl_index size);
+extern ECL_API void _ecl_set_method_hash_size(cl_env_ptr env, cl_index size);
 extern ECL_API cl_object si_clear_gfun_hash(cl_object what);
 extern ECL_API cl_object clos_set_funcallable_instance_function(cl_object x, cl_object function_or_t);
 extern ECL_API cl_object si_generic_function_p(cl_object instance);
@@ -1546,6 +1552,9 @@ extern ECL_API cl_object si_get_library_pathname(void);
 
 /* unixint.c */
 
+#define ECL_DISABLE_INTERRUPTS(env) ((env)->disable_interrupts=1)
+#define ECL_ENABLE_INTERRUPTS(env) ((env)->disable_interrupts=0)
+#define ECL_ATOMIC(env,stmt) (ECL_DISABLE_INTERRUPTS(env),(stmt),ECL_ENABLE_INTERRUPTS(env))
 extern ECL_API cl_object si_catch_signal(cl_object signal, cl_object state);
 extern ECL_API cl_object si_check_pending_interrupts(void);
 extern ECL_API cl_object si_trap_fpe(cl_object condition, cl_object flag);

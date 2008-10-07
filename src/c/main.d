@@ -32,6 +32,9 @@
 #   include <unistd.h>
 # endif
 #endif
+#ifdef HAVE_MMAP
+# include <sys/mman.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <ecl/internal.h>
@@ -40,9 +43,9 @@ extern int GC_dont_gc;
 /******************************* EXPORTS ******************************/
 
 #if !defined(ECL_THREADS)
-struct cl_env_struct cl_env;
+cl_env_ptr cl_env_p;
 #elif defined(WITH___THREAD)
-__thread struct cl_env_struct * cl_env_p;
+__thread cl_env_ptr cl_env_p;
 #endif
 struct cl_core_struct cl_core;
 const char *ecl_self;
@@ -105,7 +108,7 @@ ecl_set_option(int option, cl_fixnum value)
 }
 
 void
-ecl_init_env(struct cl_env_struct *env)
+ecl_init_env(cl_env_ptr env)
 {
 	int i;
 
@@ -225,6 +228,9 @@ cl_boot(int argc, char **argv)
 	cl_object aux;
 	cl_object features;
 	int i;
+#if defined(ECL_THREADS) && !defined(WITH__THREAD)
+	static cl_env_ptr cl_env_p;
+#endif
 
 	i = ecl_get_option(ECL_OPT_BOOTED);
 	if (i) {
@@ -247,8 +253,16 @@ cl_boot(int argc, char **argv)
 	init_unixint(0);
 	init_alloc();
 	GC_disable();
+#if !defined(HAVE_MMAP)
+	cl_env_p = cl_alloc(sizeof(*cl_env_p));
+#else
+	cl_env_p = mmap(0, sizeof(*cl_env_p), PROT_READ | PROT_WRITE,
+			MAP_ANON | MAP_PRIVATE, 0, 0);
+	if (cl_env_p < 0)
+		ecl_internal_error("Unable to allocate environment structure.");
+#endif
 #ifdef ECL_THREADS
-	init_threads();
+	init_threads(cl_env_p);
 #endif
 
 #if !defined(MSDOS) && !defined(cygwin)
