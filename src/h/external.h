@@ -124,6 +124,7 @@ typedef struct cl_env_struct {
 #if defined(ECL_THREADS)
 # ifdef WITH___THREAD
 #  define cl_env (*cl_env_p)
+#  define ecl_process_env() cl_env_p
    extern __thread cl_env_ptr cl_env_p;
 # else
 #  define cl_env (*ecl_process_env())
@@ -131,6 +132,7 @@ typedef struct cl_env_struct {
 # endif
 #else
 # define cl_env (*cl_env_p)
+# define ecl_process_env() cl_env_p
   extern cl_env_ptr cl_env_p;
 #endif
 
@@ -1552,12 +1554,23 @@ extern ECL_API cl_object si_get_library_pathname(void);
 
 /* unixint.c */
 
-#define ECL_DISABLE_INTERRUPTS(env) ((env)->disable_interrupts=1)
-#define ECL_ENABLE_INTERRUPTS(env) ((env)->disable_interrupts=0)
-#define ECL_ATOMIC(env,stmt) (ECL_DISABLE_INTERRUPTS(env),(stmt),ECL_ENABLE_INTERRUPTS(env))
+#ifdef ECL_USE_MPROTECT
+#define ecl_disable_interrupts_env(env) ((env)->disable_interrupts=1)
+#define ecl_enable_interrupts_env(env) ((env)->disable_interrupts=0)
+#else
+#define ecl_disable_interrupts_env(env) ((env)->disable_interrupts=1)
+#define ecl_enable_interrupts_env(env) (((env)->disable_interrupts^=1) && (ecl_check_pending_interrupts(),0))
+#endif
+#define ecl_disable_interrupts() ecl_disable_interrupts_env(&cl_env)
+#define ecl_enable_interrupts() ecl_enable_interrupts_env(&cl_env)
+#define ECL_PSEUDO_ATOMIC_ENV(env,stmt) (ecl_disable_interrupts_env(env),(stmt),ecl_enable_interrupts_env(env))
+#define ECL_PSEUDO_ATOMIC(stmt) (ecl_disable_interrupts(),(stmt),ecl_enable_interrupts())
 extern ECL_API cl_object si_catch_signal(cl_object signal, cl_object state);
 extern ECL_API cl_object si_check_pending_interrupts(void);
+extern ECL_API cl_object si_disable_interrupts(void);
+extern ECL_API cl_object si_enable_interrupts(void);
 extern ECL_API cl_object si_trap_fpe(cl_object condition, cl_object flag);
+extern ECL_API void ecl_check_pending_interrupts(void);
 
 
 /* unixsys.c */

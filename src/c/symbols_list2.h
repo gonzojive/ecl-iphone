@@ -1709,5 +1709,7 @@ cl_symbols[] = {
 {EXT_ "SET-STACK-SIZE","si_set_stack_size"},
 {EXT_ "SEGMENTATION-VIOLATION",NULL},
 
+{SYS_ "CHECK-PENDING-INTERRUPTS","si_check_pending_interrupts"},
+
 /* Tag for end of list */
 {NULL,NULL}};

@@ -82,6 +82,9 @@
 /* Stack grows downwards						*/
 #undef ECL_DOWN_STACK
 
+/* Use mprotect for fast interrupt dispatch				*/
+#undef ECL_USE_MPROTECT
+
 /*
  * C TYPES AND SYSTEM LIMITS
  */

@@ -30,9 +30,6 @@
 #ifdef HAVE_SCHED_YIELD
 # include <sched.h>
 #endif
-#ifdef HAVE_MMAP
-# include <sys/mmap.h>
-#endif
 
 #ifndef WITH___THREAD
 static pthread_key_t cl_env_key;
@@ -132,7 +129,7 @@ alloc_process(cl_object name)
 	process->process.function = Cnil;
 	process->process.args = Cnil;
 	process->process.interrupt = Cnil;
-	process->process.env = cl_alloc(sizeof(*process->process.env));
+	process->process.env = _ecl_alloc_env();
 	process->process.env->own_process = process;
 	return process;
 }

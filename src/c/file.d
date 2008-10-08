@@ -376,8 +376,9 @@ not_a_character_stream(cl_object s)
 static void
 io_error(cl_object strm)
 {
+	cl_env_ptr the_env = &cl_env;
 	FILE *f = strm->stream.file;
-	if (f) clearerr(f);
+	if (f) ECL_PSEUDO_ATOMIC_ENV(the_env, clearerr(f));
 	FElibc_error("Read or write operation to stream ~S signaled an error.",
 		     1, strm);
 }
@@ -394,10 +395,14 @@ wsock_error( const char *err_msg, cl_object strm )
 {
 	char *msg;
 	cl_object msg_obj;
-	FormatMessage( FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER,
-		       0, WSAGetLastError(), 0, ( void* )&msg, 0, NULL );
-	msg_obj = make_base_string_copy( msg );
-	LocalFree( msg );
+	ecl_disable_interrupts();
+	{
+		FormatMessage( FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+			       0, WSAGetLastError(), 0, ( void* )&msg, 0, NULL );
+		msg_obj = make_base_string_copy( msg );
+		LocalFree( msg );
+	}
+	ecl_enable_interrupts();
 	FEerror( err_msg, 2, strm, msg_obj );
 }
 #endif
@@ -413,6 +418,7 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 		cl_object if_does_not_exist, cl_fixnum byte_size,
 		bool char_stream_p, bool use_header_p)
 {
+	cl_env_ptr the_env = &cl_env;
 	cl_object x;
 	FILE *fp;
 	cl_object filename = si_coerce_to_filename(fn);
@@ -429,33 +435,36 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	if (char_stream_p && byte_size != 8) {
 		FEerror("Tried to make a character stream of byte size /= 8.",0);
 	}
+	ecl_disable_interrupts_env(the_env);
 	if (smm == smm_input || smm == smm_probe) {
 		fp = fopen(fname, OPEN_R);
 		if (fp == NULL) {
-			if (if_does_not_exist == @':error')
-				FEcannot_open(fn);
-			else if (if_does_not_exist == @':create') {
+			if (if_does_not_exist == @':error') {
+				goto CANNOT_OPEN;
+			} else if (if_does_not_exist == @':create') {
 				fp = fopen(fname, OPEN_W);
 				if (fp == NULL)
-					FEcannot_open(fn);
+					goto CANNOT_OPEN;
 				fclose(fp);
 				fp = fopen(fname, OPEN_R);
 				if (fp == NULL)
-					FEcannot_open(fn);
+					goto CANNOT_OPEN;
 			} else if (Null(if_does_not_exist)) {
-				return(Cnil);
+				x = Cnil;
+				goto OUTPUT;
 			} else {
-				FEerror("~S is an illegal IF-DOES-NOT-EXIST option.",
-					1, if_does_not_exist);
+				x = @':if-does-not-exist';
+				fn = if_does_not_exist;
+				goto INVALID_OPTION;
 			}
 		} else if (!char_stream_p && use_header_p) {
 			/* Read the binary header */
 			int c = getc(fp);
 			if (c != EOF) {
 				binary_header = c & 0xFF;
-				if (binary_header & ~7)
-					FEerror("~S has an invalid binary header ~S",
-					        2, fn, MAKE_FIXNUM(binary_header));
+				if (binary_header & ~7) {
+					goto INVALID_HEADER;
+				}
 			}
 			ecl_fseeko(fp, 0, SEEK_SET);
 		}
@@ -469,9 +478,9 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 				int c = getc(fp);
 				if (c != EOF) {
 					binary_header = c & 0xFF;
-					if (binary_header & ~7)
-						FEerror("~S has an invalid binary header ~S",
-						        2, fn, MAKE_FIXNUM(binary_header));
+					if (binary_header & ~7) {
+						goto INVALID_HEADER;
+					}
 					if (binary_header != 0 && if_exists == @':append' &&
 					    ecl_fseeko(fp, -1, SEEK_END) == 0) {
 						/* Read the last byte */
@@ -481,63 +490,71 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 				}
 			}
 			fclose(fp);
-			if (if_exists == @':error')
-				FEcannot_open(fn);
-			else if (if_exists == @':rename') {
+			if (if_exists == @':error') {
+				goto CANNOT_OPEN;
+			} else if (if_exists == @':rename') {
 				fp = ecl_backup_fopen(fname, (smm == smm_output)
 						      ? OPEN_W
 						      : OPEN_RW);
-				if (fp == NULL)
-					FEcannot_open(fn);
+				if (fp == NULL) {
+					goto CANNOT_OPEN;
+				}
 			} else if (if_exists == @':rename_and_delete' ||
 				   if_exists == @':new_version' ||
 				   if_exists == @':supersede') {
 				fp = fopen(fname, (smm == smm_output)
 					   ? OPEN_W
 					   : OPEN_RW);
-				if (fp == NULL)
-					FEcannot_open(fn);
+				if (fp == NULL) {
+					goto CANNOT_OPEN;
+				}
 			} else if (if_exists == @':overwrite' || if_exists == @':append') {
 				/* We cannot use "w+b" because it truncates.
 				   We cannot use "a+b" because writes jump to the end. */
 				int f = open(filename->base_string.self, (smm == smm_output)?
 					     (O_WRONLY|O_CREAT) : (O_RDWR|O_CREAT));
-				if (f < 0)
-					FEcannot_open(fn);
+				if (f < 0) {
+					goto CANNOT_OPEN;
+				}
 				fp = fdopen(f, (smm == smm_output)? OPEN_W : OPEN_RW);
 				if (fp == NULL) {
 					close(f);
-					FEcannot_open(fn);
+					goto CANNOT_OPEN;
 				}
 				if (if_exists == @':append') {
 					ecl_fseeko(fp, 0, SEEK_END);
 					appending = TRUE;
 				}
 			} else if (Null(if_exists)) {
-				return(Cnil);
+				x = Cnil;
+				goto OUTPUT;
 			} else {
-				FEerror("~S is an illegal IF-EXISTS option.",
-					1, if_exists);
+				x = @':if-exists';
+				fn = if_exists;
+				goto INVALID_OPTION;
 			}
 		} else {
-			if (if_does_not_exist == @':error')
-				FEcannot_open(fn);
-			else if (if_does_not_exist == @':create') {
+			if (if_does_not_exist == @':error') {
+				goto CANNOT_OPEN;
+			} else if (if_does_not_exist == @':create') {
 			CREATE:
 				fp = fopen(fname, (smm == smm_output)
 					   ? OPEN_W
 					   : OPEN_RW);
-				if (fp == NULL)
-					FEcannot_open(fn);
+				if (fp == NULL) {
+					goto CANNOT_OPEN;
+				}
 			} else if (Null(if_does_not_exist)) {
-				return(Cnil);
+				x = Cnil;
+				goto OUTPUT;
 			} else {
-				FEerror("~S is an illegal IF-DOES-NOT-EXIST option.",
-					1, if_does_not_exist);
+				x = @':if-does-not-exist';
+				fn = if_does_not_exist;
+				goto INVALID_OPTION;
 			}
 		}
 	} else {
-		FEerror("Illegal stream mode ~S", 1, MAKE_FIXNUM(smm));
+		goto INVALID_MODE;
 	}
 	x = cl_alloc_object(t_stream);
 	x->stream.mode = (short)smm;
@@ -577,7 +594,22 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 			}
 		}
 	}
-	return(x);
+ OUTPUT:
+	ecl_enable_interrupts_env(the_env);
+	return x;
+ CANNOT_OPEN:
+	FEcannot_open(fn);
+	return Cnil;
+ INVALID_OPTION:
+	FEerror("Invalid value op option ~A: ~A", 2, x, fn);
+	return Cnil;
+ INVALID_HEADER:
+	FEerror("~S has an invalid binary header ~S", 2, fn,
+		MAKE_FIXNUM(binary_header));
+	return Cnil;
+ INVALID_MODE:
+	FEerror("Illegal stream mode ~S", 1, MAKE_FIXNUM(smm));
+	return Cnil;
 }
 
 /* Forward definitions */
@@ -1153,13 +1185,15 @@ BEGIN:
 		if (fp == NULL)
 			wrong_file_handler(strm);
 		if (cl_env.disable_interrupts) printf("Cannot disable interrupts twice.\n");
-		ECL_DISABLE_INTERRUPTS(the_env);
-		c = getc(fp);
-		if (the_env->interrupt_pending) {
-			printf("Clearing file errors\n");
-			clearerr(fp);
+		ecl_disable_interrupts_env(the_env);
+		{
+			c = getc(fp);
+			if (the_env->interrupt_pending) {
+				printf("Clearing file errors\n");
+				clearerr(fp);
+			}
 		}
-		ECL_ENABLE_INTERRUPTS(the_env);
+		ecl_enable_interrupts_env(the_env);
 		if (cl_env.disable_interrupts) printf("Interrupts are not reenabled.\n");
 		if (c == EOF && ferror(fp))
 			io_error(strm);

@@ -38,7 +38,7 @@
 # endif
 #endif
 #include <signal.h>
-#ifdef HAVE_MMAP
+#ifdef ECL_USE_MPROTECT
 # ifndef SA_SIGINFO
 #  error "We cannot use the mmap code without siginfo"
 # endif
@@ -162,6 +162,7 @@ static struct {
 #define define_handler(name, sig, info, aux) name(sig, info, aux)
 #define call_handler(name, sig, info, aux) name(sig, info, aux)
 #define reinstall_signal(x,y)
+#define copy_siginfo(x,y) memcpy(x, y, sizeof(struct sigaction))
 static void
 mysignal(int code, void *handler)
 {
@@ -185,14 +186,20 @@ mysignal(int code, void *handler)
 #define call_handler(name, sig, info, aux) name(sig)
 #define mysignal(x,y) signal(x,y)
 #define reinstall_signal(x,y) signal(x,y)
+#define copy_siginfo(x,y)
 #endif
 
 static bool
-interrupts_disabled(cl_env_ptr the_env)
+interrupts_disabled_by_C(cl_env_ptr the_env)
 {
-	return the_env->disable_interrupts ||
-		(ecl_get_option(ECL_OPT_BOOTED) &&
-		 ecl_symbol_value(@'si::*interrupt-enable*') == Cnil);
+	return the_env->disable_interrupts;
+}
+
+static bool
+interrupts_disabled_by_lisp(cl_env_ptr the_env)
+{
+	return (ecl_get_option(ECL_OPT_BOOTED) &&
+		ecl_symbol_value(@'si::*interrupt-enable*') == Cnil);
 }
 
 static void
@@ -310,23 +317,39 @@ define_handler(non_evil_signal_handler, int sig, siginfo_t *siginfo, void *data)
 	reinstall_signal(sig, non_evil_signal_handler);
 	printf("Non evil handler\n");
 	/*
-	 * If interrupts are disabled, and we have not pushed a pending
-	 * signal, save this signal and return. On platforms in which
-	 * mprotect() works, we block all write access to the environment
-	 * for a cheap check of pending interrupts.
+	 * If interrupts are disabled by C we are not so eager on
+	 * detecting when the interrupts become enabled again. We
+	 * queue the signal and are done with that.
 	 */
-	if (interrupts_disabled(the_env)) {
+	if (interrupts_disabled_by_lisp(the_env)) {
+		if (!the_env->interrupt_pending) {
+			the_env->interrupt_pending = sig;
+			copy_siginfo(the_env->interrupt_info, siginfo);
+		}
+		errno = old_errno;
+		return;
+	}
+	/*
+	 * If interrupts are disabled by C, and we have not pushed a
+	 * pending signal, save this signal and return. On platforms
+	 * in which mprotect() works, we block all write access to the
+	 * environment for a cheap check of pending interrupts. On other
+	 * platforms we change the value of disable_interrupts to 3, so
+	 * that we detect changes.
+	 */
+	if (interrupts_disabled_by_C(the_env)) {
+		the_env->disable_interrupts = 3;
 		if (!the_env->interrupt_pending) {
 			struct sigaction oact;
 			the_env->interrupt_pending = sig;
-			memcpy(the_env->interrupt_info, siginfo, sizeof(siginfo));
+			copy_siginfo(the_env->interrupt_info, siginfo);
 			printf("Postponing signal %d\n", sig);
 			sigaction(SIGSEGV, NULL, &oact);
 			printf("SIGSEGV Handler: %x\n", oact.sa_sigaction);
 			sigaction(SIGBUS, NULL, &oact);
 			printf("SIGBUS Handler: %x\n", oact.sa_sigaction);
 			printf("sigsegv_handler: %x\n", sigsegv_handler);
-#ifdef HAVE_MMAP
+#ifdef ECL_USE_MPROTECT
 			printf("Protecting %x\n", the_env);
 			if (mprotect(the_env, sizeof(*the_env), PROT_READ) < 0)
 				ecl_internal_error("Unable to mprotect environment.");
@@ -352,25 +375,34 @@ define_handler(sigsegv_handler, int sig, siginfo_t *info, void *aux)
 # ifdef ECL_DOWN_STACK
 	if ((cl_fixnum*)info->si_addr > the_env->cs_barrier &&
 	    (cl_fixnum*)info->si_addr <= the_env->cs_org) {
-		jump_to_sigsegv_handler(the_env);
+		return jump_to_sigsegv_handler(the_env);
 	}
 # else
 	if ((cl_fixnum*)info->si_addr < the_env->cs_barrier &&
 	    (cl_fixnum*)info->si_addr >= the_env->cs_org) {
-		jump_to_sigsegv_handler(the_env);
+		return jump_to_sigsegv_handler(the_env);
 	}
 # endif
-	if (interrupts_disabled(the_env)) {
-		the_env->interrupt_pending = sig;
-		memcpy(the_env->interrupt_info, info, sizeof(*info));
-# ifdef HAVE_MMAP
-		printf("Protecting %p\n", the_env);
-		if (mprotect(the_env, sizeof(*the_env), PROT_READ) < 0)
-			ecl_internal_error("Unable to mprotect environment.");
-# endif
-	} else {
-		handle_signal_now(sig, info, aux);
+	if (interrupts_disabled_by_lisp(the_env)) {
+		if (!the_env->interrupt_pending) {
+			the_env->interrupt_pending = sig;
+			copy_siginfo(the_env->interrupt_info, info);
+		}
+		return;
 	}
+	if (interrupts_disabled_by_C(the_env)) {
+		if (!the_env->interrupt_pending) {
+			the_env->interrupt_pending = sig;
+			copy_siginfo(the_env->interrupt_info, info);
+# ifdef ECL_USE_MPROTECT
+			printf("Protecting %p\n", the_env);
+			if (mprotect(the_env, sizeof(*the_env), PROT_READ) < 0)
+				ecl_internal_error("Unable to mprotect environment.");
+# endif
+		}
+		return;
+	}
+	handle_signal_now(sig, info, aux);
 #else
 	reinstall_signal_handler(sig, sigsegv_signal_handler);
 	/*
@@ -387,7 +419,7 @@ define_handler(sigbus_handler, int sig, siginfo_t *info, void *aux)
 {
 	cl_env_ptr the_env = &cl_env;
 	printf("Entering sigbus_handler for address %0p\n", info->si_addr);
-#if defined(SA_SIGINFO) && defined(HAVE_MMAP)
+#if defined(SA_SIGINFO) && defined(ECL_USE_MPROTECT)
 	/* We access the environment when it was protected. That
 	 * means there was a pending signal. */
 	if (the_env == info->si_addr) {
@@ -407,13 +439,21 @@ define_handler(sigbus_handler, int sig, siginfo_t *info, void *aux)
 cl_object
 si_check_pending_interrupts(void)
 {
-	int sig = cl_env.interrupt_pending;
-	void *info = cl_env.interrupt_info;
-	cl_env.interrupt_pending = 0;
+	ecl_check_pending_interrupts();
+	@(return)
+}
+
+void
+ecl_check_pending_interrupts(void)
+{
+	int sig;
+	void *info;
+	cl_env.disable_interrupts = 0;
+	info = cl_env.interrupt_info;
+	sig = cl_env.interrupt_pending;
 	if (sig) {
 		call_handler(handle_signal_now, sig, info, 0);
 	}
-	@(return)
 }
 
 cl_object

@@ -32,7 +32,7 @@
 #   include <unistd.h>
 # endif
 #endif
-#ifdef HAVE_MMAP
+#ifdef ECL_USE_MPROTECT
 # include <sys/mman.h>
 #endif
 #include <stdio.h>
@@ -199,6 +199,21 @@ static const struct {
 	{NULL, -1}
 };
 
+cl_env_ptr
+_ecl_alloc_env()
+{
+	cl_env_ptr output;
+#if defined(ECL_USE_MPROTECT)
+	output = mmap(0, sizeof(*cl_env_p), PROT_READ | PROT_WRITE,
+			MAP_ANON | MAP_PRIVATE, 0, 0);
+	if (output < 0)
+		ecl_internal_error("Unable to allocate environment structure.");
+#else
+	output = cl_alloc(sizeof(*cl_env_p));
+#endif
+	return output;
+}
+
 int
 cl_shutdown(void)
 {
@@ -253,14 +268,7 @@ cl_boot(int argc, char **argv)
 	init_unixint(0);
 	init_alloc();
 	GC_disable();
-#if !defined(HAVE_MMAP)
-	cl_env_p = cl_alloc(sizeof(*cl_env_p));
-#else
-	cl_env_p = mmap(0, sizeof(*cl_env_p), PROT_READ | PROT_WRITE,
-			MAP_ANON | MAP_PRIVATE, 0, 0);
-	if (cl_env_p < 0)
-		ecl_internal_error("Unable to allocate environment structure.");
-#endif
+	cl_env_p = _ecl_alloc_env();
 #ifdef ECL_THREADS
 	init_threads(cl_env_p);
 #endif
