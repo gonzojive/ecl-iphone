@@ -104,14 +104,14 @@ get_aux_stream(void)
 {
 	cl_object stream;
 
-	start_critical_section();
-	if (cl_env.fmt_aux_stream == Cnil)
+	ecl_disable_interrupts();
+	if (cl_env.fmt_aux_stream == Cnil) {
 		stream = ecl_make_string_output_stream(64);
-	else {
+	} else {
 		stream = cl_env.fmt_aux_stream;
 		cl_env.fmt_aux_stream = Cnil;
 	}
-	end_critical_section();
+	ecl_enable_interrupts();
 	return stream;
 }
 

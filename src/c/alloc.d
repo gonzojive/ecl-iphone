@@ -242,7 +242,7 @@ ecl_alloc_object(cl_type t)
 	default:;
 	}
 
-	start_critical_section();
+	ecl_disable_interrupts();
 	tm = tm_of(t);
 ONCE_MORE:
 	obj = tm->tm_free;
@@ -435,7 +435,7 @@ ONCE_MORE:
 	  printf("\ttype = %d\n", t);
 	  ecl_internal_error("alloc botch.");
 	}
-	end_critical_section();
+	ecl_enable_interrupts();
 	return(obj);
 CALL_GC:
 	ecl_gc(tm->tm_type);
@@ -469,7 +469,7 @@ ecl_cons(cl_object a, cl_object d)
 	register cl_ptr p;
 	struct typemanager *tm=(&tm_table[(int)t_cons]);
 
-	start_critical_section(); 
+	ecl_disable_interrupts(); 
 
 ONCE_MORE:
 	obj = tm->tm_free;
@@ -494,7 +494,7 @@ ONCE_MORE:
 	obj->cons.car = a;
 	obj->cons.cdr = d;
 
-	end_critical_section();
+	ecl_enable_interrupts();
 	return(obj);
 
 CALL_GC:
@@ -542,7 +542,7 @@ ecl_alloc(cl_index n)
 	g = FALSE;
 	n = round_up(n);
 
-	start_critical_section(); 
+	ecl_disable_interrupts(); 
 ONCE_MORE:
 	/* Use extra indirection so that cb_pointer can be updated */
 	for (cbpp = &cb_pointer; (*cbpp) != NULL; cbpp = &(*cbpp)->cb_link) 
@@ -553,7 +553,7 @@ ONCE_MORE:
 			--ncb;
 			cl_dealloc(p+n, i);
 
-			end_critical_section();
+			ecl_enable_interrupts();
 			return(p);
 		}
 	m = round_to_page(n);
@@ -587,7 +587,7 @@ Use ALLOCATE-CONTIGUOUS-PAGES to expand the space.",
 	ncbpage += m;
 	cl_dealloc(p+n, LISP_PAGESIZE*m - n);
 
-	end_critical_section();
+	ecl_enable_interrupts();
 	return memset(p, 0, n);
 }
 
@@ -623,13 +623,13 @@ void *
 ecl_alloc_align(cl_index size, cl_index align)
 {
 	void *output;
-	start_critical_section();
+	ecl_disable_interrupts();
 	align--;
 	if (align)
 	  output = (void*)(((cl_index)ecl_alloc(size + align) + align - 1) & ~align);
 	else
 	  output = ecl_alloc(size);
-	end_critical_section();
+	ecl_enable_interrupts();
 	return output;
 }
 

@@ -419,7 +419,6 @@ ecl_array_allocself(cl_object x)
 	cl_index i, d;
 
 	d = x->array.dim;
-	start_critical_section(); /* avoid losing elts */
 	switch (ecl_array_elttype(x)) {
 	/* assign self field only after it has been filled, for GC sake  */
 	case aet_object: {
@@ -508,7 +507,6 @@ ecl_array_allocself(cl_object x)
 		break;
 	      }
 	}
-	end_critical_section();
 }
 
 cl_elttype

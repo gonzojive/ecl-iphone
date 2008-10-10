@@ -775,8 +775,8 @@ ecl_gc(cl_type t)
 #error "We need to stop all other threads"
 #endif /* THREADS */
 
-	interrupts = ecl_interrupt_enable;
-	ecl_interrupt_enable = 0;
+	interrupts = cl_env.disable_interrupts;
+	cl_env.disable_interrupts = 1;
 
 	collect_blocks = t > t_end;
 	if (collect_blocks)
@@ -863,7 +863,7 @@ ecl_gc(cl_type t)
 		fflush(stdout);
 	}
 
-	ecl_interrupt_enable = interrupts;
+	cl_env.disable_interrupts = interrupts;
 
 	if (GC_exit_hook != NULL)
 		(*GC_exit_hook)();
@@ -884,9 +884,7 @@ ecl_gc(cl_type t)
 		fflush(stdout);
 	}
 
-	if (cl_env.interrupt_pending) si_check_pending_interrupts();
-	
-	end_critical_section();
+	if (cl_env.interrupt_pending) ecl_check_pending_interrupts();
 }
 
 /*

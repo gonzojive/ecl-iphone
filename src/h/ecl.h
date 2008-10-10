@@ -67,11 +67,6 @@ typedef unsigned short uint16_t;
 #   define CreateThread GC_CreateThread
 #  endif
 # endif
-# define start_critical_section()
-# define end_critical_section()
-#else
-# define start_critical_section()
-# define end_critical_section()
 #endif
 
 #include <ecl/object.h>
