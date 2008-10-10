@@ -171,7 +171,8 @@ bds_unwind_n(int n)
 static void
 bds_set_size(cl_index size)
 {
-	cl_index limit = (cl_env.bds_top - cl_env.bds_org);
+	bds_ptr old_org = cl_env.bds_org;
+	cl_index limit = cl_env.bds_top - old_org;
 	if (size <= limit) {
 		FEerror("Cannot shrink the binding stack below ~D.", 1,
 			ecl_make_unsigned_integer(limit));
@@ -179,11 +180,16 @@ bds_set_size(cl_index size)
 		cl_index margin = ecl_get_option(ECL_OPT_BIND_STACK_SAFETY_AREA);
 		bds_ptr org;
 		org = ecl_alloc_atomic(size * sizeof(*org));
-		memcpy(org, cl_env.bds_org, (limit + 1) * sizeof(*org));
+
+		ecl_disable_interrupts();
+		memcpy(org, old_org, (limit + 1) * sizeof(*org));
 		cl_env.bds_top = org + limit;
 		cl_env.bds_org = org;
 		cl_env.bds_limit = org + (size - 2*margin);
 		cl_env.bds_size = size;
+		ecl_enable_interrupts();
+
+		cl_dealloc(old_org);
 	}
 }
 
@@ -339,7 +345,8 @@ new_frame_id(void)
 static void
 frs_set_size(cl_index size)
 {
-	cl_index limit = (cl_env.frs_top - cl_env.frs_org);
+	ecl_frame_ptr old_org = cl_env.frs_top;
+	cl_index limit = cl_env.frs_top - old_org;
 	if (size <= limit) {
 		FEerror("Cannot shrink frame stack below ~D.", 1,
 			ecl_make_unsigned_integer(limit));
@@ -348,11 +355,16 @@ frs_set_size(cl_index size)
 		ecl_frame_ptr org;
 		size += 2*margin;
 		org = ecl_alloc_atomic(size * sizeof(*org));
-		memcpy(org, cl_env.frs_org, (limit + 1) * sizeof(*org));
+
+		ecl_disable_interrupts();
+		memcpy(org, old_org, (limit + 1) * sizeof(*org));
 		cl_env.frs_top = org + limit;
 		cl_env.frs_org = org;
 		cl_env.frs_limit = org + (size - 2*margin);
 		cl_env.frs_size = size;
+		ecl_enable_interrupts();
+
+		cl_dealloc(old_org);
 	}
 }
 

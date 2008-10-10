@@ -26,35 +26,31 @@ void
 cl_stack_set_size(cl_index tentative_new_size)
 {
 	cl_index top = cl_env.stack_top - cl_env.stack;
-	cl_object *new_stack;
+	cl_object *new_stack, *old_stack;
 	cl_index safety_area = ecl_get_option(ECL_OPT_LISP_STACK_SAFETY_AREA);
 	cl_index new_size = tentative_new_size + 2*safety_area;
 
 	if (top > new_size)
 		FEerror("Internal error: cannot shrink stack that much.",0);
 
-	start_critical_section();
-
+	old_stack = cl_env.stack;
 	new_stack = (cl_object *)ecl_alloc_atomic(new_size * sizeof(cl_object));
-	memcpy(new_stack, cl_env.stack, cl_env.stack_size * sizeof(cl_object));
 
-#ifdef BOEHM_GBC
-	GC_free(cl_env.stack);
-#else
-	cl_dealloc(cl_env.stack);
-#endif
+	ecl_disable_interrupts();
+	memcpy(new_stack, old_stack, cl_env.stack_size * sizeof(cl_object));
 	cl_env.stack_size = new_size;
 	cl_env.stack = new_stack;
 	cl_env.stack_top = cl_env.stack + top;
 	cl_env.stack_limit = cl_env.stack + (new_size - 2*safety_area);
+	ecl_enable_interrupts();
+
+	cl_dealloc(old_stack);
 
 	/* A stack always has at least one element. This is assumed by cl__va_start
 	 * and friends, which take a sp=0 to have no arguments.
 	 */
 	if (top == 0)
 		cl_stack_push(MAKE_FIXNUM(0));
-
-	end_critical_section();
 }
 
 static void
