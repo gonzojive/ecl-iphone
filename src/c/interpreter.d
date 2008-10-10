@@ -35,7 +35,7 @@ cl_stack_set_size(cl_index tentative_new_size)
 
 	start_critical_section();
 
-	new_stack = (cl_object *)cl_alloc_atomic(new_size * sizeof(cl_object));
+	new_stack = (cl_object *)ecl_alloc_atomic(new_size * sizeof(cl_object));
 	memcpy(new_stack, cl_env.stack, cl_env.stack_size * sizeof(cl_object));
 
 #ifdef BOEHM_GBC
@@ -441,7 +441,7 @@ search_global(register cl_object s) {
 
 static cl_object
 close_around(cl_object fun, cl_object lex) {
-	cl_object v = cl_alloc_object(t_bclosure);
+	cl_object v = ecl_alloc_object(t_bclosure);
 	v->bclosure.code = fun;
 	v->bclosure.lex = lex;
 	return v;

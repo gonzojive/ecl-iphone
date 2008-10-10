@@ -123,7 +123,7 @@ thread_entry_point(cl_object process)
 static cl_object
 alloc_process(cl_object name)
 {
-	cl_object process = cl_alloc_object(t_process);
+	cl_object process = ecl_alloc_object(t_process);
 	process->process.active = 0;
 	process->process.name = name;
 	process->process.function = Cnil;
@@ -311,7 +311,7 @@ mp_process_run_function(cl_narg narg, cl_object name, cl_object function, ...)
 	cl_object output;
 @
 	pthread_mutexattr_init(&attr);
-	output = cl_alloc_object(t_lock);
+	output = ecl_alloc_object(t_lock);
 	output->lock.name = name;
 	output->lock.holder = Cnil;
 	output->lock.counter = 0;
@@ -405,7 +405,7 @@ mp_make_condition_variable(void)
 	cl_object output;
 
 	pthread_condattr_init(&attr);
-	output = cl_alloc_object(t_condition_variable);
+	output = ecl_alloc_object(t_condition_variable);
 	pthread_cond_init(&output->condition_variable.cv, &attr);
 	pthread_condattr_destroy(&attr);
 	si_set_finalizer(output, Ct);
@@ -500,7 +500,7 @@ init_threads(cl_env_ptr env)
 	pthread_mutex_init(&cl_core.global_lock, &attr);
 	pthread_mutexattr_destroy(&attr);
 
-	process = cl_alloc_object(t_process);
+	process = ecl_alloc_object(t_process);
 	process->process.active = 1;
 	process->process.name = @'si::top-level';
 	process->process.function = Cnil;

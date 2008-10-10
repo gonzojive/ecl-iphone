@@ -11,7 +11,7 @@ extern "C" {
 
 typedef struct cl_env_struct {
 	/* Flag for disabling interrupts while we call C library functions. */
-	int disable_interrupts;
+	volatile int disable_interrupts;
 
 	/* The four stacks in ECL. */
 
@@ -203,19 +203,19 @@ extern ECL_API struct cl_core_struct cl_core;
 
 /* alloc.c / alloc_2.c */
 
-extern ECL_API cl_object cl_alloc_object(cl_type t);
-extern ECL_API cl_object cl_alloc_instance(cl_index slots);
+extern ECL_API cl_object ecl_alloc_object(cl_type t);
+extern ECL_API cl_object ecl_alloc_instance(cl_index slots);
 extern ECL_API cl_object ecl_cons(cl_object a, cl_object d);
 extern ECL_API cl_object ecl_list1(cl_object a);
 #ifdef GBC_BOEHM
 extern ECL_API cl_object si_gc(cl_object area);
 extern ECL_API cl_object si_gc_dump(void);
 extern ECL_API cl_object si_gc_stats(cl_object enable);
-#define cl_alloc GC_malloc_ignore_off_page
-#define cl_alloc_atomic GC_malloc_atomic_ignore_off_page
-#define cl_alloc_align(s,d) GC_malloc_ignore_off_page(s)
-#define cl_alloc_atomic_align(s,d) GC_malloc_atomic_ignore_off_page(s)
-#define cl_dealloc(p) GC_free(p)
+extern ECL_API void *ecl_alloc(cl_index n);
+extern ECL_API void *ecl_alloc_atomic(cl_index n);
+extern ECL_API void ecl_dealloc(void *);
+#define ecl_alloc_align(s,d) ecl_alloc(s)
+#define ecl_alloc_atomic_align(s,d) ecl_alloc_atomic(s)
 #define ecl_register_static_root(x) ecl_register_root(x)
 #else
 extern ECL_API cl_object si_allocate _ARGS((cl_narg narg, cl_object type, cl_object qty, ...));
@@ -228,13 +228,13 @@ extern ECL_API cl_object si_allocate_contiguous_pages _ARGS((cl_narg narg, cl_ob
 extern ECL_API cl_object si_get_hole_size _ARGS((cl_narg narg));
 extern ECL_API cl_object si_set_hole_size _ARGS((cl_narg narg, cl_object size));
 extern ECL_API cl_object si_ignore_maximum_pages _ARGS((cl_narg narg, ...));
-extern ECL_API void *cl_alloc(cl_index n);
-extern ECL_API void *cl_alloc_align(cl_index size, cl_index align);
+extern ECL_API void *ecl_alloc(cl_index n);
+extern ECL_API void *ecl_alloc_align(cl_index size, cl_index align);
 extern ECL_API void *ecl_alloc_uncollectable(size_t size);
 extern ECL_API void ecl_free_uncollectable(void *);
-extern ECL_API void cl_dealloc(void *p);
-#define cl_alloc_atomic(x) cl_alloc(x)
-#define cl_alloc_atomic_align(x,s) cl_alloc_align(x,s)
+extern ECL_API void ecl_dealloc(void *p);
+#define ecl_alloc_atomic(x) ecl_alloc(x)
+#define ecl_alloc_atomic_align(x,s) ecl_alloc_align(x,s)
 #define ecl_register_static_root(x) ecl_register_root(x);
 #endif /* GBC_BOEHM */
 
@@ -1807,6 +1807,19 @@ extern ECL_API cl_object clos_install_method _ARGS((cl_narg narg, cl_object V1, 
 /* standard.lsp */
 extern ECL_API cl_object clos_standard_instance_set _ARGS((cl_narg narg, cl_object V1, cl_object V2, cl_object V3, ...));
 #endif
+
+/*
+ * Deprecated names
+ */
+#if 0
+#define cl_alloc_instance ecl_alloc_instance
+#define cl_alloc_object ecl_alloc_object
+#define cl_alloc ecl_alloc
+#define cl_alloc_atomic ecl_alloc_atomic
+#define cl_alloc_align ecl_alloc_align
+#define cl_alloc_atomic_align ecl_alloc_atomic_align
+#endif
+
 #endif
 
 #ifdef __cplusplus

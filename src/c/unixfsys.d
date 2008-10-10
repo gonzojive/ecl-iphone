@@ -262,7 +262,7 @@ ERROR:					FElibc_error("Can't change the current directory to ~S",
 void *
 ecl_backup_fopen(const char *filename, const char *option)
 {
-	char *backupfilename = cl_alloc(strlen(filename) + 5);
+	char *backupfilename = ecl_alloc(strlen(filename) + 5);
 	if (backupfilename == NULL) {
 		FElibc_error("Cannot allocate memory for backup filename", 0);
 	}

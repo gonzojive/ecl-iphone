@@ -111,7 +111,7 @@ make_package_hashtable()
 	cl_object h;
 	cl_index hsize = 128;
 
-	h = cl_alloc_object(t_hashtable);
+	h = ecl_alloc_object(t_hashtable);
 	h->hash.lockable = 0;
 	h->hash.test = htt_pack;
 	h->hash.size = hsize;
@@ -120,7 +120,7 @@ make_package_hashtable()
 	h->hash.factor = 0.7;
 	h->hash.entries = 0;
 	h->hash.data = NULL; /* for GC sake */
-	h->hash.data = (struct ecl_hashtable_entry *)cl_alloc(hsize * sizeof(struct ecl_hashtable_entry));
+	h->hash.data = (struct ecl_hashtable_entry *)ecl_alloc(hsize * sizeof(struct ecl_hashtable_entry));
 	return cl_clrhash(h);
 }
 
@@ -169,7 +169,7 @@ ecl_make_package(cl_object name, cl_object nicknames, cl_object use_list)
 				other, 1, name);
 		return other;
 	}
-	x = cl_alloc_object(t_package);
+	x = ecl_alloc_object(t_package);
 	x->pack.internal = make_package_hashtable();
 	x->pack.external = make_package_hashtable();
 #ifdef ECL_THREADS

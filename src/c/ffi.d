@@ -61,7 +61,7 @@ static unsigned int ecl_foreign_type_size[] = {
 cl_object
 ecl_make_foreign_data(cl_object tag, cl_index size, void *data)
 {
-	cl_object output = cl_alloc_object(t_foreign);
+	cl_object output = ecl_alloc_object(t_foreign);
 	output->foreign.tag = tag == Cnil ? @':void' : tag;
 	output->foreign.size = size;
 	output->foreign.data = (char*)data;
@@ -71,10 +71,10 @@ ecl_make_foreign_data(cl_object tag, cl_index size, void *data)
 cl_object
 ecl_allocate_foreign_data(cl_object tag, cl_index size)
 {
-	cl_object output = cl_alloc_object(t_foreign);
+	cl_object output = ecl_alloc_object(t_foreign);
 	output->foreign.tag = tag;
 	output->foreign.size = size;
-	output->foreign.data = (char*)cl_alloc_atomic(size);
+	output->foreign.data = (char*)ecl_alloc_atomic(size);
 	return output;
 }
 
@@ -115,11 +115,11 @@ ecl_null_terminated_base_string(cl_object f)
 cl_object
 si_allocate_foreign_data(cl_object tag, cl_object size)
 {
-	cl_object output = cl_alloc_object(t_foreign);
+	cl_object output = ecl_alloc_object(t_foreign);
 	cl_index bytes = fixnnint(size);
 	output->foreign.tag = tag;
 	output->foreign.size = bytes;
-	output->foreign.data = bytes? cl_alloc_atomic(bytes) : NULL;
+	output->foreign.data = bytes? ecl_alloc_atomic(bytes) : NULL;
 	@(return output)
 }
 
@@ -187,7 +187,7 @@ si_foreign_data_pointer(cl_object f, cl_object andx, cl_object asize,
 	if (ndx >= f->foreign.size || (f->foreign.size - ndx) < size) {
 		FEerror("Out of bounds reference into foreign data type ~A.", 1, f);
 	}
-	output = cl_alloc_object(t_foreign);
+	output = ecl_alloc_object(t_foreign);
 	output->foreign.tag = tag;
 	output->foreign.size = size;
 	output->foreign.data = f->foreign.data + ndx;

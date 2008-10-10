@@ -20,7 +20,7 @@
 cl_object
 ecl_allocate_instance(cl_object clas, cl_index size)
 {
-	cl_object x = cl_alloc_instance(size);
+	cl_object x = ecl_alloc_instance(size);
 	cl_index i;
 	CLASS_OF(x) = clas;
 	for (i = 0;  i < size;  i++)

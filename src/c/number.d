@@ -87,7 +87,7 @@ cl_object
 ecl_make_integer(cl_fixnum l)
 {
 	if (l > MOST_POSITIVE_FIXNUM || l < MOST_NEGATIVE_FIXNUM) {
-		cl_object z = cl_alloc_object(t_bignum);
+		cl_object z = ecl_alloc_object(t_bignum);
 #ifdef WITH_GMP
 		mpz_init_set_si(z->big.big_num, l);
 #else  /* WITH_GMP */
@@ -102,7 +102,7 @@ cl_object
 ecl_make_unsigned_integer(cl_index l)
 {
 	if (l > MOST_POSITIVE_FIXNUM) {
-		cl_object z = cl_alloc_object(t_bignum);
+		cl_object z = ecl_alloc_object(t_bignum);
 #ifdef WITH_GMP
 		mpz_init_set_ui(z->big.big_num, l);
 #else  /* WITH_GMP */
@@ -134,7 +134,7 @@ ecl_make_ratio(cl_object num, cl_object den)
 		return num;
 	if (den == MAKE_FIXNUM(-1))
 		return ecl_negate(num);
-	r = cl_alloc_object(t_ratio);
+	r = ecl_alloc_object(t_ratio);
 	r->ratio.num = num;
 	r->ratio.den = den;
 	return(r);
@@ -158,7 +158,7 @@ ecl_make_singlefloat(float f)
 	if (!isfinite(f)) {
 		cl_error(1, @'floating-point-overflow');
 	}
-	x = cl_alloc_object(t_singlefloat);
+	x = ecl_alloc_object(t_singlefloat);
 	sf(x) = f;
 	return(x);
 }
@@ -181,7 +181,7 @@ ecl_make_doublefloat(double f)
 	if (!isfinite(f)) {
 		cl_error(1, @'floating-point-overflow');
 	}
-	x = cl_alloc_object(t_doublefloat);
+	x = ecl_alloc_object(t_doublefloat);
 	df(x) = f;
 	return(x);
 }
@@ -205,7 +205,7 @@ make_longfloat(long double f)
 	if (!isfinite(f)) {
 		cl_error(1, @'floating-point-overflow');
 	}
-	x = cl_alloc_object(t_longfloat);
+	x = ecl_alloc_object(t_longfloat);
 	x->longfloat.value = f;
 	return x;
 }
@@ -337,7 +337,7 @@ ecl_make_complex(cl_object r, cl_object i)
 		goto AGAIN;
 
 	}
-	c = cl_alloc_object(t_complex);
+	c = ecl_alloc_object(t_complex);
 	c->complex.real = r;
 	c->complex.imag = i;
 	return(c);
@@ -589,12 +589,12 @@ init_number(void)
 	ECL_SET(@'LEAST-NEGATIVE-LONG-FLOAT', num);
 	ECL_SET(@'LEAST-NEGATIVE-NORMALIZED-LONG-FLOAT', num);
 
- 	cl_core.singlefloat_zero = cl_alloc_object(t_singlefloat);
+ 	cl_core.singlefloat_zero = ecl_alloc_object(t_singlefloat);
  	sf(cl_core.singlefloat_zero) = (float)0;
- 	cl_core.doublefloat_zero = cl_alloc_object(t_doublefloat);
+ 	cl_core.doublefloat_zero = ecl_alloc_object(t_doublefloat);
  	df(cl_core.doublefloat_zero) = (double)0;
 #ifdef ECL_LONG_FLOAT
- 	cl_core.longfloat_zero = cl_alloc_object(t_longfloat);
+ 	cl_core.longfloat_zero = ecl_alloc_object(t_longfloat);
  	cl_core.longfloat_zero->longfloat.value = (long double)0;
 #endif
 	cl_core.plus_half = ecl_make_ratio(MAKE_FIXNUM(1), MAKE_FIXNUM(2));

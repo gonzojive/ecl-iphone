@@ -76,7 +76,7 @@ big_register_free(cl_object x)
 cl_object
 big_register_copy(cl_object old)
 {
-	cl_object new_big = cl_alloc_object(t_bignum);
+	cl_object new_big = ecl_alloc_object(t_bignum);
 	if (old->big.big_dim > BIGNUM_REGISTER_SIZE) {
 	  /* The object already has suffered a mpz_realloc() so
 	     we can use the pointer */
@@ -115,19 +115,19 @@ big_register_normalize(cl_object x)
 static cl_object
 big_alloc(int size)
 {
-  volatile cl_object x = cl_alloc_object(t_bignum);
+  volatile cl_object x = ecl_alloc_object(t_bignum);
   if (size <= 0)
     ecl_internal_error("negative or zero size for bignum in big_alloc");
   x->big.big_dim = size;
   x->big.big_size = 0;
-  x->big.big_limbs = (mp_limb_t *)cl_alloc_atomic_align(size * sizeof(mp_limb_t), sizeof(mp_limb_t));
+  x->big.big_limbs = (mp_limb_t *)ecl_alloc_atomic_align(size * sizeof(mp_limb_t), sizeof(mp_limb_t));
   return(x);
 }
 
 cl_object
 bignum1(cl_fixnum val)
 {
-  volatile cl_object z = cl_alloc_object(t_bignum);
+  volatile cl_object z = ecl_alloc_object(t_bignum);
   mpz_init_set_si(z->big.big_num, val);
   return(z);
 }
@@ -147,7 +147,7 @@ bignum2(mp_limb_t hi, mp_limb_t lo)
 cl_object
 big_copy(cl_object x)
 {
-	volatile cl_object y = cl_alloc_object(t_bignum);
+	volatile cl_object y = ecl_alloc_object(t_bignum);
 	mpz_init_set(y->big.big_num, x->big.big_num);
 	return(y);
 }
@@ -261,13 +261,13 @@ big_normalize(cl_object x)
 static void *
 mp_alloc(size_t size)
 {
-	return cl_alloc_atomic_align(size, sizeof(mp_limb_t));
+	return ecl_alloc_atomic_align(size, sizeof(mp_limb_t));
 }
 
 static void *
 mp_realloc(void *ptr, size_t osize, size_t nsize)
 {
-	void *p = cl_alloc_atomic_align(nsize, sizeof(mp_limb_t));
+	void *p = ecl_alloc_atomic_align(nsize, sizeof(mp_limb_t));
 	memcpy(p, ptr, osize);
 	return p;
 }
@@ -285,7 +285,7 @@ void init_big_registers(void)
 {
 	int i;
 	for (i = 0; i < 3; i++) {
-		cl_env.big_register[i] = cl_alloc_object(t_bignum);
+		cl_env.big_register[i] = ecl_alloc_object(t_bignum);
 		big_register_free(cl_env.big_register[i]);
 	}
 }

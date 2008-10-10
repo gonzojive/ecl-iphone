@@ -80,12 +80,12 @@ cl_alloc_simple_base_string(cl_index length)
 {
 	cl_object x;
 
-	x = cl_alloc_object(t_base_string);
+	x = ecl_alloc_object(t_base_string);
 	x->base_string.hasfillp     = FALSE;
 	x->base_string.adjustable   = FALSE;
 	x->base_string.displaced    = Cnil;
 	x->base_string.dim          = (x->base_string.fillp = length);
-	x->base_string.self         = (char *)cl_alloc_atomic(length+1);
+	x->base_string.self         = (char *)ecl_alloc_atomic(length+1);
 	x->base_string.self[length] = x->base_string.self[0] = 0;
 	return(x);
 }
@@ -97,12 +97,12 @@ cl_alloc_simple_extended_string(cl_index length)
 	cl_object x;
 
         /* should this call si_make_vector? */
-	x = cl_alloc_object(t_string);
+	x = ecl_alloc_object(t_string);
 	x->string.hasfillp   = FALSE;
 	x->string.adjustable = FALSE;
 	x->string.displaced  = Cnil;
 	x->string.dim        = x->string.fillp = length;
-	x->string.self       = (cl_object *)cl_alloc_align(sizeof (cl_object)*length, sizeof (cl_object));
+	x->string.self       = (cl_object *)ecl_alloc_align(sizeof (cl_object)*length, sizeof (cl_object));
 	return(x);
 }
 #endif
@@ -131,7 +131,7 @@ make_simple_base_string(char *s)
 	cl_object x;
 	cl_index l = strlen(s);
 
-	x = cl_alloc_object(t_base_string);
+	x = ecl_alloc_object(t_base_string);
 	x->base_string.hasfillp = FALSE;
 	x->base_string.adjustable = FALSE;
 	x->base_string.displaced = Cnil;

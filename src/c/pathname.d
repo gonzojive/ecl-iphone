@@ -122,7 +122,7 @@ ecl_make_pathname(cl_object host, cl_object device, cl_object directory,
 {
 	cl_object x, p, component;
 
-	p = cl_alloc_object(t_pathname);
+	p = ecl_alloc_object(t_pathname);
 	if (ecl_stringp(host))
 		p->pathname.logical = ecl_logical_hostname_p(host);
 	else if (host == Cnil)
@@ -1535,7 +1535,7 @@ copy_list_wildcards(cl_object *wilds, cl_object to)
 
 	if (source->pathname.logical != from->pathname.logical)
 		goto error;
-	out = cl_alloc_object(t_pathname);
+	out = ecl_alloc_object(t_pathname);
 	out->pathname.logical = to->pathname.logical;
 
 	/* Match host names */

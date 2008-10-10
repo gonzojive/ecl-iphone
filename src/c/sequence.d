@@ -35,7 +35,7 @@ ecl_alloc_simple_vector(cl_index l, cl_elttype aet)
 		return cl_alloc_simple_extended_string(l);
 #endif
 	case aet_bit:
-		x = cl_alloc_object(t_bitvector);
+		x = ecl_alloc_object(t_bitvector);
 		x->vector.hasfillp = FALSE;
 		x->vector.adjustable = FALSE;
 		x->vector.displaced = Cnil;
@@ -44,7 +44,7 @@ ecl_alloc_simple_vector(cl_index l, cl_elttype aet)
 		x->vector.self.bit = NULL;
 		break;
 	default:
-		x = cl_alloc_object(t_vector);
+		x = ecl_alloc_object(t_vector);
 		x->vector.hasfillp = FALSE;
 		x->vector.adjustable = FALSE;
 		x->vector.displaced = Cnil;

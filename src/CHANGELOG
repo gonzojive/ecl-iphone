@@ -70,6 +70,10 @@ ECL 8.9.0:
 
  - *DEFAULT-PATHNAME-DEFAULTS* is initialized to the value of EXT:GETCWD.
 
+ - In an effort to convert all functions to the ecl_* prefix, we are deprecating
+   names while keeping the old definitions as macros. Look at external.h for
+   the list of already deprecated names.
+
 * Embedding:
 
  - ECL now implements a more transparent interface for setting and querying

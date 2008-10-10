@@ -160,12 +160,12 @@ asm_end(cl_index beginning) {
 	/* Save bytecodes from this session in a new vector */
 	code_size = current_pc() - beginning;
 	data_size = ecl_length(ENV->constants);
-	bytecodes = cl_alloc_object(t_bytecodes);
+	bytecodes = ecl_alloc_object(t_bytecodes);
 	bytecodes->bytecodes.name = @'si::bytecodes';
 	bytecodes->bytecodes.code_size = code_size;
 	bytecodes->bytecodes.data_size = data_size;
-	bytecodes->bytecodes.code = cl_alloc_atomic(code_size * sizeof(cl_opcode));
-	bytecodes->bytecodes.data = (cl_object*)cl_alloc(data_size * sizeof(cl_object));
+	bytecodes->bytecodes.code = ecl_alloc_atomic(code_size * sizeof(cl_opcode));
+	bytecodes->bytecodes.data = (cl_object*)ecl_alloc(data_size * sizeof(cl_object));
 	bytecodes->bytecodes.file = (file == OBJNULL)? Cnil : file;
 	bytecodes->bytecodes.file_position = (position == OBJNULL)? Cnil : position;
 	for (i = 0, code = (cl_opcode *)bytecodes->bytecodes.code; i < code_size; i++) {

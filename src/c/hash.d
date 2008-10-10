@@ -349,13 +349,13 @@ ecl_extend_hashtable(cl_object hashtable)
 	} else {
 		new_size = fix(new_size_obj);
 	}
-	old = cl_alloc_object(t_hashtable);
+	old = ecl_alloc_object(t_hashtable);
 	old->hash = hashtable->hash;
 	hashtable->hash.data = NULL; /* for GC sake */
 	hashtable->hash.entries = 0;
 	hashtable->hash.size = new_size;
 	hashtable->hash.data = (struct ecl_hashtable_entry *)
-	  cl_alloc(new_size * sizeof(struct ecl_hashtable_entry));
+	  ecl_alloc(new_size * sizeof(struct ecl_hashtable_entry));
 	for (i = 0;  i < new_size;  i++) {
 		hashtable->hash.data[i].key = OBJNULL;
 		hashtable->hash.data[i].value = OBJNULL;
@@ -451,13 +451,13 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 	/*
 	 * Build actual hash.
 	 */
-	h = cl_alloc_object(t_hashtable);
+	h = ecl_alloc_object(t_hashtable);
 	h->hash.test = htt;
 	h->hash.size = hsize;
         h->hash.entries = 0;
 	h->hash.data = NULL;	/* for GC sake */
 	h->hash.data = (struct ecl_hashtable_entry *)
-		cl_alloc(hsize * sizeof(struct ecl_hashtable_entry));
+		ecl_alloc(hsize * sizeof(struct ecl_hashtable_entry));
 	do_clrhash(h);
 
 	h->hash.rehash_size = rehash_size;

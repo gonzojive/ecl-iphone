@@ -43,7 +43,7 @@ big_register_free(cl_object x) {}
 cl_object
 big_register_copy(cl_object old)
 {
-	cl_object new_big = cl_alloc_object(t_bignum);
+	cl_object new_big = ecl_alloc_object(t_bignum);
         new_big->big.big_num = old->big.big_num;
 	return new_big;
 }
@@ -61,7 +61,7 @@ big_register_normalize(cl_object x)
 static cl_object
 big_alloc(int size)
 {
-	volatile cl_object x = cl_alloc_object(t_bignum);
+	volatile cl_object x = ecl_alloc_object(t_bignum);
 	if (size <= 0)
 		ecl_internal_error("negative or zero size for bignum in big_alloc");
 	x->big.big_num = 0ll;
@@ -72,7 +72,7 @@ big_alloc(int size)
 cl_object
 bignum1(cl_fixnum val)
 {
-	volatile cl_object z = cl_alloc_object(t_bignum);
+	volatile cl_object z = ecl_alloc_object(t_bignum);
 	z->big.big_num = val;
 	return(z);
 }
@@ -90,7 +90,7 @@ bignum2(cl_fixnum hi, cl_fixnum lo)
 cl_object
 big_copy(cl_object x)
 {
-	volatile cl_object y = cl_alloc_object(t_bignum);
+	volatile cl_object y = ecl_alloc_object(t_bignum);
         y->big.big_num = x->big.big_num;
 	return(y);
 }
@@ -134,7 +134,7 @@ void init_big_registers(void)
 {
 	int i;
 	for (i = 0; i < 3; i++) {
-		cl_env.big_register[i] = cl_alloc_object(t_bignum);
+		cl_env.big_register[i] = ecl_alloc_object(t_bignum);
                 cl_env.big_register[i]->big.big_num = 0ll;
 	}
 }

@@ -178,7 +178,7 @@ bds_set_size(cl_index size)
 	} else {
 		cl_index margin = ecl_get_option(ECL_OPT_BIND_STACK_SAFETY_AREA);
 		bds_ptr org;
-		org = cl_alloc_atomic(size * sizeof(*org));
+		org = ecl_alloc_atomic(size * sizeof(*org));
 		memcpy(org, cl_env.bds_org, (limit + 1) * sizeof(*org));
 		cl_env.bds_top = org + limit;
 		cl_env.bds_org = org;
@@ -347,7 +347,7 @@ frs_set_size(cl_index size)
 		cl_index margin = ecl_get_option(ECL_OPT_FRAME_STACK_SAFETY_AREA);
 		ecl_frame_ptr org;
 		size += 2*margin;
-		org = cl_alloc_atomic(size * sizeof(*org));
+		org = ecl_alloc_atomic(size * sizeof(*org));
 		memcpy(org, cl_env.frs_org, (limit + 1) * sizeof(*org));
 		cl_env.frs_top = org + limit;
 		cl_env.frs_org = org;
@@ -489,14 +489,14 @@ init_stacks(struct cl_env_struct *env, int *new_cs_org)
 	margin = ecl_get_option(ECL_OPT_FRAME_STACK_SAFETY_AREA);
 	size = ecl_get_option(ECL_OPT_FRAME_STACK_SIZE) + 2 * margin;
 	env->frs_size = size;
-	env->frs_org = (ecl_frame_ptr)cl_alloc_atomic(size * sizeof(*env->frs_org));
+	env->frs_org = (ecl_frame_ptr)ecl_alloc_atomic(size * sizeof(*env->frs_org));
 	env->frs_top = env->frs_org-1;
 	env->frs_limit = &env->frs_org[size - 2*margin];
 
 	margin = ecl_get_option(ECL_OPT_BIND_STACK_SAFETY_AREA);
 	size = ecl_get_option(ECL_OPT_BIND_STACK_SIZE) + 2 * margin;
 	env->bds_size = size;
-	env->bds_org = (bds_ptr)cl_alloc_atomic(size * sizeof(*env->bds_org));
+	env->bds_org = (bds_ptr)ecl_alloc_atomic(size * sizeof(*env->bds_org));
 	env->bds_top = env->bds_org-1;
 	env->bds_limit = &env->bds_org[size - 2*margin];
 
@@ -535,7 +535,7 @@ init_stacks(struct cl_env_struct *env, int *new_cs_org)
 				(sizeof(cl_object)*4);
 		}
 		env->altstack_size = size;
-		env->altstack = cl_alloc_atomic(size);
+		env->altstack = ecl_alloc_atomic(size);
 		memset(&new_stack, 0, sizeof(new_stack));
 		new_stack.ss_size = env->altstack_size;
 		new_stack.ss_sp = env->altstack;
@@ -544,6 +544,6 @@ init_stacks(struct cl_env_struct *env, int *new_cs_org)
 	}
 #endif
 #ifdef SA_SIGINFO
-	env->interrupt_info = cl_alloc_atomic(sizeof(siginfo_t));
+	env->interrupt_info = ecl_alloc_atomic(sizeof(siginfo_t));
 #endif
 }

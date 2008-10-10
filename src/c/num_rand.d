@@ -171,7 +171,7 @@ rando(cl_object x, cl_object rs)
 cl_object
 ecl_make_random_state(cl_object rs)
 {
-        cl_object z = cl_alloc_object(t_random);
+        cl_object z = ecl_alloc_object(t_random);
 	if (rs == Ct) {
 		z->random.value = init_random_state();
 	} else {

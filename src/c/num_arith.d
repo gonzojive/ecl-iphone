@@ -840,7 +840,7 @@ ecl_negate(cl_object x)
 
 	case t_ratio:
 		z1 = ecl_negate(x->ratio.num);
-		z = cl_alloc_object(t_ratio);
+		z = ecl_alloc_object(t_ratio);
 		z->ratio.num = z1;
 		z->ratio.den = x->ratio.den;
 		return(z);
@@ -850,12 +850,12 @@ ecl_negate(cl_object x)
 		return make_shortfloat(-ecl_shortfloat(x));
 #endif
 	case t_singlefloat:
-		z = cl_alloc_object(t_singlefloat);
+		z = ecl_alloc_object(t_singlefloat);
 		sf(z) = -sf(x);
 		return(z);
 
 	case t_doublefloat:
-		z = cl_alloc_object(t_doublefloat);
+		z = ecl_alloc_object(t_doublefloat);
 		df(z) = -df(x);
 		return(z);
 #ifdef ECL_LONG_FLOAT
@@ -1253,12 +1253,12 @@ ecl_one_plus(cl_object x)
 		return make_shortfloat(1.0 + ecl_short_float(x));
 #endif
 	case t_singlefloat:
-		z = cl_alloc_object(t_singlefloat);
+		z = ecl_alloc_object(t_singlefloat);
 		sf(z) = sf(x) + 1.0;
 		return(z);
 
 	case t_doublefloat:
-		z = cl_alloc_object(t_doublefloat);
+		z = ecl_alloc_object(t_doublefloat);
 		df(z) = df(x) + 1.0;
 		return(z);
 
@@ -1310,12 +1310,12 @@ ecl_one_minus(cl_object x)
 #endif
 
 	case t_singlefloat:
-		z = cl_alloc_object(t_singlefloat);
+		z = ecl_alloc_object(t_singlefloat);
 		sf(z) = sf(x) - 1.0;
 		return(z);
 
 	case t_doublefloat:
-		z = cl_alloc_object(t_doublefloat);
+		z = ecl_alloc_object(t_doublefloat);
 		df(z) = df(x) - 1.0;
 		return(z);
 

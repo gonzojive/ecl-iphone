@@ -120,13 +120,13 @@ thread_entry_point(cl_object process)
 static cl_object
 alloc_process(cl_object name)
 {
-	cl_object process = cl_alloc_object(t_process);
+	cl_object process = ecl_alloc_object(t_process);
 	process->process.active = 0;
 	process->process.name = name;
 	process->process.function = Cnil;
 	process->process.args = Cnil;
 	process->process.interrupt = Cnil;
-	process->process.env = cl_alloc(sizeof(*process->process.env));
+	process->process.env = ecl_alloc(sizeof(*process->process.env));
 	process->process.env->own_process = process;
 	return process;
 }
@@ -321,7 +321,7 @@ mp_process_run_function(cl_narg narg, cl_object name, cl_object function, ...)
 @(defun mp::make-lock (&key name ((:recursive recursive) Ct))
 	cl_object output;
 @
-	output = cl_alloc_object(t_lock);
+	output = ecl_alloc_object(t_lock);
 	output->lock.name = name;
 	output->lock.mutex = CreateMutex(NULL, FALSE, NULL);
 	output->lock.holder = Cnil;
@@ -466,13 +466,13 @@ init_threads()
 	cl_core.processes = OBJNULL;
 	cl_core.global_lock = CreateMutex(NULL, FALSE, NULL);
 
-	process = cl_alloc_object(t_process);
+	process = ecl_alloc_object(t_process);
 	process->process.active = 1;
 	process->process.name = @'si::top-level';
 	process->process.function = Cnil;
 	process->process.args = Cnil;
 	process->process.thread = GetCurrentThread();
-	process->process.env = env = (struct cl_env_struct*)cl_alloc(sizeof(*env));
+	process->process.env = env = (struct cl_env_struct*)ecl_alloc(sizeof(*env));
 
 #ifdef WITH___THREAD
 	cl_env_p = env

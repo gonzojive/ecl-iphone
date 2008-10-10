@@ -124,8 +124,8 @@ ecl_init_env(cl_env_ptr env)
 
 #if !defined(ECL_CMU_FORMAT)
 	env->print_pretty = FALSE;
-	env->queue = cl_alloc_atomic(ECL_PPRINT_QUEUE_SIZE * sizeof(short));
-	env->indent_stack = cl_alloc_atomic(ECL_PPRINT_INDENTATION_STACK_SIZE * sizeof(short));
+	env->queue = ecl_alloc_atomic(ECL_PPRINT_QUEUE_SIZE * sizeof(short));
+	env->indent_stack = ecl_alloc_atomic(ECL_PPRINT_INDENTATION_STACK_SIZE * sizeof(short));
 	env->fmt_aux_stream = ecl_make_string_output_stream(64);
 #endif
 #if !defined(GBC_BOEHM)
@@ -140,7 +140,7 @@ ecl_init_env(cl_env_ptr env)
 #endif /* !GBC_BOEHM */
 
 #ifdef ECL_DYNAMIC_FFI
-	env->fficall = cl_alloc(sizeof(struct ecl_fficall));
+	env->fficall = ecl_alloc(sizeof(struct ecl_fficall));
 	((struct ecl_fficall*)env->fficall)->registers = 0;
 #endif
 
@@ -209,7 +209,7 @@ _ecl_alloc_env()
 	if (output < 0)
 		ecl_internal_error("Unable to allocate environment structure.");
 #else
-	output = cl_alloc(sizeof(*cl_env_p));
+	output = ecl_alloc(sizeof(*cl_env_p));
 #endif
 	return output;
 }

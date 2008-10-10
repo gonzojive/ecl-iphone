@@ -44,7 +44,7 @@ static void finalize_queued();
 static size_t type_size[t_end];
 
 cl_object
-cl_alloc_object(cl_type t)
+ecl_alloc_object(cl_type t)
 {
 	cl_object obj;
 
@@ -126,7 +126,10 @@ cl_alloc_object(cl_type t)
 cl_object
 ecl_cons(cl_object a, cl_object d)
 {
-	struct ecl_cons *obj = GC_MALLOC(sizeof(struct ecl_cons));
+	struct ecl_cons *obj;
+	ecl_disable_interrupts();
+	obj = GC_MALLOC(sizeof(struct ecl_cons));
+	ecl_enable_interrupts();
 #ifdef ECL_SMALL_CONS
 	obj->car = a;
 	obj->cdr = d;
@@ -142,7 +145,10 @@ ecl_cons(cl_object a, cl_object d)
 cl_object
 ecl_list1(cl_object a)
 {
-	struct ecl_cons *obj = GC_MALLOC(sizeof(struct ecl_cons));
+	struct ecl_cons *obj;
+	ecl_disable_interrupts();
+	obj = GC_MALLOC(sizeof(struct ecl_cons));
+	ecl_enable_interrupts();
 #ifdef ECL_SMALL_CONS
 	obj->car = a;
 	obj->cdr = Cnil;
@@ -156,11 +162,11 @@ ecl_list1(cl_object a)
 }
 
 cl_object
-cl_alloc_instance(cl_index slots)
+ecl_alloc_instance(cl_index slots)
 {
 	cl_object i;
-	i = cl_alloc_object(t_instance);
-	i->instance.slots = (cl_object *)cl_alloc(sizeof(cl_object) * slots);
+	i = ecl_alloc_object(t_instance);
+	i->instance.slots = (cl_object *)ecl_alloc(sizeof(cl_object) * slots);
 	i->instance.length = slots;
 	return i;
 }
@@ -168,13 +174,47 @@ cl_alloc_instance(cl_index slots)
 void *
 ecl_alloc_uncollectable(size_t size)
 {
-	return GC_MALLOC_UNCOLLECTABLE(size);
+	void *output;
+	ecl_disable_interrupts();
+	output = GC_MALLOC_UNCOLLECTABLE(size);
+	ecl_enable_interrupts();
+	return output;
 }
 
 void
 ecl_free_uncollectable(void *pointer)
 {
+	ecl_disable_interrupts();
 	GC_FREE(pointer);
+	ecl_enable_interrupts();
+}
+
+void *
+ecl_alloc(cl_index n)
+{
+	void *output;
+	ecl_disable_interrupts();
+	output = GC_MALLOC_IGNORE_OFF_PAGE(n);
+	ecl_enable_interrupts();
+	return output;
+}
+
+void *
+ecl_alloc_atomic(cl_index n)
+{
+	void *output;
+	ecl_disable_interrupts();
+	output = GC_MALLOC_ATOMIC_IGNORE_OFF_PAGE(n);
+	ecl_enable_interrupts();
+	return output;
+}
+
+void
+cl_dealloc(void *ptr)
+{
+	ecl_disable_interrupts();
+	GC_FREE(ptr);
+	ecl_enable_interrupts();
 }
 
 static int alloc_initialized = FALSE;
@@ -289,18 +329,22 @@ standard_finalizer(cl_object o)
 		break;
 #ifdef ECL_THREADS
 	case t_lock:
+		ecl_disable_interrupts();
 #if defined(_MSC_VER) || defined(mingw32)
 		CloseHandle(o->lock.mutex);
 #else
 		pthread_mutex_destroy(&o->lock.mutex);
 #endif
+		ecl_enable_interrupts();
 		break;
 	case t_condition_variable:
+		ecl_disable_interrupts();
 #if defined(_MSC_VER) || defined(mingw32)
 		CloseHandle(o->condition_variable.cv);
 #else
 		pthread_cond_destroy(&o->condition_variable.cv);
 #endif
+		ecl_enable_interrupts();
 		break;
 #endif
 	default:;
@@ -342,7 +386,9 @@ queueing_finalizer(cl_object o, cl_object finalizer)
 				GC_finalization_proc ofn;
 				void *odata;
 				cl_core.to_be_finalized = aux;
+				ecl_disable_interrupts();
 				GC_register_finalizer_no_order(aux, (GC_finalization_proc*)group_finalizer, NULL, &ofn, &odata);
+				ecl_enable_interrupts();
 			} else {
 				ECL_RPLACD(aux, ECL_CONS_CDR(l));
 				ECL_RPLACD(l, aux);
@@ -357,6 +403,7 @@ si_get_finalizer(cl_object o)
 	cl_object output;
 	GC_finalization_proc ofn;
 	void *odata;
+	ecl_disable_interrupts();
 	GC_register_finalizer_no_order(o, (GC_finalization_proc)0, 0, &ofn, &odata);
 	if (ofn == 0) {
 		output = Cnil;
@@ -366,6 +413,7 @@ si_get_finalizer(cl_object o)
 		output = Cnil;
 	}
 	GC_register_finalizer_no_order(o, ofn, odata, &ofn, &odata);
+	ecl_enable_interrupts();
 	@(return output)
 }
 
@@ -374,11 +422,13 @@ si_set_finalizer(cl_object o, cl_object finalizer)
 {
 	GC_finalization_proc ofn;
 	void *odata;
+	ecl_disable_interrupts();
 	if (finalizer == Cnil) {
 		GC_register_finalizer_no_order(o, (GC_finalization_proc)0, 0, &ofn, &odata);
 	} else {
 		GC_register_finalizer_no_order(o, (GC_finalization_proc)queueing_finalizer, finalizer, &ofn, &odata);
 	}
+	ecl_enable_interrupts();
 	@(return)
 }
 
@@ -392,9 +442,9 @@ si_gc_stats(cl_object enable)
 		cl_core.bytes_consed = MAKE_FIXNUM(0);
 		cl_core.gc_counter = MAKE_FIXNUM(0);
 #else
-		cl_core.bytes_consed = cl_alloc_object(t_bignum);
+		cl_core.bytes_consed = ecl_alloc_object(t_bignum);
 		mpz_init2(cl_core.bytes_consed->big.big_num, 128);
-		cl_core.gc_counter = cl_alloc_object(t_bignum);
+		cl_core.gc_counter = ecl_alloc_object(t_bignum);
 		mpz_init2(cl_core.gc_counter->big.big_num, 128);
 #endif
 	}
@@ -532,91 +582,32 @@ stacks_scanner()
 }
 
 /**********************************************************
- *		MALLOC SUBSTITUTION			  *
- **********************************************************/
-
-#if 0 && defined(NEED_MALLOC)
-#undef malloc
-#undef calloc
-#undef free
-#undef cfree
-#undef realloc
-
-void *
-malloc(size_t size)
-{
-	return GC_MALLOC(size);
-}
-
-void
-free(void *ptr)
-{
-	GC_free(ptr);
-}
-
-void *
-realloc(void *ptr, size_t size)
-{
-	return GC_realloc(ptr, size);
-}
-
-void *
-calloc(size_t nelem, size_t elsize)
-{
-	char *ptr;
-	size_t i;
-	ptr = GC_MALLOC(i = nelem*elsize);
-	memset(ptr, 0 , i);
-	return ptr;
-}
-
-void
-cfree(void *ptr)
-{
-	GC_free(ptr);
-}
-
-#define ALLOC_ALIGNED(f, size, align) \
-	((align) <= 4 ? (int)(f)(size) : \
-	   ((align) * (((unsigned)(f)(size + (size ? (align) - 1 : 0)) + (align) - 1)/(align))))
-
-void *
-memalign(size_t align, size_t size)
-{
-	return (void *)ALLOC_ALIGNED(GC_MALLOC, size, align);
-}
-
-# ifdef WANT_VALLOC
-char *
-valloc(size_t size)
-{
-	return memalign(getpagesize(), size);
-}
-# endif /* WANT_VALLOC */
-#endif /* NEED_MALLOC */
-
-
-/**********************************************************
  *		GARBAGE COLLECTION			  *
  **********************************************************/
 
 void
 ecl_register_root(cl_object *p)
 {
+	ecl_disable_interrupts();
 	GC_add_roots((char*)p, (char*)(p+1));
+	ecl_enable_interrupts();
 }
 
 cl_object
 si_gc(cl_object area)
 {
+	ecl_disable_interrupts();
 	GC_gcollect();
+	ecl_enable_interrupts();
 	@(return)
 }
 
 cl_object
 si_gc_dump()
 {
+	ecl_disable_interrupts();
 	GC_dump();
+	ecl_enable_interrupts();
 	@(return)
 }
 

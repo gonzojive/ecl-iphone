@@ -116,7 +116,7 @@ cl_make_symbol(cl_object str)
 		str = ecl_type_error(@'make-symbol',"name",str,@'string');
 		goto AGAIN;
 	}
-	x = cl_alloc_object(t_symbol);
+	x = ecl_alloc_object(t_symbol);
 	x->symbol.name = str;
 	x->symbol.dynamic = 0;
 	ECL_SET(x,OBJNULL);

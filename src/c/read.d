@@ -445,7 +445,7 @@ ecl_parse_number(cl_object str, cl_index start, cl_index end,
 		 * 'e' or 'E' as exponent markers and we have to make a copy
 		 * of the number with this exponent marker. */
 		cl_index length = end - start;
-		char *buffer = (char*)cl_alloc_atomic(length+1);
+		char *buffer = (char*)ecl_alloc_atomic(length+1);
 		char *parse_end;
 		char exp_marker;
 		cl_object output;
@@ -750,7 +750,7 @@ sharp_C_reader(cl_object in, cl_object c, cl_object d)
 	if ((CONSP(real) || CONSP(imag)) &&
 	    !Null(SYM_VAL(@'si::*sharp-eq-context*')))
 	{
-		x = cl_alloc_object(t_complex);
+		x = ecl_alloc_object(t_complex);
 		x->complex.real = real;
 		x->complex.imag = imag;
 	} else {
@@ -824,7 +824,7 @@ sharp_Y_reader(cl_object in, cl_object c, cl_object d)
 		FEreader_error("Reader macro #Y should be followed by a list",
 			       in, 0);
 
-        rv = cl_alloc_object(t_bytecodes);
+        rv = ecl_alloc_object(t_bytecodes);
 
         rv->bytecodes.name = CAR(x); x = CDR(x);
         lex = CAR(x); x = CDR(x);
@@ -832,18 +832,18 @@ sharp_Y_reader(cl_object in, cl_object c, cl_object d)
         rv->bytecodes.definition = CAR(x); x = CDR(x);
 
         rv->bytecodes.code_size = fixint(cl_list_length(CAR(x)));
-        rv->bytecodes.code = cl_alloc_atomic(rv->bytecodes.code_size * sizeof(uint16_t));
+        rv->bytecodes.code = ecl_alloc_atomic(rv->bytecodes.code_size * sizeof(uint16_t));
         for ( i=0, nth=CAR(x) ; !ecl_endp(nth) ; i++, nth=CDR(nth) )
              ((cl_opcode*)(rv->bytecodes.code))[i] = fixint(CAR(nth));
         x = CDR(x);
 
         rv->bytecodes.data_size = fixint(cl_list_length(CAR(x)));
-        rv->bytecodes.data = cl_alloc(rv->bytecodes.data_size * sizeof(cl_object));
+        rv->bytecodes.data = ecl_alloc(rv->bytecodes.data_size * sizeof(cl_object));
         for ( i=0, nth=CAR(x) ; !ecl_endp(nth) ; i++, nth=CDR(nth) )
              ((cl_object*)(rv->bytecodes.data))[i] = CAR(nth);
 
 	if (lex != Cnil) {
-		cl_object x = cl_alloc_object(t_bclosure);
+		cl_object x = ecl_alloc_object(t_bclosure);
 		x->bclosure.code = rv;
 		x->bclosure.lex = lex;
 		rv = x;
@@ -1294,7 +1294,7 @@ sharp_dollar_reader(cl_object in, cl_object c, cl_object d)
 	if (d != Cnil && !read_suppress)
 		extra_argument('$', in, d);
 	c = ecl_read_object(in);
-	rs = cl_alloc_object(t_random);
+	rs = ecl_alloc_object(t_random);
 	rs->random.value = c;
 	@(return rs)
 }
@@ -1313,10 +1313,10 @@ ecl_copy_readtable(cl_object from, cl_object to)
 
 	/* Copy also the case for reading */
 	if (Null(to)) {
-		to = cl_alloc_object(t_readtable);
+		to = ecl_alloc_object(t_readtable);
 		to->readtable.table = NULL;
 			/*  Saving for GC.  */
-		to->readtable.table = (struct ecl_readtable_entry *)cl_alloc_align(total_bytes, entry_bytes);
+		to->readtable.table = (struct ecl_readtable_entry *)ecl_alloc_align(total_bytes, entry_bytes);
 /*
 		for (i = 0;  i < RTABSIZE;  i++)
 			rtab[i] = from->readtable.table[i];
@@ -1330,7 +1330,7 @@ ecl_copy_readtable(cl_object from, cl_object to)
 	for (i = 0;  i < RTABSIZE;  i++) {
 		if (from->readtable.table[i].dispatch_table != NULL) {
 			rtab[i].dispatch_table
- 			= (cl_object *)cl_alloc_align(RTABSIZE * sizeof(cl_object), sizeof(cl_object));
+ 			= (cl_object *)ecl_alloc_align(RTABSIZE * sizeof(cl_object), sizeof(cl_object));
 			memcpy(rtab[i].dispatch_table, from->readtable.table[i].dispatch_table,
 			      RTABSIZE * sizeof(cl_object *));
 /*
@@ -1826,7 +1826,7 @@ ecl_invalid_character_p(int c)
 	torte->macro = fromrte->macro;
 	if ((torte->dispatch_table = fromrte->dispatch_table) != NULL) {
 		size_t rtab_size = RTABSIZE * sizeof(cl_object);
-		torte->dispatch_table = (cl_object *)cl_alloc(rtab_size);
+		torte->dispatch_table = (cl_object *)ecl_alloc(rtab_size);
 		memcpy(torte->dispatch_table, fromrte->dispatch_table, rtab_size);
 	}
 	@(return Ct)
@@ -1875,7 +1875,7 @@ ecl_invalid_character_p(int c)
 		entry->syntax_type = cat_non_terminating;
 	else
 		entry->syntax_type = cat_terminating;
-	table = (cl_object *)cl_alloc(RTABSIZE * sizeof(cl_object));
+	table = (cl_object *)ecl_alloc(RTABSIZE * sizeof(cl_object));
 	entry->dispatch_table = table;
 	for (i = 0;  i < RTABSIZE;  i++)
 		table[i] = cl_core.default_dispatch_macro;
@@ -1962,11 +1962,11 @@ init_read(void)
 	cl_object *dtab;
 	int i;
 
-	cl_core.standard_readtable = cl_alloc_object(t_readtable);
+	cl_core.standard_readtable = ecl_alloc_object(t_readtable);
 	cl_core.standard_readtable->readtable.read_case = ecl_case_upcase;
 	cl_core.standard_readtable->readtable.table
 	= rtab
-	= (struct ecl_readtable_entry *)cl_alloc(RTABSIZE * sizeof(struct ecl_readtable_entry));
+	= (struct ecl_readtable_entry *)ecl_alloc(RTABSIZE * sizeof(struct ecl_readtable_entry));
 	for (i = 0;  i < RTABSIZE;  i++) {
 		rtab[i].syntax_type = cat_constituent;
 		rtab[i].macro = OBJNULL;
@@ -2006,7 +2006,7 @@ init_read(void)
 
 	rtab['#'].dispatch_table
 	= dtab
-	= (cl_object *)cl_alloc(RTABSIZE * sizeof(cl_object));
+	= (cl_object *)ecl_alloc(RTABSIZE * sizeof(cl_object));
 	for (i = 0;  i < RTABSIZE;  i++)
 		dtab[i] = cl_core.default_dispatch_macro;
 	dtab['C'] = dtab['c'] = make_cf3(sharp_C_reader);
@@ -2077,7 +2077,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 	cl_object *VV, *VVtemp = 0;
 
 	if (block == NULL) {
-		block = cl_alloc_object(t_codeblock);
+		block = ecl_alloc_object(t_codeblock);
 		si_set_finalizer(block, Ct);
 	}
 	block->cblock.entry = entry_point;
@@ -2096,7 +2096,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 		temp_len = block->cblock.temp_data_size;
 		len = perm_len + temp_len;
 #ifdef ECL_DYNAMIC_VV
-		VV = block->cblock.data = perm_len? (cl_object *)cl_alloc(perm_len * sizeof(cl_object)) : NULL;
+		VV = block->cblock.data = perm_len? (cl_object *)ecl_alloc(perm_len * sizeof(cl_object)) : NULL;
 #else
 		VV = block->cblock.data;
 #endif
@@ -2104,7 +2104,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 
 		if ((len == 0) || (block->cblock.data_text == 0)) goto NO_DATA_LABEL;
 
-		VVtemp = block->cblock.temp_data = temp_len? (cl_object *)cl_alloc(temp_len * sizeof(cl_object)) : NULL;
+		VVtemp = block->cblock.temp_data = temp_len? (cl_object *)ecl_alloc(temp_len * sizeof(cl_object)) : NULL;
 		memset(VVtemp, 0, temp_len * sizeof(*VVtemp));
 
 		/* Read all data for the library */

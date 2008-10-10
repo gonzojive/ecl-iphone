@@ -224,7 +224,7 @@ add_page_to_freelist(cl_ptr p, struct typemanager *tm)
 }
 
 cl_object
-cl_alloc_object(cl_type t)
+ecl_alloc_object(cl_type t)
 {
 	register cl_object obj;
 	register struct typemanager *tm;
@@ -519,20 +519,20 @@ Use ALLOCATE to expand the space.",
 }
 
 cl_object
-cl_alloc_instance(cl_index slots)
+ecl_alloc_instance(cl_index slots)
 {
-	cl_object i = cl_alloc_object(t_instance);
+	cl_object i = ecl_alloc_object(t_instance);
 	if (slots >= ECL_SLOTS_LIMIT)
 		FEerror("Limit on instance size exceeded: ~S slots requested.",
 			1, MAKE_FIXNUM(slots));
 	/* INV: slots > 0 */
-	i->instance.slots = (cl_object*)cl_alloc(sizeof(cl_object) * slots);
+	i->instance.slots = (cl_object*)ecl_alloc(sizeof(cl_object) * slots);
 	i->instance.length = slots;
 	return i;
 }
 
 void *
-cl_alloc(cl_index n)
+ecl_alloc(cl_index n)
 {
 	volatile cl_ptr p;
 	struct contblock **cbpp;
@@ -620,15 +620,15 @@ cl_dealloc(void *p, cl_index s)
  * required for the block.
  */
 void *
-cl_alloc_align(cl_index size, cl_index align)
+ecl_alloc_align(cl_index size, cl_index align)
 {
 	void *output;
 	start_critical_section();
 	align--;
 	if (align)
-	  output = (void*)(((cl_index)cl_alloc(size + align) + align - 1) & ~align);
+	  output = (void*)(((cl_index)ecl_alloc(size + align) + align - 1) & ~align);
 	else
-	  output = cl_alloc(size);
+	  output = ecl_alloc(size);
 	end_critical_section();
 	return output;
 }
@@ -895,7 +895,7 @@ malloc(size_t size)
     init_alloc();
 
   x = alloc_simple_base_string(size-1);
-  x->base_string.self = (char *)cl_alloc(size);
+  x->base_string.self = (char *)ecl_alloc(size);
   malloc_list = ecl_cons(x, malloc_list);
   return(x->base_string.self);
 }
@@ -933,7 +933,7 @@ realloc(void *ptr, size_t size)
 	return(ptr);
       } else {
 	j = x->base_string.dim;
-	x->base_string.self = (char *)cl_alloc(size);
+	x->base_string.self = (char *)ecl_alloc(size);
 	x->base_string.fillp = x->base_string.dim = size;
 	memcpy(x->base_string.self, ptr, j);
 	cl_dealloc(ptr, j);

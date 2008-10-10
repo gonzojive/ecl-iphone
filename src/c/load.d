@@ -147,7 +147,7 @@ ecl_library_open(cl_object filename, bool force_reload) {
 		}
 #endif
 	}
-	block = cl_alloc_object(t_codeblock);
+	block = ecl_alloc_object(t_codeblock);
 	block->cblock.self_destruct = self_destruct;
 	block->cblock.name = filename;
 #ifdef HAVE_DLFCN_H

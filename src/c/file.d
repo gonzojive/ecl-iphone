@@ -578,7 +578,7 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	} else {
 		goto INVALID_MODE;
 	}
-	x = cl_alloc_object(t_stream);
+	x = ecl_alloc_object(t_stream);
 	x->stream.mode = (short)smm;
 	x->stream.closed = 0;
 	x->stream.file = (void*)fp;
@@ -730,7 +730,7 @@ ecl_make_string_input_stream(cl_object strng, cl_index istart, cl_index iend)
 {
 	cl_object strm;
 
-	strm = cl_alloc_object(t_stream);
+	strm = ecl_alloc_object(t_stream);
 	strm->stream.mode = (short)smm_string_input;
 	strm->stream.closed = 0;
 	strm->stream.file = NULL;
@@ -988,7 +988,7 @@ si_set_buffering_mode(cl_object stream, cl_object buffer_mode_symbol)
 		if (buffer_mode != _IONBF) {
 			char *new_buffer;
 			cl_index buffer_size = BUFSIZ;
-			new_buffer = stream->stream.buffer = cl_alloc_atomic(buffer_size);
+			new_buffer = stream->stream.buffer = ecl_alloc_atomic(buffer_size);
 			setvbuf(fp, new_buffer, buffer_mode, buffer_size);
 		}
 	}
@@ -2563,7 +2563,7 @@ cl_make_synonym_stream(cl_object sym)
 	cl_object x;
 
 	sym = ecl_check_cl_type(@'make-synonym-stream',sym,t_symbol);
-	x = cl_alloc_object(t_stream);
+	x = ecl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_synonym;
 	x->stream.closed = 0;
 	x->stream.file = NULL;
@@ -2592,7 +2592,7 @@ cl_synonym_stream_symbol(cl_object strm)
 			not_an_output_stream(x);
 		streams = CONS(x, streams);
 	}
-	x = cl_alloc_object(t_stream);
+	x = ecl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_broadcast;
 	x->stream.closed = 0;
 	x->stream.file = NULL;
@@ -2621,7 +2621,7 @@ cl_broadcast_stream_streams(cl_object strm)
 			not_an_input_stream(x);
 		streams = CONS(x, streams);
 	}
-	x = cl_alloc_object(t_stream);
+	x = ecl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_concatenated;
 	x->stream.closed = 0;
 	x->stream.file = NULL;
@@ -2647,7 +2647,7 @@ cl_make_two_way_stream(cl_object istrm, cl_object ostrm)
 		not_an_input_stream(istrm);
 	if (!ecl_output_stream_p(ostrm))
 		not_an_output_stream(ostrm);
-	strm = cl_alloc_object(t_stream);
+	strm = ecl_alloc_object(t_stream);
 	strm->stream.mode = (short)smm_two_way;
 	strm->stream.closed = 0;
 	strm->stream.file = NULL;
@@ -2945,7 +2945,7 @@ si_make_string_output_stream_from_string(cl_object s)
 
 	if (type_of(s) != t_base_string || !s->base_string.hasfillp)
 		FEerror("~S is not a base-string with a fill-pointer.", 1, s);
-	strm = cl_alloc_object(t_stream);
+	strm = ecl_alloc_object(t_stream);
 	strm->stream.mode = (short)smm_string_output;
 	strm->stream.closed = 0;
 	strm->stream.file = NULL;
@@ -3009,7 +3009,7 @@ cl_object
 ecl_make_stream_from_FILE(cl_object fname, void *fp, enum ecl_smmode smm)
 {
 	cl_object stream;
-	stream = cl_alloc_object(t_stream);
+	stream = ecl_alloc_object(t_stream);
 	stream->stream.mode = (short)smm;
 	stream->stream.closed = 0;
 	stream->stream.file = fp;
@@ -3110,7 +3110,7 @@ init_file(void)
 	cl_object null_stream;
 	cl_object x;
 
-	null_stream = cl_alloc_object(t_stream);
+	null_stream = ecl_alloc_object(t_stream);
 	null_stream->stream.mode = (short)smm_io;
 	null_stream->stream.closed = 1;
 	null_stream->stream.file = NULL;
@@ -3124,7 +3124,7 @@ init_file(void)
 	null_stream = cl_make_two_way_stream(null_stream, cl_make_broadcast_stream(0));
 	cl_core.null_stream = null_stream;
 
-	standard_input = cl_alloc_object(t_stream);
+	standard_input = ecl_alloc_object(t_stream);
 	standard_input->stream.mode = (short)smm_input;
 	standard_input->stream.closed = 0;
 	standard_input->stream.file = stdin;
@@ -3136,7 +3136,7 @@ init_file(void)
 	standard_input->stream.byte_size = 8;
 	standard_input->stream.signed_bytes = 0;
 
-	standard_output = cl_alloc_object(t_stream);
+	standard_output = ecl_alloc_object(t_stream);
 	standard_output->stream.mode = (short)smm_output;
 	standard_output->stream.closed = 0;
 	standard_output->stream.file = stdout;
@@ -3148,7 +3148,7 @@ init_file(void)
 	standard_output->stream.byte_size = 8;
 	standard_output->stream.signed_bytes = 0;
 
-	error_output = cl_alloc_object(t_stream);
+	error_output = ecl_alloc_object(t_stream);
 	error_output->stream.mode = (short)smm_output;
 	error_output->stream.closed = 0;
 	error_output->stream.file = stderr;
@@ -3165,7 +3165,7 @@ init_file(void)
 
 	ECL_SET(@'*terminal-io*', standard);
 
-	x = cl_alloc_object(t_stream);
+	x = ecl_alloc_object(t_stream);
 	x->stream.mode = (short)smm_synonym;
 	x->stream.closed = 0;
 	x->stream.file = NULL;

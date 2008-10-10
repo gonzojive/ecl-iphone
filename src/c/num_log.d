@@ -848,7 +848,7 @@ si_bit_array_op(cl_object o, cl_object x, cl_object y, cl_object r)
 		}
 	L2:
 		if (Null(r)) {
-		  r = cl_alloc_object(t_array);
+		  r = ecl_alloc_object(t_array);
 		  r->array.self.t = NULL;
 		  r->array.displaced = Cnil;
 		  r->array.rank = x->array.rank;

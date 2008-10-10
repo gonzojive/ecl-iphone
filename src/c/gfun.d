@@ -41,7 +41,7 @@ si_set_raw_funcallable(cl_object instance, cl_object function)
         if (Null(function)) {
 		if (instance->instance.isgf == 2) {
                         int        length          = instance->instance.length-1;
-                        cl_object *slots           = (cl_object*)cl_alloc(sizeof(cl_object)*(length));
+                        cl_object *slots           = (cl_object*)ecl_alloc(sizeof(cl_object)*(length));
 			instance->instance.isgf    = 2;
                         memcpy(slots, instance->instance.slots, sizeof(cl_object)*(length));
 			instance->instance.slots   = slots;
@@ -51,7 +51,7 @@ si_set_raw_funcallable(cl_object instance, cl_object function)
 	} else	{
 		if (instance->instance.isgf == 0) {
                         int        length          = instance->instance.length+1;
-                        cl_object *slots           = (cl_object*)cl_alloc(sizeof(cl_object)*length);
+                        cl_object *slots           = (cl_object*)ecl_alloc(sizeof(cl_object)*length);
                         memcpy(slots, instance->instance.slots, sizeof(cl_object)*(length-1));
 			instance->instance.slots   = slots;
 			instance->instance.length  = length;
