@@ -381,6 +381,7 @@ restartable_io_error(cl_object strm)
 {
 	cl_env_ptr the_env = &cl_env;
 	volatile int old_errno = errno;
+	/* ecl_disable_interrupts(); ** done by caller */
 	clearerr((FILE*)strm->stream.file);
 	ecl_enable_interrupts();
 	if (errno == EINTR) {
@@ -397,6 +398,7 @@ io_error(cl_object strm)
 {
 	cl_env_ptr the_env = &cl_env;
 	FILE *f = strm->stream.file;
+	/* ecl_disable_interrupts(); ** done by caller */
 	clearerr(f);
 	ecl_enable_interrupts();
 	FElibc_error("Read or write operation to stream ~S signaled an error.",
@@ -690,8 +692,10 @@ static void flush_output_stream_binary(cl_object strm);
 	case smm_input_wsock:
 	case smm_output_wsock:
 	case smm_io_wsock:
-		if ( closesocket( ( int )strm->stream.file ) != 0 )
+		ecl_disable_interrupts();
+		if (closesocket( ( int )strm->stream.file ) != 0)
 			wsock_error( "Cannot close Windows Socket ~S~%~A.", strm );
+		ecl_enable_interrupts();
 #if !defined(GBC_BOEHM)
 		cl_dealloc(strm->stream.buffer);
 		strm->stream.file = NULL;
@@ -785,7 +789,7 @@ ecl_write_byte8(int c, cl_object strm)
 		} else {
 			char ch = (char)c;
 			ecl_disable_interrupts();
-			if (send( fp, &ch, 1, 0) == SOCKET_ERROR) {
+			if (send(fp, &ch, 1, 0) == SOCKET_ERROR) {
 				wsock_error("Cannot write char to Windows"
 					    "Socket ~S.~%~A", strm);
 			}
@@ -926,19 +930,22 @@ ecl_read_byte8(cl_object strm)
 	case smm_io_wsock:
 	case smm_input_wsock: {
 		int fp = (int)strm->stream.file;
-		if ( fp == INVALID_SOCKET )
-			wrong_file_handler( strm );
-		else
-		{
+		if (fp == INVALID_SOCKET) {
+			wrong_file_handler(strm);
+		} else {
 			/* check for unread chars first */
 			if (CONSP(strm->stream.object0)) {
 				c = (unsigned char)CHAR_CODE(CAR(strm->stream.object0));
 				strm->stream.object0 = CDR(strm->stream.object0);
 			} else {
 				char ch;
-				if ( recv( fp, &ch, 1, 0 ) == SOCKET_ERROR )
-					wsock_error( "Cannot read char from Windows socket ~S.~%~A", strm );
-				c = ( unsigned char )ch;
+				ecl_disable_interrupts();
+				if (recv(fp, &ch, 1, 0) == SOCKET_ERROR)
+					wsock_error("Cannot read char from "
+						    "Windows socket ~S.~%~A",
+						    strm);
+				ecl_enable_interrupts();
+				c = (unsigned char)ch;
 			}
 		}
 		break;
@@ -1026,12 +1033,15 @@ flush_output_stream_binary(cl_object strm)
 				if (c != EOF)
 					b |= (unsigned char)(c & ~MAKE_BIT_MASK(nb));
 				/* rewind stream */
+				ecl_disable_interrupts();
 				if (ecl_fseeko(fp, -1, SEEK_CUR) != 0)
 					io_error(strm);
+				ecl_enable_interrupts();
 			} else {
 				/* write-only stream: need to reopen the file for reading *
 				 * the byte to merge, then reopen it back for writing     */
 				cl_object fn = si_coerce_to_filename(strm->stream.object1);
+				ecl_disable_interrupts();
 				if (freopen(fn->base_string.self, OPEN_R, fp) == NULL ||
 				    ecl_fseeko(fp, current_offset, SEEK_SET) != 0)
 					io_error(strm);
@@ -1042,6 +1052,7 @@ flush_output_stream_binary(cl_object strm)
 				strm->stream.file = fdopen(open(fn->base_string.self, O_WRONLY), OPEN_W);
 				if (strm->stream.file == NULL || ecl_fseeko(fp, current_offset, SEEK_SET) != 0)
 					io_error(strm);
+				ecl_enable_interrupts();
 			}
 		} else {
 			/* No merging occurs -> header must be overwritten */
@@ -1224,12 +1235,11 @@ BEGIN:
 			not_a_character_stream(strm);
 		if (fp == NULL)
 			wrong_file_handler(strm);
-		if (cl_env.disable_interrupts) printf("Cannot disable interrupts twice.\n");
-		ecl_disable_interrupts_env(the_env);
+		ecl_disable_interrupts();
 		do {
 			c = getc(fp);
 		} while ((c == EOF) && ferror(fp) && restartable_io_error(strm));
-		ecl_enable_interrupts_env(the_env);
+		ecl_enable_interrupts();
 		break;
 	}
 #if defined(ECL_WSOCK)
@@ -1238,17 +1248,21 @@ BEGIN:
 		int fp = (int)strm->stream.file;
 		if (!strm->stream.char_stream_p)
 			not_a_character_stream(strm);
-		if ( fp == INVALID_SOCKET )
-			wrong_file_handler( strm );
-		else {
+		if (fp == INVALID_SOCKET) {
+			wrong_file_handler(strm);
+		} else {
 			if (CONSP(strm->stream.object0)) {
 				c = (unsigned char)CHAR_CODE(CAR(strm->stream.object0));
 				strm->stream.object0 = CDR(strm->stream.object0);
 			} else {
 				char ch;
-				if ( recv( fp, &ch, 1, 0 ) == SOCKET_ERROR )
-					wsock_error( "Cannot read char from Windows socket ~S.~%~A", strm );
-				c = ( unsigned char )ch;
+				ecl_disable_interrupts();
+				if (recv(fp, &ch, 1, 0) == SOCKET_ERROR)
+					wsock_error("Cannot read char from "
+						    "Windows socket ~S.~%~A",
+						    strm);
+				c = (unsigned char)ch;
+				ecl_enable_interrupts();
 			}
 		}
 		break;
@@ -1357,17 +1371,19 @@ BEGIN:
 		int fp = strm->stream.file;
 		if (!strm->stream.char_stream_p)
 			not_a_character_stream(strm);
-		if ( fp == INVALID_SOCKET )
-			wrong_file_handler( strm );
-		else {
+		if (fp == INVALID_SOCKET) {
+			wrong_file_handler(strm);
+		} else {
 			if (CONSP(strm->stream.object0)) {
 				c = (unsigned char)CHAR_CODE(CAR(strm->stream.object0));
 			} else {
 				char ch;
 				ecl_disable_interrupts();
-				if ( recv( fp, &ch, 1, MSG_PEEK ) == SOCKET_ERROR )
-					wsock_error( "Cannot peek char from Windows socket ~S.~%~A", strm );
-				c = ( unsigned char )ch;
+				if (recv(fp, &ch, 1, MSG_PEEK) == SOCKET_ERROR)
+					wsock_error("Cannot peek char from "
+						    "Windows socket ~S.~%~A",
+						    strm);
+				c = (unsigned char)ch;
 				ecl_enable_interrupts();
 			}
 		}
@@ -1459,9 +1475,11 @@ BEGIN:
 			not_a_character_stream(strm);
 		if (fp == NULL)
 			wrong_file_handler(strm);
+		ecl_disable_interrupts();
 		ungetc(c, fp);
 		if (c == EOF)
 			io_error(strm);
+		ecl_enable_interrupts();
 /*		--strm->stream.int0; useless in smm_io, Beppe */
 		break;
 
@@ -1565,14 +1583,14 @@ BEGIN:
 			strm->stream.int1 = (strm->stream.int1&~07) + 8;
 		else
 			strm->stream.int1++;
-		if ( ( int )fp == INVALID_SOCKET )
-			wrong_file_handler( strm );
-		else
-		{
-			char ch = ( char )c;
+		if ((int)fp == INVALID_SOCKET) {
+			wrong_file_handler(strm);
+		} else {
+			char ch = (char)c;
 			ecl_disable_interrupts();
-			if ( send( ( int )fp, &ch, 1, 0 ) == SOCKET_ERROR )
-				wsock_error( "Cannot write char to Windows Socket ~S.~%~A", strm );
+			if (send((int)fp, &ch, 1, 0) == SOCKET_ERROR)
+				wsock_error("Cannot write char to Windows "
+					    "Socket ~S.~%~A", strm);
 			ecl_enable_interrupts();
 		}
 		break;
@@ -1689,14 +1707,16 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	    (stream->stream.mode == smm_io ||
 	     stream->stream.mode == smm_output))
 	{
-		size_t towrite = end - start;
+		size_t towrite = end - start, written;
 		if (stream->stream.mode == smm_io) {
 			io_stream_begin_write(stream);
 		}
-		if (fwrite(seq->vector.self.ch + start, sizeof(char),
-			   towrite, (FILE*)stream->stream.file) < towrite) {
-			io_error(stream);
-		}
+		ecl_disable_interrupts();
+		do {
+			written = fwrite(seq->vector.self.ch + start, sizeof(char),
+					 towrite, (FILE*)stream->stream.file);
+		} while ((written < towrite) && restartable_io_error(stream));
+		ecl_enable_interrupts();
 	} else if (t == t_stream && stream->stream.mode == smm_two_way) {
 		stream = stream->stream.object1;
 		goto AGAIN;
@@ -1776,17 +1796,18 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	    (stream->stream.mode == smm_io ||
 	     stream->stream.mode == smm_input))
 	{
+		FILE *fp = (FILE*)stream->stream.file;
 		size_t toread, n;
 		if (stream->stream.mode == smm_io) {
 			io_stream_begin_write(stream);
 		}
 		toread = end - start;
+		ecl_disable_interrupts();
+		do {
+			n = fread(seq->vector.self.ch + start, sizeof(char),
+				  toread, fp);
+		} while (n < toread && ferror(fp) && restartable_io_error(stream));
 		ecl_enable_interrupts();
-		n = fread(seq->vector.self.ch + start, sizeof(char),
-			  toread, stream->stream.file);
-		if (n < toread && ferror((FILE*)stream->stream.file)) {
-			io_error(stream);
-		}
 		start += n;
 	} else if (t == t_stream && stream->stream.mode == smm_two_way) {
 		stream = stream->stream.object0;
@@ -1831,8 +1852,8 @@ BEGIN:
 			flush_output_stream_binary(strm);
 		}
 		ecl_disable_interrupts();
-		if (fflush(fp) == EOF)
-			io_error(strm);
+		while ((fflush(fp) == EOF) && restartable_io_error(strm))
+			(void)0;
 		ecl_enable_interrupts();
 		break;
 	}
@@ -1913,7 +1934,7 @@ BEGIN:
 		/* flush at least the unread chars */
 		strm->stream.object0 = Cnil;
 		/* do not do anything (yet) */
-		printf( "Trying to clear input on windows socket stream!\n" );
+		printf("Trying to clear input on windows socket stream!\n");
 		break;
 #endif
 
@@ -1978,7 +1999,7 @@ BEGIN:
 	case smm_io_wsock:
 	case smm_output_wsock:
 		/* do not do anything (yet) */
-		printf( "Trying to clear output windows socket stream\n!" );
+		printf("Trying to clear output windows socket stream\n!");
 		break;
 #endif
 
@@ -2139,25 +2160,26 @@ BEGIN:
 	case smm_io_wsock:
 	case smm_input_wsock:
 		fp = (FILE*)strm->stream.file;
-		if ( ( int )fp == INVALID_SOCKET )
-			wrong_file_handler( strm );
-		else
-		{
-			if (CONSP(strm->stream.object0))
+		if ((int)fp == INVALID_SOCKET) {
+			wrong_file_handler(strm);
+		} else {
+			if (CONSP(strm->stream.object0)) {
 				return ECL_LISTEN_AVAILABLE;
-			else {
+			} else {
 				struct timeval tv = { 0, 0 };
 				fd_set fds;
 				int result;
-
-				FD_ZERO( &fds );
-				FD_SET( ( int )fp, &fds );
+				FD_ZERO(&fds);
+				FD_SET((int)fp, &fds);
 				ecl_disable_interrupts();
-				result = select( 0, &fds, NULL, NULL,  &tv );
-				if ( result == SOCKET_ERROR )
-					wsock_error( "Cannot listen on Windows socket ~S.~%~A", strm );
+				result = select(0, &fds, NULL, NULL,  &tv);
+				if (result == SOCKET_ERROR)
+					wsock_error("Cannot listen on Windows "
+						    "socket ~S.~%~A", strm);
 				ecl_enable_interrupts();
-				return ( result > 0 ? ECL_LISTEN_AVAILABLE : ECL_LISTEN_NO_CHAR );
+				return (result > 0 ?
+					ECL_LISTEN_AVAILABLE :
+					ECL_LISTEN_NO_CHAR);
 			}
 		}
 #endif
@@ -2227,9 +2249,11 @@ BEGIN:
 		FILE *fp = (FILE*)strm->stream.file;
 		if (fp == NULL)
 			wrong_file_handler(strm);
+		ecl_disable_interrupts();
 		offset = ecl_ftello(fp);
 		if (offset < 0)
 			io_error(strm);
+		ecl_enable_interrupts();
 		if (sizeof(ecl_off_t) == sizeof(long)) {
 			output = ecl_make_integer(offset);
 		} else {
@@ -3032,14 +3056,16 @@ ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm)
 	default:
 		FEerror("make_stream: wrong mode", 0);
 	}
+	ecl_disable_interrupts();
 #if defined(ECL_WSOCK)
-	if ( smm == smm_input_wsock || smm == smm_output_wsock || smm == smm_io_wsock )
-		fp = ( FILE* )fd;
+	if (smm == smm_input_wsock || smm == smm_output_wsock || smm == smm_io_wsock)
+		fp = (FILE*)fd;
 	else
-		fp = fdopen( fd, mode );
+		fp = fdopen(fd, mode);
 #else
 	fp = fdopen(fd, mode);
 #endif
+	ecl_enable_interrupts();
 	return ecl_make_stream_from_FILE(fname, fp, smm);
 }
 
