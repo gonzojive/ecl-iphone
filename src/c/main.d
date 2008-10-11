@@ -43,9 +43,9 @@ extern int GC_dont_gc;
 /******************************* EXPORTS ******************************/
 
 #if !defined(ECL_THREADS)
-cl_env_ptr cl_env_p;
+cl_env_ptr cl_env_p = NULL;
 #elif defined(WITH___THREAD)
-__thread cl_env_ptr cl_env_p;
+__thread cl_env_ptr cl_env_p = NULL;
 #endif
 struct cl_core_struct cl_core;
 const char *ecl_self;
@@ -244,9 +244,7 @@ cl_boot(int argc, char **argv)
 	cl_object aux;
 	cl_object features;
 	int i;
-#if defined(ECL_THREADS) && !defined(WITH__THREAD)
-	static cl_env_ptr cl_env_p;
-#endif
+	cl_env_ptr env;
 
 	i = ecl_get_option(ECL_OPT_BOOTED);
 	if (i) {
@@ -269,9 +267,11 @@ cl_boot(int argc, char **argv)
 	init_unixint(0);
 	init_alloc();
 	GC_disable();
+	pause();
+#if !defined(ECL_THREADS) || defined(WITH__THREAD)
 	cl_env_p = _ecl_alloc_env();
-#ifdef ECL_THREADS
-	init_threads(cl_env_p);
+#else
+	init_threads(env);
 #endif
 
 	/*
@@ -426,7 +426,7 @@ cl_boot(int argc, char **argv)
 	 *    This cannot come later, because some routines need the
 	 *    frame stack immediately (for instance SI:PATHNAME-TRANSLATIONS).
 	 */
-	ecl_init_env(&cl_env);
+	ecl_init_env(env);
 #if !defined(GBC_BOEHM)
 	/* We need this because a lot of stuff is to be created */
 	init_GC();
@@ -434,11 +434,11 @@ cl_boot(int argc, char **argv)
 	GC_enable();
 
 #ifdef ECL_THREADS
-	cl_env.bindings_hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
+	env->bindings_hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
 						   ecl_make_singlefloat(1.5f),
 						   ecl_make_singlefloat(0.75f),
 						   Cnil); /* no locking */
-	ECL_SET(@'mp::*current-process*', cl_env.own_process);
+	ECL_SET(@'mp::*current-process*', env->own_process);
 #endif
 
 	/*

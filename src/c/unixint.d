@@ -313,7 +313,12 @@ static void
 define_handler(non_evil_signal_handler, int sig, siginfo_t *siginfo, void *data)
 {
 	int old_errno = errno;
-	cl_env_ptr the_env = &cl_env;
+	cl_env_ptr the_env;
+	if (!ecl_get_option(ECL_OPT_BOOTED)) {
+		ecl_internal_error("Got signal before environment was installed"
+				   " on our thread.");
+	}
+	the_env = ecl_process_env();
 	reinstall_signal(sig, non_evil_signal_handler);
 	printf("Non evil handler\n");
 	/*
@@ -370,7 +375,12 @@ define_handler(non_evil_signal_handler, int sig, siginfo_t *siginfo, void *data)
 static void
 define_handler(sigsegv_handler, int sig, siginfo_t *info, void *aux)
 {
-	cl_env_ptr the_env = &cl_env;
+	cl_env_ptr the_env = ecl_process_env();
+	if (!ecl_get_option(ECL_OPT_BOOTED)) {
+		ecl_internal_error("Got signal before environment was installed"
+				   " on our thread.");
+	}
+	the_env = ecl_process_env();
 #ifdef HAVE_SIGPROCMASK
 # ifdef ECL_DOWN_STACK
 	if ((cl_fixnum*)info->si_addr > the_env->cs_barrier &&
