@@ -76,7 +76,7 @@ ecl_process_env(void)
 static void
 ecl_set_process_env(cl_env_ptr env)
 {
-#ifdef WITH__THREAD
+#ifdef WITH___THREAD
 	cl_env_p = env;
 #else
 # ifdef ECL_WINDOWS_THREADS
@@ -651,7 +651,7 @@ init_threads(cl_env_ptr env)
 	process->process.env = env;
 
 	env->own_process = process;
-#if !defined(WITH__THREADS)
+#if !defined(WITH___THREAD)
 # if defined(ECL_WINDOWS_THREADS)
 	cl_env_key = TlsAlloc();
 # else

@@ -600,7 +600,6 @@ AC_TRY_COMPILE(,[static __thread void *data;],
    ac_cv_ecl___thread=yes,
    ac_cv_ecl___thread=no))
 dnl We deactivate this test because it seems to slow down ECL A LOT!!!
-ac_cv_ecl___thread=no
 ])
 
 dnl ----------------------------------------------------------------------

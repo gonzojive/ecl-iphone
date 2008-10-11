@@ -74,6 +74,9 @@ ECL 8.9.0:
    names while keeping the old definitions as macros. Look at external.h for
    the list of already deprecated names.
 
+ - ECL builds using thread local storage when configured with --with-__thread and
+   the feature works on that platform.
+
 * Embedding:
 
  - ECL now implements a more transparent interface for setting and querying

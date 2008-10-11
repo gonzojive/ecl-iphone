@@ -4545,7 +4545,6 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
 { $as_echo "$as_me:$LINENO: result: $ac_cv_ecl___thread" >&5
 $as_echo "$ac_cv_ecl___thread" >&6; }
-ac_cv_ecl___thread=no
 
 
 
