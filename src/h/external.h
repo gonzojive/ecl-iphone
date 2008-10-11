@@ -443,11 +443,11 @@ extern ECL_API cl_object si_eval_with_env _ARGS((cl_narg narg, cl_object form, .
 /* interpreter.c */
 
 extern ECL_API cl_object si_interpreter_stack _ARGS((cl_narg narg));
-extern ECL_API cl_object ecl_stack_frame_open(cl_object f, cl_index size);
+extern ECL_API cl_object ecl_stack_frame_open(cl_env_ptr env, cl_object f, cl_index size);
 extern ECL_API void ecl_stack_frame_enlarge(cl_object f, cl_index size);
 extern ECL_API void ecl_stack_frame_push(cl_object f, cl_object o);
 extern ECL_API void ecl_stack_frame_push_values(cl_object f);
-extern ECL_API cl_object ecl_stack_frame_from_va_list(cl_object f, cl_va_list args);
+extern ECL_API cl_object ecl_stack_frame_from_va_list(cl_env_ptr env, cl_object f, cl_va_list args);
 extern ECL_API cl_object ecl_stack_frame_pop_values(cl_object f);
 extern ECL_API cl_object ecl_stack_frame_elt(cl_object f, cl_index n);
 extern ECL_API void ecl_stack_frame_elt_set(cl_object f, cl_index n, cl_object o);
@@ -459,15 +459,15 @@ extern ECL_API cl_object ecl_apply_from_stack_frame(cl_object f, cl_object o);
 
 extern ECL_API void cl_stack_push(cl_object o);
 extern ECL_API cl_object cl_stack_pop(void);
-extern ECL_API cl_index cl_stack_index(void);
-extern ECL_API void cl_stack_set_size(cl_index new_size);
-extern ECL_API void cl_stack_set_index(cl_index sp);
-extern ECL_API void cl_stack_pop_n(cl_index n);
-extern ECL_API void cl_stack_insert(cl_index where, cl_index n);
-extern ECL_API cl_index cl_stack_push_list(cl_object list);
-extern ECL_API void cl_stack_push_n(cl_index n, cl_object *args);
-extern ECL_API cl_index cl_stack_push_values(void);
-extern ECL_API void cl_stack_pop_values(cl_index n);
+extern ECL_API cl_index ecl_stack_index(cl_env_ptr);
+extern ECL_API void ecl_stack_set_size(cl_env_ptr env, cl_index new_size);
+extern ECL_API void ecl_stack_set_index(cl_env_ptr env, cl_index sp);
+extern ECL_API void ecl_stack_pop_n(cl_env_ptr env, cl_index n);
+extern ECL_API void ecl_stack_insert(cl_env_ptr env, cl_index where, cl_index n);
+extern ECL_API cl_index ecl_stack_push_list(cl_env_ptr env, cl_object list);
+extern ECL_API void ecl_stack_push_n(cl_env_ptr env, cl_index n, cl_object *args);
+extern ECL_API cl_index ecl_stack_push_values(cl_env_ptr env);
+extern ECL_API void ecl_stack_pop_values(cl_env_ptr env, cl_index n);
 extern ECL_API cl_object ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offset);
 
 /* disassembler.c */

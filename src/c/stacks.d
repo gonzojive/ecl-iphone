@@ -409,7 +409,7 @@ _frs_push(register cl_object val)
 	output->frs_bds_top_index = env->bds_top - env->bds_org;
 	output->frs_val = val;
 	output->frs_ihs = env->ihs_top;
-	output->frs_sp = cl_stack_index();
+	output->frs_sp = ecl_stack_index(env);
 	return output;
 }
 
@@ -422,7 +422,7 @@ ecl_unwind(ecl_frame_ptr fr)
 		--env->frs_top;
 	env->ihs_top = env->frs_top->frs_ihs;
 	bds_unwind(env->frs_top->frs_bds_top_index);
-	cl_stack_set_index(env->frs_top->frs_sp);
+	ecl_stack_set_index(env, env->frs_top->frs_sp);
 	ecl_longjmp(env->frs_top->frs_jmpbuf, 1);
 	/* never reached */
 }
@@ -501,7 +501,7 @@ si_set_stack_size(cl_object type, cl_object size)
 	} else if (type == @'ext::c-stack') {
 		cs_set_size(env, the_size);
 	} else {
-		cl_stack_set_size(the_size);
+		ecl_stack_set_size(env, the_size);
 	}
 	@(return)
 }

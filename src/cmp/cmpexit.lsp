@@ -19,7 +19,7 @@
   (when stack-frame
     (if (stringp stack-frame)
 	(wt-nl "ecl_stack_frame_close(" stack-frame ");")
-	(wt-nl "cl_stack_set_index(" stack-frame ");")))
+	(wt-nl "ecl_stack_set_index(cl_env_copy," stack-frame ");")))
   (when bds-lcl
     (wt-nl "bds_unwind(" bds-lcl ");"))
   (if (< bds-bind 4)
@@ -81,7 +81,7 @@
 	     (cond ((eq loc 'VALUES)
 		    ;; from multiple-value-prog1 or values
 		    (unwind-bds bds-lcl bds-bind stack-frame ihs-p)
-		    (wt-nl "return VALUES(0);"))
+		    (wt-nl "return cl_env_copy->values[0];"))
 		   ((eq loc 'RETURN)
 		    ;; from multiple-value-prog1 or values
 		    (unwind-bds bds-lcl bds-bind stack-frame ihs-p)

@@ -81,10 +81,10 @@
    ;; of a function.
    ((endp forms)
     (cond ((eq *destination* 'RETURN)
-	   (wt-nl "value0=Cnil; NVALUES=0;")
+	   (wt-nl "value0=Cnil; cl_env_copy->nvalues=0;")
 	   (unwind-exit 'RETURN))
 	  ((eq *destination* 'VALUES)
-	   (wt-nl "VALUES(0)=Cnil; NVALUES=0;")
+	   (wt-nl "cl_env_copy->values[0]=Cnil; cl_env_copy->nvalues=0;")
 	   (unwind-exit 'VALUES))
 	  (t
 	   (unwind-exit 'NIL))))
@@ -105,12 +105,12 @@
 	   (forms (nreverse (coerce-locs (inline-args forms)))))
       ;; By inlining arguments we make sure that VL has no call to funct.
       ;; Reverse args to avoid clobbering VALUES(0)
-      (wt-nl "NVALUES=" nv ";")
+      (wt-nl "cl_env_copy->nvalues=" nv ";")
       (do ((vl forms (rest vl))
 	   (i (1- (length forms)) (1- i)))
 	  ((null vl))
 	(declare (fixnum i))
-	(wt-nl "VALUES(" i ")=" (first vl) ";"))
+	(wt-nl "cl_env_copy->values[" i "]=" (first vl) ";"))
       (unwind-exit 'VALUES)
       (close-inline-blocks)))))
 
@@ -195,7 +195,7 @@
     ;; If there are more variables, we have to check whether there
     ;; are enough values left in the stack.
     (when vars
-      (wt-nl "{int " nr "=NVALUES-" min-values ";")
+      (wt-nl "{int " nr "=cl_env_copy->nvalues-" min-values ";")
       ;;
       ;; Loop for assigning values to variables
       ;;

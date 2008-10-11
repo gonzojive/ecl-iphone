@@ -28,6 +28,7 @@ _ecl_va_sp(cl_narg narg)
 static cl_object
 build_funcall_frame(cl_object f, cl_va_list args)
 {
+	cl_env_ptr env = ecl_process_env();
 	cl_index n = args[0].narg;
 	cl_object *p = args[0].sp;
 	f->frame.stack = 0;
@@ -46,6 +47,7 @@ build_funcall_frame(cl_object f, cl_va_list args)
 	f->frame.bottom = p;
 	f->frame.top = p + n;
 	f->frame.t = t_frame;
+	f->frame.env = env;
 	return f;
 }
 
@@ -210,7 +212,8 @@ si_unlink_symbol(cl_object s)
 		cl_object out;
 		cl_index i;
 		struct ecl_stack_frame frame_aux;
-		const cl_object frame = ecl_stack_frame_open((cl_object)&frame_aux,
+		const cl_object frame = ecl_stack_frame_open(ecl_process_env(),
+							     (cl_object)&frame_aux,
 							     narg -= 2);
 		for (i = 0; i < narg; i++) {
 			ecl_stack_frame_elt_set(frame, i, lastarg);

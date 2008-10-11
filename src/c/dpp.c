@@ -636,6 +636,8 @@ put_declaration(void)
   int i;
   int simple_varargs;
 
+  put_lineno();
+  fprintf(out, "\tconst cl_env_ptr the_env = ecl_process_env();\n");
   for (i = 0;  i < nopt;  i++) {
     put_lineno();
     fprintf(out, "\tcl_object %s;\n", optional[i].o_var);

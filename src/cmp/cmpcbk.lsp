@@ -99,7 +99,7 @@
     (when return-p
       (wt-nl return-type-name " output;"))
     (wt-nl "cl_object aux;")
-    (wt-nl "ECL_BUILD_STACK_FRAME(frame, helper)")
+    (wt-nl "ECL_BUILD_STACK_FRAME(cl_env_copy, frame, helper)")
     (loop for n from 0
 	  and type in arg-types
 	  and ct in arg-type-constants

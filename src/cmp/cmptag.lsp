@@ -156,7 +156,7 @@
 	  (when (and (tag-p tag) (plusp (tag-ref tag)))
 	    (setf (tag-label tag) (next-label))
 	    (setf (tag-unwind-exit tag) label)
-	    (wt-nl "if (VALUES(0)==MAKE_FIXNUM(" (tag-index tag) "))")
+	    (wt-nl "if (cl_env_copy->values[0]==MAKE_FIXNUM(" (tag-index tag) "))")
 	    (wt-go (tag-label tag))))
 	(when (var-ref-ccb tag-loc)
 	  (wt-nl "ecl_internal_error(\"GO found an inexistent tag\");"))

@@ -134,7 +134,7 @@ thread_entry_point(cl_object process)
 	ecl_init_env(env);
 	init_big_registers(env);
 	ecl_set_process_env(env);
-	ecl_enable_interrupts(env);
+	ecl_enable_interrupts_env(env);
 
 	/* 2) Execute the code. The CATCH_ALL point is the destination
 	*     provides us with an elegant way to exit the thread: we just

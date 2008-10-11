@@ -59,12 +59,12 @@
 
 /********************* PRIVATE ********************/
 
-#define asm_begin() cl_stack_index()
-#define asm_clear(h) cl_stack_set_index(h)
-#define current_pc() cl_stack_index()
-#define set_pc(n) cl_stack_set_index(n)
-#define asm_op(o) cl_stack_push((cl_object)((cl_fixnum)(o)))
-#define asm_ref(n) (cl_fixnum)(cl_env.stack[n])
+#define asm_begin() ecl_stack_index(ecl_process_env())
+#define asm_clear(h) ecl_stack_set_index(ecl_process_env(), h)
+#define current_pc() ecl_stack_index(ecl_process_env())
+#define set_pc(n) ecl_stack_set_index(ecl_process_env(), n)
+#define asm_op(o) ecl_stack_push(ecl_process_env(), (cl_object)((cl_fixnum)(o)))
+#define asm_ref(n) (cl_fixnum)(ecl_process_env()->stack[n])
 static void asm_op2(int op, int arg);
 static cl_object asm_end(cl_index handle);
 static cl_index asm_jmp(register int op);

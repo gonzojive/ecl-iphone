@@ -61,12 +61,12 @@
 	 (*unwind-exit* `((STACK ,sp) ,@*unwind-exit*)))
     (wt-nl "{")
     (wt-nl "volatile bool unwinding = FALSE;")
-    (wt-nl "cl_index " sp "=cl_stack_index()," nargs ";")
+    (wt-nl "cl_index " sp "=ecl_stack_index(cl_env_copy)," nargs ";")
     (wt-nl "ecl_frame_ptr next_fr;")
     ;; Here we compile the form which is protected. When this form
     ;; is aborted, it continues at the frs_pop() with unwinding=TRUE.
     (wt-nl "if (frs_push(ECL_PROTECT_TAG)) {")
-    (wt-nl "  unwinding = TRUE; next_fr=cl_env.nlj_fr;")
+    (wt-nl "  unwinding = TRUE; next_fr=cl_env_copy->nlj_fr;")
     (wt-nl "} else {")
     (let ((*unwind-exit* (cons 'FRAME *unwind-exit*))
 	  (*destination* 'VALUES))
@@ -76,10 +76,10 @@
     ;; Here we save the values of the form which might have been
     ;; aborted, and execute some cleanup code. This code may also
     ;; be aborted by some control structure, but is not protected.
-    (wt-nl nargs "=cl_stack_push_values();")
+    (wt-nl nargs "=ecl_stack_push_values(cl_env_copy);")
     (let ((*destination* 'TRASH))
       (c2expr* body))
-    (wt-nl "cl_stack_pop_values(" nargs ");")
+    (wt-nl "ecl_stack_pop_values(cl_env_copy," nargs ");")
     ;; Finally, if the protected form was aborted, jump to the
     ;; next catch point...
     (wt-nl "if (unwinding) ecl_unwind(next_fr);")

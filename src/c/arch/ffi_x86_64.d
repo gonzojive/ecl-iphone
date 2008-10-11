@@ -165,8 +165,9 @@ ecl_dynamic_callback_execute(long i1, long i2, long i3, long i4, long i5, long i
 	enum ecl_ffi_tag tag;
 	long i_reg[MAX_INT_REGISTERS];
 	double f_reg[MAX_FP_REGISTERS];
+	cl_env_ptr env = ecl_process_env();
 
-	ECL_BUILD_STACK_FRAME(frame, aux);
+	ECL_BUILD_STACK_FRAME(env, frame, aux);
 
 	fun = CAR(cbk_info);
 	rtype = CADR(cbk_info);

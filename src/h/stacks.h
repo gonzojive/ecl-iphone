@@ -202,13 +202,15 @@ extern ECL_API ecl_frame_ptr _frs_push(register cl_object val);
  *********************************/
 
 #define CL_NEWENV_BEGIN {\
-	cl_index __i = cl_stack_push_values(); \
+	cl_env_ptr the_env = ecl_process_env(); \
+	cl_index __i = ecl_stack_push_values(the_env); \
 
 #define CL_NEWENV_END \
-	cl_stack_pop_values(__i); }
+	ecl_stack_pop_values(the_env,__i); }
 
 #define CL_UNWIND_PROTECT_BEGIN {\
 	bool __unwinding; ecl_frame_ptr __next_fr; \
+	cl_env_ptr the_env = ecl_process_env(); \
 	cl_index __nr; \
 	if (frs_push(ECL_PROTECT_TAG)) { \
 		__unwinding=1; __next_fr=cl_env.nlj_fr; \
@@ -217,10 +219,10 @@ extern ECL_API ecl_frame_ptr _frs_push(register cl_object val);
 #define CL_UNWIND_PROTECT_EXIT \
 	__unwinding=0; } \
 	frs_pop(); \
-	__nr = cl_stack_push_values();
+	__nr = ecl_stack_push_values(the_env);
 
 #define CL_UNWIND_PROTECT_END \
-	cl_stack_pop_values(__nr); \
+	ecl_stack_pop_values(the_env,__nr);	\
 	if (__unwinding) ecl_unwind(__next_fr); }
 
 #define CL_BLOCK_BEGIN(id) { \

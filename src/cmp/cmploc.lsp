@@ -74,19 +74,21 @@
   (case *destination*
     (VALUES
      (cond (is-call
-	    (wt-nl "VALUES(0)=") (wt-coerce-loc :object loc) (wt ";"))
+	    (wt-nl "cl_env_copy->values[0]=") (wt-coerce-loc :object loc) (wt ";"))
 	   ((eq loc 'VALUES) (return-from set-loc))
 	   (t
-	    (wt-nl "VALUES(0)=") (wt-coerce-loc :object loc) (wt "; NVALUES=1;"))))
+	    (wt-nl "cl_env_copy->values[0]=") (wt-coerce-loc :object loc)
+	    (wt "; cl_env_copy->nvalues=1;"))))
     (VALUE0
      (wt-nl "value0=") (wt-coerce-loc :object loc) (wt ";"))
     (RETURN
      (cond ((or is-call (eq loc 'VALUES))
 	    (wt-nl "value0=") (wt-coerce-loc :object loc) (wt ";"))
-	   ((eq loc 'VALUE0) (wt-nl "NVALUES=1;"))
+	   ((eq loc 'VALUE0) (wt-nl "cl_env_copy->nvalues=1;"))
 	   ((eq loc 'RETURN) (return-from set-loc))
 	   (t
-	    (wt-nl "value0=") (wt-coerce-loc :object loc) (wt "; NVALUES=1;"))))
+	    (wt-nl "value0=") (wt-coerce-loc :object loc)
+	    (wt "; cl_env_copy->nvalues=1;"))))
     (TRASH
      (cond (is-call (wt-nl "(void)" loc ";"))
 	   ((and (consp loc)
@@ -114,7 +116,7 @@
         ((eq loc 'RETURN)
 	 (wt "value0"))	; added for last inline-arg
 	((eq loc 'VALUES)
-	 (wt "VALUES(0)"))
+	 (wt "cl_env_copy->values[0]"))
 	((eq loc 'VA-ARG)
 	 (wt "va_arg(args,cl_object)"))
 	((eq loc 'CL-VA-ARG)
@@ -166,7 +168,7 @@
 (defun wt-character (value &optional vv)
   (wt (format nil "'\\~O'" value)))
 
-(defun wt-value (i) (wt "VALUES(" i ")"))
+(defun wt-value (i) (wt "cl_env_copy->values[" i "]"))
 
 (defun wt-keyvars (i) (wt "keyvars[" i "]"))
 

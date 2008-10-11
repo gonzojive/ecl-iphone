@@ -23,9 +23,9 @@
 /* -------------------- INTERPRETER STACK -------------------- */
 
 void
-cl_stack_set_size(cl_index tentative_new_size)
+ecl_stack_set_size(cl_env_ptr env, cl_index tentative_new_size)
 {
-	cl_index top = cl_env.stack_top - cl_env.stack;
+	cl_index top = env->stack_top - env->stack;
 	cl_object *new_stack, *old_stack;
 	cl_index safety_area = ecl_get_option(ECL_OPT_LISP_STACK_SAFETY_AREA);
 	cl_index new_size = tentative_new_size + 2*safety_area;
@@ -33,16 +33,16 @@ cl_stack_set_size(cl_index tentative_new_size)
 	if (top > new_size)
 		FEerror("Internal error: cannot shrink stack that much.",0);
 
-	old_stack = cl_env.stack;
+	old_stack = env->stack;
 	new_stack = (cl_object *)ecl_alloc_atomic(new_size * sizeof(cl_object));
 
-	ecl_disable_interrupts();
-	memcpy(new_stack, old_stack, cl_env.stack_size * sizeof(cl_object));
-	cl_env.stack_size = new_size;
-	cl_env.stack = new_stack;
-	cl_env.stack_top = cl_env.stack + top;
-	cl_env.stack_limit = cl_env.stack + (new_size - 2*safety_area);
-	ecl_enable_interrupts();
+	ecl_disable_interrupts_env(env);
+	memcpy(new_stack, old_stack, env->stack_size * sizeof(cl_object));
+	env->stack_size = new_size;
+	env->stack = new_stack;
+	env->stack_top = env->stack + top;
+	env->stack_limit = env->stack + (new_size - 2*safety_area);
+	ecl_enable_interrupts_env(env);
 
 	cl_dealloc(old_stack);
 
@@ -50,67 +50,67 @@ cl_stack_set_size(cl_index tentative_new_size)
 	 * and friends, which take a sp=0 to have no arguments.
 	 */
 	if (top == 0)
-		cl_stack_push(MAKE_FIXNUM(0));
+		ecl_stack_push(env, MAKE_FIXNUM(0));
 }
 
 static void
-cl_stack_grow(void)
+ecl_stack_grow(cl_env_ptr env)
 {
-	cl_stack_set_size(cl_env.stack_size + LISP_PAGESIZE);
+	ecl_stack_set_size(env, env->stack_size + env->stack_size / 2);
 }
 
 void
-cl_stack_push(cl_object x) {
-	if (cl_env.stack_top >= cl_env.stack_limit)
-		cl_stack_grow();
-	*(cl_env.stack_top++) = x;
+ecl_stack_push(cl_env_ptr env, cl_object x) {
+	if (env->stack_top >= env->stack_limit)
+		ecl_stack_grow(env);
+	*(env->stack_top++) = x;
 }
 
 cl_object
-cl_stack_pop() {
-	if (cl_env.stack_top == cl_env.stack)
+ecl_stack_pop(cl_env_ptr env) {
+	if (env->stack_top == env->stack)
 		FEerror("Internal error: stack underflow.",0);
-	return *(--cl_env.stack_top);
+	return *(--env->stack_top);
 }
 
 cl_index
-cl_stack_index() {
-	return cl_env.stack_top - cl_env.stack;
+ecl_stack_index(cl_env_ptr env) {
+	return env->stack_top - env->stack;
 }
 
 void
-cl_stack_set_index(cl_index index) {
-	cl_object *new_top = cl_env.stack + index;
-	if (new_top > cl_env.stack_top)
+ecl_stack_set_index(cl_env_ptr env, cl_index index) {
+	cl_object *new_top = env->stack + index;
+	if (new_top > env->stack_top)
 		FEerror("Internal error: tried to advance stack.",0);
-	cl_env.stack_top = new_top;
+	env->stack_top = new_top;
 }
 
 void
-cl_stack_pop_n(cl_index index) {
-	cl_object *new_top = cl_env.stack_top - index;
-	if (new_top < cl_env.stack)
+ecl_stack_pop_n(cl_env_ptr env, cl_index index) {
+	cl_object *new_top = env->stack_top - index;
+	if (new_top < env->stack)
 		FEerror("Internal error: stack underflow.",0);
-	cl_env.stack_top = new_top;
+	env->stack_top = new_top;
 }
 
 cl_index
-cl_stack_push_values(void) {
+ecl_stack_push_values(cl_env_ptr env) {
 	cl_index i;
-	for (i=0; i<NVALUES; i++)
-		cl_stack_push(VALUES(i));
+	for (i=0; i < env->nvalues; i++)
+		ecl_stack_push(env, env->values[i]);
 	return i;
 }
 
 void
-cl_stack_pop_values(cl_index n) {
-	NVALUES = n;
+ecl_stack_pop_values(cl_env_ptr env, cl_index n) {
+	env->nvalues = n;
 	while (n > 0)
-		VALUES(--n) = cl_stack_pop();
+		env->values[--n] = ecl_stack_pop(env);
 }
 
 cl_index
-cl_stack_push_list(cl_object list)
+ecl_stack_push_list(cl_env_ptr env, cl_object list)
 {
 	cl_index n;
 	cl_object fast, slow;
@@ -118,9 +118,9 @@ cl_stack_push_list(cl_object list)
 	/* INV: A list's length always fits in a fixnum */
 	fast = slow = list;
 	for (n = 0; CONSP(fast); n++, fast = CDR(fast)) {
-		*cl_env.stack_top = CAR(fast);
-		if (++cl_env.stack_top >= cl_env.stack_limit)
-			cl_stack_grow();
+		*env->stack_top = CAR(fast);
+		if (++env->stack_top >= env->stack_limit)
+			ecl_stack_grow(env);
 		if (n & 1) {
 			/* Circular list? */
 			if (slow == fast) break;
@@ -133,20 +133,21 @@ cl_stack_push_list(cl_object list)
 }
 
 cl_object
-ecl_stack_frame_open(cl_object f, cl_index size)
+ecl_stack_frame_open(cl_env_ptr env, cl_object f, cl_index size)
 {
-	cl_object *top = cl_env.stack_top;
+	cl_object *top = env->stack_top;
 	if (size) {
-		if (cl_env.stack_limit - top < size) {
+		if (env->stack_limit - top < size) {
 			cl_index delta = (size + (LISP_PAGESIZE-1))/LISP_PAGESIZE;
-			cl_stack_set_size(cl_env.stack_size + delta * LISP_PAGESIZE);
-			top = cl_env.stack_top;
+			ecl_stack_set_size(env, env->stack_size + delta * LISP_PAGESIZE);
+			top = env->stack_top;
 		}
 	}
 	f->frame.t = t_frame;
-	f->frame.stack = cl_env.stack;
+	f->frame.stack = env->stack;
 	f->frame.bottom = top;
-	cl_env.stack_top = f->frame.top = (top + size);
+	f->frame.env = env;
+	env->stack_top = f->frame.top = (top + size);
 	return f;
 }
 
@@ -154,56 +155,59 @@ void
 ecl_stack_frame_enlarge(cl_object f, cl_index size)
 {
 	cl_object *top;
+	cl_env_ptr env = f->frame.env;
 	if (f->frame.stack == 0) {
 		ecl_internal_error("Inconsistency in interpreter stack frame");
 	}
-	top = cl_env.stack_top;
-	if ((cl_env.stack_limit - top) < size) {
+	top = env->stack_top;
+	if ((env->stack_limit - top) < size) {
 		cl_index delta = (size + (LISP_PAGESIZE-1))/LISP_PAGESIZE;
-		cl_stack_set_size(cl_env.stack_size + delta * LISP_PAGESIZE);
-		f->frame.bottom = (f->frame.bottom - f->frame.stack) + cl_env.stack;
-		f->frame.stack = cl_env.stack;
-		top = cl_env.stack_top;
+		ecl_stack_set_size(env, env->stack_size + delta * LISP_PAGESIZE);
+		f->frame.bottom = (f->frame.bottom - f->frame.stack) + env->stack;
+		f->frame.stack = env->stack;
+		top = env->stack_top;
 	} else if (top != f->frame.top) {
-		f->frame.bottom = (f->frame.bottom - f->frame.stack) + cl_env.stack;
-		f->frame.stack = cl_env.stack;
-		top = cl_env.stack_top;
+		f->frame.bottom = (f->frame.bottom - f->frame.stack) + env->stack;
+		f->frame.stack = env->stack;
+		top = env->stack_top;
 	}
-	cl_env.stack_top = f->frame.top = (top + size);
+	env->stack_top = f->frame.top = (top + size);
 }
 
 void
 ecl_stack_frame_push(cl_object f, cl_object o)
 {
 	cl_object *top;
+	cl_env_ptr env = f->frame.env;
 	if (f->frame.stack == 0) {
 		ecl_internal_error("Inconsistency in interpreter stack frame");
 	}
-	top = cl_env.stack_top;
-	if (top >= cl_env.stack_limit) {
-		cl_stack_grow();
-		f->frame.bottom = (f->frame.bottom - f->frame.stack) + cl_env.stack;
-		f->frame.stack = cl_env.stack;
-		top = cl_env.stack_top;
+	top = env->stack_top;
+	if (top >= env->stack_limit) {
+		ecl_stack_grow(env);
+		f->frame.bottom = (f->frame.bottom - f->frame.stack) + env->stack;
+		f->frame.stack = env->stack;
+		top = env->stack_top;
 	} else if (top != f->frame.top) {
-		f->frame.bottom = (f->frame.bottom - f->frame.stack) + cl_env.stack;
-		f->frame.stack = cl_env.stack;
-		top = cl_env.stack_top;
+		f->frame.bottom = (f->frame.bottom - f->frame.stack) + env->stack;
+		f->frame.stack = env->stack;
+		top = env->stack_top;
 	}
 	*(top++) = o;
-	cl_env.stack_top = f->frame.top = top;
+	env->stack_top = f->frame.top = top;
 }
 
 void
 ecl_stack_frame_push_values(cl_object f)
 {
+	cl_env_ptr env = f->frame.env;
 	if (f->frame.stack == 0) {
 		ecl_internal_error("Inconsistency in interpreter stack frame");
 	}
-	cl_stack_push_values();
-	f->frame.bottom = (f->frame.bottom - f->frame.stack) + cl_env.stack;
-	f->frame.stack = cl_env.stack;
-	f->frame.top = cl_env.stack_top;
+	ecl_stack_push_values(env);
+	f->frame.bottom = (f->frame.bottom - f->frame.stack) + env->stack;
+	f->frame.stack = env->stack;
+	f->frame.top = env->stack_top;
 }
 
 cl_object
@@ -237,10 +241,10 @@ ecl_stack_frame_elt_set(cl_object f, cl_index ndx, cl_object o)
 }
 
 cl_object
-ecl_stack_frame_from_va_list(cl_object frame, cl_va_list args)
+ecl_stack_frame_from_va_list(cl_env_ptr env, cl_object frame, cl_va_list args)
 {
 	cl_index nargs = args[0].narg;
-	ecl_stack_frame_open(frame, nargs);
+	ecl_stack_frame_open(env, frame, nargs);
 	while (nargs) {
 		*(frame->frame.top-nargs) = cl_va_arg(args);
 		nargs--;
@@ -252,7 +256,7 @@ void
 ecl_stack_frame_close(cl_object f)
 {
 	if (f->frame.stack) {
-		cl_stack_set_index(f->frame.bottom - f->frame.stack);
+		ecl_stack_set_index(f->frame.env, f->frame.bottom - f->frame.stack);
 	}
 }
 
@@ -260,7 +264,7 @@ cl_object
 ecl_stack_frame_copy(cl_object dest, cl_object orig)
 {
 	cl_index size = orig->frame.top - orig->frame.bottom;
-	dest = ecl_stack_frame_open(dest, size);
+	dest = ecl_stack_frame_open(orig->frame.env, dest, size);
 	memcpy(dest->frame.bottom, orig->frame.bottom, size * sizeof(cl_object));
 	return dest;
 }
@@ -456,7 +460,7 @@ close_around(cl_object fun, cl_object lex) {
 #define STACK_PUSH(the_env,x) { \
 	cl_object __aux = (x); \
 	if (the_env->stack_top == the_env->stack_limit) { \
-		cl_stack_grow(); \
+		ecl_stack_grow(the_env); \
 	} \
 	*(the_env->stack_top++) = __aux; }
 
@@ -465,7 +469,7 @@ close_around(cl_object fun, cl_object lex) {
 #define STACK_PUSH_N(the_env,n) { \
 	cl_index __aux = (n); \
 	while ((the_env->stack_limit - the_env->stack_top) <= __aux) { \
-		cl_stack_grow(); \
+		ecl_stack_grow(the_env); \
 	} \
 	the_env->stack_top += __aux; }
 
@@ -499,8 +503,8 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 {
 	ECL_OFFSET_TABLE
 	typedef struct cl_env_struct *cl_env_ptr;
-	const cl_env_ptr the_env = &cl_env;
-	volatile cl_index old_bds_top_index = cl_env.bds_top - cl_env.bds_org;
+	const cl_env_ptr the_env = ecl_process_env();
+	volatile cl_index old_bds_top_index = the_env->bds_top - the_env->bds_org;
 	cl_opcode *vector = (cl_opcode*)bytecodes->bytecodes.code + offset;
 	cl_object *data = bytecodes->bytecodes.data;
 	cl_object reg0, reg1, lex_env = env;
@@ -1347,7 +1351,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		GET_DATA(form, vector, data);
 		SETUP_ENV(the_env);
 		the_env->values[0] = reg0;
-		n = cl_stack_push_values();
+		n = ecl_stack_push_values(the_env);
 		if (a == Ct) {
 			/* We are stepping in, but must first ask the user
 			 * what to do. */
@@ -1364,7 +1368,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 			/* We are not inside a STEP form. This should
 			 * actually never happen. */
 		}
-		cl_stack_pop_values(n);
+		ecl_stack_pop_values(the_env, n);
 		reg0 = the_env->values[0];
 		THREAD_NEXT;
 	}
@@ -1386,7 +1390,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		cl_index n;
 		SETUP_ENV(the_env);
 		the_env->values[0] = reg0;
-		n = cl_stack_push_values();
+		n = ecl_stack_push_values(the_env);
 		if (a == Ct) {
 			/* We exit one stepping level */
 			ECL_SETQ(@'si::*step-level*',
@@ -1400,7 +1404,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		} else {
 			/* Not stepping, nothing to be done. */
 		}
-		cl_stack_pop_values(n);
+		ecl_stack_pop_values(the_env, n);
 		reg0 = the_env->values[0];
 		THREAD_NEXT;
 	}

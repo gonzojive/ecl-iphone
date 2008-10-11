@@ -944,14 +944,14 @@ nstring_case(cl_narg narg, cl_object fun, int (*casefun)(int, bool *), cl_va_lis
 	for (i = 0, l = 0; i < narg; i++) {
 		cl_object s = si_coerce_to_base_string(cl_va_arg(args));
 		if (s->base_string.fillp) {
-			cl_stack_push(s);
+			ecl_stack_push(the_env, s);
 			l += s->base_string.fillp;
 		}
 	}
 	/* Do actual copying by recovering those strings */
 	output = cl_alloc_simple_base_string(l);
 	while (l) {
-		cl_object s = cl_stack_pop();
+		cl_object s = ecl_stack_pop(the_env);
 		size_t bytes = s->base_string.fillp;
 		l -= bytes;
 		memcpy(output->base_string.self + l, s->base_string.self, bytes);

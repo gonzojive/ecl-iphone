@@ -128,6 +128,7 @@
 	    " VLEX" *reservation-cmacro*
             " CLSR" *reservation-cmacro*
 	    " STCK" *reservation-cmacro*)
+    (wt-nl "const cl_env_ptr cl_env_copy = ecl_process_env();")
     (wt-nl "cl_object value0;")
     (wt-nl "cl_object *VVtemp;")
     (when shared-data
@@ -398,7 +399,7 @@
     (wt-nl1 "{")
     (when (compiler-check-args)
       (wt-nl "check_arg(" (length arg-types) ");"))
-    (wt-nl "NVALUES=1;")
+    (wt-nl "cl_env_copy->nvalues=1;")
     (wt-nl "return " (case return-type
                             (FIXNUM "MAKE_FIXNUM")
                             (CHARACTER "CODE_CHAR")
@@ -582,6 +583,7 @@
 	" VLEX" *reservation-cmacro*
 	" CLSR" *reservation-cmacro*
 	" STCK" *reservation-cmacro*)
+    (wt-nl "const cl_env_ptr cl_env_copy = ecl_process_env();")
     (wt-nl *volatile* "cl_object value0;")
     (when (>= (fun-debug fun) 2)
       (wt-nl "struct ihs_frame ihs;"))

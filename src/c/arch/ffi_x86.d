@@ -116,8 +116,9 @@ ecl_dynamic_callback_execute(cl_object cbk_info, char *arg_buffer)
 	cl_index i, size;
 	union ecl_ffi_values output;
 	enum ecl_ffi_tag tag;
+	cl_env_ptr env = ecl_process_env();
 
-	ECL_BUILD_STACK_FRAME(frame, aux);
+	ECL_BUILD_STACK_FRAME(env, frame, aux);
 
 	fun = CAR(cbk_info);
 	rtype = CADR(cbk_info);

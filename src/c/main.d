@@ -120,7 +120,7 @@ ecl_init_env(cl_env_ptr env)
 	env->stack_top = NULL;
 	env->stack_limit = NULL;
 	env->stack_size = 0;
-	cl_stack_set_size(ecl_get_option(ECL_OPT_LISP_STACK_SIZE));
+	ecl_stack_set_size(env, ecl_get_option(ECL_OPT_LISP_STACK_SIZE));
 
 #if !defined(ECL_CMU_FORMAT)
 	env->print_pretty = FALSE;
