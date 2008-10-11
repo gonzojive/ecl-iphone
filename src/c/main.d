@@ -202,6 +202,11 @@ static const struct {
 cl_env_ptr
 _ecl_alloc_env()
 {
+	/*
+	 * Allocates the lisp environment for a thread. Depending on which
+	 * mechanism we use for detecting delayed signals, we may allocate
+	 * the environment using mmap or the garbage collector.
+	 */
 	cl_env_ptr output;
 #if defined(ECL_USE_MPROTECT)
 	output = mmap(0, sizeof(*output), PROT_READ | PROT_WRITE,
@@ -211,6 +216,10 @@ _ecl_alloc_env()
 #else
 	output = ecl_alloc(sizeof(*output));
 #endif
+	/*
+	 * An uninitialized environment _always_ disables interrupts. They
+	 * are activated later on by the thread entry point or init_unixint().
+	 */
 	output->disable_interrupts = 1;
 	return output;
 }
