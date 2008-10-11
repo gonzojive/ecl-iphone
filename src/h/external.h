@@ -1810,14 +1810,13 @@ extern ECL_API cl_object clos_standard_instance_set _ARGS((cl_narg narg, cl_obje
 /*
  * Deprecated names
  */
-#if 0
 #define cl_alloc_instance ecl_alloc_instance
 #define cl_alloc_object ecl_alloc_object
 #define cl_alloc ecl_alloc
 #define cl_alloc_atomic ecl_alloc_atomic
 #define cl_alloc_align ecl_alloc_align
 #define cl_alloc_atomic_align ecl_alloc_atomic_align
-#endif
+#define cl_dealloc ecl_dealloc
 
 #endif
 

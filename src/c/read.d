@@ -516,7 +516,7 @@ ecl_parse_number(cl_object str, cl_index start, cl_index end,
 			output = OBJNULL;
 		}
 	OUTPUT:
-		cl_dealloc(buffer);
+		ecl_dealloc(buffer);
 		return output;
 	}
 }
@@ -2164,7 +2164,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 		if (VVtemp) {
 			block->cblock.temp_data = NULL;
 			block->cblock.temp_data_size = 0;
-			cl_dealloc(VVtemp);
+			ecl_dealloc(VVtemp);
 		}
 		bds_unwind1();
 	} CL_UNWIND_PROTECT_EXIT {

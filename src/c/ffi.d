@@ -130,7 +130,7 @@ si_free_foreign_data(cl_object f)
 		FEwrong_type_argument(@'si::foreign-data', f);
 	}
 	if (f->foreign.size) {
-		cl_dealloc(f->foreign.data);
+		ecl_dealloc(f->foreign.data);
 	}
 	f->foreign.size = 0;
 	f->foreign.data = NULL;

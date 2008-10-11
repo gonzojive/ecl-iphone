@@ -727,7 +727,7 @@ contblock_sweep_phase(void)
 			q = p + 4;
 			while (q < e && !get_mark_bit((int *)q))
 				q += 4;
-			cl_dealloc(p);
+			ecl_dealloc(p);
 			p = q + 4;
 		}
 		i = j + 1;

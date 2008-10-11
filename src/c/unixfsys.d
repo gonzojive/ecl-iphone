@@ -325,7 +325,7 @@ ecl_backup_fopen(const char *filename, const char *option)
 			     make_constant_base_string(filename), make_simple_base_string(backupfilename));
 	}
 	ecl_enable_interrupts();
-	cl_dealloc(backupfilename);
+	ecl_dealloc(backupfilename);
 	return fopen(filename, option);
 }
 

@@ -210,7 +210,7 @@ ecl_alloc_atomic(cl_index n)
 }
 
 void
-cl_dealloc(void *ptr)
+ecl_dealloc(void *ptr)
 {
 	ecl_disable_interrupts();
 	GC_FREE(ptr);

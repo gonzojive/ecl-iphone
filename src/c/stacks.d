@@ -195,7 +195,7 @@ bds_set_size(cl_env_ptr env, cl_index size)
 		env->bds_size = size;
 		ecl_enable_interrupts_env(env);
 
-		cl_dealloc(old_org);
+		ecl_dealloc(old_org);
 	}
 }
 
@@ -375,7 +375,7 @@ frs_set_size(cl_env_ptr env, cl_index size)
 		env->frs_size = size;
 		ecl_enable_interrupts_env(env);
 
-		cl_dealloc(old_org);
+		ecl_dealloc(old_org);
 	}
 }
 

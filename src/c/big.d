@@ -278,7 +278,7 @@ mp_free(void *ptr, size_t size)
 	char *x = ptr;
 	if (x < (char *)(cl_env.big_register_limbs) ||
 	    x > (char *)(cl_env.big_register_limbs+2))
-		cl_dealloc(x);
+		ecl_dealloc(x);
 }
 
 void init_big_registers(cl_env_ptr env)
