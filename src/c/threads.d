@@ -57,8 +57,8 @@ static pthread_t main_thread;
 
 extern void ecl_init_env(struct cl_env_struct *env);
 
-#ifndef WITH___THREAD
-struct cl_env_struct *
+#if !defined(WITH___THREAD)
+cl_env_ptr
 ecl_process_env(void)
 {
 #ifdef ECL_WINDOWS_THREADS
@@ -72,6 +72,21 @@ ecl_process_env(void)
 #endif
 }
 #endif
+
+static void
+ecl_set_process_env(cl_env_ptr env)
+{
+#ifdef WITH__THREAD
+	cl_env_p = env;
+#else
+# ifdef ECL_WINDOWS_THREADS
+	TlsSetValue(cl_env_key, env);
+# else
+	if (pthread_setspecific(cl_env_key, env))
+		FElibc_error("pthread_setcspecific() failed.", 0);
+# endif
+#endif
+}
 
 cl_object
 mp_current_process(void)
@@ -118,16 +133,7 @@ thread_entry_point(cl_object process)
 	pthread_cleanup_push(thread_cleanup, (void *)env);
 	ecl_init_env(env);
 	init_big_registers(env);
-#ifdef WITH___THREAD
-	cl_env_p = env;
-#else
-# ifdef ECL_WINDOWS_THREADS
-	TlsSetValue(cl_env_key, env);
-# else
-	if (pthread_setspecific(cl_env_key, env))
-		FElibc_error("pthread_setcspecific() failed.", 0);
-# endif
-#endif
+	ecl_set_process_env(env);
 
 	/* 2) Execute the code. The CATCH_ALL point is the destination
 	*     provides us with an elegant way to exit the thread: we just
@@ -192,17 +198,8 @@ ecl_import_current_thread(cl_object name, cl_object bindings)
 	initialize_process_bindings(process, bindings);
 	ecl_init_env(env);
 	init_big_registers(env);
+	ecl_set_process_env(env);
 	ecl_enable_interrupts_env(env);
-#ifdef WITH___THREAD
-	cl_env_p = env;
-#else
-# ifdef ECL_WINDOWS_THREADS
-	TlsSetValue(cl_env_key, env);
-# else
-	if (pthread_setspecific(cl_env_key, env))
-		FElibc_error("pthread_setcspecific() failed.", 0);
-# endif
-#endif
 }
 
 void
@@ -653,18 +650,15 @@ init_threads(cl_env_ptr env)
 	process->process.thread = pthread_self();
 	process->process.env = env;
 
-#ifdef WITH___THREAD
-	cl_env_p = env;
-#else
-# ifdef ECL_WINDOWS_THREADS
+	env->own_process = process;
+#if !defined(WITH__THREADS)
+# if defined(ECL_WINDOWS_THREADS)
 	cl_env_key = TlsAlloc();
-	TlsSetValue(cl_env_key, env);
 # else
 	pthread_key_create(&cl_env_key, NULL);
-	pthread_setspecific(cl_env_key, env);
 # endif
 #endif
-	env->own_process = process;
+	ecl_set_process_env(env);
 
 	cl_core.processes = ecl_list1(process);
 
