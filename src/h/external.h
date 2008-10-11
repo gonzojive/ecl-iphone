@@ -1541,7 +1541,6 @@ extern ECL_API cl_object cl_user_homedir_pathname _ARGS((cl_narg narg, ...));
 extern ECL_API cl_object si_mkstemp(cl_object templ);
 extern ECL_API cl_object si_rmdir(cl_object directory);
 
-extern ECL_API const char *ecl_expand_pathname(const char *name);
 extern ECL_API cl_object ecl_cstring_to_pathname(char *s);
 extern ECL_API void *ecl_backup_fopen(const char *filename, const char *option);
 extern ECL_API cl_object ecl_file_len(void *fp);

@@ -50,6 +50,38 @@
 #endif
 #include <errno.h>
 
+static int
+safe_chdir(const char *path)
+{
+	int output;
+	ecl_disable_interrupts();
+	output = chdir(path);
+	ecl_enable_interrupts();
+	return output;
+}
+
+static int
+safe_stat(const char *path, struct stat *sb)
+{
+	int output;
+	ecl_disable_interrupts();
+	output = stat(path, sb);
+	ecl_enable_interrupts();
+	return output;
+}
+
+#ifdef HAVE_LSTAT
+static int
+safe_lstat(const char *path, struct stat *sb)
+{
+	int output;
+	ecl_disable_interrupts();
+	output = lstat(path, sb);
+	ecl_enable_interrupts();
+	return output;
+}
+#endif
+
 #if defined(_MSC_VER) || defined(mingw32)
 static void
 change_drive(cl_object pathname)
@@ -57,7 +89,7 @@ change_drive(cl_object pathname)
 	if (pathname->pathname.device != Cnil) {
 		char device[3] = {'\0', ':', '\0'};
 		device[0] = pathname->pathname.device->base_string.self[0];
-		if (chdir(device) < 0) {
+		if (safe_chdir(device) < 0) {
 			FElibc_error("Can't change the current drive to ~S",
 				     1, pathname->pathname.device);
 		}
@@ -91,16 +123,18 @@ current_dir(void) {
 	cl_index size = 128;
 
 	do {
-	  output = cl_alloc_adjustable_base_string(size);
-	  ok = getcwd(output->base_string.self, size);
-	  size += 256;
+		output = cl_alloc_adjustable_base_string(size);
+		ecl_disable_interrupts();
+		ok = getcwd(output->base_string.self, size);
+		ecl_enable_interrupts();
+		size += 256;
 	} while(ok == NULL);
 	size = strlen(output->base_string.self);
 	if ((size + 1 /* / */ + 1 /* 0 */) >= output->base_string.dim) {
-	  /* Too large to host the trailing '/' */
-	  cl_object other = cl_alloc_adjustable_base_string(size+2);
-	  strcpy(other->base_string.self, output->base_string.self);
-	  output = other;
+		/* Too large to host the trailing '/' */
+		cl_object other = cl_alloc_adjustable_base_string(size+2);
+		strcpy(other->base_string.self, output->base_string.self);
+		output = other;
 	}
 #ifdef _MSC_VER
 	for (c=output->base_string.self; *c; c++)
@@ -121,32 +155,38 @@ current_dir(void) {
 
 static cl_object
 file_kind(char *filename, bool follow_links) {
+	cl_object output;
 #if defined(_MSC_VER) || defined(mingw32)
-	DWORD dw = GetFileAttributes( filename );
+	DWORD dw;
+	ecl_disable_interrupts();
+	dw = GetFileAttributes( filename );
 	if (dw == -1)
-		return Cnil;
+		output = Cnil;
 	else if ( dw & FILE_ATTRIBUTE_DIRECTORY )
-		return @':directory';
+		output = @':directory';
 	else
-		return @':file';
+		output = @':file';
+	ecl_enable_interrupts();
 #else
 	struct stat buf;
-#ifdef HAVE_LSTAT
-	if ((follow_links? stat : lstat)(filename, &buf) < 0)
-#else
-	if (stat(filename, &buf) < 0)
+# ifdef HAVE_LSTAT
+	if ((follow_links? safe_stat : safe_lstat)(filename, &buf) < 0)
+# else
+	if (safe_stat(filename, &buf) < 0)
+# endif
+		output = Cnil;
+# ifdef HAVE_LSTAT
+	else if (S_ISLNK(buf.st_mode))
+		output = @':link';
+# endif
+	else if (S_ISDIR(buf.st_mode))
+		output = @':directory';
+	else if (S_ISREG(buf.st_mode))
+		output = @':file';
+	else
+		output = @':special';
 #endif
-		return Cnil;
-#ifdef HAVE_LSTAT
-	if (S_ISLNK(buf.st_mode))
-		return @':link';
-#endif
-	if (S_ISDIR(buf.st_mode))
-		return @':directory';
-	if (S_ISREG(buf.st_mode))
-		return @':file';
-	return @':special';
-#endif
+	return output;
 }
 
 cl_object
@@ -164,7 +204,10 @@ si_readlink(cl_object filename) {
 	cl_object output, kind;
 	do {
 		output = cl_alloc_adjustable_base_string(size);
-		written = readlink(filename->base_string.self, output->base_string.self, size);
+		ecl_disable_interrupts();
+		written = readlink(filename->base_string.self,
+				   output->base_string.self, size);
+		ecl_enable_interrupts();
 		size += 256;
 	} while(written == size);
 	output->base_string.self[written] = '\0';
@@ -227,17 +270,17 @@ cl_truename(cl_object orig_pathname)
 		{
 			cl_object part = CAR(dir);
 			if (type_of(part) == t_base_string) {
-				if (chdir(part->base_string.self) < 0) {
+				if (safe_chdir(part->base_string.self) < 0) {
 ERROR:					FElibc_error("Can't change the current directory to ~S",
 						     1, pathname);
 				}
 			} else if (part == @':absolute') {
-				if (chdir("/") < 0)
+				if (safe_chdir("/") < 0)
 					goto ERROR;
 			} else if (part == @':relative') {
 				/* Nothing to do */
 			} else if (part == @':up') {
-				if (chdir("..") < 0)
+				if (safe_chdir("..") < 0)
 					goto ERROR;
 			} else {
 				FEerror("~S is not allowed in TRUENAME", 1, part);
@@ -253,7 +296,7 @@ ERROR:					FElibc_error("Can't change the current directory to ~S",
 #endif
 		pathname = ecl_merge_pathnames(si_getcwd(0), pathname, @':newest');
 	} CL_UNWIND_PROTECT_EXIT {
-		chdir(previous->base_string.self);
+		safe_chdir(previous->base_string.self);
 	} CL_UNWIND_PROTECT_END;
 
 	@(return pathname)
@@ -268,14 +311,20 @@ ecl_backup_fopen(const char *filename, const char *option)
 	}
 
 	strcat(strcpy(backupfilename, filename), ".BAK");
+	ecl_disable_interrupts();
 #ifdef _MSC_VER
 	/* MSVC rename doesn't remove an existing file */
-	if (access(backupfilename, F_OK) == 0 && unlink(backupfilename))
+	if (access(backupfilename, F_OK) == 0 && unlink(backupfilename)) {
+		ecl_enable_interrupts();
 		FElibc_error("Cannot remove the file ~S", 1, make_simple_base_string(backupfilename));
+	}
 #endif
-	if (rename(filename, backupfilename))
+	if (rename(filename, backupfilename)) {
+		ecl_enable_interrupts();
 		FElibc_error("Cannot rename the file ~S to ~S.", 2,
 			     make_constant_base_string(filename), make_simple_base_string(backupfilename));
+	}
+	ecl_enable_interrupts();
 	cl_dealloc(backupfilename);
 	return fopen(filename, option);
 }
@@ -284,8 +333,9 @@ cl_object
 ecl_file_len(void *fp)
 {
 	struct stat filestatus;
-
+	ecl_disable_interrupts();
 	fstat(fileno((FILE*)fp), &filestatus);
+	ecl_enable_interrupts();
 	return ecl_make_integer(filestatus.st_size);
 }
 
@@ -305,6 +355,7 @@ ecl_file_len(void *fp)
 	newn = ecl_merge_pathnames(newn, oldn, @':newest');
 	new_filename = si_coerce_to_filename(newn);
 
+	ecl_disable_interrupts();
 	while (if_exists == @':error' || if_exists == Cnil) {
 #if defined(_MSC_VER) || defined(mingw32)
 		error = SetErrorMode(0);
@@ -331,14 +382,17 @@ ecl_file_len(void *fp)
 #endif
 		/* if the file already exists */
 		if (if_exists != Cnil) {
+			ecl_enable_interrupts();
 			if_exists = CEerror(@':supersede',
 					"When trying to rename ~S, ~S already exists", 2,
 					oldn, new_filename);
+			ecl_disable_interrupts();
 			if (if_exists == Ct) if_exists= @':error';
 		}
 
 		if (if_exists == Cnil) {
-			@(return Cnil)
+			ecl_enable_interrupts();
+			@(return Cnil Cnil Cnil)
 		}
 	}
 	
@@ -384,22 +438,30 @@ ecl_file_len(void *fp)
 #endif
 	} else {
 		/* invalid key */
+		ecl_enable_interrupts();
 		FEerror("~S is an illegal IF-EXISTS option for RENAME-FILE.", 1, if_exists);
 	}
 FAILURE_CLOBBER:
+	ecl_enable_interrupts();
 	FElibc_error("Cannot rename the file ~S to ~S.", 2, oldn, newn);
 
-SUCCESS:new_truename = cl_truename(newn);
+SUCCESS:
+	ecl_enable_interrupts();
+	new_truename = cl_truename(newn);
 	@(return newn old_truename new_truename)
 @)
 
 cl_object
 cl_delete_file(cl_object file)
 {
-	cl_object filename;
+	cl_object filename = si_coerce_to_filename(file);
+	int ok;
 
-	filename = si_coerce_to_filename(file);
-	if (unlink(filename->base_string.self) < 0)
+	ecl_disable_interrupts();
+	ok = unlink(filename->base_string.self);
+	ecl_enable_interrupts();
+
+	if (ok < 0)
 		FElibc_error("Cannot delete the file ~S.", 1, file);
 	@(return Ct)
 }
@@ -414,11 +476,9 @@ cl_probe_file(cl_object file)
 cl_object
 cl_file_write_date(cl_object file)
 {
-	cl_object filename, time;
+	cl_object time, filename = si_coerce_to_filename(file);
 	struct stat filestatus;
-
-	filename = si_coerce_to_filename(file);
-	if (stat(filename->base_string.self, &filestatus) < 0)
+	if (safe_stat(filename->base_string.self, &filestatus) < 0)
 	  time = Cnil;
 	else
 	  time = UTC_time_to_universal_time(filestatus.st_mtime);
@@ -428,54 +488,22 @@ cl_file_write_date(cl_object file)
 cl_object
 cl_file_author(cl_object file)
 {
-	cl_object filename = si_coerce_to_filename(file);
+	cl_object output, filename = si_coerce_to_filename(file);
+	struct stat filestatus;
+	if (safe_stat(filename->base_string.self, &filestatus) < 0)
+		FElibc_error("Cannot get the file status of ~S.", 1, file);
 #ifdef HAVE_PWD_H
-	struct stat filestatus;
-	struct passwd *pwent;
-
-	if (stat(filename->base_string.self, &filestatus) < 0)
-		FElibc_error("Cannot get the file status of ~S.", 1, file);
-	pwent = getpwuid(filestatus.st_uid);
-	@(return make_base_string_copy(pwent->pw_name))
+	{
+		struct passwd *pwent;
+		ecl_disable_interrupts();
+		pwent = getpwuid(filestatus.st_uid);
+		ecl_enable_interrupts();
+		output = make_base_string_copy(pwent->pw_name);
+	}
 #else
-	struct stat filestatus;
-	if (stat(filename->base_string.self, &filestatus) < 0)
-		FElibc_error("Cannot get the file status of ~S.", 1, file);
-	@(return make_constant_base_string("UNKNOWN"))
+	output = make_constant_base_string("UNKNOWN");
 #endif
-}
-
-const char *
-ecl_expand_pathname(const char *name)
-{
-  const char *path, *p;
-  static char pathname[255], *pn;
-
-  if (IS_DIR_SEPARATOR(name[0])) return(name);
-  if ((path = getenv("PATH")) == NULL) ecl_internal_error("No PATH in environment");
-  p = path;
-  pn = pathname;
-  do {
-    if ((*p == '\0') || (*p == PATH_SEPARATOR)) {
-      if (pn != pathname) *pn++ = DIR_SEPARATOR; /* on SYSV . is empty */
-LAST: strcpy(pn, name);
-#ifdef _MSC_VER
-      if (GetFileAttributes(pathname) & FILE_ATTRIBUTE_DIRECTORY)
-        return ( pathname );
-#else
-      if (access(pathname, X_OK) == 0)
-	return (pathname);
-#endif
-      pn = pathname;
-      if (p[0] == PATH_SEPARATOR && p[1] == '\0') { /* last entry is empty */
-	p++;
-	goto LAST;
-      }
-    }
-    else
-      *pn++ = *p;
-  } while (*p++ != '\0');
-  return(name);			/* should never occur */
+	@(return output)
 }
 
 cl_object
@@ -596,14 +624,16 @@ list_current_directory(const char *mask, bool only_dir)
 {
 	cl_object out = Cnil;
 	char *text;
-
 #if defined(HAVE_DIRENT_H)
 	DIR *dir;
 	struct dirent *entry;
 
+	ecl_disable_interrupts();
 	dir = opendir("./");
-	if (dir == NULL)
-		return Cnil;
+	if (dir == NULL) {
+		out = Cnil;
+		goto OUTPUT;
+	}
 
 	while ((entry = readdir(dir))) {
 		text = entry->d_name;
@@ -613,30 +643,32 @@ list_current_directory(const char *mask, bool only_dir)
 	HANDLE hFind = NULL;
 	BOOL found = FALSE;
 
+	ecl_disable_interrupts();
 	for (;;) {
-		if (hFind == NULL)
-		{
+		if (hFind == NULL) {
 			hFind = FindFirstFile(".\\*", &fd);
-			if (hFind == INVALID_HANDLE_VALUE)
-				return Cnil;
+			if (hFind == INVALID_HANDLE_VALUE) {
+				out = Cnil;
+				goto OUTPUT;
+			}
 			found = TRUE;
-		}
-		else
+		} else {
 			found = FindNextFile(hFind, &fd);
-
+		}
 		if (!found)
 			break;
 		text = fd.cFileName;
-
 # else /* sys/dir.h as in SYSV */
 	FILE *fp;
 	char iobuffer[BUFSIZ];
 	DIRECTORY dir;
 
+	ecl_disable_interrupts();
 	fp = fopen("./", OPEN_R);
-	if (fp == NULL)
-		return Cnil;
-
+	if (fp == NULL) {
+		out = Cnil;
+		goto OUTPUT;
+	}
 	setbuf(fp, iobuffer);
 	for (;;) {
 		if (fread(&dir, sizeof(DIRECTORY), 1, fp) <= 0)
@@ -665,6 +697,8 @@ list_current_directory(const char *mask, bool only_dir)
 	fclose(fp);
 # endif /* !_MSC_VER */
 #endif /* !HAVE_DIRENT_H */
+	ecl_enable_interrupts();
+OUTPUT:
 	return cl_nreverse(out);
 }
 
@@ -757,21 +791,21 @@ dir_recursive(cl_object pathname, cl_object directory)
 		loop_for_in(next_dir) {
 			char *text = CAR(next_dir)->base_string.self;
 			/* We are unable to move into this directory! */
-			if (chdir(text) < 0)
+			if (safe_chdir(text) < 0)
 				continue;
 			item = dir_recursive(pathname, CDR(directory));
 			output = ecl_nconc(item, output);
-			chdir(prev_dir->base_string.self);
+			safe_chdir(prev_dir->base_string.self);
 		} end_loop_for_in;
 	} else if (item == @':absolute') {
 		/*
 		 * 2.2) If CAR(DIRECTORY) is :ABSOLUTE, we have to scan the
 		 * root directory.
 		 */
-		if (chdir("/") < 0)
+		if (safe_chdir("/") < 0)
 			return Cnil;
 		output = dir_recursive(pathname, CDR(directory));
-		chdir(prev_dir->base_string.self);
+		safe_chdir(prev_dir->base_string.self);
 	} else if (item == @':relative') {
 		/*
 		 * 2.3) If CAR(DIRECTORY) is :RELATIVE, we have to scan the
@@ -783,10 +817,10 @@ dir_recursive(cl_object pathname, cl_object directory)
 		 * 2.4) If CAR(DIRECTORY) is :UP, we have to scan the directory
 		 * which contains this one.
 		 */
-		if (chdir("..") < 0)
+		if (safe_chdir("..") < 0)
 			return Cnil;
 		output = dir_recursive(pathname, CDR(directory));
-		chdir(prev_dir->base_string.self);
+		safe_chdir(prev_dir->base_string.self);
 	} else if (item == @':wild-inferiors') {
 		/*
 		 * 2.5) If CAR(DIRECTORY) is :WILD-INFERIORS, we have to do
@@ -796,11 +830,11 @@ dir_recursive(cl_object pathname, cl_object directory)
 		next_dir = list_current_directory("*", TRUE);
 		loop_for_in(next_dir) {
 			char *text = CAR(next_dir)->base_string.self;
-			if (chdir(text) < 0)
+			if (safe_chdir(text) < 0)
 				continue;
 			item = dir_recursive(pathname, directory);
 			output = ecl_nconc(item, output);
-			chdir(prev_dir->base_string.self);
+			safe_chdir(prev_dir->base_string.self);
 		} end_loop_for_in;
 		output = ecl_nconc(output, dir_recursive(pathname, CDR(directory)));
 	}
@@ -818,7 +852,7 @@ dir_recursive(cl_object pathname, cl_object directory)
 		output = dir_recursive(mask, mask->pathname.directory);
 	} CL_UNWIND_PROTECT_EXIT {
 		if (prev_dir != Cnil)
-			chdir(prev_dir->base_string.self);
+			safe_chdir(prev_dir->base_string.self);
 	} CL_UNWIND_PROTECT_END;
 	@(return output)
 @)
@@ -838,10 +872,16 @@ si_get_library_pathname(void)
 {
 	cl_object s = cl_alloc_adjustable_base_string(cl_core.path_max);
 	char *buffer = (char*)s->base_string.self;
-	HMODULE hnd = GetModuleHandle( "ecl.dll" );
+	HMODULE hnd;
 	cl_index len, ep;
-	if ((len = GetModuleFileName(hnd, buffer, cl_core.path_max-1)) == 0)
-		FEerror("GetModuleFileName failed (last error = ~S)", 1, MAKE_FIXNUM(GetLastError()));
+	ecl_disable_interrupts();
+	hnd = GetModuleHandle("ecl.dll");
+	len = GetModuleFileName(hnd, buffer, cl_core.path_max-1);
+	ecl_enable_interrupts();
+	if (len == 0) {
+		FEerror("GetModuleFileName failed (last error = ~S)",
+			1, MAKE_FIXNUM(GetLastError()));
+	}
 	s->base_string.fillp = len;
 	return ecl_parse_namestring(s, 0, len, &ep, Cnil);
 }
@@ -857,7 +897,7 @@ si_get_library_pathname(void)
 	    directory->pathname.type != Cnil)
 		FEerror("~A is not a directory pathname.", 1, directory);
 	namestring = cl_namestring(directory);
-	if (chdir(namestring->base_string.self) <0)
+	if (safe_chdir(namestring->base_string.self) <0)
 		FElibc_error("Can't change the current directory to ~A",
 			     1, namestring);
 	if (change_d_p_d != Cnil)
@@ -868,18 +908,22 @@ si_get_library_pathname(void)
 cl_object
 si_mkdir(cl_object directory, cl_object mode)
 {
-	cl_object filename;
-	cl_index modeint;
+	cl_object filename = si_coerce_to_filename(directory);
+	cl_index modeint = ecl_fixnum_in_range(@'si::mkdir',"mode",mode,0,0777);
+	int ok;
 
-	filename = si_coerce_to_filename(directory);
-	modeint = ecl_fixnum_in_range(@'si::mkdir',"mode",mode,0,0777);
 	if (filename->base_string.fillp)
 	    filename->base_string.self[--filename->base_string.fillp] = 0;
+
+	ecl_disable_interrupts();
 #ifdef mingw32
-	if (mkdir(filename->base_string.self) < 0)
+	ok = mkdir(filename->base_string.self);
 #else
-	if (mkdir(filename->base_string.self, modeint) < 0)
+	ok = mkdir(filename->base_string.self, modeint);
 #endif
+	ecl_enable_interrupts();
+
+	if (ok < 0)
 		FElibc_error("Could not create directory ~S", 1, filename);
 	@(return filename)
 }
@@ -892,67 +936,74 @@ si_mkstemp(cl_object template)
 	int fd;
 
 #if defined(mingw32) || defined(_MSC_VER)
-
 	cl_object phys, dir, file;
 	char strTempDir[MAX_PATH];
 	char strTempFileName[MAX_PATH];
-	char * s;
-	
+	char *s;
+	int ok;
+
 	phys = cl_translate_logical_pathname(1, template);
-	
 	dir = cl_make_pathname(8,
 	                       @':type', Cnil,
 	                       @':name', Cnil,
 	                       @':version', Cnil,
 	                       @':defaults', phys);
-
 	dir = cl_namestring(dir);
 	file = cl_file_namestring(phys);
 	
 	l = dir->base_string.fillp;
-	
 	memcpy(strTempDir, dir->base_string.self, l);
 	strTempDir[l] = 0;
 	for (s = strTempDir; *s; s++)
 		if (*s == '/')
 			*s = '\\';
 
-	if (!GetTempFileName(strTempDir, file->base_string.self, 0, strTempFileName))
-	{
-		@(return Cnil)
+	ecl_disable_interrupts();
+	ok = GetTempFileName(strTempDir, file->base_string.self, 0, strTempFileName);
+	ecl_enable_interrupts();
+	if (!ok) {
+		output = Cnil;
+	} else {
+		l = strlen(strTempFileName);
+		output = cl_alloc_simple_base_string(l);
+		memcpy(output->base_string.self, strTempFileName, l);
 	}
-	
-	l = strlen(strTempFileName);
-	output = cl_alloc_simple_base_string(l);
-	memcpy(output->base_string.self, strTempFileName, l);
-
 #else
-
 	template = si_coerce_to_filename(template);
 	l = template->base_string.fillp;
 	output = cl_alloc_simple_base_string(l + 6);
 	memcpy(output->base_string.self, template->base_string.self, l);
 	memcpy(output->base_string.self + l, "XXXXXX", 6);
-#ifdef HAVE_MKSTEMP
+
+	ecl_disable_interrupts();
+# ifdef HAVE_MKSTEMP
 	fd = mkstemp(output->base_string.self);
-#else
+# else
 	fd = mktemp(output->base_string.self);
 	fd = open(fd, O_CREAT|O_TRUNC, 0666);
-#endif
-	if (fd < 0)
-		@(return Cnil)
-	close(fd);
+# endif
+	ecl_enable_interrupts();
 
+	if (fd < 0) {
+		output = Cnil;
+	} else {
+		close(fd);
+	}
 #endif
-
-	@(return cl_truename(output))
+	@(return (Null(output)? output : cl_truename(output)))
 }
 
 cl_object
 si_rmdir(cl_object directory)
 {
+	int code;
 	directory = si_coerce_to_filename(directory);
-        if ( rmdir(directory->base_string.self) != 0 )
+
+	ecl_disable_interrupts();
+	code = rmdir(directory->base_string.self);
+	ecl_enable_interrupts();
+
+        if (code != 0)
              FElibc_error("Can't remove directory ~A.", 1, directory);
         @(return Cnil)
 }

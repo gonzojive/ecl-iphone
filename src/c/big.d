@@ -281,18 +281,18 @@ mp_free(void *ptr, size_t size)
 		cl_dealloc(x);
 }
 
-void init_big_registers(void)
+void init_big_registers(cl_env_ptr env)
 {
 	int i;
 	for (i = 0; i < 3; i++) {
-		cl_env.big_register[i] = ecl_alloc_object(t_bignum);
-		big_register_free(cl_env.big_register[i]);
+		env->big_register[i] = ecl_alloc_object(t_bignum);
+		big_register_free(env->big_register[i]);
 	}
 }
 
 void
-init_big(void)
+init_big(cl_env_ptr env)
 {
-	init_big_registers();
+	init_big_registers(env);
 	mp_set_memory_functions(mp_alloc, mp_realloc, mp_free);
 }

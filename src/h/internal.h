@@ -25,8 +25,8 @@ extern "C" {
 extern void init_all_symbols(void);
 extern void init_alloc(void);
 extern void init_backq(void);
-extern void init_big(void);
-extern void init_big_registers(void);
+extern void init_big(cl_env_ptr);
+extern void init_big_registers(cl_env_ptr);
 #ifdef CLOS
 extern void init_clos(void);
 #endif

@@ -1489,7 +1489,6 @@ cl_symbols[] = {
 {MP_ "+LOAD-COMPILE-LOCK+",NULL},
 {MP_ "WITH-LOCK",NULL},
 {MP_ "WITHOUT-INTERRUPTS",NULL},
-{MP_ "CHECK-PENDING-INTERRUPTS","si_check_pending_interrupts"},
 #endif
 
 {SYS_ "WHILE",NULL},

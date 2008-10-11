@@ -204,13 +204,14 @@ _ecl_alloc_env()
 {
 	cl_env_ptr output;
 #if defined(ECL_USE_MPROTECT)
-	output = mmap(0, sizeof(*cl_env_p), PROT_READ | PROT_WRITE,
+	output = mmap(0, sizeof(*output), PROT_READ | PROT_WRITE,
 			MAP_ANON | MAP_PRIVATE, 0, 0);
 	if (output < 0)
 		ecl_internal_error("Unable to allocate environment structure.");
 #else
-	output = ecl_alloc(sizeof(*cl_env_p));
+	output = ecl_alloc(sizeof(*output));
 #endif
+	output->disable_interrupts = 1;
 	return output;
 }
 
@@ -271,10 +272,6 @@ cl_boot(int argc, char **argv)
 	cl_env_p = _ecl_alloc_env();
 #ifdef ECL_THREADS
 	init_threads(cl_env_p);
-#endif
-
-#if !defined(MSDOS) && !defined(cygwin)
-	ecl_self = ecl_expand_pathname(ecl_self);
 #endif
 
 	/*

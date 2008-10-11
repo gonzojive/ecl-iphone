@@ -5,7 +5,7 @@ top_srcdir = ..\..\src
 srcdir	= ..\..\src\c
 
 !if "$(ECL_THREADS)" != ""
-THREADS_OBJ= threads_win32.obj
+THREADS_OBJ= threads.obj
 THREADS_FLAGS= -DECL_THREADS
 !else
 THREADS_OBJ=

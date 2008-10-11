@@ -522,25 +522,14 @@ ecl_mark_env(struct cl_env_struct *env)
 		GC_set_mark_bit((void *)env->bds_org);
 	}
 #endif
-#if 0
-	GC_push_all(&(env->lex_env), &(env->lex_env)+1);
-	GC_push_all(&(env->string_pool), &(env->print_base));
-#if !defined(ECL_CMU_FORMAT)
-	GC_push_all(&(env->queue), &(env->qh));
-#endif
-	GC_push_all(env->big_register, env->big_register + 3);
-	if (env->nvalues)
-		GC_push_all(env->values, env->values + env->nvalues + 1);
-#else
 	/*memset(env->values[env->nvalues], 0, (64-env->nvalues)*sizeof(cl_object));*/
-#ifdef ECL_THREADS
+#if defined(ECL_THREADS) && !defined(ECL_USE_MPROTECT)
 	/* When using threads, "env" is a pointer to memory allocated by ECL. */
 	GC_push_conditional((void *)env, (void *)(env + 1), 1);
 	GC_set_mark_bit((void *)env);
 #else
-	/* When not using threads, "env" is a statically allocated structure. */
+	/* When not using threads, "env" is mmaped or statically allocated. */
 	GC_push_all((void *)env, (void *)(env + 1));
-#endif
 #endif
 }
 
