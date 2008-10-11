@@ -73,59 +73,60 @@ static void flush_queue(bool force, cl_object stream);
 static void
 writec_queue(int c, cl_object stream)
 {
-	if (cl_env.qc >= ECL_PPRINT_QUEUE_SIZE)
+	const cl_env_ptr env = ecl_process_env();
+	if (env->qc >= ECL_PPRINT_QUEUE_SIZE)
 		flush_queue(FALSE, stream);
-	if (cl_env.qc >= ECL_PPRINT_QUEUE_SIZE)
+	if (env->qc >= ECL_PPRINT_QUEUE_SIZE)
 		FEerror("Can't pretty-print.", 0);
-	cl_env.queue[cl_env.qt] = c;
-	cl_env.qt = mod(cl_env.qt+1);
-	cl_env.qc++;
+	env->queue[env->qt] = c;
+	env->qt = mod(env->qt+1);
+	env->qc++;
 }
 
 static void
 flush_queue(bool force, cl_object stream)
 {
+	const cl_env_ptr env = ecl_process_env();
 	int c, i, j, k, l, i0;
-
 BEGIN:
-	while (cl_env.qc > 0) {
-		c = cl_env.queue[cl_env.qh];
+	while (env->qc > 0) {
+		c = env->queue[env->qh];
 		if (c < 0400) {
 			ecl_write_char(c, stream);
 		} else if (c == MARK)
 			goto DO_MARK;
 		else if (c == UNMARK)
-			cl_env.isp -= 2;
+			env->isp -= 2;
 		else if (c == SET_INDENT)
-			cl_env.indent_stack[cl_env.isp] = ecl_file_column(stream);
+			env->indent_stack[env->isp] = ecl_file_column(stream);
 		else if (c == INDENT) {
 			goto DO_INDENT;
 		} else if (c == INDENT1) {
-			i = ecl_file_column(stream)-cl_env.indent_stack[cl_env.isp];
-			if (i < 8 && cl_env.indent_stack[cl_env.isp] < LINE_LENGTH/2) {
+			i = ecl_file_column(stream)-env->indent_stack[env->isp];
+			if (i < 8 && env->indent_stack[env->isp] < LINE_LENGTH/2) {
 				ecl_write_char(' ', stream);
-				cl_env.indent_stack[cl_env.isp]
+				env->indent_stack[env->isp]
 				= ecl_file_column(stream);
 			} else {
-				if (cl_env.indent_stack[cl_env.isp] < LINE_LENGTH/2) {
-					cl_env.indent_stack[cl_env.isp]
-					= cl_env.indent_stack[cl_env.isp-1] + 4;
+				if (env->indent_stack[env->isp] < LINE_LENGTH/2) {
+					env->indent_stack[env->isp]
+					= env->indent_stack[env->isp-1] + 4;
 				}
 				goto DO_INDENT;
 			}
 		} else if (c == INDENT2) {
-			cl_env.indent_stack[cl_env.isp] = cl_env.indent_stack[cl_env.isp-1] + 2;
+			env->indent_stack[env->isp] = env->indent_stack[env->isp-1] + 2;
 			goto PUT_INDENT;
 		}
-		cl_env.qh = mod(cl_env.qh+1);
-		--cl_env.qc;
+		env->qh = mod(env->qh+1);
+		--env->qc;
 	}
 	return;
 
 DO_MARK:
 	k = LINE_LENGTH - 1 - ecl_file_column(stream);
-	for (i = 1, j = 0, l = 1;  l > 0 && i < cl_env.qc && j < k;  i++) {
-		c = cl_env.queue[mod(cl_env.qh + i)];
+	for (i = 1, j = 0, l = 1;  l > 0 && i < env->qc && j < k;  i++) {
+		c = env->queue[mod(env->qh + i)];
 		if (c == MARK)
 			l++;
 		else if (c == UNMARK)
@@ -137,23 +138,23 @@ DO_MARK:
 	}
 	if (l == 0)
 		goto FLUSH;
-	if (i == cl_env.qc && !force)
+	if (i == env->qc && !force)
 		return;
-	cl_env.qh = mod(cl_env.qh+1);
-	--cl_env.qc;
-	if (cl_env.isp >= ECL_PPRINT_INDENTATION_STACK_SIZE-2)
+	env->qh = mod(env->qh+1);
+	--env->qc;
+	if (env->isp >= ECL_PPRINT_INDENTATION_STACK_SIZE-2)
 		FEerror("Can't pretty-print.", 0);
-	cl_env.isp+=2;
-	cl_env.indent_stack[cl_env.isp-1] = ecl_file_column(stream);
-	cl_env.indent_stack[cl_env.isp] = cl_env.indent_stack[cl_env.isp-1];
+	env->isp+=2;
+	env->indent_stack[env->isp-1] = ecl_file_column(stream);
+	env->indent_stack[env->isp] = env->indent_stack[env->isp-1];
 	goto BEGIN;
 
 DO_INDENT:
-	if (cl_env.iisp > cl_env.isp)
+	if (env->iisp > env->isp)
 		goto PUT_INDENT;
 	k = LINE_LENGTH - 1 - ecl_file_column(stream);
-	for (i0 = 0, i = 1, j = 0, l = 1;  i < cl_env.qc && j < k;  i++) {
-		c = cl_env.queue[mod(cl_env.qh + i)];
+	for (i0 = 0, i = 1, j = 0, l = 1;  i < env->qc && j < k;  i++) {
+		c = env->queue[mod(env->qh + i)];
 		if (c == MARK)
 			l++;
 		else if (c == UNMARK) {
@@ -179,7 +180,7 @@ DO_INDENT:
 		} else if (c < 0400)
 			j++;
 	}
-	if (i == cl_env.qc && !force)
+	if (i == env->qc && !force)
 		return;
 	if (i0 == 0)
 		goto PUT_INDENT;
@@ -187,23 +188,23 @@ DO_INDENT:
 	goto FLUSH;
 
 PUT_INDENT:
-	cl_env.qh = mod(cl_env.qh+1);
-	--cl_env.qc;
+	env->qh = mod(env->qh+1);
+	--env->qc;
 	ecl_write_char('\n', stream);
-	for (i = cl_env.indent_stack[cl_env.isp];  i > 0;  --i)
+	for (i = env->indent_stack[env->isp];  i > 0;  --i)
 		ecl_write_char(' ', stream);
-	cl_env.iisp = cl_env.isp;
+	env->iisp = env->isp;
 	goto BEGIN;
 
 FLUSH:
 	for (j = 0;  j < i;  j++) {
-		c = cl_env.queue[cl_env.qh];
+		c = env->queue[env->qh];
 		if (c == INDENT || c == INDENT1 || c == INDENT2)
 			ecl_write_char(' ', stream);
 		else if (c < 0400)
 			ecl_write_char(c, stream);
-		cl_env.qh = mod(cl_env.qh+1);
-		--cl_env.qc;
+		env->qh = mod(env->qh+1);
+		--env->qc;
 	}
 	goto BEGIN;
 }
@@ -211,7 +212,8 @@ FLUSH:
 static void
 write_ch(int c, cl_object stream)
 {
-	if (cl_env.print_pretty)
+	const cl_env_ptr env = ecl_process_env();
+	if (env->print_pretty)
 		writec_queue(c, stream);
 	else if (c == INDENT || c == INDENT1)
 		ecl_write_char(' ', stream);
@@ -226,18 +228,19 @@ call_print_object(cl_object x, cl_object stream)
 call_structure_print_function(cl_object f, cl_object x, cl_object stream)
 #endif
 {
+	const cl_env_ptr env = ecl_process_env();
 	short ois[ECL_PPRINT_INDENTATION_STACK_SIZE];
-	volatile bool p = cl_env.print_pretty;
+	volatile bool p = env->print_pretty;
 	volatile int oqh, oqt, oqc, oisp, oiisp;
 
-	if ((p = cl_env.print_pretty)) {
+	if ((p = env->print_pretty)) {
 		flush_queue(TRUE, stream);
-		oqh = cl_env.qh;
-		oqt = cl_env.qt;
-		oqc = cl_env.qc;
-		oisp = cl_env.isp;
-		oiisp = cl_env.iisp;
-		memcpy(ois, cl_env.indent_stack, cl_env.isp * sizeof(*ois));
+		oqh = env->qh;
+		oqt = env->qt;
+		oqc = env->qc;
+		oisp = env->isp;
+		oiisp = env->iisp;
+		memcpy(ois, env->indent_stack, env->isp * sizeof(*ois));
 	}
 	CL_UNWIND_PROTECT_BEGIN {
 #ifdef CLOS
@@ -246,13 +249,13 @@ call_structure_print_function(cl_object f, cl_object x, cl_object stream)
 		funcall(4, f, x, stream, MAKE_FIXNUM(0));
 #endif
 	} CL_UNWIND_PROTECT_EXIT {
-		if ((cl_env.print_pretty = p)) {
-			memcpy(cl_env.indent_stack, ois, oisp * sizeof(*ois));
-			cl_env.iisp = oiisp;
-			cl_env.isp = oisp;
-			cl_env.qc = oqc;
-			cl_env.qt = oqt;
-			cl_env.qh = oqh;
+		if ((env->print_pretty = p)) {
+			memcpy(env->indent_stack, ois, oisp * sizeof(*ois));
+			env->iisp = oiisp;
+			env->isp = oisp;
+			env->qc = oqc;
+			env->qt = oqt;
+			env->qh = oqh;
 		}
 	} CL_UNWIND_PROTECT_END;
 }
@@ -1251,7 +1254,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		write_ch('(', stream);
 		WRITE_SET_INDENT(stream);
 #if !defined(ECL_CMU_FORMAT)
-		if (cl_env.print_pretty && CAR(x) != OBJNULL &&
+		if (ecl_process_env()->print_pretty && CAR(x) != OBJNULL &&
 		    type_of(CAR(x)) == t_symbol &&
 		    (r = si_get_sysprop(CAR(x), @'si::pretty-print-format')) != Cnil)
 			goto PRETTY_PRINT_FORMAT;
@@ -1673,16 +1676,17 @@ si_write_object_recursive(cl_object x, cl_object stream)
 #if !defined(ECL_CMU_FORMAT)
 cl_object
 si_write_object(cl_object x, cl_object stream) {
+	const cl_env_ptr env = ecl_process_env();
 	if (ecl_symbol_value(@'*print-pretty*') == Cnil) {
-		cl_env.print_pretty = 0;
+		env->print_pretty = 0;
 	} else {
-		cl_env.print_pretty = 1;
-		cl_env.qh = cl_env.qt = cl_env.qc = 0;
-		cl_env.isp = cl_env.iisp = 0;
-		cl_env.indent_stack[0] = 0;
+		env->print_pretty = 1;
+		env->qh = env->qt = env->qc = 0;
+		env->isp = env->iisp = 0;
+		env->indent_stack[0] = 0;
 	}
 	si_write_object_recursive(x, stream);
-	if (cl_env.print_pretty)
+	if (env->print_pretty)
 		flush_queue(TRUE, stream);
 }
 #endif /* !ECL_CMU_FORMAT */

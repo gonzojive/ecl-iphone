@@ -102,16 +102,17 @@ static cl_object doformat(cl_narg narg, cl_object strm, cl_object string, cl_va_
 static cl_object
 get_aux_stream(void)
 {
+	cl_env_ptr env = ecl_process_env();
 	cl_object stream;
 
-	ecl_disable_interrupts();
-	if (cl_env.fmt_aux_stream == Cnil) {
+	ecl_disable_interrupts_env(env);
+	if (env->fmt_aux_stream == Cnil) {
 		stream = ecl_make_string_output_stream(64);
 	} else {
-		stream = cl_env.fmt_aux_stream;
-		cl_env.fmt_aux_stream = Cnil;
+		stream = env->fmt_aux_stream;
+		env->fmt_aux_stream = Cnil;
 	}
-	ecl_enable_interrupts();
+	ecl_enable_interrupts_env(env);
 	return stream;
 }
 
@@ -1872,7 +1873,7 @@ doformat(cl_narg narg, cl_object strm, cl_object string, cl_va_list args, bool i
 		format(&fmt, string->string.self, string->string.fillp);
 		ecl_force_output(strm);
 	}
-	cl_env.fmt_aux_stream = fmt.aux_stream;
+	ecl_process_env()->fmt_aux_stream = fmt.aux_stream;
 	if (!in_formatter)
 		output = Cnil;
 	return output;

@@ -79,7 +79,7 @@ void
 bds_bind(cl_object s, cl_object value)
 {
 	cl_env_ptr env = ecl_process_env();
-	struct ecl_hashtable_entry *h = ecl_search_hash(s, cl_env.bindings_hash);
+	struct ecl_hashtable_entry *h = ecl_search_hash(s, env->bindings_hash);
 	struct bds_bd *slot = ++env->bds_top;
 	if (slot >= env->bds_limit) {
 		bds_overflow();

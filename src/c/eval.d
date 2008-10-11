@@ -22,7 +22,7 @@
 cl_object *
 _ecl_va_sp(cl_narg narg)
 {
-	return cl_env.stack_top - narg;
+	return ecl_process_env()->stack_top - narg;
 }
 
 static cl_object
@@ -37,7 +37,7 @@ build_funcall_frame(cl_object f, cl_va_list args)
 		p = (cl_object*)(args[0].args);
 #else
 		cl_index i;
-		p = cl_env.values;
+		p = env->values;
 		for (i = 0; i < n; i++) {
 			p[i] = va_arg(args[0].args, cl_object);
 		}

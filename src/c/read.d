@@ -43,13 +43,14 @@ read_table_entry(cl_object rdtbl, cl_object c);
 cl_object
 si_get_buffer_string()
 {
-	cl_object pool = cl_env.string_pool;
+	const cl_env_ptr env = ecl_process_env();
+	cl_object pool = env->string_pool;
 	cl_object output;
 	if (pool == Cnil) {
 		output = cl_alloc_adjustable_base_string(ECL_BUFFER_STRING_SIZE);
 	} else {
 		output = CAR(pool);
-		cl_env.string_pool = CDR(pool);
+		env->string_pool = CDR(pool);
 	}
 	output->base_string.fillp = 0;
 	@(return output)
@@ -59,7 +60,8 @@ cl_object
 si_put_buffer_string(cl_object string)
 {
 	if (string != Cnil) {
-		cl_object pool = cl_env.string_pool;
+		const cl_env_ptr env = ecl_process_env();
+		cl_object pool = env->string_pool;
 		cl_index l = 0;
 		if (pool != Cnil) {
 			/* We store the size of the pool in the string index */
@@ -71,7 +73,7 @@ si_put_buffer_string(cl_object string)
 				string = cl_alloc_adjustable_base_string(ECL_BUFFER_STRING_SIZE);
 			}
 			string->base_string.fillp = l+1;
-			cl_env.string_pool = CONS(string, pool);
+			env->string_pool = CONS(string, pool);
 		}
 	}
 	@(return)

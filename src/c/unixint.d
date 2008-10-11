@@ -456,11 +456,12 @@ si_check_pending_interrupts(void)
 void
 ecl_check_pending_interrupts(void)
 {
+	const cl_env_ptr env = ecl_process_env();
 	int sig;
 	void *info;
-	cl_env.disable_interrupts = 0;
-	info = cl_env.interrupt_info;
-	sig = cl_env.interrupt_pending;
+	env->disable_interrupts = 0;
+	info = env->interrupt_info;
+	sig = env->interrupt_pending;
 	if (sig) {
 		call_handler(handle_signal_now, sig, info, 0);
 	}
@@ -647,6 +648,6 @@ init_unixint(int pass)
 			si_trap_fpe(Ct, Ct);
 		}
 #endif
-		cl_env.disable_interrupts = 0;
+		ecl_process_env()->disable_interrupts = 0;
 	}
 }

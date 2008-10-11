@@ -151,6 +151,7 @@ pop_maybe_nil(cl_object *l) {
 
 static cl_object
 asm_end(cl_index beginning) {
+	cl_env_ptr env = ecl_process_env();
 	cl_object bytecodes;
 	cl_index code_size, data_size, i;
 	cl_opcode *code;
@@ -169,7 +170,7 @@ asm_end(cl_index beginning) {
 	bytecodes->bytecodes.file = (file == OBJNULL)? Cnil : file;
 	bytecodes->bytecodes.file_position = (position == OBJNULL)? Cnil : position;
 	for (i = 0, code = (cl_opcode *)bytecodes->bytecodes.code; i < code_size; i++) {
-		code[i] = (cl_opcode)(cl_fixnum)cl_env.stack[beginning+i];
+		code[i] = (cl_opcode)(cl_fixnum)(env->stack[beginning+i]);
 	}
 	for (i=0; i < data_size; i++) {
 		bytecodes->bytecodes.data[i] = CAR(ENV->constants);
@@ -219,6 +220,7 @@ asm_jmp(register int op) {
 
 static void
 asm_complete(register int op, register cl_index pc) {
+	cl_env_ptr env = ecl_process_env();
 	cl_fixnum delta = current_pc() - pc;  /* [1] */
 	if (op && (asm_ref(pc-1) != op))
 		FEprogram_error("Non matching codes in ASM-COMPLETE2", 0);
@@ -229,14 +231,14 @@ asm_complete(register int op, register cl_index pc) {
 		unsigned char low = delta & 0xFF;
 		char high = delta >> 8;
 # ifdef WORDS_BIGENDIAN
-		cl_env.stack[pc] = (cl_object)(cl_fixnum)high;
-		cl_env.stack[pc+1] = (cl_object)(cl_fixnum)low;
+		env->stack[pc] = (cl_object)(cl_fixnum)high;
+		env->stack[pc+1] = (cl_object)(cl_fixnum)low;
 # else
-		cl_env.stack[pc] = (cl_object)(cl_fixnum)low;
-		cl_env.stack[pc+1] = (cl_object)(cl_fixnum)high;
+		env->stack[pc] = (cl_object)(cl_fixnum)low;
+		env->stack[pc+1] = (cl_object)(cl_fixnum)high;
 # endif
 #else
-		cl_env.stack[pc] = (cl_object)(cl_fixnum)delta;
+		env->stack[pc] = (cl_object)(cl_fixnum)delta;
 #endif
 	}
 }
@@ -1010,7 +1012,8 @@ c_catch(cl_object args, int flags) {
 static int
 c_compiler_let(cl_object args, int flags) {
 	cl_object bindings;
-	cl_index old_bds_top_index = cl_env.bds_top - cl_env.bds_org;
+	cl_env_ptr env = ecl_process_env();
+	cl_index old_bds_top_index = env->bds_top - env->bds_org;
 
 	for (bindings = pop(&args); !ecl_endp(bindings); ) {
 		cl_object form = pop(&bindings);
@@ -2350,7 +2353,7 @@ si_process_lambda_list(cl_object org_lambda_list, cl_object context)
 #define AT_KEYS		3
 #define AT_OTHER_KEYS	4
 #define AT_AUXS		5
-
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object v, key, init, spp, lambda_list = org_lambda_list;
 	cl_object reqs = Cnil, opts = Cnil, keys = Cnil, rest = Cnil, auxs = Cnil;
 	int nreq = 0, nopt = 0, nkey = 0, naux = 0, stage = 0;

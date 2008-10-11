@@ -91,7 +91,7 @@ ecl_set_process_env(cl_env_ptr env)
 cl_object
 mp_current_process(void)
 {
-	return cl_env.own_process;
+	return ecl_process_env()->own_process;
 }
 
 /*----------------------------------------------------------------------
@@ -119,7 +119,7 @@ thread_cleanup(void *env)
 	 * mp_process_kill().
 	 */
 	THREAD_OP_LOCK();
-	cl_core.processes = ecl_remove_eq(cl_env.own_process,
+	cl_core.processes = ecl_remove_eq(mp_current_process(),
 					  cl_core.processes);
 	THREAD_OP_UNLOCK();
 }
@@ -177,6 +177,7 @@ alloc_process(cl_object name)
 static void
 initialize_process_bindings(cl_object process, cl_object initial_bindings)
 {
+	const cl_env_ptr this_env = ecl_process_env();
 	cl_object hash;
 	/* FIXME! Here we should either use INITIAL-BINDINGS or copy lexical
 	 * bindings */
@@ -186,7 +187,7 @@ initialize_process_bindings(cl_object process, cl_object initial_bindings)
 					   ecl_make_singlefloat(0.7),
 					   Cnil); /* no need for locking */
 	} else {
-		hash = si_copy_hash_table(cl_env.bindings_hash);
+		hash = si_copy_hash_table(this_env->bindings_hash);
 	}
 	process->process.env->bindings_hash = hash;
 }
@@ -338,7 +339,7 @@ mp_exit_process(void)
 		   back to the thread entry point, going through all possible
 		   UNWIND-PROTECT.
 		*/
-		ecl_unwind(cl_env.frs_org);
+		ecl_unwind(ecl_process_env()->frs_org);
 	}
 }
 
@@ -449,12 +450,13 @@ mp_lock_holder(cl_object lock)
 cl_object
 mp_giveup_lock(cl_object lock)
 {
+	cl_object own_process = mp_current_process();
 	int code;
 	if (type_of(lock) != t_lock)
 		FEwrong_type_argument(@'mp::lock', lock);
-	if (lock->lock.holder != cl_env.own_process) {
+	if (lock->lock.holder != own_process) {
 		FEerror("Attempt to give up a lock ~S that is not owned by ~S.", 2,
-			lock, cl_env.own_process);
+			lock, own_process);
 	}
 	if (--lock->lock.counter == 0) {
 		lock->lock.holder = Cnil;
@@ -476,13 +478,13 @@ mp_giveup_lock(cl_object lock)
 		FEwrong_type_argument(@'mp::lock', lock);
 	/* In Windows, all locks are recursive. We simulate the other case. */
 	/* We will complain always if recursive=0 and try to lock recursively. */
-	if (!lock->lock.recursive && (lock->lock.holder == cl_env.own_process)) {
+	if (!lock->lock.recursive && (lock->lock.holder == the_env->own_process)) {
 		FEerror("A recursive attempt was made to hold lock ~S", 1, lock);
 	}
 #ifdef ECL_WINDOWS_THREADS
 	switch (WaitForSingleObject(lock->lock.mutex, (wait==Ct?INFINITE:0))) {
 		case WAIT_OBJECT_0:
-                        lock->lock.holder = cl_env.own_process;
+                        lock->lock.holder = env->own_process;
 			lock->lock.counter++;
 			output = Ct;
 			break;
@@ -503,7 +505,7 @@ mp_giveup_lock(cl_object lock)
 		rc = pthread_mutex_trylock(&lock->lock.mutex);
 	}
 	if (rc == 0) {
-		lock->lock.holder = cl_env.own_process;
+		lock->lock.holder = the_env->own_process;
 		lock->lock.counter++;
 		output = Ct;
 	} else {
@@ -548,7 +550,7 @@ mp_condition_variable_wait(cl_object cv, cl_object lock)
 		FEwrong_type_argument(@'mp::lock', lock);
 	if (pthread_cond_wait(&cv->condition_variable.cv,
 	                      &lock->lock.mutex) == 0)
-		lock->lock.holder = cl_env.own_process;
+		lock->lock.holder = mp_current_process();
 #endif
 	@(return Ct)
 }
@@ -589,7 +591,7 @@ mp_condition_variable_timedwait(cl_object cv, cl_object lock, cl_object seconds)
 	}
 	if (pthread_cond_timedwait(&cv->condition_variable.cv,
 	                           &lock->lock.mutex, &ts) == 0) {
-		lock->lock.holder = cl_env.own_process;
+		lock->lock.holder = mp_current_process();
 		@(return Ct)
 	} else {
 		@(return Cnil)
