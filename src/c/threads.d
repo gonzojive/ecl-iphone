@@ -346,7 +346,8 @@ mp_exit_process(void)
 cl_object
 mp_all_processes(void)
 {
-	/* Isn't it a race condition? */
+	/* No race condition here because this list is never destructively
+	 * modified. When we add or remove processes, we create new lists. */
 	@(return cl_copy_list(cl_core.processes))
 }
 

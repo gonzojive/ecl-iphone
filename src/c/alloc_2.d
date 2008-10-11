@@ -540,15 +540,13 @@ stacks_scanner()
 	cl_object l;
 	l = cl_core.libraries;
 	if (l) {
-		int i;
-		for (i = 0; i < l->vector.fillp; i++) {
-			cl_object dll = l->vector.self.t[i];
+		for (; l != Cnil; l = ECL_CONS_CDR(l)) {
+			cl_object dll = ECL_CONS_CAR(l);
 			if (dll->cblock.locked) {
 				GC_push_conditional((void *)dll, (void *)(&dll->cblock + 1), 1);
 				GC_set_mark_bit((void *)dll);
 			}
 		}
-		GC_set_mark_bit((void *)l->vector.self.t);
 	}
 	GC_push_all((void *)(&cl_core), (void *)(&cl_core + 1));
 	GC_push_all((void *)cl_symbols, (void *)(cl_symbols + cl_num_symbols_in_core));

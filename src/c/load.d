@@ -83,10 +83,9 @@ copy_object_file(cl_object original)
 static cl_object
 ecl_library_find_by_name(cl_object filename)
 {
-	cl_object libraries = cl_core.libraries;
-	cl_index i;
-	for (i = 0; i < libraries->vector.fillp; i++) {
-		cl_object other = libraries->vector.self.t[i];
+	cl_object l;
+	for (l = cl_core.libraries; l != Cnil; l = ECL_CONS_CDR(l)) {
+		cl_object other = ECL_CONS_CAR(l);
 		cl_object name = other->cblock.name;
 		if (!Null(name) && ecl_string_eq(name, filename)) {
 			return other;
@@ -98,10 +97,9 @@ ecl_library_find_by_name(cl_object filename)
 static cl_object
 ecl_library_find_by_handle(void *handle)
 {
-	cl_object libraries = cl_core.libraries;
-	cl_index i;
-	for (i = 0; i < libraries->vector.fillp; i++) {
-		cl_object other = libraries->vector.self.t[i];
+	cl_object l;
+	for (l = cl_core.libraries; l != Cnil; l = ECL_CONS_CDR(l)) {
+		cl_object other = ECL_CONS_CAR(l);
 		if (handle == other->cblock.handle) {
 			return other;
 		}
@@ -112,7 +110,6 @@ ecl_library_find_by_handle(void *handle)
 cl_object
 ecl_library_open(cl_object filename, bool force_reload) {
 	cl_object block;
-	cl_object libraries = cl_core.libraries;
 	bool self_destruct = 0;
 	cl_index i;
 
@@ -192,7 +189,7 @@ ecl_library_open(cl_object filename, bool force_reload) {
 		block = other;
 	} else {
 		si_set_finalizer(block, Ct);
-		cl_vector_push_extend(2, block, libraries);
+		cl_core.libraries = CONS(block, cl_core.libraries);
 	}
 	}
 	return block;
@@ -202,16 +199,11 @@ void *
 ecl_library_symbol(cl_object block, const char *symbol, bool lock) {
 	void *p;
 	if (block == @':default') {
-		cl_object l = cl_core.libraries;
-		if (l) {
-			cl_index i;
-			for (i = 0; i < l->vector.fillp; i++) {
-				cl_object block = l->vector.self.t[i];
-				p = ecl_library_symbol(block, symbol, lock);
-				if (p) {
-					return p;
-				}
-			}
+		cl_object l;
+		for (l = cl_core.libraries; l != Cnil; l = ECL_CONS_CDR(l)) {
+			cl_object block = ECL_CONS_CAR(l);
+			p = ecl_library_symbol(block, symbol, lock);
+			if (p) return p;
 		}
 		ecl_disable_interrupts();
 #if defined(mingw32) || defined(_MSC_VER)
@@ -305,7 +297,7 @@ void
 ecl_library_close(cl_object block) {
 	const char *filename;
 	bool verbose = SYM_VAL(@'si::*gc-verbose*') != Cnil;
-	cl_object libraries = cl_core.libraries;
+	cl_object l;
 	int i;
 
 	if (Null(block->cblock.name))
@@ -337,23 +329,15 @@ ecl_library_close(cl_object block) {
 		}
 		unlink(filename);
         }
-	for (i = 0; i < libraries->vector.fillp; i++) {
-		if (libraries->vector.self.t[i] == block) {
-			memmove(libraries->vector.self.t+i,
-				libraries->vector.self.t+i+1,
-				(libraries->vector.fillp-i-1) * sizeof(cl_object));
-			libraries->vector.fillp--;
-			break;
-		}
-	}
+	cl_core.libraries = ecl_remove_eq(block, cl_core.libraries);
 }
 
 void
 ecl_library_close_all(void)
 {
-	int i;
-	while ((i = cl_core.libraries->vector.fillp))
-		ecl_library_close(cl_core.libraries->vector.self.t[--i]);
+	while (cl_core.libraries != Cnil) {
+		ecl_library_close(ECL_CONS_CAR(cl_core.libraries));
+	}
 }
 
 cl_object

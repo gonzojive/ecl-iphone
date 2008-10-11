@@ -389,9 +389,7 @@ cl_boot(int argc, char **argv)
 	/* LIBRARIES is an adjustable vector of objects. It behaves as
 	   a vector of weak pointers thanks to the magic in
 	   gbc.d/alloc_2.d */
-	cl_core.libraries = si_make_vector(@'t', MAKE_FIXNUM(0),
-					   @'t', MAKE_FIXNUM(0),
-					   @'nil', @'nil');
+	cl_core.libraries = Cnil;
 #if 0
 	/* FINALIZERS and FINALIZABLE_OBJECTS are also like LIBRARIES */
 	cl_core.finalizable_objects = si_make_vector(@'t', MAKE_FIXNUM(512),
