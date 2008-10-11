@@ -267,9 +267,9 @@ cl_boot(int argc, char **argv)
 	init_unixint(0);
 	init_alloc();
 	GC_disable();
-	pause();
+	env = _ecl_alloc_env();
 #if !defined(ECL_THREADS) || defined(WITH__THREAD)
-	cl_env_p = _ecl_alloc_env();
+	cl_env_p = env;
 #else
 	init_threads(env);
 #endif
