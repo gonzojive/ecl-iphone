@@ -319,6 +319,7 @@ ecl_library_close(cl_object block) {
 		if (verbose) {
 			fprintf(stderr, ";;; Freeing library %s\n", filename);
 		}
+		ecl_disable_interrupts();
 #ifdef HAVE_DLFCN_H
 		dlclose(block->cblock.handle);
 #endif
@@ -328,6 +329,7 @@ ecl_library_close(cl_object block) {
 #if defined(mingw32) || defined(_MSC_VER)
 		FreeLibrary(block->cblock.handle);
 #endif
+		ecl_enable_interrupts();
         }
 	if (block->cblock.self_destruct) {
 		if (verbose) {
