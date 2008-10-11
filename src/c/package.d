@@ -1051,6 +1051,7 @@ BEGIN:
 cl_object
 si_package_hash_tables(cl_object p)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object he, hi, u;
 	assert_type_package(p);
 	PACKAGE_LOCK(p);

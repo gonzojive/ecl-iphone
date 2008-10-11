@@ -629,6 +629,7 @@ si_bc_disassemble(cl_object v)
 cl_object
 si_bc_split(cl_object b)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object vector;
 	cl_object data;
 	cl_object lex = Cnil;
@@ -649,6 +650,7 @@ si_bc_split(cl_object b)
 cl_object
 si_bc_file(cl_object b)
 {
+	cl_env_ptr the_env = ecl_process_env();
 	if (type_of(b) == t_bclosure) {
 		b = b->bclosure.code;
 	}

@@ -351,6 +351,7 @@ si_open_unix_socket_stream(cl_object path)
 cl_object
 si_lookup_host_entry(cl_object host_or_address)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	struct hostent *he;
 	unsigned long l;
 	char address[4];

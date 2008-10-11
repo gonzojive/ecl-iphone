@@ -85,6 +85,7 @@ cl_def_c_function_va(cl_object sym, void *c_function)
 cl_object
 si_compiled_function_name(cl_object fun)
 {
+	cl_env_ptr the_env = ecl_process_env();
 	cl_object output;
 
 	switch(type_of(fun)) {
@@ -106,6 +107,7 @@ si_compiled_function_name(cl_object fun)
 cl_object
 cl_function_lambda_expression(cl_object fun)
 {
+	cl_env_ptr the_env = ecl_process_env();
 	cl_object output, name = Cnil, lex = Cnil;
 
 	switch(type_of(fun)) {

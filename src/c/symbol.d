@@ -288,6 +288,7 @@ cl_symbol_plist(cl_object sym)
 cl_object
 cl_get_properties(cl_object place, cl_object indicator_list)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object l;
 
 #ifdef ECL_SAFE
@@ -408,6 +409,7 @@ cl_keywordp(cl_object sym)
 cl_object
 si_rem_f(cl_object plist, cl_object indicator)
 {
+	cl_env_ptr the_env = ecl_process_env();
 	bool found = remf(&plist, indicator);
 	@(return plist (found? Ct : Cnil))
 }

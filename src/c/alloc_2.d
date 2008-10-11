@@ -435,6 +435,7 @@ si_set_finalizer(cl_object o, cl_object finalizer)
 cl_object
 si_gc_stats(cl_object enable)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object old_status = cl_core.gc_stats? Ct : Cnil;
 	cl_core.gc_stats = (enable != Cnil);
 	if (cl_core.bytes_consed == Cnil) {
@@ -585,6 +586,7 @@ ecl_register_root(cl_object *p)
 cl_object
 si_gc(cl_object area)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	ecl_disable_interrupts();
 	GC_gcollect();
 	ecl_enable_interrupts();
@@ -594,6 +596,7 @@ si_gc(cl_object area)
 cl_object
 si_gc_dump()
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	ecl_disable_interrupts();
 	GC_dump();
 	ecl_enable_interrupts();

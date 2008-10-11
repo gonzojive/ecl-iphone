@@ -736,6 +736,7 @@ cl_adjustable_array_p(cl_object a)
 cl_object
 cl_array_displacement(cl_object a)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object to_array;
 	cl_index offset;
 
@@ -787,6 +788,7 @@ cl_array_displacement(cl_object a)
 cl_object
 cl_svref(cl_object x, cl_object index)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_index i;
 
 	while (type_of(x) != t_vector ||
@@ -804,6 +806,7 @@ cl_svref(cl_object x, cl_object index)
 cl_object
 si_svset(cl_object x, cl_object index, cl_object v)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_index i;
 
 	while (type_of(x) != t_vector ||
@@ -821,6 +824,7 @@ si_svset(cl_object x, cl_object index, cl_object v)
 cl_object
 cl_array_has_fill_pointer_p(cl_object a)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object r;
  AGAIN:
 	switch (type_of(a)) {
@@ -845,6 +849,7 @@ cl_array_has_fill_pointer_p(cl_object a)
 cl_object
 cl_fill_pointer(cl_object a)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	assert_type_vector(a);
 	if (!a->vector.hasfillp) {
 		a = ecl_type_error(@'fill-pointer', "argument",
@@ -859,6 +864,7 @@ cl_fill_pointer(cl_object a)
 cl_object
 si_fill_pointer_set(cl_object a, cl_object fp)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	assert_type_vector(a);
  AGAIN:
 	if (a->vector.hasfillp) {
@@ -881,6 +887,7 @@ si_fill_pointer_set(cl_object a, cl_object fp)
 cl_object
 si_replace_array(cl_object olda, cl_object newa)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object dlist;
 	if (type_of(olda) != type_of(newa)
 	    || (type_of(olda) == t_array && olda->array.rank != newa->array.rank))

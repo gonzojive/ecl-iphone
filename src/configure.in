@@ -430,7 +430,7 @@ dnl Deactivate floating point exceptions if asked to
 if test "${with_fpe}" != yes; then
    AC_DEFINE(ECL_AVOID_FPE_H)
 fi
-if test "${with_signed_zero}" == yes; then
+if test "${with_signed_zero}" = yes; then
    AC_DEFINE(ECL_SIGNED_ZERO)
 fi
 
