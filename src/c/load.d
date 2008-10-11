@@ -61,6 +61,7 @@ copy_object_file(cl_object original)
 	int err;
 	cl_object s, copy = make_constant_base_string("TMP:ECL");
 	copy = si_coerce_to_filename(si_mkstemp(copy));
+	ecl_disable_interrupts();
 #ifdef HAVE_LSTAT
 	err = unlink(copy->base_string.self) ||
 	      symlink(original->base_string.self, copy->base_string.self);
@@ -71,6 +72,7 @@ copy_object_file(cl_object original)
 	err = 1;
 #endif
 #endif
+	ecl_enable_interrupts();
 	if (err) {
 		FEerror("Unable to copy file ~A to ~A", 2, original, copy);
 	}
@@ -150,6 +152,7 @@ ecl_library_open(cl_object filename, bool force_reload) {
 	block = ecl_alloc_object(t_codeblock);
 	block->cblock.self_destruct = self_destruct;
 	block->cblock.name = filename;
+	ecl_disable_interrupts();
 #ifdef HAVE_DLFCN_H
 	block->cblock.handle = dlopen(filename->base_string.self,
 				      RTLD_NOW|RTLD_GLOBAL);
@@ -172,6 +175,7 @@ ecl_library_open(cl_object filename, bool force_reload) {
 #if defined(mingw32) || defined(_MSC_VER)
 	block->cblock.handle = LoadLibrary(filename->base_string.self);
 #endif
+	ecl_enable_interrupts();
 	/*
 	 * A second pass to ensure that the dlopen routine has not
 	 * returned a library that we had already loaded. If this is
@@ -209,6 +213,7 @@ ecl_library_symbol(cl_object block, const char *symbol, bool lock) {
 				}
 			}
 		}
+		ecl_disable_interrupts();
 #if defined(mingw32) || defined(_MSC_VER)
  		{
 		HANDLE hndSnap = NULL;
@@ -226,16 +231,18 @@ ecl_library_symbol(cl_object block, const char *symbol, bool lock) {
 			}
 			CloseHandle(hndSnap);
 		}
-		return hnd;
+		p = (void*)hnd;
 		}
 #endif
 #ifdef HAVE_DLFCN_H
-		return dlsym(0, symbol);
+		p = dlsym(0, symbol);
 #endif
 #if !defined(mingw32) && !defined(_MSC_VER) && !defined(HAVE_DLFCN_H)
-		return 0;
+		p = 0;
 #endif
+		ecl_enable_interrupts();
 	} else {
+		ecl_disable_interrupts();
 #ifdef HAVE_DLFCN_H
 		p = dlsym(block->cblock.handle, symbol);
 #endif
@@ -253,38 +260,45 @@ ecl_library_symbol(cl_object block, const char *symbol, bool lock) {
 			p = NSAddressOfSymbol(sym);
 		}
 #endif
+		ecl_enable_interrupts();
 		/* Libraries whose symbols are being referenced by the FFI should not
 		 * get garbage collected. Until we find a better solution we simply lock
 		 * them for the rest of the runtime */
 		if (p) {
 			block->cblock.locked |= lock;
 		}
-		return p;
 	}
+	return p;
 }
 
 cl_object
 ecl_library_error(cl_object block) {
-	const char *message;
+	cl_object output;
+	ecl_disable_interrupts();
 #ifdef HAVE_DLFCN_H
-	message = dlerror();
+	output = make_base_string_copy(dlerror());
 #endif
 #ifdef HAVE_MACH_O_DYLD_H
-	NSLinkEditErrors c;
-	int number;
-	const char *filename;
-	NSLinkEditError(&c, &number, &filename, &message);
+	{
+		NSLinkEditErrors c;
+		int number;
+		const char *filename;
+		NSLinkEditError(&c, &number, &filename, &message);
+		output = make_base_string_copy(message);
+	}
 #endif
 #if defined(mingw32) || defined(_MSC_VER)
-	cl_object output;
-	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
-		      FORMAT_MESSAGE_ALLOCATE_BUFFER,
-		      0, GetLastError(), 0, (void*)&message, 0, NULL);
-	output = make_base_string_copy(message);
-	LocalFree(message);
-	return output;
+	{
+		const char *message;
+		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
+			      FORMAT_MESSAGE_ALLOCATE_BUFFER,
+			      0, GetLastError(), 0, (void*)&message, 0, NULL);
+		output = make_base_string_copy(message);
+		LocalFree(message);
+	}
 #endif
-	return make_base_string_copy(message);
+	ecl_enable_interrupts();
+	return output;
 }
 
 void
