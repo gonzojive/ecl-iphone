@@ -241,7 +241,7 @@
       ((SPECIAL GLOBAL)
        (if (safe-compile)
 	   (wt-nl "cl_set(" var-loc ",")
-	   (wt-nl "ECL_SET(" var-loc ","))
+	   (wt-nl "ECL_SETQ(cl_env_copy," var-loc ","))
        (wt-coerce-loc (var-rep-type var) loc)
        (wt ");"))
       (t
