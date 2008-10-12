@@ -502,7 +502,6 @@ cl_object
 ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offset)
 {
 	ECL_OFFSET_TABLE
-	typedef struct cl_env_struct *cl_env_ptr;
 	const cl_env_ptr the_env = ecl_process_env();
 	volatile cl_index old_bds_top_index = the_env->bds_top - the_env->bds_org;
 	cl_opcode *vector = (cl_opcode*)bytecodes->bytecodes.code + offset;
@@ -512,7 +511,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	struct ecl_stack_frame frame_aux;
 	volatile struct ihs_frame ihs;
 
-	/*ecl_cs_check(ihs);*/
+	ecl_cs_check(the_env, ihs);
 
 	if (type_of(bytecodes) != t_bytecodes)
 		FEinvalid_function(bytecodes);

@@ -588,7 +588,7 @@
     (when (>= (fun-debug fun) 2)
       (wt-nl "struct ihs_frame ihs;"))
     (when (policy-check-stack-overflow)
-      (wt-nl "ecl_cs_check(value0);"))
+      (wt-nl "ecl_cs_check(cl_env_copy,value0);"))
     (when (eq (fun-closure fun) 'CLOSURE)
       (let ((clv-used (remove-if
 		       #'(lambda (x)
