@@ -77,6 +77,9 @@ ECL 8.9.0:
  - ECL builds using thread local storage when configured with --with-__thread and
    the feature works on that platform.
 
+ - Functions compiled with (OPTIMIZE (SAFETY >= 2)) have an explicit stack
+   overflow check.
+
 * Embedding:
 
  - ECL now implements a more transparent interface for setting and querying
