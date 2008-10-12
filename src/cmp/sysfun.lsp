@@ -1108,7 +1108,7 @@ type_of(#0)==t_bitvector")
 (proclaim-function fboundp (symbol) t :predicate t)
 (proclaim-function symbol-value (symbol) t)
 (proclaim-function boundp (symbol) t :predicate t :no-side-effects t)
-(def-inline boundp :always (symbol) :bool "SYM_VAL(#0)!=OBJNULL")
+(def-inline boundp :always (symbol) :bool "ECL_SYM_VAL(cl_env_copy,#0)!=OBJNULL")
 
 (proclaim-function macro-function (symbol) t)
 (proclaim-function special-operator-p (symbol) t :predicate t)

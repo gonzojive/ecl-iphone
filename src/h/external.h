@@ -9,7 +9,7 @@ extern "C" {
  * Per-thread data.
  */
 
-typedef struct cl_env_struct {
+struct cl_env_struct {
 	/* Flag for disabling interrupts while we call C library functions. */
 	volatile int disable_interrupts;
 
@@ -116,7 +116,7 @@ typedef struct cl_env_struct {
 	/* Alternative stack for processing signals */
 	void *altstack;
 	cl_index altstack_size;
-} *cl_env_ptr;
+};
 
 #ifndef __GNUC__
 #define __attribute__(x)
@@ -1330,8 +1330,8 @@ extern ECL_API cl_object si_sch_frs_base(cl_object fr, cl_object ihs);
 extern ECL_API cl_object si_reset_stack_limits(void);
 extern ECL_API cl_object si_set_stack_size(cl_object type, cl_object size);
 
-extern ECL_API void bds_overflow(void) /*__attribute__((noreturn))*/;
-extern ECL_API void bds_unwind(cl_index new_bds_top_index);
+extern ECL_API void ecl_bds_overflow(void) /*__attribute__((noreturn))*/;
+extern ECL_API void ecl_bds_unwind(cl_env_ptr env, cl_index new_bds_top_index);
 extern ECL_API void ecl_unwind(ecl_frame_ptr fr) /*__attribute__((noreturn))*/;
 extern ECL_API ecl_frame_ptr frs_sch(cl_object frame_id);
 extern ECL_API ecl_frame_ptr frs_sch_catch(cl_object frame_id);
@@ -1806,17 +1806,6 @@ extern ECL_API cl_object clos_install_method _ARGS((cl_narg narg, cl_object V1, 
 /* standard.lsp */
 extern ECL_API cl_object clos_standard_instance_set _ARGS((cl_narg narg, cl_object V1, cl_object V2, cl_object V3, ...));
 #endif
-
-/*
- * Deprecated names
- */
-#define cl_alloc_instance ecl_alloc_instance
-#define cl_alloc_object ecl_alloc_object
-#define cl_alloc ecl_alloc
-#define cl_alloc_atomic ecl_alloc_atomic
-#define cl_alloc_align ecl_alloc_align
-#define cl_alloc_atomic_align ecl_alloc_atomic_align
-#define cl_dealloc ecl_dealloc
 
 #endif
 

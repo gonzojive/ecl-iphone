@@ -142,9 +142,9 @@ thread_entry_point(cl_object process)
 	*/
 	process->process.active = 1;
 	CL_CATCH_ALL_BEGIN {
-		bds_bind(@'mp::*current-process*', process);
+		ecl_bds_bind(env, @'mp::*current-process*', process);
 		cl_apply(2, process->process.function, process->process.args);
-		bds_unwind1();
+		ecl_bds_unwind1(env);
 	} CL_CATCH_ALL_END;
 	process->process.active = 0;
 

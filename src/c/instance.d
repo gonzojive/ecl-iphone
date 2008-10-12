@@ -186,9 +186,10 @@ si_copy_instance(cl_object x)
 }
 
 @(defun find-class (name &optional (errorp Ct) env)
-	cl_object class;
+	cl_object class, hash;
 @
-	class = ecl_gethash_safe(name, SYM_VAL(@'si::*class-name-hash-table*'), Cnil);
+	hash = ECL_SYM_VAL(the_env, @'si::*class-name-hash-table*');
+	class = ecl_gethash_safe(name, hash, Cnil);
 	if (class == Cnil) {
 		if (!Null(errorp))
 			FEerror("No class named ~S.", 1, name);
@@ -264,6 +265,7 @@ enum ecl_built_in_classes {
 cl_object
 cl_class_of(cl_object x)
 {
+	cl_env_ptr the_env = ecl_process_env();
 	size_t index;
 	cl_type tp = type_of(x);
 	if (tp == t_instance)
@@ -358,7 +360,7 @@ cl_class_of(cl_object x)
 	}
 	{
 		cl_object output;
-		x = SYM_VAL(@'clos::*builtin-classes*');
+		x = ECL_SYM_VAL(the_env, @'clos::*builtin-classes*');
 		/* We have to be careful because *builtin-classes* might be empty! */
 		if (Null(x)) {
 			output = cl_find_class(1,@'t');

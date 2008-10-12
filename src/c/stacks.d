@@ -76,13 +76,12 @@ ecl_cs_overflow(void)
 
 #ifdef ECL_THREADS
 void
-bds_bind(cl_object s, cl_object value)
+ecl_bds_bind(cl_env_ptr env, cl_object s, cl_object value)
 {
-	cl_env_ptr env = ecl_process_env();
 	struct ecl_hashtable_entry *h = ecl_search_hash(s, env->bindings_hash);
 	struct bds_bd *slot = ++env->bds_top;
 	if (slot >= env->bds_limit) {
-		bds_overflow();
+		ecl_bds_overflow();
 		slot = env->bds_top;
 	}
 	if (h->key == OBJNULL) {
@@ -100,13 +99,12 @@ bds_bind(cl_object s, cl_object value)
 }
 
 void
-bds_push(cl_object s)
+ecl_bds_push(cl_env_ptr env, cl_object s)
 {
-	cl_env_ptr env = ecl_process_env();
 	struct ecl_hashtable_entry *h = ecl_search_hash(s, env->bindings_hash);
 	struct bds_bd *slot = ++env->bds_top;
 	if (slot >= env->bds_limit) {
-		bds_overflow();
+		ecl_bds_overflow();
 		slot = env->bds_top;
 	}
 	if (h->key == OBJNULL) {
@@ -123,9 +121,8 @@ bds_push(cl_object s)
 }
 
 void
-bds_unwind1(void)
+ecl_bds_unwind1(cl_env_ptr env)
 {
-	cl_env_ptr env = ecl_process_env();
 	struct bds_bd *slot = env->bds_top--;
 	cl_object s = slot->symbol;
 	struct ecl_hashtable_entry *h = ecl_search_hash(s, env->bindings_hash);
@@ -141,12 +138,11 @@ bds_unwind1(void)
 }
 
 cl_object *
-ecl_symbol_slot(cl_object s)
+ecl_symbol_slot(cl_env_ptr env, cl_object s)
 {
 	if (Null(s))
 		s = Cnil_symbol;
 	if (s->symbol.dynamic) {
-		cl_env_ptr env = ecl_process_env();
 		struct ecl_hashtable_entry *h = ecl_search_hash(s, env->bindings_hash);
 		if (h->key != OBJNULL)
 			return &h->value;
@@ -155,10 +151,9 @@ ecl_symbol_slot(cl_object s)
 }
 
 cl_object
-ecl_set_symbol(cl_object s, cl_object value)
+ecl_set_symbol(cl_env_ptr env, cl_object s, cl_object value)
 {
 	if (s->symbol.dynamic) {
-		cl_env_ptr env = ecl_process_env();
 		struct ecl_hashtable_entry *h = ecl_search_hash(s, env->bindings_hash);
 		if (h->key != OBJNULL) {
 			return (h->value = value);
@@ -169,13 +164,13 @@ ecl_set_symbol(cl_object s, cl_object value)
 #endif
 
 void
-bds_unwind_n(int n)
+ecl_bds_unwind_n(cl_env_ptr env, int n)
 {
-	while (n--) bds_unwind1();
+	while (n--) ecl_bds_unwind1(env);
 }
 
 static void
-bds_set_size(cl_env_ptr env, cl_index size)
+ecl_bds_set_size(cl_env_ptr env, cl_index size)
 {
 	bds_ptr old_org = env->bds_org;
 	cl_index limit = env->bds_top - old_org;
@@ -200,7 +195,7 @@ bds_set_size(cl_env_ptr env, cl_index size)
 }
 
 void
-bds_overflow(void)
+ecl_bds_overflow(void)
 {
 	cl_env_ptr env = ecl_process_env();
 	cl_index margin = ecl_get_option(ECL_OPT_BIND_STACK_SAFETY_AREA);
@@ -214,18 +209,17 @@ bds_overflow(void)
 	cl_cerror(6, make_constant_base_string("Extend stack size"),
 		  @'ext::stack-overflow', @':size', MAKE_FIXNUM(size),
 		  @':type', @'ext::binding-stack');
-	bds_set_size(env, size + (size / 2));
+	ecl_bds_set_size(env, size + (size / 2));
 }
 
 void
-bds_unwind(cl_index new_bds_top_index)
+ecl_bds_unwind(cl_env_ptr env, cl_index new_bds_top_index)
 {
-	cl_env_ptr env = ecl_process_env();
 	bds_ptr new_bds_top = new_bds_top_index + env->bds_org;
 	bds_ptr bds = env->bds_top;
 	for (;  bds > new_bds_top;  bds--)
 #ifdef ECL_THREADS
-		bds_unwind1();
+		ecl_bds_unwind1(env);
 #else
 		bds->symbol->symbol.value = bds->value;
 #endif
@@ -421,7 +415,7 @@ ecl_unwind(ecl_frame_ptr fr)
 	while (env->frs_top != fr && env->frs_top->frs_val != ECL_PROTECT_TAG)
 		--env->frs_top;
 	env->ihs_top = env->frs_top->frs_ihs;
-	bds_unwind(env->frs_top->frs_bds_top_index);
+	ecl_bds_unwind(env, env->frs_top->frs_bds_top_index);
 	ecl_stack_set_index(env, env->frs_top->frs_sp);
 	ecl_longjmp(env->frs_top->frs_jmpbuf, 1);
 	/* never reached */
@@ -497,7 +491,7 @@ si_set_stack_size(cl_object type, cl_object size)
 	if (type == @'ext::frame-stack') {
 		frs_set_size(env, the_size);
 	} else if (type == @'ext::binding-stack') {
-		bds_set_size(env, the_size);
+		ecl_bds_set_size(env, the_size);
 	} else if (type == @'ext::c-stack') {
 		cs_set_size(env, the_size);
 	} else {

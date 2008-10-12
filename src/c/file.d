@@ -3103,6 +3103,7 @@ ecl_stream_to_handle(cl_object s, bool output)
 void
 init_file(void)
 {
+	const cl_env_ptr env = ecl_process_env();
 	cl_object standard_input;
 	cl_object standard_output;
 	cl_object error_output;

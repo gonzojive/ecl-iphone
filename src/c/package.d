@@ -279,7 +279,7 @@ ecl_find_package_nolock(cl_object name)
 	/* Note that this function may actually be called _before_ symbols are set up
 	 * and bound! */
 	if (ecl_get_option(ECL_OPT_BOOTED) &&
-	    SYM_VAL(@'si::*relative-package-names*') != Cnil) {
+	    ECL_SYM_VAL(ecl_process_env(), @'si::*relative-package-names*') != Cnil) {
 		return si_find_relative_package(1, name);
 	}
 #endif
@@ -301,15 +301,14 @@ si_coerce_to_package(cl_object p)
 cl_object
 ecl_current_package(void)
 {
-	cl_object x;
-
-	x = ecl_symbol_value(@'*package*');
+	cl_object x = ecl_symbol_value(@'*package*');
 	if (type_of(x) != t_package) {
-		ECL_SETQ(@'*package*', cl_core.user_package);
+		const cl_env_ptr env = ecl_process_env();
+		ECL_SETQ(env, @'*package*', cl_core.user_package);
 		FEerror("The value of *PACKAGE*, ~S, was not a package",
 			1, x);
 	}
-	return(x);
+	return x;
 }
 
 /*
@@ -782,8 +781,9 @@ ecl_unuse_package(cl_object x, cl_object p)
 cl_object
 si_select_package(cl_object pack_name)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object p = si_coerce_to_package(pack_name);
-	@(return (ECL_SETQ(@'*package*', p)))
+	@(return (ECL_SETQ(the_env, @'*package*', p)))
 }
 
 cl_object

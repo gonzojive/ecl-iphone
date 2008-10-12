@@ -411,15 +411,16 @@ static void
 fmt_integer(format_stack fmt, cl_object x, bool colon, bool atsign,
 	    int radix, int mincol, int padchar, int commachar)
 {
+	const cl_env_ptr env = ecl_process_env();
 	int l, l1;
 	int s;
 
 	if (!FIXNUMP(x) && type_of(x) != t_bignum) {
 		fmt_prepare_aux_stream(fmt);
-		bds_bind(@'*print-escape*', Cnil);
-		bds_bind(@'*print-base*', MAKE_FIXNUM(radix));
+		ecl_bds_bind(env, @'*print-escape*', Cnil);
+		ecl_bds_bind(env, @'*print-base*', MAKE_FIXNUM(radix));
 		si_write_object(x, fmt->aux_stream);
-		bds_unwind_n(2);
+		ecl_bds_unwind_n(env, 2);
 		l = fmt->aux_string->string.fillp;
 		mincol -= l;
 		while (mincol-- > 0)
@@ -429,10 +430,10 @@ fmt_integer(format_stack fmt, cl_object x, bool colon, bool atsign,
 		return;
 	}
 	fmt_prepare_aux_stream(fmt);
-	bds_bind(@'*print-radix*', Cnil);
-	bds_bind(@'*print-base*', MAKE_FIXNUM(radix));
+	ecl_bds_bind(env, @'*print-radix*', Cnil);
+	ecl_bds_bind(env, @'*print-base*', MAKE_FIXNUM(radix));
 	si_write_object(x, fmt->aux_stream);
-	bds_unwind_n(2);
+	ecl_bds_unwind_n(env, 2);
 	l = l1 = fmt->aux_string->string.fillp;
 	s = 0;
 	if (tempstr(fmt, s) == '-')
@@ -624,6 +625,7 @@ fmt_roman(format_stack fmt, int i, int one, int five, int ten, bool colon)
 static void
 fmt_radix(format_stack fmt, bool colon, bool atsign)
 {
+	const cl_env_ptr env = ecl_process_env();
 	int radix, mincol, padchar, commachar;
 	cl_object x;
 	int i, j, k;
@@ -650,10 +652,10 @@ fmt_radix(format_stack fmt, bool colon, bool atsign)
 			return;
 		}
 		fmt_prepare_aux_stream(fmt);
-		bds_bind(@'*print-radix*', Cnil);
-		bds_bind(@'*print-base*', MAKE_FIXNUM(10));
+		ecl_bds_bind(env, @'*print-radix*', Cnil);
+		ecl_bds_bind(env, @'*print-base*', MAKE_FIXNUM(10));
 		si_write_object(x, fmt->aux_stream);
-		bds_unwind_n(2);
+		ecl_bds_unwind_n(env, 2);
 		s = 0;
 		i = fmt->aux_string->string.fillp;
 		if (i == 1 && tempstr(fmt, s) == '0') {

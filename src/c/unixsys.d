@@ -130,7 +130,8 @@ si_make_pipe()
 		/* The child inherits a duplicate of our input
 		   handle. Creating a duplicate avoids problems when
 		   the child closes it */
-		int stream_handle = ecl_stream_to_handle(SYM_VAL(@'*standard-input*'), 0);
+		cl_object input_stream = ecl_symbol_value(@'*standard-input*');
+		int stream_handle = ecl_stream_to_handle(input_stream, 0);
 		if (stream_handle >= 0)
 			DuplicateHandle(current, _get_osfhandle(stream_handle) /*GetStdHandle(STD_INPUT_HANDLE)*/,
 					current, &child_stdin, 0, TRUE,
@@ -162,7 +163,8 @@ si_make_pipe()
 		/* The child inherits a duplicate of our output
 		   handle. Creating a duplicate avoids problems when
 		   the child closes it */
-		int stream_handle = ecl_stream_to_handle(SYM_VAL(@'*standard-output*'), 1);
+		cl_object output_stream = ecl_symbol_value(@'*standard-output*');
+		int stream_handle = ecl_stream_to_handle(output_stream, 1);
 		if (stream_handle >= 0)
 			DuplicateHandle(current, _get_osfhandle(stream_handle) /*GetStdHandle(STD_OUTPUT_HANDLE)*/,
 					current, &child_stdout, 0, TRUE,
@@ -183,7 +185,8 @@ si_make_pipe()
 		/* The child inherits a duplicate of our output
 		   handle. Creating a duplicate avoids problems when
 		   the child closes it */
-		int stream_handle = ecl_stream_to_handle(SYM_VAL(@'*error-output*'), 1);
+		cl_object error_stream = ecl_symbol_value(@'*error-output*');
+		int stream_handle = ecl_stream_to_handle(error_stream, 1);
 		if (stream_handle >= 0)
 			DuplicateHandle(current, _get_osfhandle(stream_handle) /*GetStdHandle(STD_ERROR_HANDLE)*/,
 					current, &child_stderr, 0, TRUE,
@@ -274,8 +277,10 @@ si_make_pipe()
 		child_stdin = fd[0];
 	} else {
 		child_stdin = -1;
-		if (input == @'t')
-			child_stdin = ecl_stream_to_handle(SYM_VAL(@'*standard-input*'), 0);
+		if (input == @'t') {
+			cl_object input_stream = ecl_symbol_value(@'*standard-input*');
+			child_stdin = ecl_stream_to_handle(input_stream, 0);
+		}
 		if (child_stdin >= 0)
 			child_stdin = dup(child_stdin);
 		else
@@ -288,8 +293,10 @@ si_make_pipe()
 		child_stdout = fd[1];
 	} else {
 		child_stdout = -1;
-		if (output == @'t')
-			child_stdout = ecl_stream_to_handle(SYM_VAL(@'*standard-output*'), 1);
+		if (output == @'t') {
+			cl_object output_stream = ecl_symbol_value(@'*standard-output*');
+			child_stdout = ecl_stream_to_handle(output_stream, 1);
+		}
 		if (child_stdout >= 0)
 			child_stdout = dup(child_stdout);
 		else
@@ -298,7 +305,8 @@ si_make_pipe()
 	if (error == @':output') {
 		child_stderr = child_stdout;
 	} else if (error == @'t') {
-		child_stderr = ecl_stream_to_handle(SYM_VAL(@'*error-output*'), 1);
+		cl_object error_stream = ecl_symbol_value(@'*error-output*');
+		child_stderr = ecl_stream_to_handle(error_stream, 1);
 	} else {
 		child_stderr = -1;
 	}

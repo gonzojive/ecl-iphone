@@ -861,7 +861,7 @@ dir_recursive(cl_object pathname, cl_object directory)
 @
 	cl_object output = cl_parse_namestring(3, current_dir(), Cnil, Cnil);
 	if (!Null(change_d_p_d)) {
-		ECL_SETQ(@'*default-pathname-defaults*', output);
+		ECL_SETQ(the_env, @'*default-pathname-defaults*', output);
 	}
 	@(return output)
 @)
@@ -901,7 +901,7 @@ si_get_library_pathname(void)
 		FElibc_error("Can't change the current directory to ~A",
 			     1, namestring);
 	if (change_d_p_d != Cnil)
-		ECL_SETQ(@'*default-pathname-defaults*', directory);
+		ECL_SETQ(the_env, @'*default-pathname-defaults*', directory);
 	@(return previous)
 @)
 

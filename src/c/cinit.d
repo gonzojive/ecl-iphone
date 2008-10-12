@@ -109,16 +109,16 @@ main(int argc, char **args)
 	si_trap_fpe(Ct, Cnil);
 
 #ifdef ECL_CMU_FORMAT
-	SYM_VAL(@'*load-verbose*') = Cnil;
+	ECL_SET(@'*load-verbose*', Cnil);
 #endif
-	SYM_VAL(@'*package*') = cl_core.system_package;
+	ECL_SET(@'*package*', cl_core.system_package);
 
-	features = SYM_VAL(@'*features*');
+	features = ecl_symbol_value(@'*features*');
 	features = CONS(ecl_make_keyword("ECL-MIN"), features);
 #ifdef HAVE_UNAME
 	features = CONS(ecl_make_keyword("UNAME"), features);
 #endif
-	SYM_VAL(@'*features*') = features;
+	ECL_SET(@'*features*', features);
 	top_level = _ecl_intern("TOP-LEVEL", cl_core.system_package);
 	cl_def_c_function(top_level, si_simple_toplevel, 0);
 	funcall(1, top_level);

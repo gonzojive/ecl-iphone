@@ -21,10 +21,12 @@
 	(wt-nl "ecl_stack_frame_close(" stack-frame ");")
 	(wt-nl "ecl_stack_set_index(cl_env_copy," stack-frame ");")))
   (when bds-lcl
-    (wt-nl "bds_unwind(" bds-lcl ");"))
+    (wt-nl "ecl_bds_unwind(cl_env_copy," bds-lcl ");"))
   (if (< bds-bind 4)
-      (dotimes (n bds-bind) (declare (fixnum n)) (wt-nl "bds_unwind1();"))
-      (wt-nl "bds_unwind_n(" bds-bind ");"))
+      (dotimes (n bds-bind)
+	(declare (fixnum n))
+	(wt-nl "ecl_bds_unwind1(cl_env_copy);"))
+      (wt-nl "ecl_bds_unwind_n(cl_env_copy," bds-bind ");"))
   (when ihs-p
     (wt-nl "ihs_pop();")))
 

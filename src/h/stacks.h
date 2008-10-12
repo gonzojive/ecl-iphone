@@ -5,6 +5,7 @@
 /*
     Copyright (c) 1984, Taiichi Yuasa and Masami Hagiya.
     Copyright (c) 1990, Giuseppe Attardi.
+    Copyright (c) 2000, Juan Jose Garcia-Ripoll
 
     ECoLisp is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
@@ -37,39 +38,45 @@ typedef struct bds_bd {
 	cl_object value;	/*  previous value of the symbol  */
 } *bds_ptr;
 
-#define	bds_check  \
-	((cl_env.bds_top >= cl_env.bds_limit)? bds_overflow() : (void)0)
+#define	ecl_bds_check(env) \
+	((env->bds_top >= env->bds_limit)? ecl_bds_overflow() : (void)0)
 
 #ifdef ECL_THREADS
-extern ECL_API void bds_bind(cl_object symbol, cl_object value);
-extern ECL_API void bds_push(cl_object symbol);
-extern ECL_API void bds_unwind1();
-extern ECL_API cl_object *ecl_symbol_slot(cl_object s);
-#define SYM_VAL(s) (*ecl_symbol_slot(s))
-#if 0
+typedef struct cl_env_struct *cl_env_ptr;
+extern ECL_API void ecl_bds_bind(cl_env_ptr env, cl_object symbol, cl_object v);
+extern ECL_API void ecl_bds_push(cl_env_ptr env, cl_object symbol);
+extern ECL_API void ecl_bds_unwind1(cl_env_ptr env);
+extern ECL_API cl_object *ecl_symbol_slot(cl_env_ptr env, cl_object s);
+extern ECL_API cl_object ecl_set_symbol(cl_env_ptr env, cl_object s, cl_object v);
+#define ECL_SYM_VAL(env,s) (*ecl_symbol_slot(env,s))
 #define ECL_SET(s,v) ((s)->symbol.value=(v))
-#define ECL_SETQ(s,v) (*ecl_symbol_slot(s)=(v))
+#define ECL_SETQ(env,s,v) (ecl_set_symbol(env,s,v))
 #else
-extern ECL_API cl_object ecl_set_symbol(cl_object s, cl_object v);
-#define ECL_SET(s,v) (ecl_set_symbol(s,v))
-#define ECL_SETQ(s,v) (ecl_set_symbol(s,v))
-#endif
-#else
-#define SYM_VAL(s) ((s)->symbol.value)
+#define ECL_SYM_VAL(env,s) ((s)->symbol.value)
 #define ECL_SET(s,v) ((s)->symbol.value=(v))
-#define ECL_SETQ(s,v) ((s)->symbol.value=(v))
-#define	bds_bind(sym, val)  \
-	(bds_check,(++cl_env.bds_top)->symbol = (sym),  \
-	cl_env.bds_top->value = SYM_VAL(sym),  \
-	SYM_VAL(sym) = (val))
-
-#define bds_push(sym) \
-	(bds_check,(++cl_env.bds_top)->symbol = (sym), cl_env.bds_top->value = SYM_VAL(sym))
-
-#define	bds_unwind1()  \
-	(SYM_VAL(cl_env.bds_top->symbol) = cl_env.bds_top->value, --cl_env.bds_top)
+#define ECL_SETQ(env,s,v) ((s)->symbol.value=(v))
+#define	ecl_bds_bind(env,sym,val) do {	\
+	const cl_env_ptr env_copy = (env);	\
+	const cl_object s = (sym);		\
+	const cl_object v = (val);		\
+	ecl_bds_check(env_copy);		\
+	(++(env_copy->bds_top))->symbol = s,	\
+	env_copy->bds_top->value = s->symbol.value; \
+	s->symbol.value = v; } while (0)
+#define	ecl_bds_push(env,sym) do {	\
+	const cl_env_ptr env_copy = (env);	\
+	const cl_object s = (sym);		\
+	const cl_object v = (val);		\
+	ecl_bds_check(env_copy);		\
+	(++(env_copy->bds_top))->symbol = s,	\
+	env_copy->bds_top->value = s->symbol.value; } while (0);
+#define	ecl_bds_unwind1(env)  do {	\
+	const cl_env_ptr env_copy = (env); 		\
+	const cl_object s = env_copy->bds_top->symbol;	\
+	s->symbol.value = env_copy->bds_top->value;	\
+	--(env_copy->bds_top); } while (0)
 #endif /* ECL_THREADS */
-extern ECL_API void bds_unwind_n(int n);
+extern ECL_API void ecl_bds_unwind_n(cl_env_ptr env, int n);
 
 /****************************
  * INVOCATION HISTORY STACK

@@ -217,7 +217,7 @@
     ((SPECIAL GLOBAL)
      (if (safe-compile)
 	 (wt "ecl_symbol_value(" var-loc ")")
-	 (wt "SYM_VAL(" var-loc ")")))
+	 (wt "ECL_SYM_VAL(cl_env_copy," var-loc ")")))
     (t (wt var-loc))
     ))
 
@@ -348,8 +348,8 @@
       (wt-nl "if(type_of(CAR(" sym-loc "))!=t_symbol)")
       (wt-nl
        "FEinvalid_variable(\"~s is not a symbol.\",CAR(" sym-loc "));"))
-    (wt-nl "if(ecl_endp(" val-loc "))bds_bind(CAR(" sym-loc "),OBJNULL);")
-    (wt-nl "else{bds_bind(CAR(" sym-loc "),CAR(" val-loc "));")
+    (wt-nl "if(ecl_endp(" val-loc "))ecl_bds_bind(cl_env_copy,CAR(" sym-loc "),OBJNULL);")
+    (wt-nl "else{ecl_bds_bind(cl_env_copy,CAR(" sym-loc "),CAR(" val-loc "));")
     (wt-nl val-loc "=CDR(" val-loc ");}")
     (wt-nl sym-loc "=CDR(" sym-loc ");}")
 

@@ -145,7 +145,8 @@ ecl_symbol_value(cl_object s)
 		return s;
 	} else {
 		/* FIXME: Should we check symbol type? */
-		cl_object value = SYM_VAL(s);
+		const cl_env_ptr the_env = ecl_process_env();
+		cl_object value = ECL_SYM_VAL(the_env, s);
 		if (value == OBJNULL)
 			FEunbound_variable(s);
 		return value;
@@ -336,7 +337,7 @@ cl_symbol_name(cl_object x)
 @ {
  AGAIN:
 	if (ecl_stringp(prefix)) {
-		counter = SYM_VAL(@'*gensym-counter*');
+		counter = ECL_SYM_VAL(the_env, @'*gensym-counter*');
 		increment = 1;
 	} else if ((t = type_of(prefix)) == t_fixnum || t == t_bignum) {
 		counter = prefix;
@@ -348,16 +349,16 @@ cl_symbol_name(cl_object x)
 		goto AGAIN;
 	}
 	output = ecl_make_string_output_stream(64);
-	bds_bind(@'*print-escape*', Cnil);
-	bds_bind(@'*print-readably*', Cnil);
-	bds_bind(@'*print-base*', MAKE_FIXNUM(10));
-	bds_bind(@'*print-radix*', Cnil);
+	ecl_bds_bind(the_env, @'*print-escape*', Cnil);
+	ecl_bds_bind(the_env, @'*print-readably*', Cnil);
+	ecl_bds_bind(the_env, @'*print-base*', MAKE_FIXNUM(10));
+	ecl_bds_bind(the_env, @'*print-radix*', Cnil);
 	si_write_ugly_object(prefix, output);
 	si_write_ugly_object(counter, output);
-	bds_unwind_n(4);
+	ecl_bds_unwind_n(the_env, 4);
 	output = cl_make_symbol(cl_get_output_stream_string(output));
 	if (increment)
-		ECL_SETQ(@'*gensym-counter*',ecl_one_plus(counter));
+		ECL_SETQ(the_env, @'*gensym-counter*',ecl_one_plus(counter));
 	@(return output);
 } @)
 
@@ -369,13 +370,13 @@ cl_symbol_name(cl_object x)
 	pack = si_coerce_to_package(pack);
 ONCE_MORE:
 	output = ecl_make_string_output_stream(64);
-	bds_bind(@'*print-escape*', Cnil);
-	bds_bind(@'*print-readably*', Cnil);
-	bds_bind(@'*print-base*', MAKE_FIXNUM(10));
-	bds_bind(@'*print-radix*', Cnil);
+	ecl_bds_bind(the_env, @'*print-escape*', Cnil);
+	ecl_bds_bind(the_env, @'*print-readably*', Cnil);
+	ecl_bds_bind(the_env, @'*print-base*', MAKE_FIXNUM(10));
+	ecl_bds_bind(the_env, @'*print-radix*', Cnil);
 	si_write_ugly_object(prefix, output);
 	si_write_ugly_object(cl_core.gentemp_counter, output);
-	bds_unwind_n(4);
+	ecl_bds_unwind_n(the_env, 4);
 	cl_core.gentemp_counter = ecl_one_plus(cl_core.gentemp_counter);
 	s = ecl_intern(cl_get_output_stream_string(output), pack, &intern_flag);
 	if (intern_flag != 0)

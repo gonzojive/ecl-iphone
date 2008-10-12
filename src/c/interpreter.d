@@ -295,10 +295,11 @@ ecl_lex_env_get_record(register cl_object env, register int s)
 static cl_object
 lambda_bind_var(cl_object env, cl_object var, cl_object val, cl_object specials)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	if (!ecl_member_eq(var, specials))
 		env = bind_var(env, var, val);
 	else
-		bds_bind(var, val);
+		ecl_bds_bind(the_env, var, val);
 	return env;
 }
 
@@ -432,14 +433,6 @@ lambda_bind(cl_object env, cl_narg narg, cl_object lambda, cl_object *sp)
 /* -------------------- AIDS TO THE INTERPRETER -------------------- */
 
 static cl_object
-search_global(register cl_object s) {
-	cl_object x = SYM_VAL(s);
-	if (x == OBJNULL)
-		FEunbound_variable(s);
-	return x;
-}
-
-static cl_object
 close_around(cl_object fun, cl_object lex) {
 	cl_object v = ecl_alloc_object(t_bclosure);
 	v->bclosure.code = fun;
@@ -553,7 +546,9 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	CASE(OP_VARS); {
 		cl_object var_name;
 		GET_DATA(var_name, vector, data);
-		reg0 = search_global(var_name);
+		reg0 = ECL_SYM_VAL(the_env, var_name);
+		if (reg0 == OBJNULL)
+			FEunbound_variable(var_name);
 		THREAD_NEXT;
 	}
 
@@ -627,9 +622,11 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		VAR should be either a special variable or a constant.
 	*/
 	CASE(OP_PUSHVS); {
-		cl_object var_name;
+		cl_object var_name, value;
 		GET_DATA(var_name, vector, data);
-		STACK_PUSH(the_env, search_global(var_name));
+		value = ECL_SYM_VAL(the_env, var_name);
+		if (value == OBJNULL) FEunbound_variable(var_name);
+		STACK_PUSH(the_env, value);
 		THREAD_NEXT;
 	}
 
@@ -789,7 +786,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	*/
 	CASE(OP_EXIT); {
 		ihs_pop();
-		bds_unwind(old_bds_top_index);
+		ecl_bds_unwind(the_env, old_bds_top_index);
 		return reg0;
 	}
 	/* OP_FLET	nfun{arg}, fun1{object}
@@ -987,7 +984,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	CASE(OP_UNBINDS); {
 		cl_oparg n;
 		GET_OPARG(n, vector);
-		bds_unwind_n(n);
+		ecl_bds_unwind_n(the_env, n);
 		THREAD_NEXT;
 	}
 	/* OP_BIND	name{symbol}
@@ -1024,13 +1021,13 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	CASE(OP_BINDS); {
 		cl_object var_name;
 		GET_DATA(var_name, vector, data);
-		bds_bind(var_name, reg0);
+		ecl_bds_bind(the_env, var_name, reg0);
 		THREAD_NEXT;
 	}
 	CASE(OP_PBINDS); {
 		cl_object var_name;
 		GET_DATA(var_name, vector, data);
-		bds_bind(var_name, STACK_POP(the_env));
+		ecl_bds_bind(the_env, var_name, STACK_POP(the_env));
 		THREAD_NEXT;
 	}
 	CASE(OP_VBINDS); {
@@ -1038,7 +1035,8 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		cl_object var_name;
 		GET_OPARG(n, vector);
 		GET_DATA(var_name, vector, data);
-		bds_bind(var_name, (n < the_env->nvalues) ? the_env->values[n] : Cnil);
+		ecl_bds_bind(the_env, var_name,
+			     (n < the_env->nvalues) ? the_env->values[n] : Cnil);
 		THREAD_NEXT;
 	}
 	/* OP_SETQ	n{arg}
@@ -1065,7 +1063,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		/* INV: Not NIL, and of type t_symbol */
 		if (var->symbol.stype & stp_constant)
 			FEassignment_to_constant(var);
-		ECL_SETQ(var, reg0);
+		ECL_SETQ(the_env, var, reg0);
 		THREAD_NEXT;
 	}
 	CASE(OP_PSETQ); {
@@ -1078,7 +1076,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		cl_object var;
 		GET_DATA(var, vector, data);
 		/* INV: Not NIL, and of type t_symbol */
-		ECL_SETQ(var, STACK_POP(the_env));
+		ECL_SETQ(the_env, var, STACK_POP(the_env));
 		THREAD_NEXT;
 	}
 	CASE(OP_VSETQ); {
@@ -1096,7 +1094,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		GET_DATA(var, vector, data);
 		GET_OPARG(index, vector);
 		v = (index >= the_env->nvalues)? Cnil : the_env->values[index];
-		ECL_SETQ(var, v);
+		ECL_SETQ(the_env, var, v);
 		THREAD_NEXT;
 	}
 			
@@ -1297,7 +1295,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		THREAD_NEXT;
 	}
 	CASE(OP_PROTECT_NORMAL); {
-		bds_unwind(the_env->frs_top->frs_bds_top_index);
+		ecl_bds_unwind(the_env, the_env->frs_top->frs_bds_top_index);
 		frs_pop(the_env);
 		STACK_POP(the_env);
 		lex_env = STACK_POP(the_env);
@@ -1328,9 +1326,9 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		for (n = 0; !ecl_endp(vars); n++, vars = ECL_CONS_CDR(vars)) {
 			cl_object var = ECL_CONS_CAR(vars);
 			if (values == Cnil) {
-				bds_bind(var, OBJNULL);
+				ecl_bds_bind(the_env, var, OBJNULL);
 			} else {
-				bds_bind(var, cl_car(values));
+				ecl_bds_bind(the_env, var, cl_car(values));
 				values = ECL_CONS_CDR(values);
 			}
 		}
@@ -1339,13 +1337,13 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	}
 	CASE(OP_EXIT_PROGV); {
 		cl_index n = fix(STACK_POP(the_env));
-		bds_unwind_n(n);
+		ecl_bds_unwind_n(the_env, n);
 		THREAD_NEXT;
 	}
 
 	CASE(OP_STEPIN); {
 		cl_object form;
-		cl_object a = SYM_VAL(@'si::*step-action*');
+		cl_object a = ECL_SYM_VAL(the_env, @'si::*step-action*');
 		cl_index n;
 		GET_DATA(form, vector, data);
 		SETUP_ENV(the_env);
@@ -1354,15 +1352,15 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		if (a == Ct) {
 			/* We are stepping in, but must first ask the user
 			 * what to do. */
-			ECL_SETQ(@'si::*step-level*',
-				 cl_1P(SYM_VAL(@'si::*step-level*')));
+			ECL_SETQ(the_env, @'si::*step-level*',
+				 cl_1P(ECL_SYM_VAL(the_env, @'si::*step-level*')));
 			STACK_PUSH(the_env, form);
 			INTERPRET_FUNCALL(form, the_env, frame_aux, 1, @'si::stepper');
 		} else if (a != Cnil) {
 			/* The user told us to step over. *step-level* contains
 			 * an integer number that, when it becomes 0, means
 			 * that we have finished stepping over. */
-			ECL_SETQ(@'si::*step-action*', cl_1P(a));
+			ECL_SETQ(the_env, @'si::*step-action*', cl_1P(a));
 		} else {
 			/* We are not inside a STEP form. This should
 			 * actually never happen. */
@@ -1378,28 +1376,28 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		cl_fixnum n;
 		GET_OPARG(n, vector);
 		SETUP_ENV(the_env);
-		if (SYM_VAL(@'si::*step-action*') == Ct) {
+		if (ECL_SYM_VAL(the_env, @'si::*step-action*') == Ct) {
 			STACK_PUSH(the_env, reg0);
 			INTERPRET_FUNCALL(reg0, the_env, frame_aux, 1, @'si::stepper');
 		}
 		INTERPRET_FUNCALL(reg0, the_env, frame_aux, n, reg0);
 	}
 	CASE(OP_STEPOUT); {
-		cl_object a = SYM_VAL(@'si::*step-action*');
+		cl_object a = ECL_SYM_VAL(the_env, @'si::*step-action*');
 		cl_index n;
 		SETUP_ENV(the_env);
 		the_env->values[0] = reg0;
 		n = ecl_stack_push_values(the_env);
 		if (a == Ct) {
 			/* We exit one stepping level */
-			ECL_SETQ(@'si::*step-level*',
-				 cl_1M(SYM_VAL(@'si::*step-level*')));
+			ECL_SETQ(the_env, @'si::*step-level*',
+				 cl_1M(ECL_SYM_VAL(the_env, @'si::*step-level*')));
 		} else if (a == MAKE_FIXNUM(0)) {
 			/* We are back to the level in which the user
 			 * selected to step over. */
-			ECL_SETQ(@'si::*step-action*', Ct);
+			ECL_SETQ(the_env, @'si::*step-action*', Ct);
 		} else if (a != Cnil) {
-			ECL_SETQ(@'si::*step-action*', cl_1M(a));
+			ECL_SETQ(the_env, @'si::*step-action*', cl_1M(a));
 		} else {
 			/* Not stepping, nothing to be done. */
 		}

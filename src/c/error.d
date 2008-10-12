@@ -81,7 +81,7 @@ FEprogram_error(const char *s, int narg, ...)
 	    /* When FEprogram_error is invoked from the compiler, we can
 	     * provide information about the offending form.
 	     */
-	    cl_object stmt = SYM_VAL(@'si::*current-form*');
+	    cl_object stmt = ecl_symbol_value(@'si::*current-form*');
 	    if (stmt != Cnil) {
 		real_args = @list(3, stmt, text, real_args);
 		text = make_constant_base_string("In form~%~S~%~?");

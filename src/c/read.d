@@ -33,7 +33,7 @@
 #undef _complex
 
 #define	cat(rtbl,c)	((rtbl)->readtable.table[c].syntax_type)
-#define read_suppress (SYM_VAL(@'*read-suppress*') != Cnil)
+#define read_suppress (ecl_symbol_value(@'*read-suppress*') != Cnil)
 
 static struct ecl_readtable_entry*
 read_table_entry(cl_object rdtbl, cl_object c);
@@ -87,14 +87,14 @@ cl_object
 ecl_read_object_non_recursive(cl_object in)
 {
 	cl_object x;
+	const cl_env_ptr env = ecl_process_env();
 
-	bds_bind(@'si::*sharp-eq-context*', Cnil);
-	bds_bind(@'si::*backq-level*', MAKE_FIXNUM(0));
+	ecl_bds_bind(env, @'si::*sharp-eq-context*', Cnil);
+	ecl_bds_bind(env, @'si::*backq-level*', MAKE_FIXNUM(0));
 	x = ecl_read_object(in);
-	if (!Null(SYM_VAL(@'si::*sharp-eq-context*')))
+	if (!Null(ECL_SYM_VAL(env, @'si::*sharp-eq-context*')))
 		x = patch_sharp(x);
-	bds_unwind1();
-	bds_unwind1();
+	ecl_bds_unwind_n(env, 2);
 	return(x);
 }
 
@@ -580,7 +580,8 @@ static
 cl_object comma_reader(cl_object in, cl_object c)
 {
 	cl_object x, y;
-	cl_fixnum backq_level = fix(SYM_VAL(@'si::*backq-level*'));
+	const cl_env_ptr env = ecl_process_env();
+	cl_fixnum backq_level = fix(ECL_SYM_VAL(env, @'si::*backq-level*'));
 
 	if (backq_level <= 0)
 		FEreader_error("A comma has appeared out of a backquote.", in, 0);
@@ -595,19 +596,20 @@ cl_object comma_reader(cl_object in, cl_object c)
 	} else {
 		x = @'si::unquote';
 	}
-	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level-1));
+	ECL_SETQ(env, @'si::*backq-level*', MAKE_FIXNUM(backq_level-1));
 	y = ecl_read_object(in);
-	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level));
+	ECL_SETQ(env, @'si::*backq-level*', MAKE_FIXNUM(backq_level));
 	return cl_list(2, x, y);
 }
 
 static
 cl_object backquote_reader(cl_object in, cl_object c)
 {
-	cl_fixnum backq_level = fix(SYM_VAL(@'si::*backq-level*'));
-	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level+1));
+	const cl_env_ptr the_env = ecl_process_env();
+	cl_fixnum backq_level = fix(ECL_SYM_VAL(the_env, @'si::*backq-level*'));
+	ECL_SETQ(the_env, @'si::*backq-level*', MAKE_FIXNUM(backq_level+1));
 	in = ecl_read_object(in);
-	ECL_SETQ(@'si::*backq-level*', MAKE_FIXNUM(backq_level));
+	ECL_SETQ(the_env, @'si::*backq-level*', MAKE_FIXNUM(backq_level));
 #if 0
 	@(return cl_macroexpand_1(2, cl_list(2, @'si::quasiquote', in), Cnil));
 #else
@@ -732,6 +734,7 @@ semicolon_reader(cl_object in, cl_object c)
 static cl_object
 sharp_C_reader(cl_object in, cl_object c, cl_object d)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object x, real, imag;
 
 	if (d != Cnil && !read_suppress)
@@ -750,7 +753,7 @@ sharp_C_reader(cl_object in, cl_object c, cl_object d)
 	   structures, we cannot check the types of the elements, and we
 	   must build the complex number by hand. */
 	if ((CONSP(real) || CONSP(imag)) &&
-	    !Null(SYM_VAL(@'si::*sharp-eq-context*')))
+	    !Null(ECL_SYM_VAL(the_env, @'si::*sharp-eq-context*')))
 	{
 		x = ecl_alloc_object(t_complex);
 		x->complex.real = real;
@@ -764,15 +767,16 @@ sharp_C_reader(cl_object in, cl_object c, cl_object d)
 static cl_object
 sharp_backslash_reader(cl_object in, cl_object c, cl_object d)
 {
+	const cl_env_ptr env = ecl_process_env();
 	cl_object nc, token;
 	if (d != Cnil && !read_suppress)
 		if (!FIXNUMP(d) ||
 		    fix(d) != 0)
 			FEreader_error("~S is an illegal CHAR-FONT.", in, 1, d);
 			/*  assuming that CHAR-FONT-LIMIT is 1  */
-	bds_bind(@'*readtable*', cl_core.standard_readtable);
+	ecl_bds_bind(env, @'*readtable*', cl_core.standard_readtable);
 	token = ecl_read_object_with_delimiter(in, EOF, 1, cat_single_escape);
-	bds_unwind_n(1);
+	ecl_bds_unwind1(env);
 	if (token == Cnil) {
 		c = Cnil;
 	} else if (token->base_string.fillp == 1) {
@@ -871,8 +875,9 @@ static cl_object
 sharp_left_parenthesis_reader(cl_object in, cl_object c, cl_object d)
 {
 	extern int _cl_backq_car(cl_object *);
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object v;
-	if (fix(SYM_VAL(@'si::*backq-level*')) > 0) {
+	if (fix(ECL_SYM_VAL(the_env, @'si::*backq-level*')) > 0) {
 		/* First case: ther might be unquoted elements in the vector.
 		 * Then we just create a form that generates the vector.
 		 */
@@ -1123,8 +1128,9 @@ sharp_R_reader(cl_object in, cl_object c, cl_object d)
 static cl_object
 sharp_eq_reader(cl_object in, cl_object c, cl_object d)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object pair, value;
-	cl_object sharp_eq_context = SYM_VAL(@'si::*sharp-eq-context*');
+	cl_object sharp_eq_context = ECL_SYM_VAL(the_env, @'si::*sharp-eq-context*');
 
 	if (read_suppress) @(return)
 	if (Null(d))
@@ -1132,7 +1138,7 @@ sharp_eq_reader(cl_object in, cl_object c, cl_object d)
 	if (ecl_assql(d, sharp_eq_context) != Cnil)
 		FEreader_error("Duplicate definitions for #~D=.", in, 1, d);
 	pair = ecl_list1(d);
-	ECL_SETQ(@'si::*sharp-eq-context*', CONS(pair, sharp_eq_context));
+	ECL_SETQ(the_env, @'si::*sharp-eq-context*', CONS(pair, sharp_eq_context));
 	value = ecl_read_object(in);
 	if (value == pair)
 		FEreader_error("#~D# is defined by itself.", in, 1, d);
@@ -1143,12 +1149,13 @@ sharp_eq_reader(cl_object in, cl_object c, cl_object d)
 static cl_object
 sharp_sharp_reader(cl_object in, cl_object c, cl_object d)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object pair;
 
 	if (read_suppress) @(return Cnil)
 	if (Null(d))
 		FEreader_error("The ## readmacro requires an argument.", in, 0);
-	pair = ecl_assq(d, SYM_VAL(@'si::*sharp-eq-context*'));
+	pair = ecl_assq(d, ECL_SYM_VAL(the_env, @'si::*sharp-eq-context*'));
 	if (pair != Cnil)
 		@(return pair)
 	FEreader_error("#~D# is undefined.", in, 1, d);
@@ -1208,7 +1215,9 @@ do_patch_sharp(cl_object x)
 static cl_object
 patch_sharp(cl_object x)
 {
-	cl_object pairs, sharp_eq_context = SYM_VAL(@'si::*sharp-eq-context*');
+	const cl_env_ptr the_env = ecl_process_env();
+	cl_object sharp_eq_context = ECL_SYM_VAL(the_env, @'si::*sharp-eq-context*');
+	cl_object pairs;
 
 	pairs = sharp_eq_context;
 	loop_for_in(pairs) { 
@@ -1349,41 +1358,45 @@ ecl_copy_readtable(cl_object from, cl_object to)
 cl_object
 ecl_current_readtable(void)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object r;
 
 	/* INV: *readtable* always has a value */
-	r = SYM_VAL(@'*readtable*');
+	r = ECL_SYM_VAL(the_env, @'*readtable*');
 	if (type_of(r) != t_readtable) {
-		ECL_SETQ(@'*readtable*', ecl_copy_readtable(cl_core.standard_readtable, Cnil));
+		ECL_SETQ(the_env, @'*readtable*',
+			 ecl_copy_readtable(cl_core.standard_readtable, Cnil));
 		FEerror("The value of *READTABLE*, ~S, was not a readtable.",
 			1, r);
 	}
-	return(r);
+	return r;
 }
 
 int
 ecl_current_read_base(void)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object x;
 
 	/* INV: *READ-BASE* always has a value */
-	x = SYM_VAL(@'*read_base*');
+	x = ECL_SYM_VAL(the_env, @'*read_base*');
 	if (FIXNUMP(x)) {
 		cl_fixnum b = fix(x);
 		if (b >= 2 && b <= 36)
 			return b;
 	}
-	ECL_SETQ(@'*read_base*', MAKE_FIXNUM(10));
+	ECL_SETQ(the_env, @'*read_base*', MAKE_FIXNUM(10));
 	FEerror("The value of *READ-BASE*, ~S, was illegal.", 1, x);
 }
 
 char
 ecl_current_read_default_float_format(void)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object x;
 
 	/* INV: *READ-DEFAULT-FLOAT-FORMAT* is always bound to something */
-	x = SYM_VAL(@'*read-default-float-format*');
+	x = ECL_SYM_VAL(the_env, @'*read-default-float-format*');
 	if (x == @'single-float' || x == @'short-float')
 		return 'F';
 	if (x == @'double-float')
@@ -1395,7 +1408,7 @@ ecl_current_read_default_float_format(void)
 		return 'D';
 #endif
 	}
-	ECL_SETQ(@'*read-default-float-format*', @'single-float');
+	ECL_SETQ(the_env, @'*read-default-float-format*', @'single-float');
 	FEerror("The value of *READ-DEFAULT-FLOAT-FORMAT*, ~S, was illegal.",
 		1, x);
 }
@@ -1403,10 +1416,11 @@ ecl_current_read_default_float_format(void)
 static cl_object
 stream_or_default_input(cl_object stream)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	if (Null(stream))
-		return SYM_VAL(@'*standard-input*');
+		return ECL_SYM_VAL(the_env, @'*standard-input*');
 	if (stream == Ct)
-		return SYM_VAL(@'*terminal-io*');
+		return ECL_SYM_VAL(the_env, @'*terminal-io*');
 	return stream;
 }
 
@@ -1507,13 +1521,12 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 	if (Null(recursivep)) {
 		l = do_read_delimited_list(delimiter, strm, 1);
 	} else {
-		bds_bind(@'si::*sharp-eq-context*', Cnil);
-		bds_bind(@'si::*backq-level*', MAKE_FIXNUM(0));
+		ecl_bds_bind(the_env, @'si::*sharp-eq-context*', Cnil);
+		ecl_bds_bind(the_env, @'si::*backq-level*', MAKE_FIXNUM(0));
 		l = do_read_delimited_list(delimiter, strm, 1);
-		if (!Null(SYM_VAL(@'si::*sharp-eq-context*')))
+		if (!Null(ECL_SYM_VAL(the_env, @'si::*sharp-eq-context*')))
 			l = patch_sharp(l);
-		bds_unwind1();
-		bds_unwind1();
+		ecl_bds_unwind_n(the_env, 2);
 	}
 	@(return l)
 @)
@@ -2073,6 +2086,7 @@ init_read(void)
 cl_object
 read_VV(cl_object block, void (*entry_point)(cl_object))
 {
+	const cl_env_ptr env = ecl_process_env();
 	volatile cl_object old_eptbc = cl_core.packages_to_be_created;
 	volatile cl_object x;
 	cl_index i, len, perm_len, temp_len;
@@ -2087,7 +2101,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 
 	in = OBJNULL;
 	CL_UNWIND_PROTECT_BEGIN {
-		bds_bind(@'si::*cblock*', block);
+		ecl_bds_bind(env, @'si::*cblock*', block);
 		if (cl_core.packages_to_be_created == OBJNULL)
 			cl_core.packages_to_be_created = Cnil;
 
@@ -2113,12 +2127,12 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 		/* Read all data for the library */
 		in=ecl_make_string_input_stream(make_constant_base_string(block->cblock.data_text),
 						0, block->cblock.data_text_size);
-		bds_bind(@'*read-base*', MAKE_FIXNUM(10));
-		bds_bind(@'*read-default-float-format*', @'single-float');
-		bds_bind(@'*read-suppress*', Cnil);
-		bds_bind(@'*readtable*', cl_core.standard_readtable);
-		bds_bind(@'*package*', cl_core.lisp_package);
-		bds_bind(@'si::*sharp-eq-context*', Cnil);
+		ecl_bds_bind(env, @'*read-base*', MAKE_FIXNUM(10));
+		ecl_bds_bind(env, @'*read-default-float-format*', @'single-float');
+		ecl_bds_bind(env, @'*read-suppress*', Cnil);
+		ecl_bds_bind(env, @'*readtable*', cl_core.standard_readtable);
+		ecl_bds_bind(env, @'*package*', cl_core.lisp_package);
+		ecl_bds_bind(env, @'si::*sharp-eq-context*', Cnil);
 		for (i = 0 ; i < len; i++) {
 			x = ecl_read_object(in);
 			if (x == OBJNULL)
@@ -2128,7 +2142,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 			else
 				VVtemp[i-perm_len] = x;
 		}
-		if (!Null(SYM_VAL(@'si::*sharp-eq-context*'))) {
+		if (!Null(ECL_SYM_VAL(env, @'si::*sharp-eq-context*'))) {
 			while (i--) {
 				if (i < perm_len) {
 					VV[i] = patch_sharp(VV[i]);
@@ -2137,7 +2151,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 				}
 			}
 		}
-		bds_unwind_n(6);
+		ecl_bds_unwind_n(env, 6);
 		if (i < len)
 			FEreader_error("Not enough data while loading binary file", in, 0);
 	NO_DATA_LABEL:
@@ -2166,7 +2180,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 			block->cblock.temp_data_size = 0;
 			ecl_dealloc(VVtemp);
 		}
-		bds_unwind1();
+		ecl_bds_unwind1(env);
 	} CL_UNWIND_PROTECT_EXIT {
 		if (in != OBJNULL)
 			cl_close(1,in);

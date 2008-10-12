@@ -227,8 +227,9 @@ _ecl_alloc_env()
 int
 cl_shutdown(void)
 {
+	const cl_env_ptr env = ecl_process_env();
 	if (ecl_get_option(ECL_OPT_BOOTED) > 0) {
-		cl_object l = SYM_VAL(@'si::*exit-hooks*');
+		cl_object l = ecl_symbol_value(@'si::*exit-hooks*');
 		cl_object form = cl_list(2, @'funcall', Cnil);
 		while (CONSP(l)) {
 			ecl_elt_set(form, 1, ECL_CONS_CAR(l));
@@ -642,6 +643,7 @@ si_getenv(cl_object var)
 cl_object
 si_setenv(cl_object var, cl_object value)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_fixnum ret_val;
 
 	var = ecl_check_cl_type(@'ext::setenv', var, t_base_string);
@@ -682,6 +684,7 @@ si_setenv(cl_object var, cl_object value)
 cl_object
 si_pointer(cl_object x)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	@(return ecl_make_unsigned_integer((cl_index)x))
 }
 

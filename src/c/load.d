@@ -296,7 +296,7 @@ ecl_library_error(cl_object block) {
 void
 ecl_library_close(cl_object block) {
 	const char *filename;
-	bool verbose = SYM_VAL(@'si::*gc-verbose*') != Cnil;
+	bool verbose = ecl_symbol_value(@'si::*gc-verbose*') != Cnil;
 	cl_object l;
 	int i;
 
@@ -414,6 +414,7 @@ OUTPUT:
 cl_object
 si_load_source(cl_object source, cl_object verbose, cl_object print)
 {
+	cl_env_ptr the_env = ecl_process_env();
 	cl_object x, strm;
 
 	/* Source may be either a stream or a filename */
@@ -428,7 +429,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 	CL_UNWIND_PROTECT_BEGIN {
 		cl_object form_index = MAKE_FIXNUM(0);
 		cl_object location = CONS(source, form_index);
-		bds_bind(@'ext::*source-location*', location);
+		ecl_bds_bind(the_env, @'ext::*source-location*', location);
 		for (;;) {
 			x = cl_read(3, strm, Cnil, OBJNULL);
 			if (x == OBJNULL)
@@ -441,7 +442,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 			form_index = ecl_plus(MAKE_FIXNUM(1),form_index);
 			ECL_RPLACD(location, form_index);
 		}
-		bds_unwind1();
+		ecl_bds_unwind1(the_env);
 	} CL_UNWIND_PROTECT_EXIT {
 		/* We do not want to come back here if close_stream fails,
 		   therefore, first we frs_pop() current jump point, then
@@ -524,10 +525,10 @@ NOT_A_FILENAME:
 		cl_format(3, Ct, make_constant_base_string("~&;;; Loading ~s~%"),
 			  filename);
 	}
-	bds_bind(@'*package*', ecl_symbol_value(@'*package*'));
-	bds_bind(@'*readtable*', ecl_symbol_value(@'*readtable*'));
-	bds_bind(@'*load-pathname*', not_a_filename? Cnil : source);
-	bds_bind(@'*load-truename*', not_a_filename? Cnil : cl_truename(filename));
+	ecl_bds_bind(the_env, @'*package*', ecl_symbol_value(@'*package*'));
+	ecl_bds_bind(the_env, @'*readtable*', ecl_symbol_value(@'*readtable*'));
+	ecl_bds_bind(the_env, @'*load-pathname*', not_a_filename? Cnil : source);
+	ecl_bds_bind(the_env, @'*load-truename*', not_a_filename? Cnil : cl_truename(filename));
 	if (!Null(function)) {
 		ok = funcall(4, function, filename, verbose, print);
 	} else {
@@ -549,7 +550,7 @@ NOT_A_FILENAME:
 #endif
 		ok = si_load_source(filename, verbose, print);
 	}
-	bds_unwind_n(4);
+	ecl_bds_unwind_n(the_env, 4);
 	if (!Null(ok))
 		FEerror("LOAD: Could not load file ~S (Error: ~S)",
 			2, filename, ok);
