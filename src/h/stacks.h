@@ -109,16 +109,16 @@ extern ECL_API cl_object ihs_top_function_name(void);
  * Frames are established, for instance, by CATCH, BLOCK, TAGBODY,
  * LAMBDA, UNWIND-PROTECT, etc.
  *
- * Frames are established by frs_push(). For each call to frs_push()
- * there must be a corresponding frs_pop(). More precisely, since our
+ * Frames are established by ecl_frs_push(). For each call to ecl_frs_push()
+ * there must be a corresponding ecl_frs_pop(). More precisely, since our
  * frame mechanism relies on the C stack and on the setjmp/longjmp
  * functions, any function that creates a frame must also destroy it
- * with frs_pop() before returning.
+ * with ecl_frs_pop() before returning.
  *
  * Frames are identified by a value frs_val. This can be either a
  * unique identifier, created for each CATCH, BLOCK, etc, or a common
  * one ECL_PROTECT_TAG, used by UNWIND-PROTECT forms. The first type
- * of frames can be target of a search frs_sch() and thus one can jump
+ * of frames can be target of a search ecl_frs_sch() and thus one can jump
  * to them. The second type of frames are like barriers designed to
  * intercept the jumps to the outer frames and are called
  * automatically by the function unwind() whenever it jumps to a frame
@@ -133,9 +133,9 @@ typedef struct ecl_frame {
 	cl_index	frs_sp;
 } *ecl_frame_ptr;
 
-extern ECL_API ecl_frame_ptr _frs_push(register cl_object val);
-#define frs_push(val)  ecl_setjmp(_frs_push(val)->frs_jmpbuf)
-#define frs_pop() (cl_env.frs_top--)
+extern ECL_API ecl_frame_ptr _ecl_frs_push(register cl_env_ptr, register cl_object);
+#define ecl_frs_push(env,val)  ecl_setjmp(_ecl_frs_push(env,val)->frs_jmpbuf)
+#define ecl_frs_pop(env) ((env)->frs_top--)
 
 /*******************
  * ARGUMENTS STACK
@@ -209,49 +209,52 @@ extern ECL_API ecl_frame_ptr _frs_push(register cl_object val);
  *********************************/
 
 #define CL_NEWENV_BEGIN {\
-	cl_env_ptr the_env = ecl_process_env(); \
+	const cl_env_ptr the_env = ecl_process_env(); \
 	cl_index __i = ecl_stack_push_values(the_env); \
 
 #define CL_NEWENV_END \
 	ecl_stack_pop_values(the_env,__i); }
 
-#define CL_UNWIND_PROTECT_BEGIN {\
+#define CL_UNWIND_PROTECT_BEGIN(the_env) do {	   \
 	bool __unwinding; ecl_frame_ptr __next_fr; \
-	cl_env_ptr the_env = ecl_process_env(); \
+	const cl_env_ptr __the_env = (the_env);	   \
 	cl_index __nr; \
-	if (frs_push(ECL_PROTECT_TAG)) { \
-		__unwinding=1; __next_fr=cl_env.nlj_fr; \
+	if (ecl_frs_push(__the_env,ECL_PROTECT_TAG)) {	\
+		__unwinding=1; __next_fr=__the_env->nlj_fr; \
 	} else {
 
 #define CL_UNWIND_PROTECT_EXIT \
 	__unwinding=0; } \
-	frs_pop(); \
-	__nr = ecl_stack_push_values(the_env);
+	ecl_frs_pop(__the_env); \
+	__nr = ecl_stack_push_values(__the_env);
 
 #define CL_UNWIND_PROTECT_END \
-	ecl_stack_pop_values(the_env,__nr);	\
-	if (__unwinding) ecl_unwind(__next_fr); }
+	ecl_stack_pop_values(__the_env,__nr);	\
+	if (__unwinding) ecl_unwind(__the_env,__next_fr); } while(0)
 
-#define CL_BLOCK_BEGIN(id) { \
-	cl_object id = new_frame_id(); \
-	if (frs_push(id) == 0)
+#define CL_BLOCK_BEGIN(the_env,id) do {   	\
+	const cl_object __id = new_frame_id();	\
+	const cl_env_ptr __the_env = (the_env);	\
+	if (ecl_frs_push(__the_env,__id) == 0)
 
-#define CL_BLOCK_END } \
-	frs_pop()
+#define CL_BLOCK_END \
+	ecl_frs_pop(__the_env); } while(0)
 
-#define CL_CATCH_BEGIN(tag) \
-	if (frs_push(tag) == 0) {
+#define CL_CATCH_BEGIN(the_env,tag) do {	\
+	const cl_env_ptr __the_env = (the_env);	\
+	if (ecl_frs_push(__the_env,tag) == 0) {
 
 #define CL_CATCH_END } \
-	frs_pop();
+	frs_pop(); } while (0)
 
-#define CL_CATCH_ALL_BEGIN \
-	if (frs_push(ECL_PROTECT_TAG) == 0) {
+#define CL_CATCH_ALL_BEGIN(the_env) do {	\
+	const cl_env_ptr __the_env = (the_env);	\
+	if (ecl_frs_push(__the_env,ECL_PROTECT_TAG) == 0) {
 
 #define CL_CATCH_ALL_IF_CAUGHT } else {
 
 #define CL_CATCH_ALL_END } \
-	frs_pop()
+	ecl_frs_pop(__the_env); } while(0)
 
 #ifdef __cplusplus
 }

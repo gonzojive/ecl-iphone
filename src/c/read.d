@@ -2100,7 +2100,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 	block->cblock.entry = entry_point;
 
 	in = OBJNULL;
-	CL_UNWIND_PROTECT_BEGIN {
+	CL_UNWIND_PROTECT_BEGIN(env) {
 		ecl_bds_bind(env, @'si::*cblock*', block);
 		if (cl_core.packages_to_be_created == OBJNULL)
 			cl_core.packages_to_be_created = Cnil;

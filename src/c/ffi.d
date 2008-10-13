@@ -420,7 +420,7 @@ si_load_foreign_module(cl_object filename)
 
 #ifdef ECL_THREADS
 	mp_get_lock(1, ecl_symbol_value(@'mp::+load-compile-lock+'));
-	CL_UNWIND_PROTECT_BEGIN {
+	CL_UNWIND_PROTECT_BEGIN(ecl_process_env()) {
 #endif
 	output = ecl_library_open(filename, 0);
 	if (output->cblock.handle == NULL)

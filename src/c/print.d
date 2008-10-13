@@ -242,7 +242,7 @@ call_structure_print_function(cl_object f, cl_object x, cl_object stream)
 		oiisp = env->iisp;
 		memcpy(ois, env->indent_stack, env->isp * sizeof(*ois));
 	}
-	CL_UNWIND_PROTECT_BEGIN {
+	CL_UNWIND_PROTECT_BEGIN(env) {
 #ifdef CLOS
 		funcall(3, @'print-object', x, stream);
 #else
@@ -685,7 +685,7 @@ write_bignum(cl_object x, cl_object stream)
 	struct powers powers[num_powers];
 #else
 	struct powers *powers = (struct powers*)malloc(sizeof(struct powers)*num_powers);
-	CL_UNWIND_PROTECT_BEGIN {
+	CL_UNWIND_PROTECT_BEGIN(ecl_process_env()) {
 #endif
 		cl_object p;
 		cl_index i, n_digits;

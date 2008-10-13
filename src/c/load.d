@@ -343,6 +343,7 @@ ecl_library_close_all(void)
 cl_object
 si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object block;
 	cl_object basename;
 	cl_object prefix;
@@ -363,7 +364,7 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 	   to load the same file, we may end up initializing twice the same
 	   module. */
 	mp_get_lock(1, ecl_symbol_value(@'mp::+load-compile-lock+'));
-	CL_UNWIND_PROTECT_BEGIN {
+	CL_UNWIND_PROTECT_BEGIN(the_env) {
 #endif
 	/* Try to load shared object file */
 	block = ecl_library_open(filename, 1);
@@ -426,7 +427,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		if (Null(strm))
 			@(return Cnil)
 	}
-	CL_UNWIND_PROTECT_BEGIN {
+	CL_UNWIND_PROTECT_BEGIN(the_env) {
 		cl_object form_index = MAKE_FIXNUM(0);
 		cl_object location = CONS(source, form_index);
 		ecl_bds_bind(the_env, @'ext::*source-location*', location);

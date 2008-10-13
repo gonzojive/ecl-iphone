@@ -150,7 +150,7 @@
 	  (wt-nl "{ cl_object " tag-loc ";")
 	  (setq env-grows t))		; just to ensure closing the block
 	(bind "new_frame_id()" tag-loc)
-	(wt-nl "if (frs_push(" tag-loc ")) {")
+	(wt-nl "if (ecl_frs_push(cl_env_copy," tag-loc ")) {")
 	;; Allocate labels.
 	(dolist (tag body)
 	  (when (and (tag-p tag) (plusp (tag-ref tag)))

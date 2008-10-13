@@ -118,7 +118,7 @@
 	    (let ((*destination* (tmp-destination *destination*)))
 	      (set-loc loc)
 	      (setq loc *destination*))
-	    (wt-nl "frs_pop();"))
+	    (wt-nl "ecl_frs_pop(cl_env_copy);"))
 	   (TAIL-RECURSION-MARK)
 	   (JUMP (setq jump-p t))
 	   (t (baboon))))))
@@ -145,7 +145,7 @@
           (baboon))
         ;;; Never reached
         )
-       ((eq ue 'FRAME) (wt-nl "frs_pop();"))
+       ((eq ue 'FRAME) (wt-nl "ecl_frs_pop(cl_env_copy);"))
        ((eq ue 'TAIL-RECURSION-MARK)
         (if (eq exit 'TAIL-RECURSION-MARK)
           (progn (unwind-bds bds-lcl bds-bind stack-frame ihs-p)

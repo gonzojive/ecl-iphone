@@ -392,9 +392,8 @@ frs_overflow(void)		/* used as condition in list.d */
 }
 
 ecl_frame_ptr
-_frs_push(register cl_object val)
+_ecl_frs_push(register cl_env_ptr env, register cl_object val)
 {
-	cl_env_ptr env = ecl_process_env();
 	ecl_frame_ptr output = ++env->frs_top;
 	if (output >= env->frs_limit) {
 		frs_overflow();
@@ -408,9 +407,8 @@ _frs_push(register cl_object val)
 }
 
 void
-ecl_unwind(ecl_frame_ptr fr)
+ecl_unwind(cl_env_ptr env, ecl_frame_ptr fr)
 {
-	cl_env_ptr env = ecl_process_env();
 	env->nlj_fr = fr;
 	while (env->frs_top != fr && env->frs_top->frs_val != ECL_PROTECT_TAG)
 		--env->frs_top;

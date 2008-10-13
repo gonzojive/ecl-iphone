@@ -230,6 +230,7 @@ si_readlink(cl_object filename) {
 cl_object
 cl_truename(cl_object orig_pathname)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object dir;
 	cl_object previous = current_dir();
 
@@ -244,7 +245,7 @@ cl_truename(cl_object orig_pathname)
 	 * then we resolve the value of the symlink and continue traversing
 	 * the filesystem.
 	 */
-	CL_UNWIND_PROTECT_BEGIN {
+	CL_UNWIND_PROTECT_BEGIN(the_env) {
 		cl_object kind, filename;
 	BEGIN:
 		filename = si_coerce_to_filename(pathname);
@@ -845,7 +846,7 @@ dir_recursive(cl_object pathname, cl_object directory)
 	cl_object prev_dir = Cnil;
 	cl_object output;
 @
-	CL_UNWIND_PROTECT_BEGIN {
+	CL_UNWIND_PROTECT_BEGIN(the_env) {
 		prev_dir = current_dir();
 		mask = coerce_to_file_pathname(mask);
 		change_drive(mask);

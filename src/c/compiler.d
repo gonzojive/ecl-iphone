@@ -2717,7 +2717,7 @@ si_make_lambda(cl_object name, cl_object rest)
 	struct cl_compiler_env new_c_env;
 
 	c_new_env(&new_c_env, Cnil, 0);
-	CL_UNWIND_PROTECT_BEGIN {
+	CL_UNWIND_PROTECT_BEGIN(ecl_process_env()) {
 		lambda = ecl_make_lambda(name,rest);
 	} CL_UNWIND_PROTECT_EXIT {
 		ENV = old_c_env;
@@ -2747,7 +2747,7 @@ si_make_lambda(cl_object name, cl_object rest)
 	ENV->lex_env = env;
 	ENV->stepping = stepping != Cnil;
 	handle = asm_begin();
-	CL_UNWIND_PROTECT_BEGIN {
+	CL_UNWIND_PROTECT_BEGIN(ecl_process_env()) {
 		compile_form(form, FLAG_VALUES);
 		asm_op(OP_EXIT);
 		bytecodes = asm_end(handle);

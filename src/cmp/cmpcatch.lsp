@@ -30,18 +30,18 @@
 	   (*unwind-exit* (list* *exit* 'FRAME *unwind-exit*)))
       (if (member new-destination '(TRASH VALUES))
 	  (progn
-	    (wt-nl "if (frs_push(" 'VALUE0 ")==0) {")
+	    (wt-nl "if (ecl_frs_push(cl_env_copy," 'VALUE0 ")==0) {")
 	    (wt-comment "BEGIN CATCH " code nil)
 	    (c2expr body)
 	    (wt-nl "}"))
 	  (progn
-	    (wt-nl "if (frs_push(" 'VALUE0 ")) {")
+	    (wt-nl "if (ecl_frs_push(cl_env_copy," 'VALUE0 ")) {")
 	    (wt-comment "BEGIN CATCH " code nil)
 	    (unwind-exit 'VALUES t)
 	    (wt-nl "}")
 	    (c2expr body)))
       (wt-label *exit*)
-      (wt-nl "frs_pop();")
+      (wt-nl "ecl_frs_pop(cl_env_copy);")
       (wt-comment "END CATCH " code nil)
       )
     (unwind-exit new-destination)))
@@ -64,15 +64,15 @@
     (wt-nl "cl_index " sp "=ecl_stack_index(cl_env_copy)," nargs ";")
     (wt-nl "ecl_frame_ptr next_fr;")
     ;; Here we compile the form which is protected. When this form
-    ;; is aborted, it continues at the frs_pop() with unwinding=TRUE.
-    (wt-nl "if (frs_push(ECL_PROTECT_TAG)) {")
+    ;; is aborted, it continues at the ecl_frs_pop() with unwinding=TRUE.
+    (wt-nl "if (ecl_frs_push(cl_env_copy,ECL_PROTECT_TAG)) {")
     (wt-nl "  unwinding = TRUE; next_fr=cl_env_copy->nlj_fr;")
     (wt-nl "} else {")
     (let ((*unwind-exit* (cons 'FRAME *unwind-exit*))
 	  (*destination* 'VALUES))
       (c2expr* form))
     (wt-nl "}")
-    (wt-nl "frs_pop();")
+    (wt-nl "ecl_frs_pop(cl_env_copy);")
     ;; Here we save the values of the form which might have been
     ;; aborted, and execute some cleanup code. This code may also
     ;; be aborted by some control structure, but is not protected.
@@ -82,7 +82,7 @@
     (wt-nl "ecl_stack_pop_values(cl_env_copy," nargs ");")
     ;; Finally, if the protected form was aborted, jump to the
     ;; next catch point...
-    (wt-nl "if (unwinding) ecl_unwind(next_fr);")
+    (wt-nl "if (unwinding) ecl_unwind(cl_env_copy,next_fr);")
     ;; ... or simply return the values of the protected form.
     (unwind-exit 'VALUES)
     (wt "}")))

@@ -208,7 +208,7 @@ jump_to_sigsegv_handler(cl_env_ptr the_env)
 	ecl_frame_ptr destination = frs_sch(OBJNULL);
 	if (destination) {
 		the_env->nvalues = 0;
-		ecl_unwind(destination);
+		ecl_unwind(the_env, destination);
 	}
 	ecl_internal_error("SIGSEGV without handler to jump to.");
 }
@@ -259,7 +259,7 @@ define_handler(lisp_signal_handler, int sig, siginfo_t *info, void *aux)
 		ecl_frame_ptr destination = frs_sch(OBJNULL);
 		if (destination) {
 			the_env->nvalues = 0;
-			ecl_unwind(destination);
+			ecl_unwind(the_env, destination);
 		}
 		ecl_internal_error("SIGSEGV without handler to jump to.");
 	}
@@ -267,7 +267,7 @@ define_handler(lisp_signal_handler, int sig, siginfo_t *info, void *aux)
 		ecl_frame_ptr destination = frs_sch(OBJNULL);
 		if (destination) {
 			the_env->nvalues = 0;
-			ecl_unwind(destination);
+			ecl_unwind(the_env, destination);
 		}
 		ecl_internal_error("SIGSEGV without handler to jump to.");
 	}

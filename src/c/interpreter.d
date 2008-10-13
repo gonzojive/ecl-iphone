@@ -440,9 +440,6 @@ close_around(cl_object fun, cl_object lex) {
 	return v;
 }
 
-#undef frs_pop
-#define frs_pop(the_env) { the_env->frs_top--; }
-
 /*
  * Manipulation of the interpreter stack. As shown here, we omit may
  * security checks, assuming that the interpreted code is consistent.
@@ -1130,7 +1127,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		GET_LABEL(exit, vector);
 		STACK_PUSH(the_env, lex_env);
 		STACK_PUSH(the_env, (cl_object)exit);
-		if (frs_push(reg1) == 0) {
+		if (ecl_frs_push(the_env,reg1) == 0) {
 			THREAD_NEXT;
 		} else {
 			reg0 = the_env->values[0];
@@ -1158,7 +1155,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		STACK_PUSH(the_env, lex_env);
 		STACK_PUSH(the_env, (cl_object)vector); /* FIXME! */
 		vector += n * OPARG_SIZE;
-		if (frs_push(reg1) != 0) {
+		if (ecl_frs_push(the_env,reg1) != 0) {
 			/* Wait here for gotos. Each goto sets
 			   VALUES(0) to an integer which ranges from 0
 			   to ntags-1, depending on the tag. These
@@ -1176,7 +1173,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	}
 	CASE(OP_EXIT_FRAME); {
 	DO_EXIT_FRAME:
-		frs_pop(the_env);
+		ecl_frs_pop(the_env);
 		STACK_POP_N(the_env, 2);
 		lex_env = ECL_CONS_CDR(lex_env);
 		THREAD_NEXT;
@@ -1284,8 +1281,8 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		GET_LABEL(exit, vector);
 		STACK_PUSH(the_env, lex_env);
 		STACK_PUSH(the_env, (cl_object)exit);
-		if (frs_push(ECL_PROTECT_TAG) != 0) {
-			frs_pop(the_env);
+		if (ecl_frs_push(the_env,ECL_PROTECT_TAG) != 0) {
+			ecl_frs_pop(the_env);
 			vector = (cl_opcode *)STACK_POP(the_env);
 			lex_env = STACK_POP(the_env);
 			reg0 = the_env->values[0];
@@ -1296,7 +1293,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	}
 	CASE(OP_PROTECT_NORMAL); {
 		ecl_bds_unwind(the_env, the_env->frs_top->frs_bds_top_index);
-		frs_pop(the_env);
+		ecl_frs_pop(the_env);
 		STACK_POP(the_env);
 		lex_env = STACK_POP(the_env);
 		STACK_PUSH(the_env, MAKE_FIXNUM(1));
@@ -1309,7 +1306,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		reg0 = the_env->values[0];
 		n = fix(STACK_POP(the_env));
 		if (n <= 0)
-			ecl_unwind(the_env->frs_top + n);
+			ecl_unwind(the_env, the_env->frs_top + n);
 		THREAD_NEXT;
 	}
 

@@ -141,7 +141,7 @@ thread_entry_point(cl_object process)
 	*     do an unwind up to frs_top.
 	*/
 	process->process.active = 1;
-	CL_CATCH_ALL_BEGIN {
+	CL_CATCH_ALL_BEGIN(env) {
 		ecl_bds_bind(env, @'mp::*current-process*', process);
 		cl_apply(2, process->process.function, process->process.args);
 		ecl_bds_unwind1(env);
@@ -339,7 +339,8 @@ mp_exit_process(void)
 		   back to the thread entry point, going through all possible
 		   UNWIND-PROTECT.
 		*/
-		ecl_unwind(ecl_process_env()->frs_org);
+		const cl_env_ptr env = ecl_process_env();
+		ecl_unwind(env, env->frs_org);
 	}
 }
 
