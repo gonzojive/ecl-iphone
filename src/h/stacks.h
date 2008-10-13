@@ -89,15 +89,20 @@ typedef struct ihs_frame {
 	cl_index index;
 } *ihs_ptr;
 
-#define ihs_push(r,f,e) do {	\
-	(r)->next=cl_env.ihs_top; (r)->function=(f); (r)->lex_env=(e); \
-	(r)->index=cl_env.ihs_top->index+1;\
-	cl_env.ihs_top = (r); \
+#define ecl_ihs_push(env,rec,fun,lisp_env) do { \
+	const cl_env_ptr __the_env = (env);	\
+	struct ihs_frame * const r = (rec);	\
+	r->next=__the_env->ihs_top;		\
+	r->function=(fun);			\
+	r->lex_env=(lisp_env);			\
+	r->index=__the_env->ihs_top->index+1;	\
+	__the_env->ihs_top = r; 		\
 } while(0)
 
-#define ihs_pop() do {\
-	if (cl_env.ihs_top->next == NULL) ecl_internal_error("Underflow in IHS stack"); \
-	cl_env.ihs_top = cl_env.ihs_top->next; \
+#define ecl_ihs_pop(env) do {				\
+	const cl_env_ptr __the_env = (env);		\
+	struct ihs_frame *r = __the_env->ihs_top;	\
+	if (r) __the_env->ihs_top = r->next;		\
 } while(0)
 
 extern ECL_API cl_object ihs_top_function_name(void);

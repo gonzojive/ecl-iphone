@@ -506,7 +506,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	if (type_of(bytecodes) != t_bytecodes)
 		FEinvalid_function(bytecodes);
 
-	ihs_push(&ihs, bytecodes, lex_env);
+	ecl_ihs_push(the_env, &ihs, bytecodes, lex_env);
 	frame_aux.t = t_frame;
 	frame_aux.stack = frame_aux.top = frame_aux.bottom = 0;
 	reg0 = Cnil;
@@ -782,7 +782,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		or a function.
 	*/
 	CASE(OP_EXIT); {
-		ihs_pop();
+		ecl_ihs_pop(the_env);
 		ecl_bds_unwind(the_env, old_bds_top_index);
 		return reg0;
 	}
