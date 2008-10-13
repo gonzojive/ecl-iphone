@@ -248,14 +248,16 @@ signal_catcher(int sig)
 #ifdef GBC_BOEHM
 	int old_GC_enabled = GC_enabled();
 #endif
+	if (!ecl_get_option(ECL_OPT_BOOTED)) {
+		mysignal(sig, signal_catcher);
+		return;
+	}
 	if (!ecl_interrupt_enable ||
-	    (ecl_get_option(ECL_OPT_BOOTED) &&
-	     ecl_symbol_value(@'si::*interrupt-enable*') == Cnil)) {
+	    Null(ecl_symbol_value(@'si::*interrupt-enable*'))) {
 		mysignal(sig, signal_catcher);
 		cl_env.interrupt_pending = sig;
 		return;
 	}
-	mysignal(sig, signal_catcher);
 #ifdef HAVE_SIGPROCMASK
 	CL_UNWIND_PROTECT_BEGIN {
 #ifdef SA_SIGINFO
@@ -456,7 +458,6 @@ init_unixint(int pass)
 #ifdef SIGFPE
 		if (ecl_get_option(ECL_OPT_TRAP_SIGFPE)) {
 			mysignal(SIGFPE, signal_catcher);
-			si_trap_fpe(Ct, Ct);
 		}
 #endif
 #if defined(ECL_THREADS) && !defined(_MSC_VER) && !defined(mingw32)
@@ -475,6 +476,7 @@ init_unixint(int pass)
 			si_Xmake_constant(name, MAKE_FIXNUM(known_signals[i].code));
 		}
 		ECL_SET(@'si::*interrupt-enable*', Ct);
+		si_trap_fpe(Ct, Ct);
+		ecl_interrupt_enable = 1;
 	}
-	ecl_interrupt_enable = 1;
 }
