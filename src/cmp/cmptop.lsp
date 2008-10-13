@@ -626,7 +626,7 @@
     ;; name into the invocation stack
     (when (>= (fun-debug fun) 2)
       (push 'IHS *unwind-exit*)
-      (wt-nl "ihs_push(cl_env_copy,&ihs," (add-symbol (fun-name fun)) ",Cnil);"))
+      (wt-nl "ecl_ihs_push(cl_env_copy,&ihs," (add-symbol (fun-name fun)) ",Cnil);"))
 
     (c2lambda-expr (c1form-arg 0 lambda-expr)
 		   (c1form-arg 2 lambda-expr)
