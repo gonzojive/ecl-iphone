@@ -595,7 +595,7 @@ extern ECL_API cl_object si_set_buffering_mode(cl_object strm, cl_object mode);
 
 extern ECL_API bool ecl_input_stream_p(cl_object strm);
 extern ECL_API bool ecl_output_stream_p(cl_object strm);
-extern ECL_API cl_object ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists, cl_object if_does_not_exist, cl_fixnum byte_size, bool char_stream_p, bool use_header_p);
+extern ECL_API cl_object ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists, cl_object if_does_not_exist, cl_fixnum byte_size, bool char_stream_p);
 extern ECL_API cl_object ecl_make_string_input_stream(cl_object strng, cl_index istart, cl_index iend);
 extern ECL_API cl_object ecl_make_string_output_stream(cl_index line_length);
 extern ECL_API cl_object ecl_read_byte(cl_object strm);

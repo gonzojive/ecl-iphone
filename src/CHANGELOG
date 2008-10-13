@@ -80,6 +80,8 @@ ECL 8.9.0:
  - Functions compiled with (OPTIMIZE (SAFETY >= 2)) have an explicit stack
    overflow check.
 
+ - Binary streams now can only read or write bytes whose size is a multiple of 8.
+
 * Embedding:
 
  - ECL now implements a more transparent interface for setting and querying

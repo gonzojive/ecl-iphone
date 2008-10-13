@@ -438,7 +438,7 @@ wsock_error( const char *err_msg, cl_object strm )
 cl_object
 ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 		cl_object if_does_not_exist, cl_fixnum byte_size,
-		bool char_stream_p, bool use_header_p)
+		bool char_stream_p)
 {
 	cl_env_ptr the_env = &cl_env;
 	cl_object x;
@@ -446,7 +446,6 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	cl_object filename = si_coerce_to_filename(fn);
 	char *fname = filename->base_string.self;
 	bool signed_bytes, appending = FALSE;
-	uint8_t binary_header = 0, bit_buffer = 0, bits_left = 0;
 
 	if (byte_size < 0) {
 		signed_bytes = 1;
@@ -479,38 +478,12 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 				fn = if_does_not_exist;
 				goto INVALID_OPTION;
 			}
-		} else if (!char_stream_p && use_header_p) {
-			/* Read the binary header */
-			int c = getc(fp);
-			if (c != EOF) {
-				binary_header = c & 0xFF;
-				if (binary_header & ~7) {
-					goto INVALID_HEADER;
-				}
-			}
-			ecl_fseeko(fp, 0, SEEK_SET);
 		}
 	} else if (smm == smm_output || smm == smm_io) {
 		if (if_exists == @':new_version' && if_does_not_exist == @':create')
 			goto CREATE;
 		fp = fopen(fname, OPEN_R);
 		if (fp != NULL) {
-			if (!char_stream_p && use_header_p && (if_exists == @':overwrite' || if_exists == @':append')) {
-				/* Read binary header */
-				int c = getc(fp);
-				if (c != EOF) {
-					binary_header = c & 0xFF;
-					if (binary_header & ~7) {
-						goto INVALID_HEADER;
-					}
-					if (binary_header != 0 && if_exists == @':append' &&
-					    ecl_fseeko(fp, -1, SEEK_END) == 0) {
-						/* Read the last byte */
-						bit_buffer = getc(fp) & 0xFF;
-						bits_left = binary_header;
-					}
-				}
-			}
 			fclose(fp);
 			if (if_exists == @':error') {
 				goto CANNOT_OPEN;
@@ -583,22 +556,11 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	x->stream.closed = 0;
 	x->stream.file = (void*)fp;
 	x->stream.char_stream_p = char_stream_p;
-	/* Michael, touch this to reactivate support for odd bit sizes! */
-	if (!use_header_p) {
-		/* binary header not used, round byte_size to a 8 bits */
-		byte_size = (byte_size + 7) & ~7;
-		/* change header to something detectable */
-		binary_header = 0xFF;
-	}
+	/* binary header not used, round byte_size to a 8 bits */
+	byte_size = (byte_size + 7) & ~7;
 	x->stream.byte_size = byte_size;
 	x->stream.signed_bytes = signed_bytes;
-	x->stream.header = binary_header;
 	x->stream.last_op = 0;
-	if (bits_left != 0) {
-		x->stream.bits_left = bits_left;
-		x->stream.bit_buffer = bit_buffer;
-		x->stream.buffer_state = -1;
-	}
 	x->stream.object1 = fn;
 	x->stream.int0 = x->stream.int1 = 0;
 	si_set_buffering_mode(x, char_stream_p? @':line-buffered' : @':fully-buffered');
@@ -609,10 +571,9 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 		if (!char_stream_p) {
 			/* Set file pointer to the correct position */
 			if (appending) {
-				if (bits_left != 0)
-					ecl_fseeko(fp, -1, SEEK_END);
+				ecl_fseeko(fp, -1, SEEK_END);
 			} else {
-				ecl_fseeko(fp, (use_header_p ? 1 : 0), SEEK_SET);
+				ecl_fseeko(fp, 0, SEEK_SET);
 			}
 		}
 	}
@@ -627,11 +588,6 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	ecl_enable_interrupts_env(the_env);
 	FEerror("Invalid value op option ~A: ~A", 2, x, fn);
 	return Cnil;
- INVALID_HEADER:
-	ecl_enable_interrupts_env(the_env);
-	FEerror("~S has an invalid binary header ~S", 2, fn,
-		MAKE_FIXNUM(binary_header));
-	return Cnil;
  INVALID_MODE:
 	ecl_enable_interrupts_env(the_env);
 	FEerror("Illegal stream mode ~S", 1, MAKE_FIXNUM(smm));
@@ -641,7 +597,6 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 /* Forward definitions */
 static void ecl_write_byte8(int c, cl_object strm);
 static int ecl_read_byte8(cl_object strm);
-static void flush_output_stream_binary(cl_object strm);
 
 @(defun close (strm &key (abort @'nil'))
 	FILE *fp;
@@ -672,14 +627,6 @@ static void flush_output_stream_binary(cl_object strm);
 			wrong_file_handler(strm);
 		if (ecl_output_stream_p(strm)) {
 			ecl_force_output(strm);
-			if (!strm->stream.char_stream_p && strm->stream.header != 0xFF) {
-				/* write header */
-				ecl_disable_interrupts();
-				if (ecl_fseeko(fp, 0, SEEK_SET) != 0)
-					io_error(strm);
-				ecl_enable_interrupts();
-				ecl_write_byte8(strm->stream.header, strm);
-			}
 		}
 		if (fclose(fp) != 0)
 			FElibc_error("Cannot close stream ~S.", 1, strm);
@@ -869,35 +816,6 @@ BEGIN:
 	if (bs == 8) {
 		cl_fixnum n = fixint(c);
 		ecl_write_byte8(n & 0xFF, strm);
-	} else if (bs & 7) {
-		unsigned char b = strm->stream.bit_buffer;
-		int bs_ = bs;
-		cl_object c0 = c;
-		nb = strm->stream.bits_left;
-		if (strm->stream.buffer_state == 1) {
-			/* buffer is prepared for reading: re-read (8-nb) bits and throw the rest */
-			int c0;
-			ecl_fseeko((FILE*)strm->stream.file, -1, SEEK_CUR);
-			c0 = ecl_read_byte8(strm);
-			if (c0 == EOF)
-				/* this should not happen !!! */
-				io_error(strm);
-			ecl_fseeko((FILE*)strm->stream.file, -1, SEEK_CUR);
-			b = (unsigned char)(c0 & MAKE_BIT_MASK(8-nb));
-			nb = (8-nb);
-		}
-		do {
-			b |= (unsigned char)(fixnnint(cl_logand(2, c0, MAKE_FIXNUM(MAKE_BIT_MASK(8-nb)))) << nb);
-			bs_ -= (8-nb);
-			c0 = cl_ash(c0, MAKE_FIXNUM(nb-8));
-			if (bs_ >= 0) {
-				ecl_write_byte8(b, strm);
-				b = nb = 0;
-			}
-		} while (bs_ > 0);
-		strm->stream.bits_left = (bs_ < 0 ? (8+bs_) : 0);
-		strm->stream.bit_buffer = (bs_ < 0 ? (b & MAKE_BIT_MASK(8+bs_)) : 0);
-		strm->stream.buffer_state = (bs_ < 0 ? -1 : 0);
 	} else do {
 		cl_object b = cl_logand(2, c, MAKE_FIXNUM(0xFF));
 		ecl_write_byte8(fix(b), strm);
@@ -995,78 +913,6 @@ si_set_buffering_mode(cl_object stream, cl_object buffer_mode_symbol)
 	@(return stream)
 }
 
-static void
-flush_output_stream_binary(cl_object strm)
-{
-	if (strm->stream.buffer_state == -1) {
-		/* buffer is prepared for writing: flush it */
-		unsigned char b = strm->stream.bit_buffer;
-		cl_index nb = strm->stream.bits_left;
-		bool do_merging = FALSE;
-		FILE *fp = (FILE*)strm->stream.file;
-
-		/* do we need to merge with existing byte? */
-		ecl_off_t current_offset, diff_offset;
-		ecl_disable_interrupts();
-		current_offset = ecl_ftello(fp);
-		if (ecl_fseeko(fp, 0, SEEK_END) != 0)
-			io_error(strm);
-		switch ((diff_offset = ecl_ftello(fp)-current_offset)) {
-			case 0: break;
-			case 1:
-				/* (EOF-1): merge only if less bits left than header tells us */
-				do_merging = (nb < strm->stream.header);
-				break;
-			default:
-				do_merging = (diff_offset > 1);
-				break;
-		}
-		if (ecl_fseeko(fp, current_offset, SEEK_SET) != 0)
-			io_error(strm);
-		ecl_enable_interrupts();
-
-		/* do merging, if required */
-		if (do_merging){
-			if (strm->stream.mode == smm_io) {
-				/* I/O stream: no need to reopen and I/O sync already triggered */
-				int c = ecl_read_byte8(strm);
-				if (c != EOF)
-					b |= (unsigned char)(c & ~MAKE_BIT_MASK(nb));
-				/* rewind stream */
-				ecl_disable_interrupts();
-				if (ecl_fseeko(fp, -1, SEEK_CUR) != 0)
-					io_error(strm);
-				ecl_enable_interrupts();
-			} else {
-				/* write-only stream: need to reopen the file for reading *
-				 * the byte to merge, then reopen it back for writing     */
-				cl_object fn = si_coerce_to_filename(strm->stream.object1);
-				ecl_disable_interrupts();
-				if (freopen(fn->base_string.self, OPEN_R, fp) == NULL ||
-				    ecl_fseeko(fp, current_offset, SEEK_SET) != 0)
-					io_error(strm);
-				/* cannot use ecl_read_byte8 here, because strm hasn't the right mode */
-				b |= (unsigned char)(getc(fp) & ~MAKE_BIT_MASK(nb));
-				/* need special trick to re-open the file for writing, avoiding truncation */
-				fclose(fp);
-				strm->stream.file = fdopen(open(fn->base_string.self, O_WRONLY), OPEN_W);
-				if (strm->stream.file == NULL || ecl_fseeko(fp, current_offset, SEEK_SET) != 0)
-					io_error(strm);
-				ecl_enable_interrupts();
-			}
-		} else {
-			/* No merging occurs -> header must be overwritten */
-			strm->stream.header = nb;
-		}
-
-		/* flush byte w/o changing file pointer */
-		ecl_write_byte8(b, strm);
-		ecl_disable_interrupts();
-		ecl_fseeko(fp, -1, SEEK_CUR);
-		ecl_enable_interrupts();
-	}
-}
-
 cl_object
 ecl_read_byte(cl_object strm)
 {
@@ -1148,35 +994,6 @@ BEGIN:
 			return MAKE_FIXNUM((signed char)c);
 		}
 		return MAKE_FIXNUM(i);
-	} else if (bs & 7) {
-		unsigned char b = strm->stream.bit_buffer;
-		nb = strm->stream.bits_left;
-		if (strm->stream.buffer_state == -1) {
-			/* buffer is prepared for writing: flush it */
-			flush_output_stream_binary(strm);
-			b = ((unsigned char)ecl_read_byte8(strm)) >> nb;
-			nb = (8-nb);
-		}
-		if (nb >= bs) {
-			c = MAKE_FIXNUM(b & (unsigned char)MAKE_BIT_MASK(bs));
-			strm->stream.bits_left = (nb-bs);
-			strm->stream.bit_buffer = (strm->stream.bits_left > 0 ? (b >> bs): 0);
-		} else {
-			cl_index i;
-			c = MAKE_FIXNUM(b);
-			while (nb < bs) {
-				int c0 = ecl_read_byte8(strm);
-				if (c0 == EOF)
-					return Cnil;
-				b = (unsigned char)(c0 & 0xFF);
-				for (i=8; i>0 && nb<bs; i--, nb++, b>>=1) {
-					c = cl_logior(2, c, cl_ash(MAKE_FIXNUM(b&0x01), MAKE_FIXNUM(nb)));
-				}
-			}
-			strm->stream.bits_left = i;
-			strm->stream.bit_buffer = b;
-		}
-		strm->stream.buffer_state = (strm->stream.bits_left > 0 ? 1 : 0);
 	} else {
 		cl_index bs_ = bs;
 		c = MAKE_FIXNUM(0);
@@ -1848,9 +1665,6 @@ BEGIN:
 		FILE *fp = (FILE*)strm->stream.file;
 		if (fp == NULL)
 			wrong_file_handler(strm);
-		if ((strm->stream.byte_size & 7) && strm->stream.buffer_state == -1) {
-			flush_output_stream_binary(strm);
-		}
 		ecl_disable_interrupts();
 		while ((fflush(fp) == EOF) && restartable_io_error(strm))
 			(void)0;
@@ -2294,24 +2108,10 @@ BEGIN:
 	default:
 		ecl_internal_error("illegal stream mode");
 	}
-	if (!strm->stream.char_stream_p) {
-		/* deduce header and convert to bits */
-		output = ecl_times(strm->stream.header != 0xFF ? ecl_one_minus(output) : output, MAKE_FIXNUM(8));
-		switch (strm->stream.buffer_state) {
-			case 0: break;
-			case -1:
-				/* bits left for writing, use them */
-				output = ecl_plus(output, MAKE_FIXNUM(strm->stream.bits_left));
-				break;
-			case 1:
-				/* bits left for reading, deduce them */
-				output = ecl_minus(output, MAKE_FIXNUM(strm->stream.bits_left));
-				break;
-		}
-		/* normalize to byte_size */
-		output = ecl_floor2(output, MAKE_FIXNUM(strm->stream.byte_size));
+	if (!strm->stream.char_stream_p && strm->stream.byte_size != 8) {
+		output = ecl_floor2(output, MAKE_FIXNUM(strm->stream.byte_size/8));
 		if (VALUES(1) != MAKE_FIXNUM(0)) {
-			ecl_internal_error("File position is not on byte boundary");
+			FEerror("File position is not on byte boundary", 0);
 		}
 	}
 	return output;
@@ -2321,7 +2121,6 @@ cl_object
 ecl_file_position_set(cl_object strm, cl_object large_disp)
 {
 	ecl_off_t disp;
-	int extra = 0;
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (ECL_INSTANCEP(strm))
@@ -2337,37 +2136,15 @@ BEGIN:
 		ecl_force_output(strm);
 	case smm_input:{
 		FILE *fp = (FILE*)strm->stream.file;
-		if (!strm->stream.char_stream_p) {
-			large_disp = ecl_floor2(ecl_times(large_disp, MAKE_FIXNUM(strm->stream.byte_size)),
-					    MAKE_FIXNUM(8));
-			extra = fix(VALUES(1));
-			/* include the header in byte offset */
-			if (strm->stream.header != 0xFF)
-				large_disp = ecl_one_plus(large_disp);
-			/* flush output stream: required, otherwise internal buffer is lost */
-			flush_output_stream_binary(strm);
-			/* reset internal buffer: should be set again if extra != 0 */
-			strm->stream.bit_buffer = strm->stream.bits_left = strm->stream.buffer_state = 0;
+		if (!strm->stream.char_stream_p && strm->stream.byte_size > 8) {
+			large_disp = ecl_times(large_disp,
+					       MAKE_FIXNUM(strm->stream.byte_size/8));
 		}
 		disp = ecl_integer_to_off_t(large_disp);
 		if (fp == NULL)
 			wrong_file_handler(strm);
 		if (ecl_fseeko(fp, disp, 0) != 0)
 			return Cnil;
-		if (extra != 0) {
-			if (ecl_input_stream_p(strm)) {
-				/* prepare the buffer for reading */
-				int c = ecl_read_byte8(strm);
-				if (c == EOF)
-					return Cnil;
-				strm->stream.bit_buffer = (c & 0xFF) >> extra;
-				strm->stream.bits_left = (8-extra);
-				strm->stream.buffer_state = 1;
-				/* reset extra to avoid error */
-				extra = 0;
-			}
-			/* FIXME: consider case of output-only stream */
-		}
 		break;
 	}
 	case smm_string_output: {
@@ -2417,9 +2194,6 @@ BEGIN:
 	default:
 		ecl_internal_error("illegal stream mode");
 	}
-	if (extra) {
-		FEerror("Unsupported stream byte size", 0);
-	}
 	return Ct;
 }
 
@@ -2443,19 +2217,12 @@ BEGIN:
 		ecl_force_output(strm);
 	case smm_input: {
 		FILE *fp = (FILE*)strm->stream.file;
-		cl_index bs;
 		if (fp == NULL)
 			wrong_file_handler(strm);
 		output = ecl_file_len(fp);
-		if (!strm->stream.char_stream_p) {
-			bs = strm->stream.byte_size;
-			if (strm->stream.header != 0xFF)
-				output = ecl_floor2(ecl_minus(ecl_times(ecl_one_minus(output), MAKE_FIXNUM(8)),
-				                             MAKE_FIXNUM((8-strm->stream.header)%8)),
-						MAKE_FIXNUM(bs));
-			else
-				output = ecl_floor2(ecl_times(output, MAKE_FIXNUM(8)),
-						MAKE_FIXNUM(bs));
+		if (!strm->stream.char_stream_p && strm->stream.byte_size != 8) {
+			cl_index bs = strm->stream.byte_size;
+			output = ecl_floor2(output, MAKE_FIXNUM(bs/8));
 			if (VALUES(1) != MAKE_FIXNUM(0)) {
 				FEerror("File length is not on byte boundary", 0);
 			}
@@ -2873,8 +2640,7 @@ normalize_stream_element_type(cl_object element_type)
 		byte_size = normalize_stream_element_type(element_type);
 	}
 	strm = ecl_open_stream(filename, smm, if_exists, if_does_not_exist,
-			       byte_size, char_stream_p,
-			       (use_header_p != Cnil));
+			       byte_size, char_stream_p);
 	@(return strm)
 @)
 

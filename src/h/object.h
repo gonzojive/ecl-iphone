@@ -483,10 +483,6 @@ struct ecl_stream {
 	cl_fixnum int1;		/*  some int  */
 	char	*buffer;	/*  file buffer  */
 	cl_index byte_size;	/*  size of byte in binary streams  */
-	unsigned char bit_buffer;
-	uint8_t bits_left;
-	int8_t buffer_state;	/* 0: unknown, 1: reading, -1: writing */
-	uint8_t header;		/* number of significant bits in the last byte */
 	int8_t last_op;		/* 0: unknown, 1: reading, -1: writing */
 };
 
