@@ -512,7 +512,9 @@ init_threads()
 #ifdef WITH___THREAD
 	cl_env_p = env;
 #else
-	pthread_key_create(&cl_env_key, NULL);
+	if (pthread_key_create(&cl_env_key, NULL) < 0) {
+		ecl_internal_error("Unable to create the thread local storage.");
+	}
 	pthread_setspecific(cl_env_key, env);
 #endif
 	env->own_process = process;
