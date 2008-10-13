@@ -28,7 +28,7 @@
 	(wt-nl "ecl_bds_unwind1(cl_env_copy);"))
       (wt-nl "ecl_bds_unwind_n(cl_env_copy," bds-bind ");"))
   (when ihs-p
-    (wt-nl "ihs_pop();")))
+    (wt-nl "ecl_ihs_pop(cl_env_copy);")))
 
 (defun unwind-exit (loc &optional (jump-p nil) &aux (bds-lcl nil) (bds-bind 0) (stack-frame nil) (ihs-p nil))
   (declare (fixnum bds-bind))
