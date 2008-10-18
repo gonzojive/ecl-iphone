@@ -776,17 +776,13 @@ cl_get_output_stream_string(cl_object strm)
 static int
 str_in_read_char(cl_object strm)
 {
-	int c = strm->stream.unread;
-	if (c != EOF) {
-		strm->stream.unread = EOF;
+	cl_fixnum curr_pos = STRING_INPUT_POSITION(strm);
+	int c;
+	if (curr_pos >= STRING_INPUT_LIMIT(strm)) {
+		c = EOF;
 	} else {
-		cl_fixnum curr_pos = STRING_INPUT_POSITION(strm);
-		if (curr_pos >= STRING_INPUT_LIMIT(strm)) {
-			c = EOF;
-		} else {
-			c = STRING_INPUT_STRING(strm)->base_string.self[curr_pos];
-			STRING_INPUT_POSITION(strm) = curr_pos+1;
-		}
+		c = STRING_INPUT_STRING(strm)->base_string.self[curr_pos];
+		STRING_INPUT_POSITION(strm) = curr_pos+1;
 	}
 	return c;
 }
@@ -800,7 +796,7 @@ str_in_unread_char(cl_object strm, int c)
 	if (c <= 0) {
 		unread_error(strm);
 	}
-	generic_unread_char(strm, c);
+	STRING_INPUT_POSITION(strm) = curr_pos - 1;
 }
 
 static int
@@ -813,13 +809,10 @@ str_in_peek_char(cl_object strm)
 		return STRING_INPUT_STRING(strm)->base_string.self[pos];
 	}
 }
-#define str_in_peek_char generic_peek_char
 
 static int
 str_in_listen(cl_object strm)
 {
-	if (strm->stream.unread != EOF)
-		return ECL_LISTEN_AVAILABLE;
 	if (STRING_INPUT_POSITION(strm) < STRING_INPUT_LIMIT(strm))
 		return ECL_LISTEN_AVAILABLE;
 	else
