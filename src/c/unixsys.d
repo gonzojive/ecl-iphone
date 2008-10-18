@@ -69,9 +69,9 @@ si_make_pipe()
 		output = Cnil;
 	} else {
 		cl_object fake_in_name = make_simple_base_string("PIPE-READ-ENDPOINT");
-		cl_object in = ecl_make_stream_from_fd(fake_in_name, fds[0], smm_input);
+		cl_object in = ecl_make_stream_from_fd(fake_in_name, fds[0], smm_input, 8, 0);
 		cl_object fake_out_name = make_simple_base_string("PIPE-WRITE-ENDPOINT");
-		cl_object out = ecl_make_stream_from_fd(fake_out_name, fds[1], smm_output);
+		cl_object out = ecl_make_stream_from_fd(fake_out_name, fds[1], smm_output, 8, 0);
 		output = cl_make_two_way_stream(in, out);
 	}
 	@(return output)
@@ -360,14 +360,14 @@ si_make_pipe()
 	}
 	if (parent_write > 0) {
 		stream_write = ecl_make_stream_from_fd(command, parent_write,
-						       smm_output);
+						       smm_output, 8, 0);
 	} else {
 		parent_write = 0;
 		stream_write = cl_core.null_stream;
 	}
 	if (parent_read > 0) {
 		stream_read = ecl_make_stream_from_fd(command, parent_read,
-						      smm_input);
+						      smm_input, 8, 0);
 	} else {
 		parent_read = 0;
 		stream_read = cl_core.null_stream;

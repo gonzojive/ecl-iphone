@@ -595,6 +595,8 @@ extern ECL_API cl_object si_set_buffering_mode(cl_object strm, cl_object mode);
 
 extern ECL_API bool ecl_input_stream_p(cl_object strm);
 extern ECL_API bool ecl_output_stream_p(cl_object strm);
+extern ECL_API cl_object ecl_stream_element_type(cl_object strm);
+extern ECL_API bool ecl_interactive_stream_p(cl_object strm);
 extern ECL_API cl_object ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists, cl_object if_does_not_exist, cl_fixnum byte_size, bool char_stream_p);
 extern ECL_API cl_object ecl_make_string_input_stream(cl_object strng, cl_index istart, cl_index iend);
 extern ECL_API cl_object ecl_make_string_output_stream(cl_index line_length);
@@ -606,16 +608,17 @@ extern ECL_API void ecl_unread_char(int c, cl_object strm);
 extern ECL_API int ecl_peek_char(cl_object strm);
 extern ECL_API int ecl_write_char(int c, cl_object strm);
 extern ECL_API void writestr_stream(const char *s, cl_object strm);
-#define ecl_finish_output(x) ecl_force_output(x)
 extern ECL_API void ecl_force_output(cl_object strm);
+extern ECL_API void ecl_finish_output(cl_object strm);
 extern ECL_API void ecl_clear_input(cl_object strm);
 extern ECL_API void ecl_clear_output(cl_object strm);
 extern ECL_API bool ecl_listen_stream(cl_object strm);
 extern ECL_API cl_object ecl_file_position(cl_object strm);
 extern ECL_API cl_object ecl_file_position_set(cl_object strm, cl_object disp);
+extern ECL_API cl_object ecl_file_length(cl_object strm);
 extern ECL_API int ecl_file_column(cl_object strm);
-extern ECL_API cl_object ecl_make_stream_from_fd(cl_object host, int fd, enum ecl_smmode smm);
-extern ECL_API cl_object ecl_make_stream_from_FILE(cl_object host, void *fd, enum ecl_smmode smm);
+extern ECL_API cl_object ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm, cl_fixnum byte_size, int char_stream_p);
+extern ECL_API cl_object ecl_make_stream_from_FILE(cl_object fname, void *fd, enum ecl_smmode smm, cl_fixnum byte_size, int char_stream_p);
 extern ECL_API int ecl_stream_to_handle(cl_object s, bool output);
 
 /* finalize.c */

@@ -1182,7 +1182,7 @@ also known as unix-domain sockets."))
 		  buffering)
 	    (t :int :int :object)
 	    t
-	    "si_set_buffering_mode(ecl_make_stream_from_fd(#0,#1,(enum ecl_smmode)#2), #3)"
+	    "si_set_buffering_mode(ecl_make_stream_from_fd(#0,#1,(enum ecl_smmode)#2,8,1), #3)"
 	    :one-liner t))
 
 (defmethod socket-make-stream ((socket socket)  &rest args &key (buffering-mode NIL))

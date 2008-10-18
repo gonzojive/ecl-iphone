@@ -122,6 +122,24 @@ extern void* ecl_dynamic_callback_make(cl_object data, enum ecl_ffi_calling_conv
 #define OPEN_A	"ab"
 #define OPEN_RA	"a+b"
 
+#define STRING_OUTPUT_STRING(strm) (strm)->stream.object0
+#define STRING_OUTPUT_COLUMN(strm) (strm)->stream.int1
+#define STRING_INPUT_STRING(strm) (strm)->stream.object0
+#define STRING_INPUT_POSITION(strm) (strm)->stream.int0
+#define STRING_INPUT_LIMIT(strm) (strm)->stream.int1
+#define TWO_WAY_STREAM_INPUT(strm) (strm)->stream.object0
+#define TWO_WAY_STREAM_OUTPUT(strm) (strm)->stream.object1
+#define SYNONYM_STREAM_SYMBOL(strm) (strm)->stream.object0
+#define SYNONYM_STREAM_STREAM(strm) ecl_symbol_value((strm)->stream.object0)
+#define BROADCAST_STREAM_LIST(strm) (strm)->stream.object0
+#define ECHO_STREAM_INPUT(strm) (strm)->stream.object0
+#define ECHO_STREAM_OUTPUT(strm) (strm)->stream.object1
+#define CONCATENATED_STREAM_LIST(strm) (strm)->stream.object0
+#define IO_STREAM_FILE(strm) (FILE*)((strm)->stream.file)
+#define IO_STREAM_COLUMN(strm) (strm)->stream.int1
+#define IO_STREAM_ELT_TYPE(strm) (strm)->stream.object0
+#define IO_STREAM_FILENAME(strm) (strm)->stream.object1
+
 /* format.d */
 
 #ifndef ECL_CMU_FORMAT

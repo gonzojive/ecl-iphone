@@ -472,18 +472,50 @@ enum ecl_smmode {		/*  stream mode  */
 #endif
 };
 
+struct ecl_file_ops {
+	cl_index (*write_byte8)(cl_object strm, char *c, cl_index n);
+	cl_index (*read_byte8)(cl_object strm, char *c, cl_index n);
+
+	int (*read_char)(cl_object strm);
+	int (*write_char)(cl_object strm, int c);
+	void (*unread_char)(cl_object strm, int c);
+	int (*peek_char)(cl_object strm);
+
+	cl_index (*read_vector)(cl_object strm, cl_object data, cl_index start, cl_index end);
+	cl_index (*write_vector)(cl_object strm, cl_object data, cl_index start, cl_index end);
+
+	int (*listen)(cl_object strm);
+	void (*clear_input)(cl_object strm);
+	void (*clear_output)(cl_object strm);
+	void (*finish_output)(cl_object strm);
+	void (*force_output)(cl_object strm);
+
+	int (*input_p)(cl_object strm);
+	int (*output_p)(cl_object strm);
+	int (*interactive_p)(cl_object strm);
+	cl_object (*element_type)(cl_object strm);
+
+	cl_object (*length)(cl_object strm);
+	cl_object (*get_position)(cl_object strm);
+	cl_object (*set_position)(cl_object strm, cl_object pos);
+	int (*column)(cl_object strm);
+
+	cl_object (*close)(cl_object strm);
+};
+
 struct ecl_stream {
-	HEADER4(mode,closed,char_stream_p,signed_bytes);
+	HEADER4(mode,char_stream_p,closed,signed_bytes);
 				/*  stream mode of enum smmode  */
-				/*  stream element type  */
-	void	*file;		/*  file pointer  */
+	struct ecl_file_ops *ops; /*  dispatch table  */
+	void *file;		/*  file pointer  */
 	cl_object object0;	/*  some object  */
 	cl_object object1;	/*  some object */
+	cl_fixnum unread;	/*  one-char buffer for unread-char  */
 	cl_fixnum int0;		/*  some int  */
 	cl_fixnum int1;		/*  some int  */
-	char	*buffer;	/*  file buffer  */
 	cl_index byte_size;	/*  size of byte in binary streams  */
-	int8_t last_op;		/* 0: unknown, 1: reading, -1: writing */
+	cl_fixnum last_op;	/*  0: unknown, 1: reading, -1: writing */
+	char *buffer;		/*  buffer for FILE  */
 };
 
 struct ecl_random {

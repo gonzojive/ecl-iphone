@@ -23,6 +23,7 @@
 
 #include <ecl/ecl.h>
 #include <ecl/ecl-inl.h>
+#include <ecl/internal.h>
 #include <limits.h>
 #include <string.h>
 #include <ctype.h>
@@ -643,25 +644,18 @@ L:
 #endif
 	case t_base_string:
 		x = cl_parse_namestring(1, x);
-
 	case t_pathname:
 		break;
-
 	case t_stream:
 		switch ((enum ecl_smmode)x->stream.mode) {
 		case smm_input:
 		case smm_output:
 		case smm_probe:
 		case smm_io:
-			x = x->stream.object1;
-			/*
-				The file was stored in stream.object1.
-				See open.
-			*/
+			x = IO_STREAM_FILENAME(x);
 			goto L;
-
 		case smm_synonym:
-			x = ecl_symbol_value(x->stream.object0);
+			x = SYNONYM_STREAM_STREAM(x);
 			goto L;
 		default:
 			;/* Fall through to error message */

@@ -1444,7 +1444,7 @@ fmt_case(format_stack fmt, bool colon, bool atsign)
 	else
 		format(fmt, fmt->ctl_str + i, j - i);
 	fmt_copy1(fmt, &fmt_old);
-	x = x->stream.object0;
+	x = STRING_OUTPUT_STRING(x);
 	if (!colon && !atsign)
 		for (i = 0;  i < x->string.fillp;  i++) {
 			if (isupper(j = x->string.self[i]))
@@ -1729,7 +1729,7 @@ fmt_justification(format_stack fmt, volatile bool colon, bool atsign)
 		}
 		fmt->stream = this_field;
 		format(fmt, fmt->ctl_str + i, j - i);
-		fields = CONS(this_field->stream.object0, fields);
+		fields = CONS(STRING_OUTPUT_STRING(this_field), fields);
 		fmt_copy1(fmt, &fmt_old);
 
 		if (fmt->ctl_str[--j0] == '>') {
@@ -1867,7 +1867,7 @@ doformat(cl_narg narg, cl_object strm, cl_object string, cl_va_list args, bool i
 		fmt.indents = 0;
 	fmt.string = string;
 	fmt.aux_stream = get_aux_stream();
-	fmt.aux_string = fmt.aux_stream->stream.object0;
+	fmt.aux_string = STRING_OUTPUT_STRING(fmt.aux_stream);
 	if ((colon = ecl_setjmp(*fmt.jmp_buf))) {
 		if (--colon)
 			fmt_error(&fmt, "illegal ~:^");
@@ -2122,7 +2122,7 @@ DIRECTIVE:
 				 @':offset', MAKE_FIXNUM(0));
 			}
 		strm = ecl_make_string_output_stream(0);
-		strm->stream.object0 = output;
+		STRING_OUTPUT_STRING(strm) = output;
 		if (null_strm == 0)
 			output = Cnil;
 	}

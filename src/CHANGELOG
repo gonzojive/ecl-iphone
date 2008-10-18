@@ -82,6 +82,10 @@ ECL 8.9.0:
 
  - Binary streams now can only read or write bytes whose size is a multiple of 8.
 
+ - ECL has now a new and more easily extensible implementation of streams, based
+   on C structures with a method dispatch table. Apart from code reuse and better
+   maintainability, this allows a more sensible design of read/write-sequence.
+
 * Embedding:
 
  - ECL now implements a more transparent interface for setting and querying
