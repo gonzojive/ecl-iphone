@@ -161,6 +161,9 @@ struct cl_core_struct {
 
 	cl_object terminal_io;
 	cl_object null_stream;
+	cl_object standard_input;
+	cl_object standard_output;
+	cl_object error_output;
 	cl_object standard_readtable;
 	cl_object dispatch_reader;
 	cl_object default_dispatch_macro;
@@ -597,7 +600,7 @@ extern ECL_API bool ecl_input_stream_p(cl_object strm);
 extern ECL_API bool ecl_output_stream_p(cl_object strm);
 extern ECL_API cl_object ecl_stream_element_type(cl_object strm);
 extern ECL_API bool ecl_interactive_stream_p(cl_object strm);
-extern ECL_API cl_object ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists, cl_object if_does_not_exist, cl_fixnum byte_size, bool char_stream_p);
+extern ECL_API cl_object ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists, cl_object if_does_not_exist, cl_fixnum byte_size, int char_stream_p, int cstream);
 extern ECL_API cl_object ecl_make_string_input_stream(cl_object strng, cl_index istart, cl_index iend);
 extern ECL_API cl_object ecl_make_string_output_stream(cl_index line_length);
 extern ECL_API cl_object ecl_read_byte(cl_object strm);
@@ -1545,8 +1548,8 @@ extern ECL_API cl_object si_mkstemp(cl_object templ);
 extern ECL_API cl_object si_rmdir(cl_object directory);
 
 extern ECL_API cl_object ecl_cstring_to_pathname(char *s);
-extern ECL_API void *ecl_backup_fopen(const char *filename, const char *option);
-extern ECL_API cl_object ecl_file_len(void *fp);
+extern ECL_API int ecl_backup_open(const char *filename, int option, int mode);
+extern ECL_API cl_object ecl_file_len(int f);
 extern ECL_API cl_object ecl_homedir_pathname(cl_object user);
 #if defined(_MSC_VER) || defined(mingw32)
 extern ECL_API cl_object si_get_library_pathname(void);

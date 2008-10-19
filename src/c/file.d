@@ -56,13 +56,14 @@
 #define ecl_ftello ftello
 #endif
 
-static cl_index ecl_read_byte8(cl_object stream, char *c, cl_index n);
-static cl_index ecl_write_byte8(cl_object stream, char *c, cl_index n);
+static cl_index ecl_read_byte8(cl_object stream, unsigned char *c, cl_index n);
+static cl_index ecl_write_byte8(cl_object stream, unsigned char *c, cl_index n);
 
 struct ecl_file_ops *duplicate_dispatch_table(const struct ecl_file_ops *ops);
 const struct ecl_file_ops *stream_dispatch_table(cl_object strm);
 
 static int flisten(FILE *);
+static int file_listen(int);
 static void io_stream_begin_write(cl_object strm);
 static void io_stream_begin_read(cl_object strm);
 static cl_object ecl_off_t_to_integer(ecl_off_t offset);
@@ -86,28 +87,28 @@ static void wrong_file_handler(cl_object strm);
  */
 
 static cl_index
-not_output_write_byte8(cl_object strm, char *c, cl_index n)
+not_output_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	not_an_output_stream(strm);
 	return 0;
 }
 
 static cl_index
-not_input_read_byte8(cl_object strm, char *c, cl_index n)
+not_input_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	not_an_input_stream(strm);
 	return 0;
 }
 
 static cl_index
-not_binary_write_byte8(cl_object strm, char *c, cl_index n)
+not_binary_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	not_a_binary_stream(strm);
 	return 0;
 }
 
 static cl_index
-not_binary_read_byte8(cl_object strm, char *c, cl_index n)
+not_binary_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	not_a_binary_stream(strm);
 	return 0;
@@ -214,13 +215,13 @@ not_implemented_set_position(cl_object strm, cl_object pos)
  */
 
 static cl_index
-closed_stream_read_byte8(cl_object strm, char *c, cl_index n)
+closed_stream_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	FEclosed_stream(strm);
 }
 
 static cl_index
-closed_stream_write_byte8(cl_object strm, char *c, cl_index n)
+closed_stream_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	FEclosed_stream(strm);
 }
@@ -284,7 +285,7 @@ closed_stream_set_position(cl_object strm, cl_object position)
  * the character size matches that of the byte.
  */
 static cl_index
-generic_write_byte8(cl_object strm, char *c, cl_index n)
+generic_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	const struct ecl_file_ops *ops = stream_dispatch_table(strm);
 	cl_index i;
@@ -295,7 +296,7 @@ generic_write_byte8(cl_object strm, char *c, cl_index n)
 }
 
 static cl_index
-generic_read_byte8(cl_object strm, char *c, cl_index n)
+generic_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	const struct ecl_file_ops *ops = stream_dispatch_table(strm);
 	cl_index i;
@@ -315,7 +316,7 @@ generic_read_char(cl_object strm)
 	int c = strm->stream.unread;
 	if (c == EOF) {
 		const struct ecl_file_ops *ops = stream_dispatch_table(strm);
-		char aux;
+		unsigned char aux;
 		if (ops->read_byte8(strm, &aux, 1) < 1)
 			c = EOF;
 		else
@@ -462,7 +463,7 @@ generic_read_vector(cl_object strm, cl_object data, cl_index start, cl_index end
  */
 
 static cl_index
-clos_stream_read_byte8(cl_object strm, char *c, cl_index n)
+clos_stream_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	cl_index i;
 	for (i = 0; i < n; i++) {
@@ -475,7 +476,7 @@ clos_stream_read_byte8(cl_object strm, char *c, cl_index n)
 }
 
 static cl_index
-clos_stream_write_byte8(cl_object strm, char *c, cl_index n)
+clos_stream_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	cl_index i;
 	for (i = 0; i < n; i++) {
@@ -671,7 +672,12 @@ static cl_object
 str_out_set_position(cl_object strm, cl_object pos)
 {
 	cl_object string = STRING_OUTPUT_STRING(strm);
-	cl_fixnum disp = fixnnint(pos);
+	cl_fixnum disp;
+	if (Null(pos)) {
+		disp = strm->base_string.dim;
+	} else {
+		disp = fixnnint(pos);
+	}
 	if (disp < string->base_string.fillp) {
 		string->base_string.fillp = disp;
 	} else {
@@ -846,9 +852,14 @@ str_in_get_position(cl_object strm)
 static cl_object
 str_in_set_position(cl_object strm, cl_object pos)
 {
-	cl_fixnum disp = fixnnint(pos);
-	if (disp >= STRING_INPUT_LIMIT(strm)) {
+	cl_fixnum disp;
+	if (Null(pos)) {
 		disp = STRING_INPUT_LIMIT(strm);
+	}  else {
+		disp = fixnnint(pos);
+		if (disp >= STRING_INPUT_LIMIT(strm)) {
+			disp = STRING_INPUT_LIMIT(strm);
+		}
 	}
 	STRING_INPUT_POSITION(strm) = disp;
 	return Ct;
@@ -941,7 +952,7 @@ for the string ~S.",
  */
 
 static cl_index
-two_way_read_byte8(cl_object strm, char *c, cl_index n)
+two_way_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	if (strm == cl_core.terminal_io)
 		ecl_force_output(TWO_WAY_STREAM_OUTPUT(cl_core.terminal_io));
@@ -949,7 +960,7 @@ two_way_read_byte8(cl_object strm, char *c, cl_index n)
 }
 
 static cl_index
-two_way_write_byte8(cl_object strm, char *c, cl_index n)
+two_way_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	return ecl_write_byte8(TWO_WAY_STREAM_OUTPUT(strm), c, n);
 }
@@ -1119,7 +1130,7 @@ cl_two_way_stream_output_stream(cl_object strm)
 #define broadcast_read_byte8 not_input_read_byte8
 
 static cl_index
-broadcast_write_byte8(cl_object strm, char *c, cl_index n)
+broadcast_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	cl_object l;
 	cl_index out = n;
@@ -1286,14 +1297,14 @@ cl_broadcast_stream_streams(cl_object strm)
  */
 
 static cl_index
-echo_read_byte8(cl_object strm, char *c, cl_index n)
+echo_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	cl_index out = ecl_read_byte8(ECHO_STREAM_INPUT(strm), c, n);
 	return ecl_write_byte8(ECHO_STREAM_OUTPUT(strm), c, out);
 }
 
 static cl_index
-echo_write_byte8(cl_object strm, char *c, cl_index n)
+echo_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	return ecl_write_byte8(ECHO_STREAM_OUTPUT(strm), c, n);
 }
@@ -1448,7 +1459,7 @@ cl_echo_stream_output_stream(cl_object strm)
  */
 
 static cl_index
-concatenated_read_byte8(cl_object strm, char *c, cl_index n)
+concatenated_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	cl_object l = CONCATENATED_STREAM_LIST(strm);
 	cl_index out = 0;
@@ -1583,13 +1594,13 @@ cl_concatenated_stream_streams(cl_object strm)
  */
 
 static cl_index
-synonym_read_byte8(cl_object strm, char *c, cl_index n)
+synonym_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	return ecl_read_byte8(SYNONYM_STREAM_STREAM(strm), c, n);
 }
 
 static cl_index
-synonym_write_byte8(cl_object strm, char *c, cl_index n)
+synonym_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	return ecl_write_byte8(SYNONYM_STREAM_STREAM(strm), c, n);
 }
@@ -1764,11 +1775,397 @@ cl_synonym_stream_symbol(cl_object strm)
 }
 
 /**********************************************************************
- * TWO WAY STREAM
+ * POSIX FILE STREAM
  */
 
 static cl_index
-io_stream_read_byte8(cl_object strm, char *c, cl_index n)
+io_file_read_byte8(cl_object strm, unsigned char *c, cl_index n)
+{
+	int f = IO_FILE_DESCRIPTOR(strm);
+	cl_fixnum out;
+	ecl_disable_interrupts();
+	do {
+		out = read(f, c, sizeof(char)*n);
+	} while (out < 0 && restartable_io_error(strm));
+	ecl_enable_interrupts();
+	return out;
+}
+
+static cl_index
+io_file_write_byte8(cl_object strm, unsigned char *c, cl_index n)
+{
+	int f = IO_FILE_DESCRIPTOR(strm);
+	cl_index out;
+	ecl_disable_interrupts();
+	do {
+		out = write(f, c, sizeof(char)*n);
+	} while (out < 0 && restartable_io_error(strm));
+	ecl_enable_interrupts();
+	return out;
+}
+
+#define io_file_read_char generic_read_char
+
+static int
+io_file_write_char(cl_object strm, int c)
+{
+	char aux = c;
+	strm->stream.unread = EOF;
+	if (c == '\n')
+		IO_FILE_COLUMN(strm) = 0;
+	else if (c == '\t')
+		IO_FILE_COLUMN(strm) = (IO_FILE_COLUMN(strm)&~07) + 8;
+	else
+		IO_FILE_COLUMN(strm)++;
+	io_file_write_byte8(strm, &aux, 1);
+	return c;
+}
+
+#define io_file_unread_char generic_unread_char
+#define io_file_peek_char generic_peek_char
+
+static int
+io_file_listen(cl_object strm)
+{
+	int f = IO_FILE_DESCRIPTOR(strm);
+	return file_listen(f);
+}
+
+static void
+io_file_clear_input(cl_object strm)
+{
+	int f = IO_FILE_DESCRIPTOR(strm);
+#if defined(mingw32) || defined(_MSC_VER)
+	if (isatty(f)) {
+		/* Flushes Win32 console */
+		if (!FlushConsoleInputBuffer((HANDLE)_get_osfhandle(fileno(fp))))
+			FEwin32_error("FlushConsoleInputBuffer() failed", 0);
+		/* Do not stop here: the FILE structure needs also to be flushed */
+	}
+#endif
+	while (file_listen(f) == ECL_LISTEN_AVAILABLE) {
+		io_file_read_char(strm);
+	}
+}
+
+#define io_file_clear_output generic_void
+#define io_file_force_output generic_void
+#define io_file_finish_output io_file_force_output
+#define io_file_input_p generic_always_true
+#define io_file_output_p generic_always_true
+
+static int
+io_file_interactive_p(cl_object strm)
+{
+	int f = IO_FILE_DESCRIPTOR(strm);
+	return isatty(f);
+}
+
+static cl_object
+io_file_element_type(cl_object strm)
+{
+	return IO_FILE_ELT_TYPE(strm);
+}
+
+static cl_object
+io_file_length(cl_object strm)
+{
+	int f = IO_FILE_DESCRIPTOR(strm);
+	cl_object output = ecl_file_len(f);
+	if (strm->stream.byte_size != 8) {
+		cl_index bs = strm->stream.byte_size;
+		output = ecl_floor2(output, MAKE_FIXNUM(bs/8));
+		if (VALUES(1) != MAKE_FIXNUM(0)) {
+			FEerror("File length is not on byte boundary", 0);
+		}
+	}
+	return output;
+}
+
+static cl_object
+io_file_get_position(cl_object strm)
+{
+	int f = IO_FILE_DESCRIPTOR(strm);
+	cl_object output;
+	ecl_off_t offset;
+
+	ecl_disable_interrupts();
+	offset = lseek(f, 0, SEEK_CUR);
+	ecl_enable_interrupts();
+	if (offset < 0)
+		io_error(strm);
+	if (sizeof(ecl_off_t) == sizeof(long)) {
+		output = ecl_make_integer(offset);
+	} else {
+		output = ecl_off_t_to_integer(offset);
+	}
+	if (strm->stream.byte_size != 8) {
+		output = ecl_floor2(output, MAKE_FIXNUM(strm->stream.byte_size / 8));
+	}
+	return output;
+}
+
+static cl_object
+io_file_set_position(cl_object strm, cl_object large_disp)
+{
+	int f = IO_FILE_DESCRIPTOR(strm);
+	cl_object output;
+	if (Null(large_disp)) {
+		ecl_disable_interrupts();
+		if (lseek(f, 0, SEEK_END) == (ecl_off_t)-1)
+			output = Cnil;
+		else
+			output = Ct;
+		ecl_enable_interrupts();
+	} else {
+		ecl_off_t disp;
+		if (strm->stream.byte_size != 8) {
+			large_disp = ecl_times(large_disp,
+					       MAKE_FIXNUM(strm->stream.byte_size / 8));
+		}
+		disp = ecl_integer_to_off_t(large_disp);
+		ecl_disable_interrupts();
+		if (lseek(f, disp, SEEK_SET) == (ecl_off_t)-1)
+			output = Cnil;
+		else
+			output = Ct;
+		ecl_enable_interrupts();
+	}
+	return output;
+}
+
+static int
+io_file_column(cl_object strm)
+{
+	return IO_FILE_COLUMN(strm);
+}
+
+static cl_object
+io_file_close(cl_object strm)
+{
+	int f = IO_FILE_DESCRIPTOR(strm);
+	int failed;
+	if (f == STDOUT_FILENO)
+		FEerror("Cannot close the standard output", 0);
+	if (f == STDIN_FILENO)
+		FEerror("Cannot close the standard input", 0);
+	ecl_disable_interrupts();
+	failed = close(f);
+	ecl_enable_interrupts();
+	if (failed < 0)
+		FElibc_error("Cannot close stream ~S.", 1, strm);
+	strm->stream.file = (void*)-1;
+	return generic_close(strm);
+}
+
+static cl_index
+io_file_read_vector(cl_object strm, cl_object data, cl_index start, cl_index end)
+{
+	cl_elttype t = data->vector.elttype;
+	if (start >= end)
+		return start;
+	if (t == aet_b8 || t == aet_i8 || t == aet_bc) {
+		if (strm->stream.byte_size == 8) {
+			void *aux = data->vector.self.ch + start;
+			return strm->stream.ops->read_byte8(strm, aux, end-start);
+		}
+	}
+	if (t == aet_fix || t == aet_index) {
+		if (strm->stream.byte_size == sizeof(cl_fixnum)*8) {
+			void *aux = data->vector.self.fix + start;
+			cl_index bytes = (end - start) * sizeof(cl_fixnum);
+			bytes = strm->stream.ops->read_byte8(strm, aux, bytes);
+			return start + bytes / sizeof(cl_fixnum);
+		}
+	}
+	return generic_read_vector(strm, data, start, end);
+}
+
+static cl_index
+io_file_write_vector(cl_object strm, cl_object data, cl_index start, cl_index end)
+{
+	cl_elttype t = data->vector.elttype;
+	if (start >= end)
+		return start;
+	if (t == aet_b8 || t == aet_i8 || t == aet_bc) {
+		if (strm->stream.byte_size == 8) {
+			void *aux = data->vector.self.fix + start;
+			return strm->stream.ops->write_byte8(strm, aux, end-start);
+		}
+	}
+	if (t == aet_fix || t == aet_index) {
+		if (strm->stream.byte_size == sizeof(cl_fixnum)*8) {
+			void *aux = data->vector.self.fix + start;
+			cl_index bytes = (end - start) * sizeof(cl_fixnum);
+			bytes = strm->stream.ops->write_byte8(strm, aux, bytes);
+			return start + bytes / sizeof(cl_fixnum);
+		}
+	}
+	return generic_write_vector(strm, data, start, end);
+}
+
+const struct ecl_file_ops io_file_ops = {
+	io_file_write_byte8,
+	io_file_read_byte8,
+
+	io_file_read_char,
+	io_file_write_char,
+	io_file_unread_char,
+	io_file_peek_char,
+
+	io_file_read_vector,
+	io_file_write_vector,
+
+	io_file_listen,
+	io_file_clear_input,
+	io_file_clear_output,
+	io_file_finish_output,
+	io_file_force_output,
+
+	io_file_input_p,
+	io_file_output_p,
+	io_file_interactive_p,
+	io_file_element_type,
+
+	io_file_length,
+	io_file_get_position,
+	io_file_set_position,
+	io_file_column,
+	io_file_close
+};
+
+const struct ecl_file_ops output_file_ops = {
+	io_file_write_byte8,
+	not_input_read_byte8,
+
+	not_input_read_char,
+	io_file_write_char,
+	not_input_unread_char,
+	not_input_read_char,
+
+	generic_read_vector,
+	io_file_write_vector,
+
+	not_input_listen,
+	generic_void,
+	io_file_clear_output,
+	io_file_finish_output,
+	io_file_force_output,
+
+	generic_always_false,
+	io_file_output_p,
+	generic_always_false,
+	io_file_element_type,
+
+	io_file_length,
+	io_file_get_position,
+	io_file_set_position,
+	io_file_column,
+	io_file_close
+};
+
+const struct ecl_file_ops input_file_ops = {
+	not_output_write_byte8,
+	io_file_read_byte8,
+
+	io_file_read_char,
+	not_output_write_char,
+	io_file_unread_char,
+	io_file_peek_char,
+
+	io_file_read_vector,
+	generic_write_vector,
+
+	io_file_listen,
+	io_file_clear_input,
+	generic_void,
+	generic_void,
+	generic_void,
+
+	io_file_input_p,
+	generic_always_false,
+	io_file_interactive_p,
+	io_file_element_type,
+
+	io_file_length,
+	io_file_get_position,
+	io_file_set_position,
+	generic_column,
+	io_file_close
+};
+
+static void
+set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int char_stream_p)
+{
+	if (char_stream_p) {
+		if (byte_size != 8) {
+			FEerror("Cannot create a character stream when byte size is not 8.", 0);
+		}
+		stream->stream.signed_bytes = 0;
+		IO_STREAM_ELT_TYPE(stream) = @'base-char';
+		byte_size = 8;
+ 	} else {
+		cl_object t;
+		if (byte_size > 0) {
+			stream->stream.signed_bytes = 0;
+			t = @'unsigned-byte';
+		} else {
+			byte_size = -byte_size;
+			stream->stream.signed_bytes = 1;
+			t = @'signed-byte';
+		}
+		IO_STREAM_ELT_TYPE(stream) = cl_list(2, t, MAKE_FIXNUM(byte_size));
+	}
+	stream->stream.char_stream_p = char_stream_p;
+	stream->stream.byte_size = (byte_size+7)&(~(cl_fixnum)7);
+}
+
+cl_object
+ecl_make_file_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm,
+			     cl_fixnum byte_size, int char_stream_p)
+{
+	cl_object stream = alloc_stream();
+	stream->stream.mode = (short)smm;
+	stream->stream.closed = 0;
+#if defined (ECL_WSOCK)
+	if (smm == smm_input_wsock || smm == smm_io_wsock)
+		character_p = 1;
+#endif
+	switch(smm) {
+	case smm_probe:
+	case smm_input:
+		smm = smm_input_file;
+	case smm_input_file:
+		stream->stream.ops = duplicate_dispatch_table(&input_file_ops);
+		break;
+	case smm_output:
+		smm = smm_output_file;
+	case smm_output_file:
+		stream->stream.ops = duplicate_dispatch_table(&output_file_ops);
+		break;
+	case smm_io:
+		smm = smm_io_file;
+	case smm_io_file:
+		stream->stream.ops = duplicate_dispatch_table(&io_file_ops);
+		break;
+	default:
+		FEerror("make_stream: wrong mode", 0);
+	}
+	set_stream_elt_type(stream, byte_size, char_stream_p);
+	IO_FILE_FILENAME(stream) = fname; /* not really used */
+	IO_FILE_COLUMN(stream) = 0;
+	stream->stream.file = (void*)fd;
+	stream->stream.last_op = 0;
+	si_set_finalizer(stream, Ct);
+	return stream;
+}
+
+/**********************************************************************
+ * C STREAMS
+ */
+
+static cl_index
+io_stream_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	FILE *f = IO_STREAM_FILE(strm);
 	cl_index out;
@@ -1783,7 +2180,7 @@ io_stream_read_byte8(cl_object strm, char *c, cl_index n)
 }
 
 static cl_index
-io_stream_write_byte8(cl_object strm, char *c, cl_index n)
+io_stream_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	FILE *f = IO_STREAM_FILE(strm);
 	cl_index out;
@@ -1822,29 +2219,21 @@ io_stream_write_char(cl_object strm, int c)
 	char aux = c;
 	int outcome;
 	strm->stream.unread = EOF;
+	ecl_disable_interrupts();
+	do {
+		outcome = putc(c, f);
+	} while (outcome == EOF && restartable_io_error(strm));
+	ecl_enable_interrupts();
 	if (c == '\n')
 		IO_STREAM_COLUMN(strm) = 0;
 	else if (c == '\t')
 		IO_STREAM_COLUMN(strm) = (IO_STREAM_COLUMN(strm)&~07) + 8;
 	else
 		IO_STREAM_COLUMN(strm)++;
-	ecl_disable_interrupts();
-	do {
-		outcome = putc(c, f);
-	} while (outcome == EOF && restartable_io_error(strm));
-	ecl_enable_interrupts();
 	return c;
 }
 
-static void
-io_stream_unread_char(cl_object strm, int c)
-{
-	if (strm->stream.unread != EOF) {
-		unread_twice(strm);
-	}
-	strm->stream.unread = c;
-}
-
+#define io_stream_unread_char generic_unread_char
 #define io_stream_peek_char generic_peek_char
 
 static int
@@ -1896,27 +2285,13 @@ io_stream_interactive_p(cl_object strm)
 	return isatty(fileno(f));
 }
 
-static cl_object
-io_stream_element_type(cl_object strm)
-{
-	cl_object output;
-	if (strm->stream.char_stream_p) {
-		output = @'base-char';
-	} else {
-		cl_fixnum bs = strm->stream.byte_size;
-		output = strm->stream.signed_bytes?
-			@'signed-byte' : @'unsigned-byte';
-		if (bs != 8)
-			output = cl_list(2, output, MAKE_FIXNUM(bs));
-	}
-	return output;
-}
+#define io_stream_element_type io_file_element_type
 
 static cl_object
 io_stream_length(cl_object strm)
 {
 	FILE *f = IO_STREAM_FILE(strm);
-	cl_object output = ecl_file_len(f);
+	cl_object output = ecl_file_len(fileno(f));
 	if (strm->stream.byte_size != 8) {
 		cl_index bs = strm->stream.byte_size;
 		output = ecl_floor2(output, MAKE_FIXNUM(bs/8));
@@ -1954,19 +2329,28 @@ static cl_object
 io_stream_set_position(cl_object strm, cl_object large_disp)
 {
 	FILE *f = IO_STREAM_FILE(strm);
-	ecl_off_t disp;
 	cl_object output;
-	if (strm->stream.byte_size != 8) {
-		large_disp = ecl_times(large_disp,
-				       MAKE_FIXNUM(strm->stream.byte_size / 8));
+	if (Null(large_disp)) {
+		ecl_disable_interrupts();
+		if (ecl_fseeko(f, -1, SEEK_END) != 0)
+			output = Cnil;
+		else
+			output = Ct;
+		ecl_enable_interrupts();
+	} else {
+		ecl_off_t disp;
+		if (strm->stream.byte_size != 8) {
+			large_disp = ecl_times(large_disp,
+					       MAKE_FIXNUM(strm->stream.byte_size / 8));
+		}
+		disp = ecl_integer_to_off_t(large_disp);
+		ecl_disable_interrupts();
+		if (ecl_fseeko(f, disp, SEEK_SET) != 0)
+			output = Cnil;
+		else
+			output = Ct;
+		ecl_enable_interrupts();
 	}
-	disp = ecl_integer_to_off_t(large_disp);
-	ecl_disable_interrupts();
-	if (ecl_fseeko(f, disp, 0) != 0)
-		output = Cnil;
-	else
-		output = Ct;
-	ecl_enable_interrupts();
 	return output;
 }
 
@@ -2006,51 +2390,8 @@ io_stream_close(cl_object strm)
  * Specialized sequence operations
  */
 
-static cl_index
-io_stream_read_vector(cl_object strm, cl_object data, cl_index start, cl_index end)
-{
-	cl_elttype t = data->vector.elttype;
-	if (start >= end)
-		return start;
-	if (t == aet_b8 || t == aet_i8 || t == aet_bc) {
-		if (strm->stream.byte_size == 8) {
-			void *aux = data->vector.self.ch + start;
-			return io_stream_read_byte8(strm, aux, end-start);
-		}
-	}
-	if (t == aet_fix || t == aet_index) {
-		if (strm->stream.byte_size == sizeof(cl_fixnum)*8) {
-			void *aux = data->vector.self.fix + start;
-			cl_index bytes = (end - start) * sizeof(cl_fixnum);
-			bytes = io_stream_read_byte8(strm, aux, bytes);
-			return start + bytes / sizeof(cl_fixnum);
-		}
-	}
-	return generic_read_vector(strm, data, start, end);
-}
-
-static cl_index
-io_stream_write_vector(cl_object strm, cl_object data, cl_index start, cl_index end)
-{
-	cl_elttype t = data->vector.elttype;
-	if (start >= end)
-		return start;
-	if (t == aet_b8 || t == aet_i8 || t == aet_bc) {
-		if (strm->stream.byte_size == 8) {
-			void *aux = data->vector.self.fix + start;
-			return io_stream_write_byte8(strm, aux, end-start);
-		}
-	}
-	if (t == aet_fix || t == aet_index) {
-		if (strm->stream.byte_size == sizeof(cl_fixnum)*8) {
-			void *aux = data->vector.self.fix + start;
-			cl_index bytes = (end - start) * sizeof(cl_fixnum);
-			bytes = io_stream_write_byte8(strm, aux, bytes);
-			return start + bytes / sizeof(cl_fixnum);
-		}
-	}
-	return generic_write_vector(strm, data, start, end);
-}
+#define io_stream_read_vector io_file_read_vector
+#define io_stream_write_vector io_file_write_vector
 
 const struct ecl_file_ops io_stream_ops = {
 	io_stream_write_byte8,
@@ -2162,11 +2503,11 @@ si_set_buffering_mode(cl_object stream, cl_object buffer_mode_symbol)
 	}
 	if (mode == smm_output || mode == smm_io || mode == smm_input) {
 		FILE *fp = (FILE*)stream->stream.file;
-		char *new_buffer = 0;
+		unsigned char *new_buffer = 0;
 		setvbuf(fp, 0, _IONBF, 0);
 		if (buffer_mode != _IONBF) {
 			cl_index buffer_size = BUFSIZ;
-			char *new_buffer = ecl_alloc_atomic(buffer_size);
+			unsigned char *new_buffer = ecl_alloc_atomic(buffer_size);
 			stream->stream.buffer = new_buffer;
 			setvbuf(fp, new_buffer, buffer_mode, buffer_size);
 		}
@@ -2200,22 +2541,7 @@ ecl_make_stream_from_FILE(cl_object fname, void *f, enum ecl_smmode smm,
 	default:
 		FEerror("Not a valid mode ~D for ecl_make_stream_from_FILE", 1, MAKE_FIXNUM(smm));
 	}
-	if (char_stream_p) {
-		if (byte_size != 8) {
-			FEerror("Cannot create a character stream when byte size is not 8.", 0);
-		}
-		IO_STREAM_ELT_TYPE(stream) = @'base-char';
- 	} else {
-		IO_STREAM_ELT_TYPE(stream) = Cnil;
-	}
-	stream->stream.char_stream_p = char_stream_p;
-	if (byte_size > 0) {
-		stream->stream.signed_bytes = 0;
-	} else {
-		byte_size = -byte_size;
-		stream->stream.signed_bytes = 1;
-	}
-	stream->stream.byte_size = (byte_size+7)&(~(cl_fixnum)7);
+	set_stream_elt_type(stream, byte_size, char_stream_p);
 	IO_STREAM_FILENAME(stream) = fname; /* not really used */
 	IO_STREAM_COLUMN(stream) = 0;
 	stream->stream.file = f;
@@ -2262,25 +2588,30 @@ ecl_make_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm,
 	return ecl_make_stream_from_FILE(fname, fp, smm, byte_size, char_stream_p);
 }
 
+
 int
 ecl_stream_to_handle(cl_object s, bool output)
 {
-	FILE *f;
  BEGIN:
 	if (type_of(s) != t_stream)
 		return -1;
 	switch ((enum ecl_smmode)s->stream.mode) {
 	case smm_input:
 		if (output) return -1;
-		f = (FILE*)s->stream.file;
-		break;
+		return fileno((FILE*)s->stream.file);
+	case smm_input_file:
+		if (output) return -1;
+		return (int)s->stream.file;
 	case smm_output:
 		if (!output) return -1;
-		f = (FILE*)s->stream.file;
-		break;
+		return fileno((FILE*)s->stream.file);
+	case smm_output_file:
+		if (!output) return -1;
+		return (int)s->stream.file;
 	case smm_io:
-		f = (FILE*)s->stream.file;
-		break;
+		return fileno((FILE*)s->stream.file);
+	case smm_io_file:
+		return (int)s->stream.file;
 	case smm_synonym:
 		s = SYNONYM_STREAM_STREAM(s);
 		goto BEGIN;
@@ -2290,7 +2621,6 @@ ecl_stream_to_handle(cl_object s, bool output)
 	default:
 		ecl_internal_error("illegal stream mode");
 	}
-	return fileno(f);
 }
 
 /**********************************************************************
@@ -2319,13 +2649,13 @@ stream_dispatch_table(cl_object strm)
 }
 
 static cl_index
-ecl_read_byte8(cl_object strm, char *c, cl_index n)
+ecl_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	return stream_dispatch_table(strm)->read_byte8(strm, c, n);
 }
 
 static cl_index
-ecl_write_byte8(cl_object strm, char *c, cl_index n)
+ecl_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	return stream_dispatch_table(strm)->write_byte8(strm, c, n);
 }
@@ -2348,7 +2678,7 @@ ecl_read_char_noeof(cl_object strm)
 cl_object
 ecl_read_byte(cl_object strm)
 {
-	cl_index (*read_byte8)(cl_object, char *, cl_index);
+	cl_index (*read_byte8)(cl_object, unsigned char *, cl_index);
 	cl_index bs;
 #ifdef ECL_CLOS_STREAMS
 	if (ECL_INSTANCEP(strm)) {
@@ -2386,7 +2716,7 @@ ecl_read_byte(cl_object strm)
 void
 ecl_write_byte(cl_object c, cl_object strm)
 {
-	cl_index (*write_byte8)(cl_object strm, char *c, cl_index n);
+	cl_index (*write_byte8)(cl_object strm, unsigned char *c, cl_index n);
 	cl_index bs;
 	/*
 	 * The first part is only for composite or complex streams.
@@ -2673,11 +3003,7 @@ cl_file_length(cl_object strm)
 		if (position == @':start') {
 			position = MAKE_FIXNUM(0);
 		} else if (position == @':end') {
-			position = cl_file_length(file_stream);
-			if (position == Cnil) {
-				output = Cnil;
-				goto OUTPUT;
-			}
+			position = Cnil;
 		}
 		output = ecl_file_position_set(file_stream, position);
 	}
@@ -2799,11 +3125,12 @@ normalize_stream_element_type(cl_object element_type)
 cl_object
 ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 		cl_object if_does_not_exist, cl_fixnum byte_size,
-		bool char_stream_p)
+		int char_stream_p, int cstream)
 {
 	cl_env_ptr the_env = &cl_env;
 	cl_object x;
-	FILE *fp;
+	int f;
+	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 	cl_object filename = si_coerce_to_filename(fn);
 	char *fname = filename->base_string.self;
 	bool appending = FALSE;
@@ -2813,17 +3140,17 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	}
 	ecl_disable_interrupts_env(the_env);
 	if (smm == smm_input || smm == smm_probe) {
-		fp = fopen(fname, OPEN_R);
-		if (fp == NULL) {
+		f = open(fname, O_RDONLY, mode);
+		if (f < 0) {
 			if (if_does_not_exist == @':error') {
 				goto CANNOT_OPEN;
 			} else if (if_does_not_exist == @':create') {
-				fp = fopen(fname, OPEN_W);
-				if (fp == NULL)
+				f = open(fname, O_WRONLY|O_CREAT, mode);
+				if (f < 0)
 					goto CANNOT_OPEN;
-				fclose(fp);
-				fp = fopen(fname, OPEN_R);
-				if (fp == NULL)
+				close(f);
+				f = open(fname, O_RDONLY, mode);
+				if (f < 0)
 					goto CANNOT_OPEN;
 			} else if (Null(if_does_not_exist)) {
 				x = Cnil;
@@ -2837,42 +3164,36 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	} else if (smm == smm_output || smm == smm_io) {
 		if (if_exists == @':new_version' && if_does_not_exist == @':create')
 			goto CREATE;
-		fp = fopen(fname, OPEN_R);
-		if (fp != NULL) {
-			fclose(fp);
+		f = open(fname, O_RDONLY, mode);
+		if (f >= 0) {
+			close(f);
 			if (if_exists == @':error') {
 				goto CANNOT_OPEN;
 			} else if (if_exists == @':rename') {
-				fp = ecl_backup_fopen(fname, (smm == smm_output)
-						      ? OPEN_W
-						      : OPEN_RW);
-				if (fp == NULL) {
+				f = ecl_backup_open(fname, (smm == smm_output)
+						    ? O_WRONLY|O_CREAT
+						    : O_RDWR|O_CREAT,
+						    mode);
+				if (f < 0)
 					goto CANNOT_OPEN;
-				}
 			} else if (if_exists == @':rename_and_delete' ||
 				   if_exists == @':new_version' ||
 				   if_exists == @':supersede') {
-				fp = fopen(fname, (smm == smm_output)
-					   ? OPEN_W
-					   : OPEN_RW);
-				if (fp == NULL) {
+				f = open(fname, (smm == smm_output)
+					 ? O_WRONLY|O_TRUNC : O_RDWR|O_TRUNC,
+					 mode);
+				if (f < 0)
 					goto CANNOT_OPEN;
-				}
 			} else if (if_exists == @':overwrite' || if_exists == @':append') {
 				/* We cannot use "w+b" because it truncates.
 				   We cannot use "a+b" because writes jump to the end. */
-				int f = open(filename->base_string.self, (smm == smm_output)?
-					     (O_WRONLY|O_CREAT) : (O_RDWR|O_CREAT));
-				if (f < 0) {
+				f = open(filename->base_string.self, (smm == smm_output)?
+					 (O_WRONLY|O_CREAT) : (O_RDWR|O_CREAT),
+					 mode);
+				if (f < 0)
 					goto CANNOT_OPEN;
-				}
-				fp = fdopen(f, (smm == smm_output)? OPEN_W : OPEN_RW);
-				if (fp == NULL) {
-					close(f);
-					goto CANNOT_OPEN;
-				}
 				if (if_exists == @':append') {
-					ecl_fseeko(fp, 0, SEEK_END);
+					lseek(f, 0, SEEK_END);
 					appending = TRUE;
 				}
 			} else if (Null(if_exists)) {
@@ -2888,12 +3209,11 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 				goto CANNOT_OPEN;
 			} else if (if_does_not_exist == @':create') {
 			CREATE:
-				fp = fopen(fname, (smm == smm_output)
-					   ? OPEN_W
-					   : OPEN_RW);
-				if (fp == NULL) {
+				f = open(fname, (smm == smm_output)?
+					 O_WRONLY|O_CREAT : O_RDWR|O_CREAT,
+					 mode);
+				if (f < 0)
 					goto CANNOT_OPEN;
-				}
 			} else if (Null(if_does_not_exist)) {
 				x = Cnil;
 				goto OUTPUT;
@@ -2906,19 +3226,32 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	} else {
 		goto INVALID_MODE;
 	}
-	x = ecl_make_stream_from_FILE(fn, fp, smm, byte_size, char_stream_p);
-	si_set_buffering_mode(x, char_stream_p? @':line-buffered' : @':fully-buffered');
+	ecl_enable_interrupts_env(the_env);
+	if (cstream) {
+		FILE *fp;
+		switch (smm) {
+		case smm_input:		fp = fdopen(f, OPEN_R); break;
+		case smm_output:	fp = fdopen(f, OPEN_W); break;
+		case smm_io:		fp = fdopen(f, OPEN_RW); break;
+		}
+		x = ecl_make_stream_from_FILE(fn, fp, smm, byte_size, char_stream_p);
+		si_set_buffering_mode(x, char_stream_p? @':line-buffered' : @':fully-buffered');
+	} else {
+		x = ecl_make_file_stream_from_fd(fn, f, smm, byte_size, char_stream_p);
+	}
 	if (smm == smm_probe) {
 		cl_close(1, x);
 	} else {
 		si_set_finalizer(x, Ct);
 		if (!char_stream_p) {
 			/* Set file pointer to the correct position */
+			ecl_disable_interrupts_env(the_env);
 			if (appending) {
-				ecl_fseeko(fp, -1, SEEK_END);
+				lseek(f, -1, SEEK_END);
 			} else {
-				ecl_fseeko(fp, 0, SEEK_SET);
+				lseek(f, 0, SEEK_SET);
 			}
+			ecl_enable_interrupts_env(the_env);
 		}
 	}
  OUTPUT:
@@ -2938,14 +3271,13 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	return Cnil;
 }
 
-
 @(defun open (filename
 	      &key (direction @':input')
 		   (element_type @'base-char')
 		   (if_exists Cnil iesp)
 		   (if_does_not_exist Cnil idnesp)
 	           (external_format @':default')
-		   (use_header_p Cnil)
+		   (cstream Cnil)
 	      &aux strm)
 	enum ecl_smmode smm;
 	bool char_stream_p;
@@ -3006,7 +3338,7 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 		byte_size = normalize_stream_element_type(element_type);
 	}
 	strm = ecl_open_stream(filename, smm, if_exists, if_does_not_exist,
-			       byte_size, char_stream_p);
+			       byte_size, char_stream_p, !Null(cstream));
 	@(return strm)
 @)
 
@@ -3021,39 +3353,31 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
  */
 
 static int
-flisten(FILE *fp)
+file_listen(int fileno)
 {
-#ifdef HAVE_SELECT
+#if !defined(mingw32) && !defined(_MSC_VER)
+# if defined(HAVE_SELECT)
 	fd_set fds;
 	int retv, fd;
 	struct timeval tv = { 0, 0 };
-#endif
-#if defined(mingw32) || defined(_MSC_VER)
-	HANDLE hnd;
-#endif
-	if (feof(fp))
-		return ECL_LISTEN_EOF;
-#ifdef FILE_CNT
-	if (FILE_CNT(fp) > 0)
-		return ECL_LISTEN_AVAILABLE;
-#endif
-#if !defined(mingw32) && !defined(_MSC_VER)
-#if defined(HAVE_SELECT)
-	fd = fileno(fp);
 	FD_ZERO(&fds);
-	FD_SET(fd, &fds);
-	retv = select(fd + 1, &fds, NULL, NULL, &tv);
+	FD_SET(fileno, &fds);
+	retv = select(fileno + 1, &fds, NULL, NULL, &tv);
 	if (retv < 0)
 		FElibc_error("select() returned an error value", 0);
-	return (retv > 0)? ECL_LISTEN_AVAILABLE : ECL_LISTEN_NO_CHAR;
-#elif defined(FIONREAD)
-	{ long c = 0;
-	ioctl(fileno(fp), FIONREAD, &c);
-	return (c > 0)? ECL_LISTEN_AVAILABLE : ECL_LISTEN_NO_CHAR;
+	else if (retv > 0)
+		return ECL_LISTEN_AVAILABLE;
+	else
+		return ECL_LISTEN_NO_CHAR;
+# elif defined(FIONREAD)
+	{
+		long c = 0;
+		ioctl(fileno, FIONREAD, &c);
+		return (c > 0)? ECL_LISTEN_AVAILABLE : ECL_LISTEN_NO_CHAR;
 	}
-#endif /* FIONREAD */
+# endif /* FIONREAD */
 #else
-	hnd = (HANDLE)_get_osfhandle(fileno(fp));
+	HANDLE hnd = (HANDLE)_get_osfhandle(fileno);
 	switch (GetFileType(hnd)) {
 		case FILE_TYPE_CHAR: {
 			DWORD dw, dw_read, cm;
@@ -3104,6 +3428,22 @@ flisten(FILE *fp)
 			break;
 	}
 #endif
+	return -3;
+}
+
+static int
+flisten(FILE *fp)
+{
+	int aux;
+	if (feof(fp))
+		return ECL_LISTEN_EOF;
+#ifdef FILE_CNT
+	if (FILE_CNT(fp) > 0)
+		return ECL_LISTEN_AVAILABLE;
+#endif
+	aux = file_listen(fileno(fp));
+	if (aux != -3)
+		return aux;
 	/* This code is portable, and implements the expected behavior for regular files.
 	   It will fail on noninteractive streams. */
 	{
@@ -3290,14 +3630,24 @@ unread_twice(cl_object s)
 	CEerror(Ct, "Used UNREAD-CHAR twice on stream ~D", 1, s);
 }
 
+static void
+maybe_clearerr(cl_object strm)
+{
+	cl_type t = type_of(strm);
+	if (t == smm_io || t == smm_output || t == smm_input) {
+		FILE *f = IO_STREAM_FILE(strm);
+		if (f != NULL) clearerr(f);
+	}
+}
+
 static int
 restartable_io_error(cl_object strm)
 {
-	cl_env_ptr the_env = &cl_env;
+	cl_env_ptr the_env = ecl_process_env();
 	volatile int old_errno = errno;
 	/* ecl_disable_interrupts(); ** done by caller */
-	clearerr((FILE*)strm->stream.file);
-	ecl_enable_interrupts();
+	maybe_clearerr(strm);
+	ecl_enable_interrupts_env(the_env);
 	if (errno == EINTR) {
 		return 1;
 	} else {
@@ -3310,11 +3660,10 @@ restartable_io_error(cl_object strm)
 static void
 io_error(cl_object strm)
 {
-	cl_env_ptr the_env = &cl_env;
-	FILE *f = IO_STREAM_FILE(strm);
+	cl_env_ptr the_env = ecl_process_env();
 	/* ecl_disable_interrupts(); ** done by caller */
-	clearerr(f);
-	ecl_enable_interrupts();
+	maybe_clearerr(strm);
+	ecl_enable_interrupts_env(the_env);
 	FElibc_error("Read or write operation to stream ~S signaled an error.",
 		     1, strm);
 }
@@ -3360,18 +3709,27 @@ init_file(void)
 	null_stream = cl_make_two_way_stream(null_stream, cl_make_broadcast_stream(0));
 	cl_core.null_stream = null_stream;
 
+#if 0
 	standard_input = ecl_make_stream_from_FILE(make_constant_base_string("stdin"),
 						   stdin, smm_input, 8, 1);
-
 	standard_output = ecl_make_stream_from_FILE(make_constant_base_string("stdout"),
 						    stdout, smm_output, 8, 1);
-
 	error_output = ecl_make_stream_from_FILE(make_constant_base_string("stderr"),
 						 stderr, smm_output, 8, 1);
-
+#else
+	standard_input = ecl_make_file_stream_from_fd(make_constant_base_string("stdin"),
+						      STDIN_FILENO, smm_input, 8, 1);
+	standard_output = ecl_make_file_stream_from_fd(make_constant_base_string("stdout"),
+						       STDOUT_FILENO, smm_output, 8, 1);
+	error_output = ecl_make_file_stream_from_fd(make_constant_base_string("stderr"),
+						    STDERR_FILENO, smm_output, 8, 1);
+#endif
+	cl_core.standard_input = standard_input;
 	ECL_SET(@'*standard-input*', standard_input);
+	cl_core.standard_output = standard_output;
 	ECL_SET(@'*standard-output*', standard_output);
 	ECL_SET(@'*trace-output*', standard_output);
+	cl_core.error_output = error_output;
 	ECL_SET(@'*error-output*', error_output);
 
 	cl_core.terminal_io = aux 

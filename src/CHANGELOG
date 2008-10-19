@@ -90,6 +90,9 @@ ECL 8.9.0:
    *TERMINAL-IO* but directly the input or output streams associated to stdin,
    stdout and stderr.
 
+ - Internally, ECL allows to work with POSIX file descriptors directly, without
+   using C streams.
+
 * Embedding:
 
  - ECL now implements a more transparent interface for setting and querying

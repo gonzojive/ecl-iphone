@@ -454,8 +454,11 @@ struct ecl_structure {		/*  structure header  */
 
 enum ecl_smmode {		/*  stream mode  */
 	smm_input,		/*  input  */
+	smm_input_file,		/*  input  */
 	smm_output,		/*  output  */
+	smm_output_file,	/*  output  */
 	smm_io,			/*  input-output  */
+	smm_io_file,		/*  input-output  */
 	smm_synonym,		/*  synonym  */
 	smm_broadcast,		/*  broadcast  */
 	smm_concatenated,	/*  concatenated  */
@@ -473,8 +476,8 @@ enum ecl_smmode {		/*  stream mode  */
 };
 
 struct ecl_file_ops {
-	cl_index (*write_byte8)(cl_object strm, char *c, cl_index n);
-	cl_index (*read_byte8)(cl_object strm, char *c, cl_index n);
+	cl_index (*write_byte8)(cl_object strm, unsigned char *c, cl_index n);
+	cl_index (*read_byte8)(cl_object strm, unsigned char *c, cl_index n);
 
 	int (*read_char)(cl_object strm);
 	int (*write_char)(cl_object strm, int c);

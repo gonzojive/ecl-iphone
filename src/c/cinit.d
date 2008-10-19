@@ -78,22 +78,25 @@ si_find_relative_package(cl_narg narg, cl_object package, ...)
 
 static cl_object si_simple_toplevel ()
 {
+	cl_object output = cl_core.standard_output;
 	cl_object sentence;
 	int i;
 
 	/* Simple minded top level loop */
-	printf(";*** Lisp core booted ****\nECL (Embeddable Common Lisp)  %d pages\n", MAXPAGE);
-	fflush(stdout);
+	writestr_stream(";*** Lisp core booted ****\n"
+			"ECL (Embeddable Common Lisp)\n",
+			output);
+	ecl_force_output(output);
 	for (i = 1; i<fix(si_argc()); i++) {
-	  cl_object arg = si_argv(MAKE_FIXNUM(i));
-	  cl_load(1, arg);
+		cl_object arg = si_argv(MAKE_FIXNUM(i));
+		cl_load(1, arg);
 	}
 	while (1) {
-	  printf("\n> ");
-	  sentence = @read(3, Cnil, Cnil, OBJNULL);
-	  if (sentence == OBJNULL)
-	    @(return);
-	  ecl_prin1(si_eval_with_env(1, sentence), Cnil);
+		writestr_stream("\n> ", output);
+		sentence = @read(3, Cnil, Cnil, OBJNULL);
+		if (sentence == OBJNULL)
+			@(return);
+		ecl_prin1(si_eval_with_env(1, sentence), output);
 	}
 }
 

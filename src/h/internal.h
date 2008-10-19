@@ -139,6 +139,10 @@ extern void* ecl_dynamic_callback_make(cl_object data, enum ecl_ffi_calling_conv
 #define IO_STREAM_COLUMN(strm) (strm)->stream.int1
 #define IO_STREAM_ELT_TYPE(strm) (strm)->stream.object0
 #define IO_STREAM_FILENAME(strm) (strm)->stream.object1
+#define IO_FILE_DESCRIPTOR(strm) (int)((strm)->stream.file)
+#define IO_FILE_COLUMN(strm) (strm)->stream.int1
+#define IO_FILE_ELT_TYPE(strm) (strm)->stream.object0
+#define IO_FILE_FILENAME(strm) (strm)->stream.object1
 
 /* format.d */
 

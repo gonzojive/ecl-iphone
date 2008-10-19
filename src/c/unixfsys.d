@@ -303,8 +303,8 @@ ERROR:					FElibc_error("Can't change the current directory to ~S",
 	@(return pathname)
 }
 
-void *
-ecl_backup_fopen(const char *filename, const char *option)
+int
+ecl_backup_open(const char *filename, int option, int mode)
 {
 	char *backupfilename = ecl_alloc(strlen(filename) + 5);
 	if (backupfilename == NULL) {
@@ -327,15 +327,15 @@ ecl_backup_fopen(const char *filename, const char *option)
 	}
 	ecl_enable_interrupts();
 	ecl_dealloc(backupfilename);
-	return fopen(filename, option);
+	return open(filename, option, mode);
 }
 
 cl_object
-ecl_file_len(void *fp)
+ecl_file_len(int f)
 {
 	struct stat filestatus;
 	ecl_disable_interrupts();
-	fstat(fileno((FILE*)fp), &filestatus);
+	fstat(f, &filestatus);
 	ecl_enable_interrupts();
 	return ecl_make_integer(filestatus.st_size);
 }
