@@ -86,6 +86,10 @@ ECL 8.9.0:
    on C structures with a method dispatch table. Apart from code reuse and better
    maintainability, this allows a more sensible design of read/write-sequence.
 
+ - *STANDARD-INPUT*, *{STANDARD,ERROR,TRACE}-OUTPUT* are no longer synonyms to
+   *TERMINAL-IO* but directly the input or output streams associated to stdin,
+   stdout and stderr.
+
 * Embedding:
 
  - ECL now implements a more transparent interface for setting and querying

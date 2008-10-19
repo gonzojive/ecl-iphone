@@ -3369,18 +3369,16 @@ init_file(void)
 	error_output = ecl_make_stream_from_FILE(make_constant_base_string("stderr"),
 						 stderr, smm_output, 8, 1);
 
+	ECL_SET(@'*standard-input*', standard_input);
+	ECL_SET(@'*standard-output*', standard_output);
+	ECL_SET(@'*trace-output*', standard_output);
+	ECL_SET(@'*error-output*', error_output);
+
 	cl_core.terminal_io = aux 
 		= cl_make_two_way_stream(standard_input, standard_output);
 
 	ECL_SET(@'*terminal-io*', aux);
-
 	aux = cl_make_synonym_stream(@'*terminal-io*');
-
-	ECL_SET(@'*standard-input*', aux);
-	ECL_SET(@'*standard-output*', aux);
-	ECL_SET(@'*error-output*', error_output);
-
 	ECL_SET(@'*query-io*', aux);
 	ECL_SET(@'*debug-io*', aux);
-	ECL_SET(@'*trace-output*', aux);
 }
