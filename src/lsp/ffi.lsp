@@ -33,6 +33,8 @@
 	   "ENSURE-CHAR-STORABLE" "DEF-TYPE"
 	   "WITH-CSTRING" "CONVERT-TO-CSTRING" "CONVERT-FROM-CSTRING" "FREE-CSTRING"
            "WITH-CAST-POINTER" "WITH-CSTRINGS"
+
+	   "*USE-DFFI*"
 	   )
   (:import-from "SYS" "NULL-POINTER-P" "GET-SYSPROP" "PUT-SYSPROP"))
 
@@ -54,7 +56,7 @@
 
 (defvar *ffi-types* (make-hash-table :size 128))
 
-#+dffi (defvar si::*use-dffi* t)
+(defvar *use-dffi* t)
 
 (defun foreign-elt-type-p (name)
   (and (symbolp name)
