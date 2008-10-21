@@ -20,13 +20,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <ecl/internal.h>
-#ifdef mingw32
-#include <w32api.h>
-#include <wtypes.h>
-#include <winbase.h>
-#include <io.h>
-#endif
-#ifdef _MSC_VER
+#if defined(mingw32) || defined (_MSC_VER)
 #include <windows.h>
 #endif
 #ifdef HAVE_UNISTD_H
@@ -369,3 +363,4 @@ si_make_pipe()
 		  Cnil)
 		 exit_status)
 @)
+}
