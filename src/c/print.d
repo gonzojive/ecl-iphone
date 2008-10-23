@@ -1344,16 +1344,16 @@ si_write_ugly_object(cl_object x, cl_object stream)
 		if (ecl_print_readably()) FEprint_not_readable(x);
 		write_str(x->stream.closed? "#<closed " : "#<", stream);
 		switch ((enum ecl_smmode)x->stream.mode) {
+		case smm_input_file:
 		case smm_input:
 			write_str("input stream ", stream);
 			si_write_ugly_object(IO_STREAM_FILENAME(x), stream);
 			break;
-
+		case smm_output_file:
 		case smm_output:
 			write_str("output stream ", stream);
 			si_write_ugly_object(IO_STREAM_FILENAME(x), stream);
 			break;
-
 #ifdef _MSC_VER
 		case smm_input_wsock:
 			write_str("input win32 socket stream ", stream);
@@ -1370,7 +1370,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
 			si_write_ugly_object(IO_STREAM_FILENAME(x), stream);
 			break;
 #endif
-
+		case smm_io_file:
 		case smm_io:
 			write_str("io stream ", stream);
 			si_write_ugly_object(IO_STREAM_FILENAME(x), stream);

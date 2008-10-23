@@ -652,6 +652,9 @@ L:
 		case smm_output:
 		case smm_probe:
 		case smm_io:
+		case smm_input_file:
+		case smm_output_file:
+		case smm_io_file:
 			x = IO_STREAM_FILENAME(x);
 			goto L;
 		case smm_synonym:
