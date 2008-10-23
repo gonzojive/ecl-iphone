@@ -506,9 +506,28 @@ struct ecl_file_ops {
 	cl_object (*close)(cl_object strm);
 };
 
+enum {
+	ECL_STREAM_BINARY = 0,
+	ECL_STREAM_FORMAT = 0xF,
+#ifdef ECL_UNICODE
+	ECL_STREAM_DEFAULT_FORMAT = 2,
+#else
+	ECL_STREAM_DEFAULT_FORMAT = 1,
+#endif
+	ECL_STREAM_ISO_8859_1 = 1,
+	ECL_STREAM_LATIN_1 = 1,
+	ECL_STREAM_UTF_8 = 2,
+	ECL_STREAM_UCS_2 = 3,
+	ECL_STREAM_UCS_4 = 4,
+	ECL_STREAM_SIGNED_BYTES = 16,
+	ECL_STREAM_C_STREAM = 32
+};
+
 struct ecl_stream {
-	HEADER4(mode,char_stream_p,closed,signed_bytes);
-				/*  stream mode of enum smmode  */
+	HEADER3(mode,closed,flags);
+       				/*  stream mode of enum smmode  */
+				/*  closed stream?  */
+				/*  character table, flags, etc  */
 	struct ecl_file_ops *ops; /*  dispatch table  */
 	void *file;		/*  file pointer  */
 	cl_object object0;	/*  some object  */
@@ -519,6 +538,7 @@ struct ecl_stream {
 	cl_index byte_size;	/*  size of byte in binary streams  */
 	cl_fixnum last_op;	/*  0: unknown, 1: reading, -1: writing */
 	char *buffer;		/*  buffer for FILE  */
+	cl_object format;	/*  external format  */
 };
 
 struct ecl_random {

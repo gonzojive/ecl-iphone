@@ -1710,5 +1710,11 @@ cl_symbols[] = {
 
 {SYS_ "CHECK-PENDING-INTERRUPTS","si_check_pending_interrupts"},
 
+{KEY_ "LATIN-1",NULL},
+{KEY_ "ISO-8859-1",NULL},
+{KEY_ "UTF-8",NULL},
+{KEY_ "UCS-2",NULL},
+{KEY_ "UCS-4",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};

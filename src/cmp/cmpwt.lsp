@@ -143,7 +143,7 @@
     (null (return-from data-dump))
     ((or pathname string)
      (setf stream (open stream :direction :output :if-does-not-exist :create
-			:if-exists :supersede)
+			:if-exists :supersede :external-format :latin-1)
 	   must-close stream))
     (stream))
   (let ((*print-radix* nil)

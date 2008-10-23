@@ -423,7 +423,8 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		/* INV: if "source" is not a valid stream, file.d will complain */
 		strm = source;
 	} else {
-		strm = ecl_open_stream(source, smm_input, Cnil, Cnil, 8, 1, 0);
+		strm = ecl_open_stream(source, smm_input, Cnil, Cnil, 8,
+				       ECL_STREAM_DEFAULT_FORMAT);
 		if (Null(strm))
 			@(return Cnil)
 	}

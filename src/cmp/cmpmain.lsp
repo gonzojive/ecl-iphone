@@ -369,7 +369,7 @@ output = cl_safe_eval(c_string_to_object(lisp_code), Cnil, OBJNULL);
 	     ;; We should give a warning that we cannot link this module in
 	     (when flags (push flags ld-flags))
 	     (push init-fn submodules))))))
-    (setq c-file (open c-name :direction :output))
+    (setq c-file (open c-name :direction :output :external-format :latin-1))
     (format c-file +lisp-program-header+ submodules)
     (cond (shared-data-file
 	   (data-init shared-data-file)
@@ -767,7 +767,7 @@ from the C language code.  NIL means \"do not create the file\"."
   (let* ((null-stream (make-broadcast-stream))
          (*compiler-output1* null-stream)
          (*compiler-output2* (if h-file
-				 (open h-file :direction :output)
+				 (open h-file :direction :output :external-format :latin-1)
 				 null-stream))
          (t3local-fun (symbol-function 'T3LOCAL-FUN))
 	 (compiler-conditions nil))
