@@ -824,8 +824,9 @@ dir_recursive(cl_object pathname, cl_object directory)
 @)
 
 @(defun ext::getcwd (&optional (change_d_p_d Cnil))
+	cl_object output;
 @
-	cl_object output = cl_parse_namestring(3, current_dir(), Cnil, Cnil);
+	output = cl_parse_namestring(3, current_dir(), Cnil, Cnil);
 	if (!Null(change_d_p_d)) {
 		ECL_SETQ(@'*default-pathname-defaults*', output);
 	}
