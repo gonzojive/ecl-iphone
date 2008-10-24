@@ -78,7 +78,7 @@ si_make_pipe()
 	cl_object stream_write;
 	cl_object stream_read;
 	cl_object exit_status = Cnil;
-@{
+@
 	command = si_copy_to_simple_base_string(command);
 	argv = cl_mapcar(2, @'si::copy-to-simple-base-string', argv);
 #if defined(mingw32) || defined (_MSC_VER)
@@ -363,4 +363,4 @@ si_make_pipe()
 		  Cnil)
 		 exit_status)
 @)
-}
+
