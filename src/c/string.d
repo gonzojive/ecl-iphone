@@ -122,6 +122,18 @@ cl_alloc_adjustable_base_string(cl_index l)
 	return output;
 }
 
+#ifdef ECL_UNICODE
+cl_object
+ecl_alloc_adjustable_extended_string(cl_index l)
+{
+	cl_object output = cl_alloc_simple_extended_string(l);
+	output->base_string.fillp = 0;
+	output->base_string.hasfillp = TRUE;
+ 	output->base_string.adjustable = TRUE;
+	return output;
+}
+#endif
+
 /*
 	Make_simple_base_string(s) makes a simple-base string from C string s.
 */

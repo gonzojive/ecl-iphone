@@ -737,7 +737,7 @@ all_dots(cl_object s)
 {
 	cl_index i;
 	for (i = 0;  i < s->base_string.fillp;  i++)
-		if (s->base_string.self[i] != '.')
+		if (ecl_char(s, i) != '.')
 			return 0;
 	return 1;
 }
@@ -757,8 +757,8 @@ needs_to_be_escaped(cl_object s, cl_object readtable, cl_object print_case)
 	 * string has to be escaped according to readtable case and the rules
 	 * of 22.1.3.3.2. */
 	for (i = 0; i < s->base_string.fillp;  i++) {
-		int c = s->base_string.self[i] & 0377;
-		int syntax = readtable->readtable.table[c].syntax_type;
+		int c = ecl_char(s, i);
+		int syntax = ecl_readtable_get(readtable, c, 0);
 		if (syntax != cat_constituent || ecl_invalid_character_p(c) || (c) == ':')
 			return 1;
 		if ((action == ecl_case_downcase) && isupper(c))
@@ -785,7 +785,7 @@ write_symbol_string(cl_object s, int action, cl_object print_case,
 		write_ch('|', stream);
 	capitalize = 1;
 	for (i = 0;  i < s->base_string.fillp;  i++) {
-		int c = s->base_string.self[i];
+		int c = ecl_char(s, i);
 		if (escape) {
 			if (c == '|' || c == '\\') {
 				write_ch('\\', stream);

@@ -100,6 +100,11 @@ ECL 8.9.0:
    :LATIN-1 and :ISO-8859-1. If built _without_ support for Unicode, only the
    last two are available.
 
+ - Readtables now include entries for extended characters.
+
+ - When a string is read, if the characters are base-char, the string is read
+   as a base-string.
+
 * Embedding:
 
  - ECL now implements a more transparent interface for setting and querying
@@ -203,6 +208,8 @@ ECL 8.9.0:
  - Negative and nonnegative zeros are not EQL.
 
  - ENSURE-DIRECTORIES first has to merge the path with *DEFAULT-PATH...*
+
+ - The routines for printing symbols expected the names to be base strings.
 
 ;;; Local Variables: ***
 ;;; mode:text ***

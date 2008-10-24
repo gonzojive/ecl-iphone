@@ -549,9 +549,10 @@ utf_8_read_char(cl_object strm)
 	}
 	if (strm->stream.ops->read_byte8(strm, buffer, 1) < 1)
 		return EOF;
-	printf("%0x\n", buffer[0]);
-	if ((buffer[0] & 0x80) == 0)
+	/*printf(": %04x :", buffer[0]);*/
+	if ((buffer[0] & 0x80) == 0) {
 		return buffer[0];
+	}
 	if ((buffer[0] & 0x40) == 0)
 		goto MALFORMED;
 	if ((buffer[0] & 0x20) == 0) {
@@ -573,6 +574,7 @@ utf_8_read_char(cl_object strm)
 		return EOF;
 	for (i = 1, cum = buffer[0]; i <= nbytes; i++) {
 		unsigned char c = buffer[i];
+		/*printf(": %04x :", c);*/
 		if ((c & 0xC0) != 0x80)
 			goto MALFORMED;
 		c &= 0x3F;
@@ -586,6 +588,7 @@ utf_8_read_char(cl_object strm)
 		if (cum >= 0xFFFE && cum <= 0xFFFF)
 			goto INVALID_CODE_POINT;
 	}
+	/*printf("; %04x ;", cum);*/
 	return cum;
  TOO_LONG:
 	FEerror("In ~A found an UTF-8 encoding which is too large for the given character",
@@ -612,18 +615,19 @@ utf_8_write_char(cl_object strm, int c_orig)
 		buffer[0] = c;
 		nbytes = 1;
 	} else if (c <= 0x7ff) {
-		buffer[1] = c & 0x3f; c >>= 6;
+		buffer[1] = (c & 0x3f) | 0x80; c >>= 6;
 		buffer[0] = c | 0xC0;
+		/*printf("\n; %04x ;: %04x :: %04x :\n", c_orig, buffer[0], buffer[1]);*/
 		nbytes = 2;
 	} else if (c <= 0xFFFF) {
-		buffer[2] = c & 0x3f; c >>= 6;
-		buffer[1] = c & 0x3f; c >>= 6;
+		buffer[2] = (c & 0x3f) | 0x80; c >>= 6;
+		buffer[1] = (c & 0x3f) | 0x80; c >>= 6;
 		buffer[0] = c | 0xE0;
 		nbytes = 3;
 	} else if (c <= 0x1FFFFFL) {
-		buffer[3] = c & 0x3f; c >>= 6;
-		buffer[2] = c & 0x3f; c >>= 6;
-		buffer[1] = c & 0x3f; c >>= 6;
+		buffer[3] = (c & 0x3f) | 0x80; c >>= 6;
+		buffer[2] = (c & 0x3f) | 0x80; c >>= 6;
+		buffer[1] = (c & 0x3f) | 0x80; c >>= 6;
 		buffer[0] = c | 0xF0;
 		nbytes = 4;
 	}

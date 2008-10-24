@@ -705,8 +705,10 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		frame_aux.top = the_env->stack_top;
 		frame_aux.bottom = the_env->stack_top - narg;
 	AGAIN:
-		if (reg0 == OBJNULL || reg0 == Cnil)
+		if (reg0 == OBJNULL || reg0 == Cnil) {
+			cl_print(1,x);
 			FEundefined_function(x);
+		}
 		switch (type_of(reg0)) {
 		case t_cfunfixed:
 			if (narg != (cl_index)reg0->cfun.narg)

@@ -557,13 +557,7 @@ enum ecl_chattrib {		/*  character attribute  */
 
 struct ecl_readtable_entry {		/*  read table entry  */
 	enum ecl_chattrib syntax_type;	/*  character attribute  */
-	cl_object macro;		/*  macro function  */
-	cl_object *dispatch_table;	/*  pointer to the  */
-					/*  dispatch table  */
-					/*  NULL for  */
-					/*  non-dispatching  */
-					/*  macro character, or  */
-					/*  non-macro character  */
+	cl_object dispatch;		/*  a macro, a hash or NIL  */
 };
 
 enum ecl_readtable_case {
@@ -573,10 +567,13 @@ enum ecl_readtable_case {
 	ecl_case_preserve,
 };
 
-struct ecl_readtable {			/*  read table  */
+struct ecl_readtable {		/*  read table  */
 	HEADER;
 	enum ecl_readtable_case read_case; /*  readtable-case  */
 	struct ecl_readtable_entry *table; /*  read table itself  */
+#ifdef ECL_UNICODE
+	cl_object hash;		/* hash for values outside base-char range */
+#endif
 };
 
 struct ecl_pathname {

@@ -86,7 +86,7 @@ initialization function in object files have more or less unpredictable
 names, we store them in a string in the object file. This string is recognized
 by the TAG it has at the beginning This function searches that tag and retrieves
 the function name it precedes."
-  (with-open-file (stream file :direction :input)
+  (with-open-file (stream file :direction :input :external-format :latin-1)
     (cmpnote "Scanning ~S" file)
     (when (search-tag stream tag)
       (let ((name (read-name stream)))

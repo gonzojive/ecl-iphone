@@ -1279,6 +1279,8 @@ extern ECL_API cl_object cl_make_dispatch_macro_character _ARGS((cl_narg narg, c
 extern ECL_API cl_object cl_set_dispatch_macro_character _ARGS((cl_narg narg, cl_object dspchr, cl_object subchr, cl_object fnc, ...));
 extern ECL_API cl_object cl_get_dispatch_macro_character _ARGS((cl_narg narg, cl_object dspchr, cl_object subchr, ...));
 
+extern ECL_API int ecl_readtable_get(cl_object rdtbl, int c, cl_object *macro);
+extern ECL_API void ecl_readtable_set(cl_object rdtbl, int c, enum ecl_chattrib cat, cl_object macro_or_table);
 extern ECL_API cl_object ecl_read_object_non_recursive(cl_object in);
 extern ECL_API cl_object ecl_read_object(cl_object in);
 extern ECL_API cl_object ecl_parse_number(cl_object s, cl_index start, cl_index end, cl_index *ep, unsigned int radix);
@@ -1593,6 +1595,7 @@ extern ECL_API cl_object si_base_string_p(cl_object x);
 extern ECL_API cl_object si_coerce_to_base_string(cl_object x);
 extern ECL_API cl_object si_coerce_to_extended_string(cl_object x);
 extern ECL_API cl_object cl_alloc_simple_extended_string(cl_index l);
+extern ECL_API cl_object ecl_alloc_adjustable_extended_string(cl_index l);
 #else
 #define si_base_char_p cl_characterp
 #define si_base_string_p cl_stringp
