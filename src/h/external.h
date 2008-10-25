@@ -196,6 +196,8 @@ struct cl_core_struct {
 #endif
 	cl_object libraries;
 	cl_object to_be_finalized;
+
+	cl_index max_heap_size;
 	cl_object bytes_consed;
 	cl_object gc_counter;
 	bool gc_stats;
@@ -1340,7 +1342,8 @@ extern ECL_API cl_object si_bds_var(cl_object arg);
 extern ECL_API cl_object si_bds_val(cl_object arg);
 extern ECL_API cl_object si_sch_frs_base(cl_object fr, cl_object ihs);
 extern ECL_API cl_object si_reset_stack_limits(void);
-extern ECL_API cl_object si_set_stack_size(cl_object type, cl_object size);
+extern ECL_API cl_object si_set_limit(cl_object type, cl_object size);
+extern ECL_API cl_object si_get_limit(cl_object type);
 
 extern ECL_API void ecl_bds_overflow(void) /*__attribute__((noreturn))*/;
 extern ECL_API void ecl_bds_unwind(cl_env_ptr env, cl_index new_bds_top_index);

@@ -148,7 +148,21 @@ ecl_library_open(cl_object filename, bool force_reload) {
 	}
 	block = ecl_alloc_object(t_codeblock);
 	block->cblock.self_destruct = self_destruct;
+	block->cblock.locked = 0;
+	block->cblock.handle = NULL;
+	block->cblock.entry = NULL;
+	block->cblock.data = NULL;
+	block->cblock.data_size = 0;
+	block->cblock.temp_data = NULL;
+	block->cblock.temp_data_size = 0;
+	block->cblock.data_text = NULL;
+	block->cblock.data_text_size = 0;
 	block->cblock.name = filename;
+	block->cblock.next = Cnil;
+	block->cblock.links = Cnil;
+	block->cblock.cfuns_size = 0;
+	block->cblock.cfuns = NULL;
+
 	ecl_disable_interrupts();
 #ifdef HAVE_DLFCN_H
 	block->cblock.handle = dlopen(filename->base_string.self,

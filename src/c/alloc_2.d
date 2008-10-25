@@ -37,16 +37,21 @@ static void finalize_queued();
  *		OBJECT ALLOCATION			  *
  **********************************************************/
 
-static void
-out_of_memory()
+void
+_ecl_set_max_heap_size(cl_index new_size)
 {
-	/* Free up some memory and try working with the condition */
-	cl_env_ptr the_env = ecl_process_env();
+	const cl_env_ptr the_env = ecl_process_env();
+	ecl_disable_interrupts_env(the_env);
+	GC_set_max_heap_size(cl_core.max_heap_size = new_size);
+	ecl_enable_interrupts_env(the_env);
+}
+
+static void
+out_of_memory(cl_env_ptr the_env)
+{
 	the_env->string_pool = Cnil;
-	cl_index new_size = ecl_get_option(ECL_OPT_HEAP_SIZE) +
-		ecl_get_option(ECL_OPT_HEAP_SAFETY_AREA);
-	ecl_set_option(ECL_OPT_HEAP_SIZE, new_size);
-	GC_set_max_heap_size(new_size);
+	_ecl_set_max_heap_size(cl_core.max_heap_size +
+			       ecl_get_option(ECL_OPT_HEAP_SAFETY_AREA));
 	cl_error(1, @'ext::storage-exhausted');
 }
 
@@ -59,7 +64,7 @@ static size_t type_size[t_end];
 cl_object
 ecl_alloc_object(cl_type t)
 {
-	cl_object obj;
+	const cl_env_ptr the_env = ecl_process_env();
 
 	/* GC_MALLOC already resets objects */
 	switch (t) {
@@ -67,19 +72,6 @@ ecl_alloc_object(cl_type t)
 		return MAKE_FIXNUM(0); /* Immediate fixnum */
 	case t_character:
 		return CODE_CHAR(' '); /* Immediate character */
-	case t_codeblock:
-		obj = (cl_object)GC_MALLOC(sizeof(struct ecl_codeblock));
-		if (obj == NULL) out_of_memory();
-		obj->cblock.locked = 0;
-		obj->cblock.links = Cnil;
-		obj->cblock.name = Cnil;
-		obj->cblock.next = Cnil;
-		obj->cblock.data_text = NULL;
-		obj->cblock.data = NULL;
-		obj->cblock.data_text_size = 0;
-		obj->cblock.data_size = 0;
-		obj->cblock.handle = NULL;
-		break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 #endif
@@ -87,10 +79,17 @@ ecl_alloc_object(cl_type t)
 	case t_longfloat:
 #endif
 	case t_singlefloat:
-	case t_doublefloat:
+	case t_doublefloat: {
+		cl_object obj;
+		ecl_disable_interrupts_env(the_env);
 		obj = (cl_object)GC_MALLOC_ATOMIC(type_size[t]);
-		if (obj == NULL) out_of_memory();
+		ecl_enable_interrupts_env(the_env);
+		if (obj != NULL) {
+			obj->d.t = t;
+			return obj;
+		}
 		break;
+	}
 	case t_bignum:
 	case t_ratio:
 	case t_complex:
@@ -124,15 +123,23 @@ ecl_alloc_object(cl_type t)
         case t_condition_variable:
 #endif
 	case t_foreign:
+	case t_codeblock: {
+		cl_object obj;
+		ecl_disable_interrupts_env(the_env);
 		obj = (cl_object)GC_MALLOC(type_size[t]);
-		if (obj == NULL) out_of_memory();
+		ecl_enable_interrupts_env(the_env);
+		if (obj != NULL) {
+			obj->d.t = t;
+			return obj;
+		}
 		break;
+	}
 	default:
 		printf("\ttype = %d\n", t);
 		ecl_internal_error("alloc botch.");
 	}
-	obj->d.t = t;
-	return obj;
+	out_of_memory(the_env);
+	return OBJNULL;
 }
 
 #ifdef make_cons
@@ -142,11 +149,12 @@ ecl_alloc_object(cl_type t)
 cl_object
 ecl_cons(cl_object a, cl_object d)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	struct ecl_cons *obj;
-	ecl_disable_interrupts();
+	ecl_disable_interrupts_env(the_env);
 	obj = GC_MALLOC(sizeof(struct ecl_cons));
-	ecl_enable_interrupts();
-	if (obj == NULL) out_of_memory();
+	ecl_enable_interrupts_env(the_env);
+	if (obj == NULL) out_of_memory(the_env);
 #ifdef ECL_SMALL_CONS
 	obj->car = a;
 	obj->cdr = d;
@@ -162,11 +170,12 @@ ecl_cons(cl_object a, cl_object d)
 cl_object
 ecl_list1(cl_object a)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	struct ecl_cons *obj;
-	ecl_disable_interrupts();
+	ecl_disable_interrupts_env(the_env);
 	obj = GC_MALLOC(sizeof(struct ecl_cons));
-	ecl_enable_interrupts();
-	if (obj == NULL) out_of_memory();
+	ecl_enable_interrupts_env(the_env);
+	if (obj == NULL) out_of_memory(the_env);
 #ifdef ECL_SMALL_CONS
 	obj->car = a;
 	obj->cdr = Cnil;
@@ -192,50 +201,55 @@ ecl_alloc_instance(cl_index slots)
 void *
 ecl_alloc_uncollectable(size_t size)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	void *output;
-	ecl_disable_interrupts();
+	ecl_disable_interrupts_env(the_env);
 	output = GC_MALLOC_UNCOLLECTABLE(size);
-	ecl_enable_interrupts();
-	if (output == NULL) out_of_memory();
+	ecl_enable_interrupts_env(the_env);
+	if (output == NULL) out_of_memory(the_env);
 	return output;
 }
 
 void
 ecl_free_uncollectable(void *pointer)
 {
-	ecl_disable_interrupts();
+	const cl_env_ptr the_env = ecl_process_env();
+	ecl_disable_interrupts_env(the_env);
 	GC_FREE(pointer);
-	ecl_enable_interrupts();
+	ecl_enable_interrupts_env(the_env);
 }
 
 void *
 ecl_alloc(cl_index n)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	void *output;
-	ecl_disable_interrupts();
+	ecl_disable_interrupts_env(the_env);
 	output = GC_MALLOC_IGNORE_OFF_PAGE(n);
-	ecl_enable_interrupts();
-	if (output == NULL) out_of_memory();
+	ecl_enable_interrupts_env(the_env);
+	if (output == NULL) out_of_memory(the_env);
 	return output;
 }
 
 void *
 ecl_alloc_atomic(cl_index n)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	void *output;
-	ecl_disable_interrupts();
+	ecl_disable_interrupts_env(the_env);
 	output = GC_MALLOC_ATOMIC_IGNORE_OFF_PAGE(n);
-	ecl_enable_interrupts();
-	if (output == NULL) out_of_memory();
+	ecl_enable_interrupts_env(the_env);
+	if (output == NULL) out_of_memory(the_env);
 	return output;
 }
 
 void
 ecl_dealloc(void *ptr)
 {
-	ecl_disable_interrupts();
+	const cl_env_ptr the_env = ecl_process_env();
+	ecl_disable_interrupts_env(the_env);
 	GC_FREE(ptr);
-	ecl_enable_interrupts();
+	ecl_enable_interrupts_env(the_env);
 }
 
 static int alloc_initialized = FALSE;
@@ -275,7 +289,7 @@ init_alloc(void)
 #endif
 	GC_clear_roots();
 	GC_disable();
-	GC_set_max_heap_size(ecl_get_option(ECL_OPT_HEAP_SIZE));
+	_ecl_set_max_heap_size(ecl_get_option(ECL_OPT_HEAP_SIZE));
 
 #define init_tm(x,y,z) type_size[x] = (z)
 	for (i = 0; i < t_end; i++) {
@@ -349,25 +363,29 @@ standard_finalizer(cl_object o)
 		cl_close(1, o);
 		break;
 #ifdef ECL_THREADS
-	case t_lock:
-		ecl_disable_interrupts();
+	case t_lock: {
+		const cl_env_ptr the_env = ecl_process_env();
+		ecl_disable_interrupts_env(the_env);
 #if defined(_MSC_VER) || defined(mingw32)
 		CloseHandle(o->lock.mutex);
 #else
 		pthread_mutex_destroy(&o->lock.mutex);
 #endif
-		ecl_enable_interrupts();
+		ecl_enable_interrupts_env(the_env);
 		break;
-	case t_condition_variable:
-		ecl_disable_interrupts();
+	}
+	case t_condition_variable: {
+		const cl_env_ptr the_env = ecl_process_env();
+		ecl_disable_interrupts_env(the_env);
 #if defined(_MSC_VER) || defined(mingw32)
 		CloseHandle(o->condition_variable.cv);
 #else
 		pthread_cond_destroy(&o->condition_variable.cv);
 #endif
-		ecl_enable_interrupts();
+		ecl_enable_interrupts_env(the_env);
 		break;
 #endif
+	}
 	default:;
 	}
 }
@@ -404,12 +422,13 @@ queueing_finalizer(cl_object o, cl_object finalizer)
 			volatile cl_object aux = ACONS(o, finalizer, Cnil);
 			cl_object l = cl_core.to_be_finalized;
 			if (ATOM(l)) {
+				const cl_env_ptr the_env = ecl_process_env();
 				GC_finalization_proc ofn;
 				void *odata;
 				cl_core.to_be_finalized = aux;
-				ecl_disable_interrupts();
+				ecl_disable_interrupts_env(the_env);
 				GC_register_finalizer_no_order(aux, (GC_finalization_proc*)group_finalizer, NULL, &ofn, &odata);
-				ecl_enable_interrupts();
+				ecl_enable_interrupts_env(the_env);
 			} else {
 				ECL_RPLACD(aux, ECL_CONS_CDR(l));
 				ECL_RPLACD(l, aux);
@@ -421,10 +440,11 @@ queueing_finalizer(cl_object o, cl_object finalizer)
 cl_object
 si_get_finalizer(cl_object o)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object output;
 	GC_finalization_proc ofn;
 	void *odata;
-	ecl_disable_interrupts();
+	ecl_disable_interrupts_env(the_env);
 	GC_register_finalizer_no_order(o, (GC_finalization_proc)0, 0, &ofn, &odata);
 	if (ofn == 0) {
 		output = Cnil;
@@ -434,22 +454,23 @@ si_get_finalizer(cl_object o)
 		output = Cnil;
 	}
 	GC_register_finalizer_no_order(o, ofn, odata, &ofn, &odata);
-	ecl_enable_interrupts();
+	ecl_enable_interrupts_env(the_env);
 	@(return output)
 }
 
 cl_object
 si_set_finalizer(cl_object o, cl_object finalizer)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	GC_finalization_proc ofn;
 	void *odata;
-	ecl_disable_interrupts();
+	ecl_disable_interrupts_env(the_env);
 	if (finalizer == Cnil) {
 		GC_register_finalizer_no_order(o, (GC_finalization_proc)0, 0, &ofn, &odata);
 	} else {
 		GC_register_finalizer_no_order(o, (GC_finalization_proc)queueing_finalizer, finalizer, &ofn, &odata);
 	}
-	ecl_enable_interrupts();
+	ecl_enable_interrupts_env(the_env);
 	@(return)
 }
 
@@ -597,18 +618,19 @@ stacks_scanner()
 void
 ecl_register_root(cl_object *p)
 {
-	ecl_disable_interrupts();
+	const cl_env_ptr the_env = ecl_process_env();
+	ecl_disable_interrupts_env(the_env);
 	GC_add_roots((char*)p, (char*)(p+1));
-	ecl_enable_interrupts();
+	ecl_enable_interrupts_env(the_env);
 }
 
 cl_object
 si_gc(cl_object area)
 {
 	const cl_env_ptr the_env = ecl_process_env();
-	ecl_disable_interrupts();
+	ecl_disable_interrupts_env(the_env);
 	GC_gcollect();
-	ecl_enable_interrupts();
+	ecl_enable_interrupts_env(the_env);
 	@(return)
 }
 
@@ -616,9 +638,9 @@ cl_object
 si_gc_dump()
 {
 	const cl_env_ptr the_env = ecl_process_env();
-	ecl_disable_interrupts();
+	ecl_disable_interrupts_env(the_env);
 	GC_dump();
-	ecl_enable_interrupts();
+	ecl_enable_interrupts_env(the_env);
 	@(return)
 }
 

@@ -55,6 +55,7 @@ extern cl_env_ptr _ecl_alloc_env(void);
 
 /* alloc.d/alloc_2.d */
 
+extern void _ecl_set_max_heap_size(cl_index new_size);
 extern cl_object ecl_alloc_bytecodes(cl_index data_size, cl_index code_size);
 
 /* compiler.d */

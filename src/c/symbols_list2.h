@@ -1705,7 +1705,8 @@ cl_symbols[] = {
 {EXT_ "FRAME-STACK",NULL},
 {EXT_ "LISP-STACK",NULL},
 {EXT_ "C-STACK",NULL},
-{EXT_ "SET-STACK-SIZE","si_set_stack_size"},
+{EXT_ "SET-LIMIT","si_set_limit"},
+{EXT_ "GET-LIMIT","si_get_limit"},
 {EXT_ "SEGMENTATION-VIOLATION",NULL},
 
 {SYS_ "CHECK-PENDING-INTERRUPTS","si_check_pending_interrupts"},

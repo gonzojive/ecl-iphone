@@ -204,7 +204,7 @@ ECL 8.9.0:
 		(handler-bind ((ext:stack-overflow #'handle-overflow))
 		  (foo 1))))
 
- - New function (EXT:SET-STACK-SIZE type size) can resize type =
+ - New function (EXT:SET-LIMIT type size) can resize type =
    EXT:BINDING-STACK, EXT:LISP-STACK and EXT:FRAME-STACK.
 
  - FLOAT-SIGN returns the right value on negative zeros.
