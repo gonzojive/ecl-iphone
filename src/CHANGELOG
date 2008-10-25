@@ -82,6 +82,10 @@ ECL 8.9.0:
 
  - Binary streams now can only read or write bytes whose size is a multiple of 8.
 
+ - ECL now has an implicit memory limit of 128Mb, which can be raised using
+   ecl_set_option(ECL_OPT_HEAP_SIZE, new_limit). Out of memory conditions are
+   detected and gracefully handled.
+
 * Streams:
 
  - ECL has now a new and more easily extensible implementation of streams, based
@@ -129,6 +133,8 @@ ECL 8.9.0:
 	ECL_OPT_C_STACK_SIZE,
 	ECL_OPT_C_STACK_SAFETY_AREA,
 	ECL_OPT_SIGALTSTACK_SIZE,
+	ECL_OPT_HEAP_SIZE,
+	ECL_OPT_HEAP_SAFETY_AREA,
 	ECL_OPT_LIMIT
 
 * Bugs fixed:

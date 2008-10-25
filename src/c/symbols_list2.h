@@ -1716,5 +1716,7 @@ cl_symbols[] = {
 {KEY_ "UCS-2",NULL},
 {KEY_ "UCS-4",NULL},
 
+{EXT_ "STORAGE-EXHAUSTED",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};

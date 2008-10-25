@@ -554,7 +554,10 @@ returns with NIL."
 or return to an outer frame, undoing all the function calls so far."
 		   type))))))
 
-(define-condition storage-exhausted (storage-condition) ())
+(define-condition ext:storage-exhausted (storage-condition) ()
+  (:REPORT
+   (lambda (condition stream)
+     (format stream "Memory limit reached. Please jump to an outer point or quit program."))))
 
 (define-condition type-error (error)
   ((datum :INITARG :DATUM :READER type-error-datum)

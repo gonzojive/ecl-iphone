@@ -75,6 +75,8 @@ static cl_fixnum option_values[ECL_OPT_LIMIT+1] = {
 	131072,	/* ECL_OPT_C_STACK_SIZE */
 	4192,	/* ECL_OPT_C_STACK_SAFETY_AREA */
 	1,	/* ECL_OPT_SIGALTSTACK_SIZE */
+	128*1024*1024, /* ECL_OPT_HEAP_SIZE */
+	1024*1024, /* ECL_OPT_HEAP_SAFETY_AREA */
 	0};
 
 #if !defined(GBC_BOEHM)
@@ -98,7 +100,7 @@ ecl_set_option(int option, cl_fixnum value)
 	if (option > ECL_OPT_LIMIT || option < 0) {
 		FEerror("Invalid boot option ~D", 1, MAKE_FIXNUM(option));
 	} else {
-		if (option > ECL_OPT_BOOTED &&
+		if (option < ECL_OPT_BOOTED &&
 		    option_values[ECL_OPT_BOOTED]) {
 			FEerror("Cannot change option ~D while ECL is running",
 				1, MAKE_FIXNUM(option));

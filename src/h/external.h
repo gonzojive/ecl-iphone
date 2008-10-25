@@ -216,6 +216,8 @@ extern ECL_API cl_object si_gc_dump(void);
 extern ECL_API cl_object si_gc_stats(cl_object enable);
 extern ECL_API void *ecl_alloc(cl_index n);
 extern ECL_API void *ecl_alloc_atomic(cl_index n);
+extern ECL_API void *ecl_alloc_uncollectable(size_t size);
+extern ECL_API void ecl_free_uncollectable(void *);
 extern ECL_API void ecl_dealloc(void *);
 #define ecl_alloc_align(s,d) ecl_alloc(s)
 #define ecl_alloc_atomic_align(s,d) ecl_alloc_atomic(s)
@@ -868,6 +870,8 @@ typedef enum {
 	ECL_OPT_C_STACK_SIZE,
 	ECL_OPT_C_STACK_SAFETY_AREA,
 	ECL_OPT_SIGALTSTACK_SIZE,
+	ECL_OPT_HEAP_SIZE,
+	ECL_OPT_HEAP_SAFETY_AREA,
 	ECL_OPT_LIMIT
 } ecl_option;
 

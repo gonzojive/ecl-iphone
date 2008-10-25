@@ -496,6 +496,12 @@ ucs_4_write_char(cl_object strm, int c_orig)
 	buffer[1] = c & 8; c >>= 8;
 	buffer[0] = c;
 	strm->stream.ops->write_byte8(strm, buffer, 4);
+	if (c_orig == '\n')
+		IO_STREAM_COLUMN(strm) = 0;
+	else if (c_orig == '\t')
+		IO_STREAM_COLUMN(strm) = (IO_STREAM_COLUMN(strm)&~07) + 8;
+	else
+		IO_STREAM_COLUMN(strm)++;
 	return c_orig;
 }
 
@@ -525,7 +531,13 @@ ucs_2_write_char(cl_object strm, int c_orig)
 	buffer[1] = c & 8; c >>= 8;
 	buffer[0] = c & 8;
 	strm->stream.ops->write_byte8(strm, buffer, 2);
-	return c;
+	if (c_orig == '\n')
+		IO_STREAM_COLUMN(strm) = 0;
+	else if (c_orig == '\t')
+		IO_STREAM_COLUMN(strm) = (IO_STREAM_COLUMN(strm)&~07) + 8;
+	else
+		IO_STREAM_COLUMN(strm)++;
+	return c_orig;
 }
 
 /*
@@ -632,6 +644,12 @@ utf_8_write_char(cl_object strm, int c_orig)
 		nbytes = 4;
 	}
 	strm->stream.ops->write_byte8(strm, buffer, nbytes);
+	if (c == '\n')
+		IO_STREAM_COLUMN(strm) = 0;
+	else if (c == '\t')
+		IO_STREAM_COLUMN(strm) = (IO_STREAM_COLUMN(strm)&~07) + 8;
+	else
+		IO_STREAM_COLUMN(strm)++;
 	return c_orig;
 }
 #endif

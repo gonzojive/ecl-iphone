@@ -37,6 +37,19 @@ static void finalize_queued();
  *		OBJECT ALLOCATION			  *
  **********************************************************/
 
+static void
+out_of_memory()
+{
+	/* Free up some memory and try working with the condition */
+	cl_env_ptr the_env = ecl_process_env();
+	the_env->string_pool = Cnil;
+	cl_index new_size = ecl_get_option(ECL_OPT_HEAP_SIZE) +
+		ecl_get_option(ECL_OPT_HEAP_SAFETY_AREA);
+	ecl_set_option(ECL_OPT_HEAP_SIZE, new_size);
+	GC_set_max_heap_size(new_size);
+	cl_error(1, @'ext::storage-exhausted');
+}
+
 #ifdef alloc_object
 #undef alloc_object
 #endif
@@ -56,6 +69,7 @@ ecl_alloc_object(cl_type t)
 		return CODE_CHAR(' '); /* Immediate character */
 	case t_codeblock:
 		obj = (cl_object)GC_MALLOC(sizeof(struct ecl_codeblock));
+		if (obj == NULL) out_of_memory();
 		obj->cblock.locked = 0;
 		obj->cblock.links = Cnil;
 		obj->cblock.name = Cnil;
@@ -75,6 +89,7 @@ ecl_alloc_object(cl_type t)
 	case t_singlefloat:
 	case t_doublefloat:
 		obj = (cl_object)GC_MALLOC_ATOMIC(type_size[t]);
+		if (obj == NULL) out_of_memory();
 		break;
 	case t_bignum:
 	case t_ratio:
@@ -110,6 +125,7 @@ ecl_alloc_object(cl_type t)
 #endif
 	case t_foreign:
 		obj = (cl_object)GC_MALLOC(type_size[t]);
+		if (obj == NULL) out_of_memory();
 		break;
 	default:
 		printf("\ttype = %d\n", t);
@@ -130,6 +146,7 @@ ecl_cons(cl_object a, cl_object d)
 	ecl_disable_interrupts();
 	obj = GC_MALLOC(sizeof(struct ecl_cons));
 	ecl_enable_interrupts();
+	if (obj == NULL) out_of_memory();
 #ifdef ECL_SMALL_CONS
 	obj->car = a;
 	obj->cdr = d;
@@ -149,6 +166,7 @@ ecl_list1(cl_object a)
 	ecl_disable_interrupts();
 	obj = GC_MALLOC(sizeof(struct ecl_cons));
 	ecl_enable_interrupts();
+	if (obj == NULL) out_of_memory();
 #ifdef ECL_SMALL_CONS
 	obj->car = a;
 	obj->cdr = Cnil;
@@ -178,6 +196,7 @@ ecl_alloc_uncollectable(size_t size)
 	ecl_disable_interrupts();
 	output = GC_MALLOC_UNCOLLECTABLE(size);
 	ecl_enable_interrupts();
+	if (output == NULL) out_of_memory();
 	return output;
 }
 
@@ -196,6 +215,7 @@ ecl_alloc(cl_index n)
 	ecl_disable_interrupts();
 	output = GC_MALLOC_IGNORE_OFF_PAGE(n);
 	ecl_enable_interrupts();
+	if (output == NULL) out_of_memory();
 	return output;
 }
 
@@ -206,6 +226,7 @@ ecl_alloc_atomic(cl_index n)
 	ecl_disable_interrupts();
 	output = GC_MALLOC_ATOMIC_IGNORE_OFF_PAGE(n);
 	ecl_enable_interrupts();
+	if (output == NULL) out_of_memory();
 	return output;
 }
 
@@ -254,6 +275,7 @@ init_alloc(void)
 #endif
 	GC_clear_roots();
 	GC_disable();
+	GC_set_max_heap_size(ecl_get_option(ECL_OPT_HEAP_SIZE));
 
 #define init_tm(x,y,z) type_size[x] = (z)
 	for (i = 0; i < t_end; i++) {
