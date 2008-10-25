@@ -91,7 +91,6 @@ the function name it precedes."
     (when (search-tag stream tag)
       (let ((name (read-name stream)))
 	(cmpnote "Found tag: ~S for ~A" name file)
-	(print name)
 	name))))
 
 (defun remove-prefix (prefix name)
