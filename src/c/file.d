@@ -3416,7 +3416,7 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 	cl_object filename = si_coerce_to_filename(fn);
 	char *fname = filename->base_string.self;
-	bool appending = FALSE;
+	bool appending = 0;
 
 	ecl_disable_interrupts_env(the_env);
 	if (smm == smm_input || smm == smm_probe) {
@@ -3426,12 +3426,10 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 				goto CANNOT_OPEN;
 			} else if (if_does_not_exist == @':create') {
 				f = open(fname, O_WRONLY|O_CREAT, mode);
-				if (f < 0)
-					goto CANNOT_OPEN;
+				if (f < 0) goto CANNOT_OPEN;
 				close(f);
 				f = open(fname, O_RDONLY, mode);
-				if (f < 0)
-					goto CANNOT_OPEN;
+				if (f < 0) goto CANNOT_OPEN;
 			} else if (Null(if_does_not_exist)) {
 				x = Cnil;
 				goto OUTPUT;
@@ -3442,6 +3440,7 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 			}
 		}
 	} else if (smm == smm_output || smm == smm_io) {
+		int base = (smm == smm_output)? O_WRONLY : O_RDWR;
 		if (if_exists == @':new_version' && if_does_not_exist == @':create')
 			goto CREATE;
 		f = open(fname, O_RDONLY, mode);
@@ -3450,32 +3449,17 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 			if (if_exists == @':error') {
 				goto CANNOT_OPEN;
 			} else if (if_exists == @':rename') {
-				f = ecl_backup_open(fname, (smm == smm_output)
-						    ? O_WRONLY|O_CREAT
-						    : O_RDWR|O_CREAT,
-						    mode);
-				if (f < 0)
-					goto CANNOT_OPEN;
+				f = ecl_backup_open(fname, base|O_CREAT, mode);
+				if (f < 0) goto CANNOT_OPEN;
 			} else if (if_exists == @':rename_and_delete' ||
 				   if_exists == @':new_version' ||
 				   if_exists == @':supersede') {
-				f = open(fname, (smm == smm_output)
-					 ? O_WRONLY|O_TRUNC : O_RDWR|O_TRUNC,
-					 mode);
-				if (f < 0)
-					goto CANNOT_OPEN;
+				f = open(fname, base|O_TRUNC, mode);
+				if (f < 0) goto CANNOT_OPEN;
 			} else if (if_exists == @':overwrite' || if_exists == @':append') {
-				/* We cannot use "w+b" because it truncates.
-				   We cannot use "a+b" because writes jump to the end. */
-				f = open(filename->base_string.self, (smm == smm_output)?
-					 (O_WRONLY|O_CREAT) : (O_RDWR|O_CREAT),
-					 mode);
-				if (f < 0)
-					goto CANNOT_OPEN;
-				if (if_exists == @':append') {
-					lseek(f, 0, SEEK_END);
-					appending = TRUE;
-				}
+				f = open(fname, base, mode);
+				if (f < 0) goto CANNOT_OPEN;
+				appending = (if_exists == @':append');
 			} else if (Null(if_exists)) {
 				x = Cnil;
 				goto OUTPUT;
@@ -3488,12 +3472,8 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 			if (if_does_not_exist == @':error') {
 				goto CANNOT_OPEN;
 			} else if (if_does_not_exist == @':create') {
-			CREATE:
-				f = open(fname, (smm == smm_output)?
-					 O_WRONLY|O_CREAT : O_RDWR|O_CREAT,
-					 mode);
-				if (f < 0)
-					goto CANNOT_OPEN;
+			CREATE:	f = open(fname, base | O_CREAT | O_TRUNC, mode);
+				if (f < 0) goto CANNOT_OPEN;
 			} else if (Null(if_does_not_exist)) {
 				x = Cnil;
 				goto OUTPUT;
