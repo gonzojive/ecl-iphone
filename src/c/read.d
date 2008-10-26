@@ -1922,8 +1922,8 @@ ecl_invalid_character_p(int c)
 @
 	ecl_readtable_set(readtable, ecl_char_code(c),
 			  Null(non_terminating_p)?
-			  cat_non_terminating :
-			  cat_terminating,
+			  cat_terminating :
+			  cat_non_terminating,
 			  function);
 	@(return Ct)
 @)
@@ -1948,7 +1948,7 @@ ecl_invalid_character_p(int c)
 @
 	assert_type_readtable(readtable);
 	c = ecl_char_code(chr);
-	cat = Null(non_terminating_p)? cat_non_terminating : cat_terminating;
+	cat = Null(non_terminating_p)? cat_terminating : cat_non_terminating;
 	table = cl__make_hash_table(@'eql', MAKE_FIXNUM(128),
 				    ecl_make_singlefloat(1.5f),
 				    ecl_make_singlefloat(0.5f),
@@ -2096,7 +2096,7 @@ init_read(void)
 	cl_core.default_dispatch_macro = make_cf3(default_dispatch_macro_fun);
 
 	cl_make_dispatch_macro_character(3, CODE_CHAR('#'),
-					 Ct /* terminating */, r);
+					 Ct /* non terminating */, r);
 
 	cl_set_dispatch_macro_character(4, CODE_CHAR('#'), CODE_CHAR('C'),
 					make_cf3(sharp_C_reader), r);
