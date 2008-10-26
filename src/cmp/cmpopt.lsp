@@ -198,10 +198,6 @@
     (base-char . (character x))
     (character . (character x))
     (function . (si::coerce-to-function x))
-    (complex .
-     (let ((y x))
-       (declare (:read-only y))
-       (complex (realpart y) (imagpart y))))
     ))
 
 (defun expand-coerce (form value type env)
@@ -236,6 +232,14 @@
 	  ((loop for (a-type . template) in +coercion-table+
 	      when (eq type a-type)
 	      do (return (subst value 'x template))))
+	  ;;
+	  ;; FIXME! COMPLEX cannot be in +coercion-table+ because
+	  ;; (type= '(complex) '(complex double-float)) == T
+	  ;;
+	  ((eq type 'COMPLEX)
+	   `(let ((y ,value))
+	      (declare (:read-only y))
+	      (complex (realpart y) (imagpart y))))
 	  ;;
 	  ;; Complex types defined with DEFTYPE.
 	  ((and (atom type)
