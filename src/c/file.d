@@ -2041,6 +2041,25 @@ io_file_listen(cl_object strm)
 {
 	if (strm->stream.unread != EOF)
 		return ECL_LISTEN_AVAILABLE;
+	if (strm->stream.flags & ECL_STREAM_MIGHT_SEEK) {
+		cl_env_ptr the_env = ecl_process_env();
+		int f = IO_FILE_DESCRIPTOR(strm);
+		ecl_off_t disp, new;
+		ecl_disable_interrupts_env(the_env);
+		disp = lseek(f, 0, SEEK_CUR);
+		ecl_enable_interrupts_env(the_env);
+		if (disp != (ecl_off_t)-1) {
+			ecl_disable_interrupts_env(the_env);
+			new = lseek(f, 0, SEEK_END);
+			ecl_enable_interrupts_env(the_env);
+			lseek(f, disp, SEEK_SET);
+			if (new == disp) {
+				return ECL_LISTEN_NO_CHAR;
+			} else if (new != (ecl_off_t)-1) {
+				return ECL_LISTEN_AVAILABLE;
+			}
+		}
+	}
 	return file_listen(IO_FILE_DESCRIPTOR(strm));
 }
 
@@ -2135,7 +2154,7 @@ io_file_set_position(cl_object strm, cl_object large_disp)
 		disp = ecl_integer_to_off_t(large_disp);
 		mode = SEEK_SET;
 	}
-	disp = lseek(f, 0, SEEK_END);
+	disp = lseek(f, disp, mode);
 	return (disp == (ecl_off_t)-1)? Cnil : Ct;
 }
 
@@ -3511,6 +3530,7 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	if (smm == smm_probe) {
 		cl_close(1, x);
 	} else {
+		x->stream.flags |= ECL_STREAM_MIGHT_SEEK;
 		si_set_finalizer(x, Ct);
 		/* Set file pointer to the correct position */
 		ecl_file_position_set(x, appending? Cnil : MAKE_FIXNUM(0));

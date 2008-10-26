@@ -41,8 +41,9 @@ typedef struct bds_bd {
 #define	ecl_bds_check(env) \
 	((env->bds_top >= env->bds_limit)? ecl_bds_overflow() : (void)0)
 
-#ifdef ECL_THREADS
 typedef struct cl_env_struct *cl_env_ptr;
+
+#ifdef ECL_THREADS
 extern ECL_API void ecl_bds_bind(cl_env_ptr env, cl_object symbol, cl_object v);
 extern ECL_API void ecl_bds_push(cl_env_ptr env, cl_object symbol);
 extern ECL_API void ecl_bds_unwind1(cl_env_ptr env);
@@ -66,7 +67,7 @@ extern ECL_API cl_object ecl_set_symbol(cl_env_ptr env, cl_object s, cl_object v
 #define	ecl_bds_push(env,sym) do {	\
 	const cl_env_ptr env_copy = (env);	\
 	const cl_object s = (sym);		\
-	const cl_object v = (val);		\
+	const cl_object v = s->symbol.value;	\
 	ecl_bds_check(env_copy);		\
 	(++(env_copy->bds_top))->symbol = s,	\
 	env_copy->bds_top->value = s->symbol.value; } while (0);
