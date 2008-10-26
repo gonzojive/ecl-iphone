@@ -927,9 +927,8 @@ cl_object
 si_make_string_output_stream_from_string(cl_object s)
 {
 	cl_object strm = alloc_stream();
-
-	if (type_of(s) != t_base_string || !s->base_string.hasfillp)
-		FEerror("~S is not a base-string with a fill-pointer.", 1, s);
+	if (!ecl_stringp(s) || !s->base_string.hasfillp)
+		FEerror("~S is not a -string with a fill-pointer.", 1, s);
 	strm->stream.ops = duplicate_dispatch_table(&str_out_ops);
 	strm->stream.mode = (short)smm_string_output;
 	STRING_OUTPUT_STRING(strm) = s;
@@ -2040,8 +2039,9 @@ io_file_write_char(cl_object strm, int c)
 static int
 io_file_listen(cl_object strm)
 {
-	int f = IO_FILE_DESCRIPTOR(strm);
-	return file_listen(f);
+	if (strm->stream.unread != EOF)
+		return ECL_LISTEN_AVAILABLE;
+	return file_listen(IO_FILE_DESCRIPTOR(strm));
 }
 
 static void
@@ -2122,29 +2122,21 @@ static cl_object
 io_file_set_position(cl_object strm, cl_object large_disp)
 {
 	int f = IO_FILE_DESCRIPTOR(strm);
-	cl_object output;
+	ecl_off_t disp;
+	int mode;
 	if (Null(large_disp)) {
-		ecl_disable_interrupts();
-		if (lseek(f, 0, SEEK_END) == (ecl_off_t)-1)
-			output = Cnil;
-		else
-			output = Ct;
-		ecl_enable_interrupts();
+		disp = 0;
+		mode = SEEK_END;
 	} else {
-		ecl_off_t disp;
 		if (strm->stream.byte_size != 8) {
 			large_disp = ecl_times(large_disp,
 					       MAKE_FIXNUM(strm->stream.byte_size / 8));
 		}
 		disp = ecl_integer_to_off_t(large_disp);
-		ecl_disable_interrupts();
-		if (lseek(f, disp, SEEK_SET) == (ecl_off_t)-1)
-			output = Cnil;
-		else
-			output = Ct;
-		ecl_enable_interrupts();
+		mode = SEEK_SET;
 	}
-	return output;
+	disp = lseek(f, 0, SEEK_END);
+	return (disp == (ecl_off_t)-1)? Cnil : Ct;
 }
 
 static int
@@ -2333,7 +2325,7 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags)
 #ifdef ECL_UNICODE
 	case ECL_STREAM_UTF_8:
 		IO_STREAM_ELT_TYPE(stream) = @'character';
-		byte_size = 8*2;
+		byte_size = 8;
 		stream->stream.format = @':utf-8';
 		stream->stream.ops->read_char = utf_8_read_char;
 		stream->stream.ops->write_char = utf_8_write_char;
@@ -2482,8 +2474,9 @@ io_stream_write_char(cl_object strm, int c)
 static int
 io_stream_listen(cl_object strm)
 {
-	FILE *f = IO_STREAM_FILE(strm);
-	return flisten(f);
+	if (strm->stream.unread != EOF)
+		return ECL_LISTEN_AVAILABLE;
+	return flisten(IO_STREAM_FILE(strm));
 }
 
 static void
@@ -2572,29 +2565,23 @@ static cl_object
 io_stream_set_position(cl_object strm, cl_object large_disp)
 {
 	FILE *f = IO_STREAM_FILE(strm);
-	cl_object output;
+	ecl_off_t disp;
+	int mode;
 	if (Null(large_disp)) {
-		ecl_disable_interrupts();
-		if (ecl_fseeko(f, -1, SEEK_END) != 0)
-			output = Cnil;
-		else
-			output = Ct;
-		ecl_enable_interrupts();
+		disp = 0;
+		mode = SEEK_END;
 	} else {
-		ecl_off_t disp;
 		if (strm->stream.byte_size != 8) {
 			large_disp = ecl_times(large_disp,
 					       MAKE_FIXNUM(strm->stream.byte_size / 8));
 		}
 		disp = ecl_integer_to_off_t(large_disp);
-		ecl_disable_interrupts();
-		if (ecl_fseeko(f, disp, SEEK_SET) != 0)
-			output = Cnil;
-		else
-			output = Ct;
-		ecl_enable_interrupts();
+		mode = SEEK_SET;
 	}
-	return output;
+	ecl_disable_interrupts();
+	mode = ecl_fseeko(f, disp, mode);
+	ecl_enable_interrupts();
+	return mode? Cnil : Ct;
 }
 
 static int
@@ -3118,6 +3105,28 @@ cl_file_string_length(cl_object stream, cl_object string)
 			@(return MAKE_FIXNUM(1))
 	}
 	switch (type_of(string)) {
+#ifdef ECL_UNICODE
+	case t_string: {
+		cl_object c = cl_stream_external_format(stream);
+		cl_index i;
+		if (c == @':utf-8')
+			for (i = l = 0; i < string->string.fillp; i++) {
+				cl_index c = ecl_char(string, i);
+				l++;
+				if (c >= 0x7f) l++;
+				if (c >= 0x7ff) l++;
+				if (c >= 0xffff) l++;
+				if (c >= 0x1fffffL) l++;
+			}
+		else if (c == @':ucs-2')
+			l = string->string.fillp * 2;
+		else if (c == @':ucs-4')
+			l = string->string.fillp * 4;
+		else
+			l = string->string.fillp;
+		break;
+	}
+#endif
 	case t_base_string:
 		l = string->base_string.fillp;
 		break;
