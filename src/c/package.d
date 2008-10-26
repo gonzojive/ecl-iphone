@@ -383,11 +383,6 @@ ecl_find_symbol_nolock(cl_object name, cl_object p, int *intern_flag)
 	cl_object s, ul;
 
 	name = ecl_check_type_string(@'find-symbol', name);
-#ifdef ECL_UNICODE
-	if (ecl_fits_in_base_string(name)) {
-		name = si_copy_to_simple_base_string(name);
-	}
-#endif
 	s = ecl_gethash_safe(name, p->pack.external, OBJNULL);
 	if (s != OBJNULL) {
 		*intern_flag = EXTERNAL;
