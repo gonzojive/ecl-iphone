@@ -805,8 +805,10 @@ si_coerce_to_filename(cl_object pathname_orig)
 		FEerror("Too long filename: ~S.", 1, namestring);
 #ifdef ECL_UNICODE
 	if (type_of(namestring) == t_string) {
-		FEerror("The filesystem does not accept filenames with extended characters: ~S",
-			1, namestring);
+		if (!ecl_fits_in_base_string(namestring))
+			FEerror("The filesystem does not accept filenames with extended characters: ~S",
+				1, namestring);
+		namestring = si_copy_to_simple_base_string(namestring);
 	}
 #endif
 	return namestring;
