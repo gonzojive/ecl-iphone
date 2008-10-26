@@ -289,7 +289,7 @@ init_alloc(void)
 #endif
 	GC_clear_roots();
 	GC_disable();
-	_ecl_set_max_heap_size(ecl_get_option(ECL_OPT_HEAP_SIZE));
+	GC_set_max_heap_size(cl_core.max_heap_size = ecl_get_option(ECL_OPT_HEAP_SIZE));
 
 #define init_tm(x,y,z) type_size[x] = (z)
 	for (i = 0; i < t_end; i++) {
@@ -384,8 +384,8 @@ standard_finalizer(cl_object o)
 #endif
 		ecl_enable_interrupts_env(the_env);
 		break;
-#endif
 	}
+#endif
 	default:;
 	}
 }

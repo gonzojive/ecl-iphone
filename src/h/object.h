@@ -520,14 +520,14 @@ enum {
 	ECL_STREAM_UCS_2 = 3,
 	ECL_STREAM_UCS_4 = 4,
 	ECL_STREAM_SIGNED_BYTES = 16,
-	ECL_STREAM_C_STREAM = 32
+	ECL_STREAM_C_STREAM = 32,
+	ECL_STREAM_MIGHT_SEEK = 64
 };
 
 struct ecl_stream {
-	HEADER3(mode,closed,flags);
+	HEADER2(mode,closed);
        				/*  stream mode of enum smmode  */
 				/*  closed stream?  */
-				/*  character table, flags, etc  */
 	struct ecl_file_ops *ops; /*  dispatch table  */
 	void *file;		/*  file pointer  */
 	cl_object object0;	/*  some object  */
@@ -539,6 +539,7 @@ struct ecl_stream {
 	cl_fixnum last_op;	/*  0: unknown, 1: reading, -1: writing */
 	char *buffer;		/*  buffer for FILE  */
 	cl_object format;	/*  external format  */
+	int flags;		/*  character table, flags, etc  */
 };
 
 struct ecl_random {
