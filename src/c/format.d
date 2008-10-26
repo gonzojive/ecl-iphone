@@ -107,7 +107,7 @@ get_aux_stream(void)
 
 	ecl_disable_interrupts_env(env);
 	if (env->fmt_aux_stream == Cnil) {
-		stream = ecl_make_string_output_stream(64);
+		stream = ecl_make_string_output_stream(64, 1);
 	} else {
 		stream = env->fmt_aux_stream;
 		env->fmt_aux_stream = Cnil;
@@ -1431,7 +1431,7 @@ fmt_case(format_stack fmt, bool colon, bool atsign)
 	int up_colon;
 	bool b;
 
-	x = ecl_make_string_output_stream(64);
+	x = ecl_make_string_output_stream(64, 1);
 	i = fmt->ctl_index;
 	j = fmt_skip(fmt);
 	if (fmt->ctl_str[--j] != ')' || fmt->ctl_str[--j] != '~')
@@ -1709,7 +1709,7 @@ fmt_justification(format_stack fmt, volatile bool colon, bool atsign)
 
 	fields = Cnil;
 	for (;;) {
-		cl_object this_field = ecl_make_string_output_stream(64);
+		cl_object this_field = ecl_make_string_output_stream(64, 1);
 		i = fmt->ctl_index;
 		j0 = j = fmt_skip(fmt);
 		while (fmt->ctl_str[--j] != '~')
@@ -2106,12 +2106,16 @@ DIRECTIVE:
 	int null_strm = 0;
 @
 	if (Null(strm)) {
+#ifdef ECL_UNICODE
+		strm = ecl_alloc_adjustable_extended_string(64);
+#else
 		strm = cl_alloc_adjustable_base_string(64);
+#endif
 		null_strm = 1;
 	} else if (strm == Ct) {
 		strm = ecl_symbol_value(@'*standard-output*');
 	}
-	if (type_of(strm) == t_base_string) {
+	if (ecl_stringp(strm)) {
 		output = strm;
 		if (!output->base_string.hasfillp) {
 			cl_error(7, @'si::format-error',
@@ -2121,8 +2125,7 @@ DIRECTIVE:
 				 @':control-string', string,
 				 @':offset', MAKE_FIXNUM(0));
 			}
-		strm = ecl_make_string_output_stream(0);
-		STRING_OUTPUT_STRING(strm) = output;
+		strm = si_make_string_output_stream_from_string(strm);
 		if (null_strm == 0)
 			output = Cnil;
 	}

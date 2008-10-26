@@ -348,7 +348,7 @@ cl_symbol_name(cl_object x)
 					cl_list(3, @'or', @'string', @'integer'));
 		goto AGAIN;
 	}
-	output = ecl_make_string_output_stream(64);
+	output = ecl_make_string_output_stream(64, 1);
 	ecl_bds_bind(the_env, @'*print-escape*', Cnil);
 	ecl_bds_bind(the_env, @'*print-readably*', Cnil);
 	ecl_bds_bind(the_env, @'*print-base*', MAKE_FIXNUM(10));
@@ -369,7 +369,7 @@ cl_symbol_name(cl_object x)
 	prefix = ecl_check_type_string(@'gentemp', prefix);
 	pack = si_coerce_to_package(pack);
 ONCE_MORE:
-	output = ecl_make_string_output_stream(64);
+	output = ecl_make_string_output_stream(64, 1);
 	ecl_bds_bind(the_env, @'*print-escape*', Cnil);
 	ecl_bds_bind(the_env, @'*print-readably*', Cnil);
 	ecl_bds_bind(the_env, @'*print-base*', MAKE_FIXNUM(10));

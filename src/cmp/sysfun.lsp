@@ -355,8 +355,6 @@
 (proclaim-function make-echo-stream (stream stream) echo-stream)
 (proclaim-function make-string-input-stream (*) string-stream)
 (proclaim-function make-string-output-stream (*) string-stream)
-(def-inline make-string-output-stream :always () string-stream
- "ecl_make_string_output_stream(128)")
 
 (proclaim-function get-output-stream-string (string-stream) string)
 (proclaim-function streamp (t) t :predicate t)

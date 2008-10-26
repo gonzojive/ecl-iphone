@@ -114,8 +114,7 @@ ecl_library_open(cl_object filename, bool force_reload) {
 	cl_index i;
 
 	/* Coerces to a file name but does not merge with cwd */
-	filename = coerce_to_physical_pathname(filename);
-	filename = cl_namestring(filename);
+	filename = si_coerce_to_filename(filename);
 
 	if (!force_reload) {
 		/* When loading a foreign library, such as a dll or a
@@ -371,7 +370,7 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 	}
 
 	/* We need the full pathname */
-	filename = cl_namestring(cl_truename(filename));
+	filename = cl_truename(filename);
 
 #ifdef ECL_THREADS
 	/* Loading binary code is not thread safe. When another thread tries
@@ -544,7 +543,8 @@ NOT_A_FILENAME:
 	ecl_bds_bind(the_env, @'*package*', ecl_symbol_value(@'*package*'));
 	ecl_bds_bind(the_env, @'*readtable*', ecl_symbol_value(@'*readtable*'));
 	ecl_bds_bind(the_env, @'*load-pathname*', not_a_filename? Cnil : source);
-	ecl_bds_bind(the_env, @'*load-truename*', not_a_filename? Cnil : cl_truename(filename));
+	ecl_bds_bind(the_env, @'*load-truename*',
+		     not_a_filename? Cnil : (filename = cl_truename(filename)));
 	if (!Null(function)) {
 		ok = funcall(4, function, filename, verbose, print);
 	} else {

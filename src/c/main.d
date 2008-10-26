@@ -128,7 +128,7 @@ ecl_init_env(cl_env_ptr env)
 	env->print_pretty = FALSE;
 	env->queue = ecl_alloc_atomic(ECL_PPRINT_QUEUE_SIZE * sizeof(short));
 	env->indent_stack = ecl_alloc_atomic(ECL_PPRINT_INDENTATION_STACK_SIZE * sizeof(short));
-	env->fmt_aux_stream = ecl_make_string_output_stream(64);
+	env->fmt_aux_stream = ecl_make_string_output_stream(64, 1);
 #endif
 #if !defined(GBC_BOEHM)
 # if defined(THREADS)

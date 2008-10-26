@@ -940,23 +940,38 @@ si_make_string_output_stream_from_string(cl_object s)
 }
 
 cl_object
-ecl_make_string_output_stream(cl_index line_length)
+ecl_make_string_output_stream(cl_index line_length, int extended)
 {
 #ifdef ECL_UNICODE
-	cl_object s = ecl_alloc_adjustable_extended_string(line_length);
+	cl_object s = extended?
+		ecl_alloc_adjustable_extended_string(line_length) :
+		cl_alloc_adjustable_base_string(line_length);
 #else
-	cl_object s = cl_alloc_adjustable_base_string(line_length);
+	cl_object s = ecl_alloc_adjustable_base_string(line_length);
 #endif
 	return si_make_string_output_stream_from_string(s);
 }
 
-@(defun make-string-output-stream (&key (element_type @'base-char'))
+@(defun make-string-output-stream (&key (element_type @'character'))
+	int extended = 0;
 @
-	if (Null(funcall(3, @'subtypep', element_type, @'character'))) {
+	if (element_type == @'base-char') {
+		(void)0;
+	} else if (element_type == @'character') {
+#ifdef ECL_UNICODE
+		extended = 1;
+#endif
+	} else if (!Null(funcall(3, @'subtypep', element_type, @'base-char'))) {
+		(void)0;
+	} else if (!Null(funcall(3, @'subtypep', element_type, @'character'))) {
+#ifdef ECL_UNICODE
+		extended = 1;
+#endif
+	} else {
 		FEerror("In MAKE-STRING-OUTPUT-STREAM, the argument :ELEMENT-TYPE (~A) must be a subtype of character",
 			1, element_type);
 	}
-	@(return ecl_make_string_output_stream(128))
+	@(return ecl_make_string_output_stream(128, extended))
 @)
 
 cl_object
@@ -3160,7 +3175,6 @@ cl_object
 si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 {
 	cl_fixnum start,limit,end;
-	cl_type t;
 
 	/* Since we have called ecl_length(), we know that SEQ is a valid
 	   sequence. Therefore, we only need to check the type of the
@@ -3175,9 +3189,9 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	if (end <= start) {
 		goto OUTPUT;
 	}
-	t = type_of(seq);
-	if (t == t_list) {
-		bool ischar = cl_stream_element_type(stream) == @'base-char';
+	if (LISTP(seq)) {
+		cl_object elt_type = cl_stream_element_type(stream);
+		bool ischar = (elt_type == @'base-char') || (elt_type == @'character');
 		cl_object s = ecl_nthcdr(start, seq);
 		loop_for_in(s) {
 			if (start < end) {
@@ -3203,7 +3217,6 @@ cl_object
 si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 {
 	cl_fixnum start,limit,end;
-	cl_type t;
 
 	/* Since we have called ecl_length(), we know that SEQ is a valid
 	   sequence. Therefore, we only need to check the type of the
@@ -3218,9 +3231,9 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	if (end <= start) {
 		goto OUTPUT;
 	}
-	t = type_of(seq);
-	if (t == t_list) {
-		bool ischar = cl_stream_element_type(stream) == @'base-char';
+	if (LISTP(seq)) {
+		cl_object elt_type = cl_stream_element_type(stream);
+		bool ischar = (elt_type == @'base-char') || (elt_type == @'character');
 		seq = ecl_nthcdr(start, seq);
 		loop_for_in(seq) {
 			if (start >= end) {

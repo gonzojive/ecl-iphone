@@ -606,7 +606,7 @@ extern ECL_API cl_object ecl_stream_element_type(cl_object strm);
 extern ECL_API bool ecl_interactive_stream_p(cl_object strm);
 extern ECL_API cl_object ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists, cl_object if_does_not_exist, cl_fixnum byte_size, int flags);
 extern ECL_API cl_object ecl_make_string_input_stream(cl_object strng, cl_index istart, cl_index iend);
-extern ECL_API cl_object ecl_make_string_output_stream(cl_index line_length);
+extern ECL_API cl_object ecl_make_string_output_stream(cl_index line_length, int extended);
 extern ECL_API cl_object ecl_read_byte(cl_object strm);
 extern ECL_API void ecl_write_byte(cl_object byte, cl_object strm);
 extern ECL_API int ecl_read_char_noeof(cl_object strm);
