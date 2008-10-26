@@ -942,7 +942,11 @@ si_make_string_output_stream_from_string(cl_object s)
 cl_object
 ecl_make_string_output_stream(cl_index line_length)
 {
+#ifdef ECL_UNICODE
+	cl_object s = ecl_alloc_adjustable_extended_string(line_length);
+#else
 	cl_object s = cl_alloc_adjustable_base_string(line_length);
+#endif
 	return si_make_string_output_stream_from_string(s);
 }
 
@@ -962,7 +966,7 @@ cl_get_output_stream_string(cl_object strm)
 	if (type_of(strm) != t_stream ||
 	    (enum ecl_smmode)strm->stream.mode != smm_string_output)
 		FEerror("~S is not a string-output stream.", 1, strm);
-	strng = si_copy_to_simple_base_string(STRING_OUTPUT_STRING(strm));
+	strng = cl_copy_seq(STRING_OUTPUT_STRING(strm));
 	STRING_OUTPUT_STRING(strm)->base_string.fillp = 0;
 	@(return strng)
 }
@@ -982,7 +986,7 @@ str_in_read_char(cl_object strm)
 	if (curr_pos >= STRING_INPUT_LIMIT(strm)) {
 		c = EOF;
 	} else {
-		c = STRING_INPUT_STRING(strm)->base_string.self[curr_pos];
+		c = ecl_char(STRING_INPUT_STRING(strm), curr_pos);
 		STRING_INPUT_POSITION(strm) = curr_pos+1;
 	}
 	return c;
@@ -1007,7 +1011,7 @@ str_in_peek_char(cl_object strm)
 	if (pos >= STRING_INPUT_LIMIT(strm)) {
 		return EOF;
 	} else {
-		return STRING_INPUT_STRING(strm)->base_string.self[pos];
+		return ecl_char(STRING_INPUT_STRING(strm), pos);
 	}
 }
 
@@ -1113,13 +1117,7 @@ ecl_make_string_input_stream(cl_object strng, cl_index istart, cl_index iend)
 @(defun make_string_input_stream (strng &o istart iend)
 	cl_index s, e;
 @
-	strng = si_coerce_to_base_string(strng);
-#ifdef ECL_UNICODE
-	if (type_of(strng) == t_string) {
-		FEerror("Reading from extended strings is not supported: ~A",
-			1, strng);
-	}
-#endif
+	strng = cl_string(strng);
 	if (Null(istart))
 		s = 0;
 	else if (!FIXNUMP(istart) || FIXNUM_MINUSP(istart))
