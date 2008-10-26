@@ -145,7 +145,7 @@
 
 (defun pretty-out (stream char)
   (declare (type pretty-stream stream)
-	   (type base-char char)
+	   (type character char)
 	   (si::c-local))
   (cond ((char= char #\newline)
 	 (enqueue-newline stream :literal))
