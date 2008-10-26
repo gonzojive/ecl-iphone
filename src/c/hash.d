@@ -92,12 +92,14 @@ _hash_equal(int depth, cl_hashkey h, cl_object x)
 		x = x->symbol.name;
 #ifdef ECL_UNICODE
 	case t_base_string:
-		return hash_base_string(x->base_string.self, x->base_string.fillp, h);
+		return hash_base_string((unsigned char *)x->base_string.self,
+					x->base_string.fillp, h);
 	case t_string:
-		return hash_full_string(x->base_string.self, x->base_string.fillp, h);
+		return hash_full_string(x->string.self, x->string.fillp, h);
 #else
 	case t_base_string:
-		return hash_string(h, x->base_string.self, x->base_string.fillp);
+		return hash_string(h, (unsigned char *)x->base_string.self,
+				   x->base_string.fillp);
 #endif
 	case t_pathname:
 		h = _hash_equal(0, h, x->pathname.directory);
