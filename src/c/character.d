@@ -34,9 +34,9 @@ ecl_base_char_code(cl_object c)
 {
 #ifdef ECL_UNICODE
 	if (CHARACTERP(c)) {
-		cl_fixnum c = CHAR_CODE(c);
-		if (c <= 255) {
-			return (int)c;
+		cl_fixnum code = CHAR_CODE(c);
+		if (code <= 255) {
+			return (int)code;
 		}
 	}
 	FEtype_error_character(c);
@@ -563,21 +563,10 @@ cl_name_char(cl_object name)
 			c = Cnil;
 		} else {
 			cl_index used_l;
-			if (type_of(name) == t_base_string) {
-				cl_index end = name->base_string.fillp;
-				cl_index real_end = end;
-				c = ecl_parse_integer(name, 1, end, &real_end, 16);
-				used_l = real_end;
-			} else {
-				/* Unsafe code: what about read errors?
-				bds_bind(@'*read-base*', MAKE_FIXNUM(16));
-				c = cl_funcall(6, @'read-from-string', name,
-					       Cnil, Cnil, @':start', MAKE_FIXNUM(1));
-				bds_unwind1();
-				used_l = fix(VALUES(0));
-				*/
-				c = Cnil;
-			}
+			cl_index end = name->base_string.fillp;
+			cl_index real_end = end;
+			c = ecl_parse_integer(name, 1, end, &real_end, 16);
+			used_l = real_end;
 			if (!FIXNUMP(c) || (used_l == (l - 1))) {
 				c = Cnil;
 			} else {
