@@ -244,6 +244,7 @@ si_make_pipe()
 			  if (GetExitCodeProcess(pr_info.hProcess, &exitcode) &&
 			      STILL_ACTIVE != exitcode) {
 				  exit_status = MAKE_FIXNUM(exitcode);
+			  }
 		}
 		CloseHandle(pr_info.hProcess);
 	} else {
