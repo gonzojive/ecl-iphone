@@ -538,7 +538,7 @@
 
 (defmacro def-function (name args &key module (returning :void) (call :cdecl))
   #+DFFI 
-  (when (and module si::*use-dffi*)
+  (when (and module *use-dffi*)
     (return-from def-function
       `(def-lib-function ,name ,args :returning ,returning :module ,module :call ,call)))
   (multiple-value-bind (c-name lisp-name)
@@ -575,7 +575,7 @@
                           (and (consp ffi-type)
                                (member (first ffi-type) '(* :array)))))
 	   (inline-form (cond #+dffi
-                              ((and module si::*use-dffi*)
+                              ((and module *use-dffi*)
 			       `(si::find-foreign-symbol ,c-name ,module ',type ,(size-of-foreign-type type)))
 			      (t
 			       `(c-inline () () :object
@@ -656,7 +656,7 @@
                           `((eval-when (:compile-toplevel)
                               (do-load-foreign-library ,filename
 				,system-library)))))
-       (dyn-form #+dffi (when (and (not system-library) si::*use-dffi*)
+       (dyn-form #+dffi (when (and (not system-library) *use-dffi*)
                           `((si:load-foreign-module ,filename)))
                  #-dffi nil))
    `(progn ,@compile-form ,@dyn-form)))
@@ -671,7 +671,7 @@
 
 #+dffi
 (defmacro defcallback (name ret-type arg-desc &body body)
-  (if si::*use-dffi*
+  (if *use-dffi*
       (multiple-value-bind (name call-type) (if (consp name)
                                                 (values-list name)
                                                 (values name :cdecl))
