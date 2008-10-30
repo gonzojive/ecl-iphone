@@ -548,7 +548,7 @@ because it contains a reference to the undefined class~%  ~A"
 		       (table (slot-table class))
 		       (slotd (gethash slot-name table))
 		       (index (slot-definition-location slotd)))
-		  (if (fixnump index)
+		  (if (si::fixnump index)
 		      (si:instance-set self (the fixnum index) value)
 		      (rplaca (the cons index) value)))))))
 
