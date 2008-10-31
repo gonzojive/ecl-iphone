@@ -70,6 +70,9 @@ ECL 8.9.0:
 
  - *DEFAULT-PATHNAME-DEFAULTS* is initialized to the value of EXT:GETCWD.
 
+ - A new command line option, -debug, enables the debugger whenever an error
+   happens. The converse is -nodebug.
+
 * Embedding:
 
  - ECL now implements a more transparent interface for setting and querying
