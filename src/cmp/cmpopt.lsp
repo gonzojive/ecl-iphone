@@ -189,7 +189,7 @@
 ;;; form.
 ;;;
 (defparameter +coercion-table+
-  '((integer . (let ((y x)) (check-type y integer) x))
+  '((integer . (let ((y x)) (check-type y integer) y))
     (float . (float x))
     (short-float  . (float x 0.0s0))
     (single-float . (float x 0.0f0))
