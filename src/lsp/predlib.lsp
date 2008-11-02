@@ -1017,12 +1017,9 @@ if not possible."
 (defun register-cons-type (&optional (car-type '*) (cdr-type '*))
   (let ((car-tag (if (eq car-type '*) -1 (canonical-type car-type)))
 	(cdr-tag (if (eq cdr-type '*) -1 (canonical-type cdr-type))))
-    (cond ((or (zerop car-tag) (zerop cdr-tag))
-	   0)
-	  ((and (= car-tag -1) (= cdr-tag -1))
-	   (canonical-type 'CONS))
-	  (t
-	   (throw '+canonical-type-failure+ 'cons)))))
+    (if (or (zerop car-tag) (zerop cdr-tag))
+	0
+	(canonical-type 'CONS))))
 
 ;;----------------------------------------------------------------------
 ;; FIND-BUILT-IN-TAG
