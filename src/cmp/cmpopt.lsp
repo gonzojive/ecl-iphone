@@ -114,12 +114,6 @@
 	  ((atom type)
 	   form)
 	  ;;
-	  ;; Complex types with arguments.
-	  ((setf rest (rest type)
-		 first (first type)
-		 function (get-sysprop first 'SI::DEFTYPE-DEFINITION))
-	   (expand-typep form object `',(apply function rest) env))
-	  ;;
 	  ;; (TYPEP o '(NOT t)) => (NOT (TYPEP o 't))
 	  ((eq first 'NOT)
 	   `(not (typep ,object ',(first rest))))
@@ -149,6 +143,12 @@
 	     `(LET ((,var ,object))
 		(AND (TYPEP ,var ',first)
 		     ,@(expand-in-interval-p `(the ,first ,var) rest)))))
+	  ;;
+	  ;; Complex types with arguments.
+	  ((setf rest (rest type)
+		 first (first type)
+		 function (get-sysprop first 'SI::DEFTYPE-DEFINITION))
+	   (expand-typep form object `',(apply function rest) env))
 	  (t
 	   form))))
 
