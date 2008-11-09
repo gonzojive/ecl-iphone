@@ -65,9 +65,9 @@ machine."
 	(key (concatenate 'list tag ":"))
 	(string key))
        (nil)
-    (let ((c (read-char stream nil nil)))
+    (let ((c (read-byte stream nil nil)))
       (cond ((null c) (return nil))
-	    ((not (equal c (pop string)))
+	    ((not (= c (char-code (pop string))))
 	     (setf string key))
 	    ((null string)
 	     (return t))))))
@@ -76,9 +76,9 @@ machine."
   (declare (si::c-local))
   (concatenate 'string
 	       (loop with c = t
-		  until (or (null (setf c (read-char stream nil nil)))
-			    (equal c #\@))
-		  collect c)))
+		  until (or (null (setf c (read-byte stream nil nil)))
+			    (= c #.(char-code #\@)))
+		  collect (code-char c))))
 
 (defun find-init-name (file &key (tag "@EcLtAg"))
   "Search for the initialization function in an object file. Since the
@@ -86,11 +86,11 @@ initialization function in object files have more or less unpredictable
 names, we store them in a string in the object file. This string is recognized
 by the TAG it has at the beginning This function searches that tag and retrieves
 the function name it precedes."
-  (with-open-file (stream file :direction :input :external-format :latin-1)
+  (with-open-file (stream file :direction :input :element-type '(unsigned-byte 8))
     (cmpnote "Scanning ~S" file)
     (when (search-tag stream tag)
       (let ((name (read-name stream)))
-	(cmpnote "Found tag: ~S" name)
+	(cmpnote "Found tag: ~S for ~A" name file)
 	name))))
 
 (defun remove-prefix (prefix name)

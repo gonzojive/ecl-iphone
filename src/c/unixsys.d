@@ -20,13 +20,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <ecl/internal.h>
-#ifdef mingw32
-#include <w32api.h>
-#include <wtypes.h>
-#include <winbase.h>
-#include <io.h>
-#endif
-#ifdef _MSC_VER
+#if defined(mingw32) || defined (_MSC_VER)
 #include <windows.h>
 #endif
 #ifdef HAVE_UNISTD_H
@@ -84,7 +78,7 @@ si_make_pipe()
 	cl_object stream_write;
 	cl_object stream_read;
 	cl_object exit_status = Cnil;
-@{
+@
 	command = si_copy_to_simple_base_string(command);
 	argv = cl_mapcar(2, @'si::copy-to-simple-base-string', argv);
 #if defined(mingw32) || defined (_MSC_VER)
@@ -253,6 +247,7 @@ si_make_pipe()
 			  if (GetExitCodeProcess(pr_info.hProcess, &exitcode) &&
 			      STILL_ACTIVE != exitcode) {
 				  exit_status = MAKE_FIXNUM(exitcode);
+			  }
 		}
 		CloseHandle(pr_info.hProcess);
 	} else {
@@ -377,3 +372,4 @@ si_make_pipe()
 		  Cnil)
 		 exit_status)
 @)
+

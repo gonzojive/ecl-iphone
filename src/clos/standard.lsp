@@ -537,8 +537,9 @@ because it contains a reference to the undefined class~%  ~A"
 		       (table (slot-table class))
 		       (slotd (gethash slot-name table))
 		       (index (slot-definition-location slotd))
-		       (value (si:instance-ref self index)))
-		  (declare (fixnum index))
+		       (value (if (si::fixnump index)
+				  (si:instance-ref self (the fixnum index))
+				  (car (the cons index)))))
 		  (if (si:sl-boundp value)
 		      value
 		      (values (slot-unbound (class-of self) self slot-name)))))
@@ -547,8 +548,9 @@ because it contains a reference to the undefined class~%  ~A"
 		       (table (slot-table class))
 		       (slotd (gethash slot-name table))
 		       (index (slot-definition-location slotd)))
-		  (declare (fixnum index))
-		  (si:instance-set self index value))))))
+		  (if (si::fixnump index)
+		      (si:instance-set self (the fixnum index) value)
+		      (rplaca (the cons index) value)))))))
 
 (defun std-class-sealed-accessors (index)
   (declare (si::c-local)

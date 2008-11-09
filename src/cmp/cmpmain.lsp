@@ -409,6 +409,7 @@ static cl_object VV[VM];
 	       shared-data-file submodules epilogue-code)
        (close c-file)
        (compiler-cc c-name o-name)
+       (when (probe-file output-name) (delete-file output-name))
        #-msvc
        (progn
        (safe-system (format nil "ar cr ~A ~A ~{~A ~}"

@@ -87,7 +87,34 @@ bignums."
 (deftype ext::cl-fixnum () `(SIGNED-BYTE #.CL-FIXNUM-BITS))
 (deftype ext::cl-index () `(UNSIGNED-BYTE #.CL-FIXNUM-BITS))
 
-(deftype real (&rest foo) '(OR RATIONAL FLOAT))
+(deftype real (&optional (start '* start-p) (end '*))
+  (if start-p
+      (let (rat-start
+	    real-start
+	    rat-end
+	    real-end)
+	(cond ((consp start)
+	       (setf start (first start)
+		     rat-start (list (rational start))
+		     real-start (list (float start))))
+	      ((numberp start)
+	       (setf rat-start (rational start)
+		     real-start (float start)))
+	      (t
+	       (setf rat-start start
+		     real-start start)))
+	(cond ((consp end)
+	       (setf end (first end)
+		     rat-end (list (rational end))
+		     real-end (list (float end))))
+	      ((numberp end)
+	       (setf rat-end (rational end)
+		     real-end (float end)))
+	      (t
+	       (setf rat-end end
+		     real-end end)))
+	`(OR (RATIONAL ,rat-start ,rat-end) (FLOAT ,real-start ,real-end)))
+      '(OR RATIONAL FLOAT)))
 
 #-short-float
 (deftype short-float (&rest args)
@@ -1017,12 +1044,9 @@ if not possible."
 (defun register-cons-type (&optional (car-type '*) (cdr-type '*))
   (let ((car-tag (if (eq car-type '*) -1 (canonical-type car-type)))
 	(cdr-tag (if (eq cdr-type '*) -1 (canonical-type cdr-type))))
-    (cond ((or (zerop car-tag) (zerop cdr-tag))
-	   0)
-	  ((and (= car-tag -1) (= cdr-tag -1))
-	   (canonical-type 'CONS))
-	  (t
-	   (throw '+canonical-type-failure+ 'cons)))))
+    (if (or (zerop car-tag) (zerop cdr-tag))
+	0
+	(canonical-type 'CONS))))
 
 ;;----------------------------------------------------------------------
 ;; FIND-BUILT-IN-TAG

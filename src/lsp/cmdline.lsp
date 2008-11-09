@@ -50,6 +50,8 @@ Usage: ecl [-? | --help]
     ("-h" 0 #0# :noloadrc)
     ("-norc" 0 nil :noloadrc)
     ("--" 0 nil :stop)
+    ("-debug" 0 (setf si::*break-enable* t))
+    ("-nodebug" 0 (setf si::*break-enable* nil))
     ("-eval" 1 (eval (read-from-string 1)))
     ("-shell" 1 (progn (setq quit 0) (load 1 :verbose nil)))
     ("-load" 1 (load 1 :verbose verbose))
@@ -155,14 +157,18 @@ An excerpt of the rules used by ECL:
 "
   (multiple-value-bind (commands loadrc)
       (produce-init-code args rules)
-    (handler-case
-	(progn
-	  (when loadrc
-	    (dolist (file *lisp-init-file-list*)
-	      (when (load file :if-does-not-exist nil :search-list nil :verbose nil)
-		(return))))
-	  (eval commands))
-      (error (c)
-	(format *error-output*
-		"An error occurred during initialization:~%~A.~%" c)
-	(quit 1)))))
+    (handler-bind ((error
+		    #'(lambda (c)
+			(if *break-enable*
+			    (invoke-debugger c)
+			    (progn
+			      (format *error-output*
+				      "An error occurred during initialization:~%~A.~%"
+				      c)
+			      (quit 1))))))
+      (progn
+	(when loadrc
+	  (dolist (file *lisp-init-file-list*)
+	    (when (load file :if-does-not-exist nil :search-list nil :verbose nil)
+	      (return))))
+	(eval commands)))))

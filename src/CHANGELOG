@@ -86,6 +86,9 @@ ECL 8.9.0:
    ecl_set_option(ECL_OPT_HEAP_SIZE, new_limit). Out of memory conditions are
    detected and gracefully handled.
 
+ - A new command line option, -debug, enables the debugger whenever an error
+   happens. The converse is -nodebug.
+
 * Streams:
 
  - ECL has now a new and more easily extensible implementation of streams, based
