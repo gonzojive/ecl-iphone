@@ -760,28 +760,48 @@ if not possible."
 
 ;;----------------------------------------------------------------------
 ;; MEMBER types. We register this object in a separate list, *MEMBER-TYPES*,
-;; and tag all types to which it belongs.
+;; and tag all types to which it belongs. We need to treat three cases
+;; separately
+;;	- Ordinary types, via simple-member-type, check the objects
+;;	  against all pre-registered types, adding their tags.
+;;	- Ordinary numbers, are translated into intervals.
+;;	- Floating point zeros, have to be treated separately. This
+;;	  is done by assigning a special tag to -0.0 and translating
+;;	  (MEMBER 0.0) = (AND (float-type 0.0 0.0) (NOT (MEMBER -0.0)))
 ;;
 (defun register-member-type (object)
   ;(declare (si::c-local))
   (let ((pos (assoc object *member-types*)))
-    (or (and pos (cdr pos))
-	;; We convert number into intervals, so that (AND INTEGER (NOT
-	;; (EQL 10))) is detected as a subtype of (OR (INTEGER * 9)
-	;; (INTEGER 11 *)).
-	(and (realp object)
-	     (let* ((base-type (if (integerp object) 'INTEGER (type-of object)))
-		    (type (list base-type object object)))
-	       (or (find-registered-tag type)
-		   (register-interval-type type))))
-	(let* ((tag (new-type-tag)))
-	  (maybe-save-types)
-	  (setq *member-types* (acons object tag *member-types*))
-	  (dolist (i *elementary-types*)
-	    (let ((type (car i)))
-	      (when (typep object type)
-		(setf (cdr i) (logior tag (cdr i))))))
-	  tag))))
+    (cond ((and pos (cdr pos)))
+	  ((not (realp object))
+	   (simple-member-type object))
+	  ((and (floatp object) (zerop object))
+	   (if (minusp (float-sign object))
+	       (simple-member-type object)
+	       (logandc2 (number-member-type object)
+			 (register-member-type (- object)))))
+	  (t
+	   (number-member-type object)))))
+
+(defun simple-member-type (object)
+  (declare (si::c-local))
+  (let* ((tag (new-type-tag)))
+    (maybe-save-types)
+    (setq *member-types* (acons object tag *member-types*))
+    (dolist (i *elementary-types*)
+      (let ((type (car i)))
+	(when (typep object type)
+	  (setf (cdr i) (logior tag (cdr i))))))
+    tag))
+
+;; We convert number into intervals, so that (AND INTEGER (NOT (EQL
+;; 10))) is detected as a subtype of (OR (INTEGER * 9) (INTEGER 11
+;; *)).
+(defun number-member-type (object)
+  (let* ((base-type (if (integerp object) 'INTEGER (type-of object)))
+	 (type (list base-type object object)))
+    (or (find-registered-tag type)
+	(register-interval-type type))))
 
 (defun push-type (type tag)
   (declare (si::c-local))
