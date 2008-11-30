@@ -143,12 +143,15 @@
 		  t2)
 		 (t
 		  `(AND ,t1 ,t2))))
+	  ((eq tag1 'CONS)
+	   (type-and 'CONS t2))
+	  ((eq tag2 'CONS)
+	   (type-and t1 'CONS))
 	  ((null tag1)
-	   (cmpwarn "Unknown type ~S" t1)
+	   (cmpwarn "Unknown type ~S. Assuming it is T." t1)
 	   t2)
 	  (t
-	   (error t2)
-	   (cmpwarn "Unknown type ~S" t2)
+	   (cmpwarn "Unknown type ~S. Assuming it is T." t2)
 	   t1))))
 
 (defun type-or (t1 t2)
@@ -172,6 +175,10 @@
 		  t1)
 		 (t
 		  `(OR ,t1 ,t2))))
+	  ((eq tag1 'CONS)
+	   (type-or 'CONS t2))
+	  ((eq tag2 'CONS)
+	   (type-or t1 'CONS))
 	  ((null tag1)
 	   (cmpwarn "Unknown type ~S" t1)
 	   'T)

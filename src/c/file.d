@@ -2206,8 +2206,7 @@ io_file_read_vector(cl_object strm, cl_object data, cl_index start, cl_index end
 			void *aux = data->vector.self.ch + start;
 			return strm->stream.ops->read_byte8(strm, aux, end-start);
 		}
-	}
-	if (t == aet_fix || t == aet_index) {
+	} else if (t == aet_fix || t == aet_index) {
 		if (strm->stream.byte_size == sizeof(cl_fixnum)*8) {
 			void *aux = data->vector.self.fix + start;
 			cl_index bytes = (end - start) * sizeof(cl_fixnum);
@@ -2229,8 +2228,7 @@ io_file_write_vector(cl_object strm, cl_object data, cl_index start, cl_index en
 			void *aux = data->vector.self.fix + start;
 			return strm->stream.ops->write_byte8(strm, aux, end-start);
 		}
-	}
-	if (t == aet_fix || t == aet_index) {
+	} else if (t == aet_fix || t == aet_index) {
 		if (strm->stream.byte_size == sizeof(cl_fixnum)*8) {
 			void *aux = data->vector.self.fix + start;
 			cl_index bytes = (end - start) * sizeof(cl_fixnum);
@@ -2347,6 +2345,8 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags)
 	case ECL_STREAM_BINARY:
 		IO_STREAM_ELT_TYPE(stream) = cl_list(2, t, MAKE_FIXNUM(byte_size));
 		stream->stream.format = @':default';
+		stream->stream.ops->read_char = not_character_read_char;
+		stream->stream.ops->write_char = not_character_write_char;
 		break;
 	/*case ECL_ISO_8859_1:*/
 	case ECL_STREAM_LATIN_1:
