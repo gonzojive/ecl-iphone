@@ -777,10 +777,12 @@ if not possible."
 	  ((not (realp object))
 	   (simple-member-type object))
 	  ((and (floatp object) (zerop object))
-	   (if (minusp (float-sign object))
-	       (simple-member-type object)
-	       (logandc2 (number-member-type object)
-			 (register-member-type (- object)))))
+	   #.(if (eql (- 0.0) 0.0)
+		 '(number-member-type object)
+		 '(if (minusp (float-sign object))
+		      (simple-member-type object)
+		      (logandc2 (number-member-type object)
+			        (register-member-type (- object))))))
 	  (t
 	   (number-member-type object)))))
 
