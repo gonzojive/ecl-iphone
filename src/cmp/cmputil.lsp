@@ -137,11 +137,12 @@
     (apply #'format t args)))
 
 (defun cmperr (string &rest args)
-  (signal 'compiler-error
-	  :format-control string
-	  :format-arguments args)
-  (print-compiler-message c t)
-  (abort))
+  (let ((c (make-condition 'compiler-error
+			   :format-control string
+			   :format-arguments args)))
+    (signal c)
+    (print-compiler-message c t)
+    (abort)))
 
 (defun check-args-number (operator args &optional (min 0) (max nil))
   (let ((l (length args)))
@@ -195,7 +196,7 @@
   
 (defun baboon (&aux (*print-case* :upcase))
   (signal 'compiler-internal-error
-	  :format-control "A bug was found in the compiler.  Contact jjgarcia@users.sourceforge.net"
+	  :format-control "A bug was found in the compiler."
 	  :format-arguments nil))
   
 (defmacro with-cmp-protection (main-form error-form)
@@ -208,21 +209,21 @@
 
 (defun cmp-eval (form)
   (with-cmp-protection (eval form)
-    (cmperr "~&;;; The form ~s was not evaluated successfully.~
-             ~%;;; You are recommended to compile again.~%"
+    (cmperr "The form ~s was not evaluated successfully.~
+~&You are recommended to compile again."
 	    form)))
   
 (defun cmp-macroexpand (form &optional (env *cmp-env*))
   (with-cmp-protection (macroexpand form env)
-    (cmperr "~&;;; The macro form ~S was not expanded successfully.~
-             ~%;;; You are recommended to compile again.~%" form)))
+    (cmperr "The macro form ~S was not expanded successfully.~
+~%You are recommended to compile again." form)))
   
 (defun cmp-expand-macro (fd form &optional (env *cmp-env*))
   (with-cmp-protection
     (let ((new-form (funcall *macroexpand-hook* fd form env)))
       (values new-form (not (eql new-form form))))
-    (cmperr "~&;;; The macro form ~S was not expanded successfully.~
-             ~%;;; You are recommended to compile again.~%" form)))
+    (cmperr "The macro form ~S was not expanded successfully.~
+~%You are recommended to compile again." form)))
 
 (defun si::compiler-clear-compiler-properties (symbol)
   #-:CCL
