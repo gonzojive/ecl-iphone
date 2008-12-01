@@ -753,8 +753,9 @@ if not possible."
   (or (find-registered-tag type)
       (multiple-value-bind (tag-super tag-sub)
 	  (find-type-bounds type in-our-family-p type-<= nil)
-	(let ((tag (logior (new-type-tag) tag-sub)))
+	(let ((tag (new-type-tag)))
 	  (update-types (logandc2 tag-super tag-sub) tag)
+	  (setf tag (logior tag tag-sub))
 	  (push-type type tag)
 	  tag))))
 
@@ -1064,9 +1065,12 @@ if not possible."
 (defun register-cons-type (&optional (car-type '*) (cdr-type '*))
   (let ((car-tag (if (eq car-type '*) -1 (canonical-type car-type)))
 	(cdr-tag (if (eq cdr-type '*) -1 (canonical-type cdr-type))))
-    (if (or (zerop car-tag) (zerop cdr-tag))
-	0
-	(canonical-type 'CONS))))
+    (cond ((or (zerop car-tag) (zerop cdr-tag))
+	   0)
+	  ((and (= car-tag -1) (= cdr-tag -1))
+	   (canonical-type 'CONS))
+	  (t
+	   (throw '+canonical-type-failure+ 'CONS)))))
 
 ;;----------------------------------------------------------------------
 ;; FIND-BUILT-IN-TAG

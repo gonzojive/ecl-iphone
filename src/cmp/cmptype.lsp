@@ -143,12 +143,17 @@
 		  t2)
 		 (t
 		  `(AND ,t1 ,t2))))
+	  ((eq tag1 'CONS)
+	   (cmpwarn "Unsupported CONS type ~S. Replacing it with T." t1)
+	   t2)
+	  ((eq tag2 'CONS)
+	   (cmpwarn "Unsupported CONS type ~S. Replacing it with T." t2)
+	   t1)
 	  ((null tag1)
-	   (cmpwarn "Unknown type ~S" t1)
+	   (cmpwarn "Unknown type ~S. Assuming it is T." t1)
 	   t2)
 	  (t
-	   (error t2)
-	   (cmpwarn "Unknown type ~S" t2)
+	   (cmpwarn "Unknown type ~S. Assuming it is T." t2)
 	   t1))))
 
 (defun type-or (t1 t2)
@@ -172,12 +177,18 @@
 		  t1)
 		 (t
 		  `(OR ,t1 ,t2))))
+	  ((eq tag1 'CONS)
+	   (cmpwarn "Unsupported CONS type ~S. Replacing it with T." t1)
+	   T)
+	  ((eq tag2 'CONS)
+	   (cmpwarn "Unsupported CONS type ~S. Replacing it with T." t2)
+	   T)
 	  ((null tag1)
 	   (cmpwarn "Unknown type ~S" t1)
-	   'T)
+	   T)
 	  (t
 	   (cmpwarn "Unknown type ~S" t2)
-	   'T))))
+	   T))))
 
 (defun type>= (type1 type2)
   (subtypep type2 type1))

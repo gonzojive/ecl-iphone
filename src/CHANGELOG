@@ -177,6 +177,10 @@ ECL 8.9.0:
 
  - ENSURE-DIRECTORIES first has to merge the path with *DEFAULT-PATH...*
 
+ - SUBTYPEP does not support complex CONS type specifiers. This caused the
+   compiler to choke on declaration such as (CONS INTEGER (CONS T T))
+   and the like.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
