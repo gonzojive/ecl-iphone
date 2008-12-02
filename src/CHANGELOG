@@ -99,6 +99,8 @@ ECL 8.9.0:
 	ECL_OPT_SIGALTSTACK_SIZE,
 	ECL_OPT_LIMIT
 
+ - Two new convenience functions, ecl_defparameter() and ecl_defvar.
+
 * Bugs fixed:
 
  - The optimizer for COERCE might enter an infinite loop for certain

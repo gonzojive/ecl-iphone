@@ -1413,8 +1413,8 @@ extern ECL_API cl_object cl_gensym _ARGS((cl_narg narg, ...));
 extern ECL_API cl_object cl_gentemp _ARGS((cl_narg narg, ...));
 extern ECL_API cl_object si_put_properties _ARGS((cl_narg narg, cl_object sym, ...));
 
-extern ECL_API void cl_defvar(cl_object s, cl_object v);
-extern ECL_API void cl_defparameter(cl_object s, cl_object v);
+extern ECL_API void ecl_defvar(cl_object s, cl_object v);
+extern ECL_API void ecl_defparameter(cl_object s, cl_object v);
 extern ECL_API cl_object ecl_make_keyword(const char *s);
 extern ECL_API cl_object ecl_symbol_value(cl_object s);
 extern ECL_API cl_object ecl_symbol_name(cl_object s);

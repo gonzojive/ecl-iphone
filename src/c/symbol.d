@@ -460,3 +460,17 @@ cl_object
 	ECL_SET(sym, val);
 	@(return sym)
 }
+
+cl_object
+ecl_defvar(cl_object sym, cl_object val)
+{
+	si_safe_eval(cl_list(3, @'defvar', sym, cl_list(2, @'quote', val)));
+	return sym;
+}
+
+cl_object
+ecl_defparameter(cl_object sym, cl_object val)
+{
+	si_safe_eval(cl_list(3, @'defparameter', sym, cl_list(2, @'quote', val)));
+	return sym;
+}
