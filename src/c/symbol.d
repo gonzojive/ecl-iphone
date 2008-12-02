@@ -461,16 +461,14 @@ cl_object
 	@(return sym)
 }
 
-cl_object
+void
 ecl_defvar(cl_object sym, cl_object val)
 {
-	si_safe_eval(cl_list(3, @'defvar', sym, cl_list(2, @'quote', val)));
-	return sym;
+	si_safe_eval(3, cl_list(3, @'defvar', sym, cl_list(2, @'quote', val)), Cnil, Cnil);
 }
 
-cl_object
+void
 ecl_defparameter(cl_object sym, cl_object val)
 {
-	si_safe_eval(cl_list(3, @'defparameter', sym, cl_list(2, @'quote', val)));
-	return sym;
+	si_safe_eval(3, cl_list(3, @'defparameter', sym, cl_list(2, @'quote', val)), Cnil, Cnil);
 }
