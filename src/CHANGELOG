@@ -187,6 +187,8 @@ ECL 8.9.0:
    pathname designators are not allowed and a correctable error is signaled
    when the value of this variable is found to be of the wrong type.
 
+ - DIRECTORY would fail to handle symbolic links under certain conditions.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

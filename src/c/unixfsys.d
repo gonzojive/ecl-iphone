@@ -703,16 +703,15 @@ dir_files(cl_object basedir, cl_object pathname)
 		new = cl_pathname(new);
 		if (Null(cl_pathname_match_p(new, mask)))
 			continue;
+		new->pathname.host = basedir->pathname.host;
+		new->pathname.device = basedir->pathname.device;
+		new->pathname.directory = basedir->pathname.directory;
 #ifdef HAVE_LSTAT
+		/* Resolve symbolic links */
 		if (file_kind(text, FALSE) == @':link') {
 			new = cl_truename(new);
-		} else
-#endif
-		{
-			new->pathname.host = basedir->pathname.host;
-			new->pathname.device = basedir->pathname.device;
-			new->pathname.directory = basedir->pathname.directory;
 		}
+#endif
 		output = CONS(new, output);
 	} end_loop_for_in;
 	return output;
