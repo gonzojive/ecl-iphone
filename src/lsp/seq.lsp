@@ -95,8 +95,9 @@
                     #+unicode
                     (STRING . CHARACTER)
 		    (BIT-VECTOR . BIT)
-		    ((VECTOR EXT::BYTE8) . EXT::BYTE8)
-		    ((VECTOR EXT::INTEGER8) . EXT::INTEGER8)
+		    ((VECTOR EXT:BYTE8) . EXT:BYTE8)
+		    ((VECTOR EXT:INTEGER8) . EXT:INTEGER8)
+		    ((VECTOR EXT:CL-INDEX) . EXT:CL-INDEX)
 		    ((VECTOR FIXNUM) . FIXNUM)
 		    ((VECTOR SHORT-FLOAT) . SHORT-FLOAT)
 		    ((VECTOR LONG-FLOAT) . LONG-FLOAT)
