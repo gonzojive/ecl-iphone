@@ -439,11 +439,23 @@
 ;; TYPE CHECKING
 ;;
 
+(defun remove-function-types (type)
+  (if (atom type)
+      type
+      (case (first type)
+	((OR AND NOT)
+	 (cons (first type) (loop for i in (rest type) collect (remove-function-types i))))
+	(FUNCTION 'FUNCTION)
+	(otherwise type))))
+
 (defmacro optional-check-type (&whole whole var-name type &environment env)
   "Generates a type check that is only activated for the appropriate
 safety settings and when the type is not trivial."
   (unless (policy-automatic-check-type-p env)
     (cmpnote "Unable to emit check for variable ~A" whole))
   (when (policy-automatic-check-type-p env)
-    (unless (subtypep 't type)
-      `(check-type ,var-name ,type))))
+    (setf type (remove-function-types type))
+    (multiple-value-bind (ok valid)
+	(subtypep 't type)
+      (unless (or ok (not valid))
+	`(check-type ,var-name ,type)))))
