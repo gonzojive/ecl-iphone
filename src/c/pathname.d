@@ -623,12 +623,11 @@ si_default_pathname_defaults(void)
 	 * not enter an infinite loop when using PARSE-NAMESTRING, because
 	 * this routine might itself try to use the value of this variable. */
 	cl_object path = ecl_symbol_value(@'*default-pathname-defaults*');
-	if (ecl_stringp(path)) {
-		/* Avoids infinite loop by giving a third argument to
-		 * parse-namestring */
-		path = cl_parse_namestring(3, path, Cnil, Cnil);
-	} else {
-		path = cl_pathname(path);
+	while (type_of(path) != t_pathname) {
+		bds_bind(@'*default-pathname-defaults*', si_getcwd(0));
+		path = ecl_type_error(@'pathname', "*default-pathname-defaults*",
+				      path, @'pathname');
+		bds_unwind1();
 	}
 	@(return path)
 }

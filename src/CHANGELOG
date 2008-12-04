@@ -183,6 +183,10 @@ ECL 8.9.0:
    compiler to choke on declaration such as (CONS INTEGER (CONS T T))
    and the like.
 
+ - The value of *DEFAULT-PATHNAME-DEFAULTS* has to be of type pathname. Other
+   pathname designators are not allowed and a correctable error is signaled
+   when the value of this variable is found to be of the wrong type.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
