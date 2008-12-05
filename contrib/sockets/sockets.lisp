@@ -41,11 +41,11 @@
  "#include <sys/time.h>"
  "#include <netdb.h>"
  "#include <string.h>"
+ "#include <unistd.h>"
  "#include <netinet/in.h>"
  "#include <netinet/tcp.h>"
  "#include <errno.h>"
  "#include <fcntl.h>"
- "#include <stdio.h>"
  #+:cygwin
  "#define MSG_WAITALL 0"
  "#ifndef MSG_CONFIRM"
