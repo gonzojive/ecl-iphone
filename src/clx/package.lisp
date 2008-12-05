@@ -227,7 +227,7 @@
 #+clx-ansi-common-lisp
 (common-lisp:in-package :common-lisp-user)
 
-#+ecl
+#+(and ecl (not stage1))
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (require 'sockets))
 
