@@ -73,6 +73,8 @@ ECL 8.9.0:
  - A new command line option, -debug, enables the debugger whenever an error
    happens. The converse is -nodebug.
 
+ - We now ship version 0.7.3 of the portable CLX library.
+
 * Embedding:
 
  - ECL now implements a more transparent interface for setting and querying
