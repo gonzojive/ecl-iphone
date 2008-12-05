@@ -1,15 +1,68 @@
 -*- Text -*-
+-- Changes in telent CLX 0.7.3, Tue Mar 28 2006 ---
 
----  Changes in SBCL CLX 0.5.5, <FILL IN TIMESTAMP>        ---
+Support for Allegro CL (6.2 and later) (Mikel Evins)
+Latin 1 keysyms (Christophe Rhodes)
+Some protocol fixes (Douglas Crosher)
+Define a RENDER-OP typ (Douglas Crosher)
+
+---  Changes in SBCL CLX 0.7.2, Tue Jan 10 2006 ---
+
+OpenMCL fixes
+DPMS extension support
+Xauthority ipv6 parsing fixes
+
+Thanks to Bryan O'Connor, Matthew Kennedy, Christophe Rhodes
+
+---  Changes in SBCL CLX 0.7.1, Wed Aug 24 2005 ---
+
+Works in SBCL 0.9.2 and newer.
+
+---  Changes in SBCL CLX 0.7.0, Sun May 1 2005 ---
+
+The SBCL support now depends on version 0.9.0 or greater.
+
+---  Changes in SBCL CLX 0.6.1, Mon Mar 28 2005 ---
+
+experimental GLX extension support (from Janis Dzerins)
+
+The ICCCM-compliant selection handling in demo/clipboard.lisp is now
+more ICCCM-compliant.
+
+The implementation of the RENDER client protocol has been
+enhanced. (Gilbert Baumann)
+
+Bug fix: CIRCULATE-NOTIFY, CIRCULATE-REQUEST and PROPERTY-NOTIFY input
+event descriptions have been fixed.
+
+---  Changes in SBCL CLX 0.6, Tue Nov 16 2004  ---
+
+A port to ECL has been merged (Juan Jose Garcia Ripoll)
 
 With the addition of an implementation of DYNAMIC-EXTENT &REST lists
 to SBCL, various functions (e.g. READ-INPUT, QUEUE-EVENT) in CLX
 should cons less.
 
-A Texinfo version of the CLX manual as been added.
+A Texinfo version of the CLX manual has been added (in manual/), thanks
+to the work of Gilbert Baumann and Shawn Betts.  
 
 The portable-clx mailing list has been created for development discussion
-and bug reports
+and bug reports.  See 
+http://lists.metacircles.com/cgi-bin/mailman/listinfo/portable-clx
+
+A demonstration of ICCCM-compliant selection handling for select and paste
+has been included in demo/clipboard.lisp
+
+Bug fix: change the sizes of certain fields in a WM-SIZE-HINT to be 32
+bits wide, as per the ICCCM specifications. Fixes a problem seen with
+the MacOS X11 window manger, that uses very large hint values.
+(Patch from Eric Marsden)
+
+Bug fix: +POINTER-EVENT-MASK-VECTOR+ is supposed to be a vector of
+keywords.  It wasn't, but it is now. (Milan Zamazal)
+
+Bug fix: xrender now compiles properly when *DEF-CLX-CLASS-USE-DEFCLASS*
+(Milan again)
 
 ---  Changes in SBCL CLX 0.5.4, Tue Nov 11 00:02:43 2003   ---
 

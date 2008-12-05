@@ -35,15 +35,17 @@
 (defclass legacy-file (static-file) ())
 
 (defsystem CLX
-    :depends-on (sb-bsd-sockets)
-    :version "0.5.4"
+    :depends-on (#+sbcl sb-bsd-sockets)
+    :version "0.7.2"
     :serial t
     :default-component-class clx-source-file
     :components
     ((:file "package")
      (:file "depdefs")
      (:file "clx")
-     (:file "dependent")
+     #-(or openmcl allegro) (:file "dependent")
+     #+openmcl (:file "dep-openmcl")
+     #+allegro (:file "dep-allegro")
      (:file "macros")
      (:file "bufmac")
      (:file "buffer")
@@ -60,12 +62,19 @@
      (:file "manager")
      (:file "image")
      (:file "resource")
+     #+allegro
+     (:file "excldep" :pathname "excldep.lisp")
      (:module extensions
 	      :pathname #.(make-pathname :directory '(:relative))
 	      :components
 	      ((:file "shape")
+	       (:file "big-requests")
 	       (:file "xvidmode")
-	       (:xrender-source-file "xrender")))
+	       (:xrender-source-file "xrender")
+               (:file "glx")
+               (:file "gl" :depends-on ("glx"))
+	       (:file "dpms")
+               (:file "xtest")))
      (:module demo
 	      :default-component-class example-source-file
 	      :components
@@ -75,7 +84,9 @@
 	       ;; asdf doesn't load example files anyway.
 	       (:file "beziertest")
 	       (:file "clclock")
+               (:file "clipboard")
 	       (:file "clx-demos")
+	       (:file "gl-test")
 	       ;; FIXME: compiling this generates 30-odd spurious code
 	       ;; deletion notes.  Find out why, and either fix or
 	       ;; workaround the problem.
@@ -96,7 +107,6 @@
      (:legacy-file "exclREADME")
      (:legacy-file "exclcmac" :pathname "exclcmac.lisp")
      (:legacy-file "excldepc" :pathname "excldep.c")
-     (:legacy-file "excldep" :pathname "excldep.lisp")
      (:legacy-file "sockcl" :pathname "sockcl.lisp")
      (:legacy-file "socket" :pathname "socket.c")
      (:legacy-file "defsystem" :pathname "defsystem.lisp")
@@ -149,14 +159,18 @@
 	   ;; use of this does not imply that applications using CLX
 	   ;; calls that expand into calls to these accessors will be
 	   ;; optimized in the same way).
-	   (let ((sb-ext:*derive-function-types* t))
+	   (let ((sb-ext:*derive-function-types* t)
+                 (sadx (find-symbol "STACK-ALLOCATE-DYNAMIC-EXTENT" :sb-c))
+                 (sadx-var (find-symbol "*STACK-ALLOCATE-DYNAMIC-EXTENT*" :sb-ext)))
 	     ;; deeply unportable stuff, this.  I will be shot.  We
 	     ;; want to enable the dynamic-extent declarations in CLX.
-	     (when (sb-c::policy-quality-name-p
-		    'sb-c::stack-allocate-dynamic-extent)
+	     (when (and sadx (sb-c::policy-quality-name-p sadx))
 	       ;; no way of setting it back short of yet more yukky stuff
-	       (proclaim '(optimize (sb-c::stack-allocate-dynamic-extent 3))))
-	     (call-next-method)))
+	       (proclaim `(optimize (,sadx 3))))
+             (if sadx-var
+                 (progv (list sadx-var) (list t)
+                   (call-next-method))
+                 (call-next-method))))
       (setf (operation-on-warnings o) on-warnings
 	    (operation-on-failure o) on-failure))))
 

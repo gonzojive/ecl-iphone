@@ -41,35 +41,48 @@
 
 (defun read-xauth-entry (stream)
   (labels ((read-short (stream &optional (eof-errorp t))
-	     (let ((high-byte (read-byte stream eof-errorp)))
-	       (and high-byte
-		    (dpb high-byte (byte 8 8) (read-byte stream)))))
-	   (read-short-length-string (stream)
-	     (let ((length (read-short stream)))
-	       (let ((string (make-string length)))
-		 (dotimes (k length)
-		   (setf (schar string k) (card8->char (read-byte stream))))
-		 string)))
-	   (read-short-length-vector (stream)
-	     (let ((length (read-short stream)))
-	       (let ((vector (make-array length :element-type '(unsigned-byte 8))))
-		 (dotimes (k length)
-		   (setf (aref vector k) (read-byte stream)))
-		 vector))))
-    (let ((family (read-short stream nil)))
-      (if (null family)
-	(list nil nil nil nil nil)
-	(let* ((address (read-short-length-vector stream))
-	       (number (parse-integer (read-short-length-string stream)))
-	       (name (read-short-length-string stream))
-	       (data (read-short-length-vector stream))
-	       (family (or (car (rassoc family *protocol-families*)) family)))
-	  (list 
-	   family
-	   (ecase family
-	     (:local (map 'string #'code-char address))
-	     (:internet (coerce address 'list)))
-	   number name data))))))
+             (let ((high-byte (read-byte stream eof-errorp)))
+               (and high-byte
+                    (dpb high-byte (byte 8 8) (read-byte stream)))))
+           (read-short-length-string (stream)
+             (let ((length (read-short stream)))
+               (let ((string (make-string length)))
+                 (dotimes (k length)
+                   (setf (schar string k) (card8->char (read-byte stream))))
+                 string)))
+           (read-short-length-vector (stream)
+             (let ((length (read-short stream)))
+               (let ((vector (make-array length 
+                                         :element-type '(unsigned-byte 8))))
+                 (dotimes (k length)
+                   (setf (aref vector k) (read-byte stream)))
+                 vector))))
+    (let ((family-id (read-short stream nil)))
+      (if (null family-id)
+          (list nil nil nil nil nil)
+          (let* ((address-data (read-short-length-vector stream))
+                 (number (parse-integer (read-short-length-string stream)))
+                 (name (read-short-length-string stream))
+                 (data (read-short-length-vector stream))
+                 (family (car (rassoc family-id *protocol-families*))))
+            (unless family
+              (return-from read-xauth-entry
+                ;; we return FAMILY-ID to signal to
+                ;; GET-BEST-AUTHORIZATION that we haven't finished
+                ;; with the stream.
+                (list family-id nil nil nil nil)))
+            (let ((address 
+                   (case family
+                     (:local (map 'string #'code-char address-data))
+                     (:internet (coerce address-data 'list))
+                     ;; FIXME: we can probably afford not to support
+                     ;; :DECNET or :CHAOSNET in this modern age, but
+                     ;; :INTERNET6 probably deserve support.  -- CSR,
+                     ;; 2005-08-07
+                     (t nil))))
+              ;; if ADDRESS is NIL by this time, we will never match
+              ;; the address of DISPLAY.
+              (list family address number name data)))))))
 
 (defun get-best-authorization (host display protocol)
   ;; parse .Xauthority, extract the cookie for DISPLAY on HOST.
@@ -117,6 +130,24 @@
 		(values best-name best-data)))))))
     (values "" "")))
 
+(defmacro with-display ((display &key timeout inline)
+			&body body)
+  ;; This macro is for use in a multi-process environment.  It
+  ;; provides exclusive access to the local display object for
+  ;; multiple request generation.  It need not provide immediate
+  ;; exclusive access for replies; that is, if another process is
+  ;; waiting for a reply (while not in a with-display), then
+  ;; synchronization need not (but can) occur immediately.  Except
+  ;; where noted, all routines effectively contain an implicit
+  ;; with-display where needed, so that correct synchronization is
+  ;; always provided at the interface level on a per-call basis.
+  ;; Nested uses of this macro will work correctly.  This macro does
+  ;; not prevent concurrent event processing; see with-event-queue.
+  `(with-buffer (,display
+		 ,@(and timeout `(:timeout ,timeout))
+		 ,@(and inline `(:inline ,inline)))
+     ,@body))
+
 ;;
 ;; Resource id management
 ;;
@@ -133,40 +164,59 @@
 		 (type mask32 mask))))))
 
 (defun resourcealloc (display)
-  ;; Allocate a resource-id for in DISPLAY
+  ;; Allocate a resource-id for use in DISPLAY
   (declare (type display display))
   (declare (clx-values resource-id))
-  (dpb (incf (display-resource-id-count display))
-       (display-resource-id-byte display)
-       (display-resource-id-base display)))
+  (loop for next-count upfrom (1+ (display-resource-id-count display))
+        repeat (1+ (display-resource-id-mask display))
+        as id = (dpb next-count
+                     (display-resource-id-byte display)
+                     (display-resource-id-base display))
+        unless (nth-value 1 (gethash id (display-resource-id-map display)))
+        do (setf (display-resource-id-count display) next-count)
+           (setf (gethash id (display-resource-id-map display)) t)
+           (return-from resourcealloc id))
+  ;; internal consistency check
+  (assert (= (hash-table-count (display-resource-id-map display))
+             (1+ (display-resource-id-mask display))))
+  ;; tell the user what's gone wrong
+  (error 'resource-ids-exhausted))
 
 (defmacro allocate-resource-id (display object type)
   ;; Allocate a resource-id for OBJECT in DISPLAY
-  (if (member (eval type) +clx-cached-types+)
-      `(let ((id (funcall (display-xid ,display) ,display)))
-	 (save-id ,display id ,object)
-	 id)
-    `(funcall (display-xid ,display) ,display)))
+  `(with-display (,display)
+     ,(if (member (eval type) +clx-cached-types+)
+          `(let ((id (funcall (display-xid ,display) ,display)))
+             (save-id ,display id ,object)
+             id)
+          `(funcall (display-xid ,display) ,display))))
 
 (defmacro deallocate-resource-id (display id type)
+  (declare (ignore type))
   ;; Deallocate a resource-id for OBJECT in DISPLAY
-  (when (member (eval type) +clx-cached-types+)
-    `(deallocate-resource-id-internal ,display ,id)))
+  `(deallocate-resource-id-internal ,display ,id))
 
 (defun deallocate-resource-id-internal (display id)
-  (remhash id (display-resource-id-map display)))
+  (with-display (display)
+    (remhash id (display-resource-id-map display))))
 
 (defun lookup-resource-id (display id)
   ;; Find the object associated with resource ID
   (gethash id (display-resource-id-map display)))
 
 (defun save-id (display id object)
-  ;; Register a resource-id from another display.
+  ;; cache the object associated with ID for this display.
   (declare (type display display)
 	   (type integer id)
 	   (type t object))
   (declare (clx-values object))
-  (setf (gethash id (display-resource-id-map display)) object))
+  ;; we can't cache objects from other clients, because they may
+  ;; become invalid without us being told about that.
+  (let ((base (display-resource-id-base display))
+        (mask (display-resource-id-mask display)))
+    (when (= (logandc2 id mask) base)
+      (setf (gethash id (display-resource-id-map display)) object))
+    object))
 
 ;; Define functions to find the CLX data types given a display and resource-id
 ;; If the data type is being cached, look there first.
@@ -263,24 +313,6 @@
 ;;
 ;; Display functions
 ;;
-(defmacro with-display ((display &key timeout inline)
-			&body body)
-  ;; This macro is for use in a multi-process environment.  It
-  ;; provides exclusive access to the local display object for
-  ;; multiple request generation.  It need not provide immediate
-  ;; exclusive access for replies; that is, if another process is
-  ;; waiting for a reply (while not in a with-display), then
-  ;; synchronization need not (but can) occur immediately.  Except
-  ;; where noted, all routines effectively contain an implicit
-  ;; with-display where needed, so that correct synchronization is
-  ;; always provided at the interface level on a per-call basis.
-  ;; Nested uses of this macro will work correctly.  This macro does
-  ;; not prevent concurrent event processing; see with-event-queue.
-  `(with-buffer (,display
-		 ,@(and timeout `(:timeout ,timeout))
-		 ,@(and inline `(:inline ,inline)))
-     ,@body))
-
 (defmacro with-event-queue ((display &key timeout inline)
 			    &body body &environment env)
   ;; exclusive access to event queue
@@ -337,8 +369,9 @@ authority data for the local machine's actual hostname - as returned by
 gethostname(3) - is used instead."
   (destructuring-bind (host display screen protocol)
       (get-default-display display-name)
-    (declare (ignore screen))
-    (open-display host :display display :protocol protocol)))
+    (let ((display (open-display host :display display :protocol protocol)))
+      (setf (display-default-screen display) (nth screen (display-roots display)))
+      display)))
 
 (defun open-display (host &key (display 0) protocol authorization-name authorization-data)
   ;; Implementation specific routine to setup the buffer for a
@@ -378,6 +411,9 @@ gethostname(3) - is used instead."
 	  (initialize-resource-allocator disp)
 	  (initialize-predefined-atoms disp)
 	  (initialize-extensions disp)
+	  (when (assoc "BIG-REQUESTS" (display-extension-alist disp)
+		       :test #'string=)
+	    (enable-big-requests disp))
 	  (setq ok-p t))
       (unless ok-p (close-display disp :abort t)))
     disp))

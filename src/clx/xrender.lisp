@@ -3,7 +3,7 @@
 ;;;     Title: The X Render Extension
 ;;;   Created: 2002-08-03
 ;;;    Author: Gilbert Baumann <unk6@rz.uni-karlsruhe.de>
-;;;       $Id$
+;;;       $Id: xrender.lisp,v 1.5 2004/12/06 11:48:57 csr21 Exp $
 ;;; ---------------------------------------------------------------------------
 ;;;
 ;;; (c) copyright 2002, 2003 by Gilbert Baumann
@@ -46,6 +46,38 @@
 ;;   interface also for high performance apps?
 
 ;; - Write tests.
+
+;;;; API issues
+
+;; - On one hand we want convenience functions like RENDER-TRIANGLE or
+;;   WITH-UNIFORM-COLOR-PICTURE. On the other hand if you are up to
+;;   write a full rasterization library you obviously want high
+;;   performance entry points as RENDER-TRIANGLES-1.
+
+;; - We want to extend XLIB:COLOR into something with alpha channel.
+;;   How to name it?
+
+;; - WITH-UNIFORM-COLOR-PICTURE (var picture r g b &optional alpha) &body body
+;;
+;;   Example:
+;;   (WITH-UNIFORM-COLOR-PICTURE (color dest 1.0 1.0 0.0)
+;;     (RENDER-TRIANGLE dest color ...))
+
+;; - Pose the filter and the transform slots of a picture.
+
+;; - Also introduce a PICTURE-DEFAULT-MASK-FORMAT?
+
+;; - COPY-PICTURE?
+
+;; - WITH-PICTURE-OPTIONS ?
+;;
+;;   (WITH-PICTURE-OPTIONS (pic :repeat :on) ...)
+
+;; - WITH-PICTURE ?
+;;
+;;   (WITH-PICTURE (picture drawable ...) ...)
+
+;;
 
 (in-package :xlib)
 
@@ -101,44 +133,62 @@
           render-composite-glyphs
           render-add-glyph
           render-add-glyph-from-picture
-          render-free-glyphs
-          
-          
-	  render-combine
-	  ))
+          render-free-glyphs))
 
 (pushnew :clx-ext-render *features*)
 
 (define-extension "RENDER")
 
-(progn
-  (defconstant +X-RenderQueryVersion+ 0) ;done
-  (defconstant +X-RenderQueryPictFormats+ 1)
-  (defconstant +X-RenderQueryPictIndexValues+ 2)
-  (defconstant +X-RenderQueryDithers+ 3)
-  (defconstant +X-RenderCreatePicture+ 4) ;done
-  (defconstant +X-RenderChangePicture+ 5) ;done
-  (defconstant +X-RenderSetPictureClipRectangles+ 6) ;done
-  (defconstant +X-RenderFreePicture+ 7) ;done
-  (defconstant +X-RenderComposite+ 8) ;we need better arglist
-  (defconstant +X-RenderScale+ 9)
-  (defconstant +X-RenderTrapezoids+ 10)
-  (defconstant +X-RenderTriangles+ 11)
-  (defconstant +X-RenderTriStrip+ 12)
-  (defconstant +X-RenderTriFan+ 13)
-  (defconstant +X-RenderColorTrapezoids+ 14)
-  (defconstant +X-RenderColorTriangles+ 15)
-  (defconstant +X-RenderTransform+ 16)
-  (defconstant +X-RenderCreateGlyphSet+ 17) ;done
-  (defconstant +X-RenderReferenceGlyphSet+ 18) ;done
-  (defconstant +X-RenderFreeGlyphSet+ 19) ;done
-  (defconstant +X-RenderAddGlyphs+ 20)
-  (defconstant +X-RenderAddGlyphsFromPicture+ 21)
-  (defconstant +X-RenderFreeGlyphs+ 22)
-  (defconstant +X-RenderCompositeGlyphs8+ 23) ;done
-  (defconstant +X-RenderCompositeGlyphs16+ 24)
-  (defconstant +X-RenderCompositeGlyphs32+ 25)
-  (defconstant +X-RenderFillRectangles+ 26))
+;;;; Request constants
+
+;; Note: Although version numbers are given render.h where the request
+;; numbers are defined, render-query-version returns 0.0 all displays
+;; i tested. --GB 2004-07-21
+
+(defconstant +X-RenderQueryVersion+ 0)                  ;done
+(defconstant +X-RenderQueryPictFormats+ 1)
+(defconstant +X-RenderQueryPictIndexValues+ 2)          ;0.7
+(defconstant +X-RenderQueryDithers+ 3)
+(defconstant +X-RenderCreatePicture+ 4)                 ;done
+(defconstant +X-RenderChangePicture+ 5)                 ;done
+(defconstant +X-RenderSetPictureClipRectangles+ 6)      ;done
+(defconstant +X-RenderFreePicture+ 7)                   ;done
+(defconstant +X-RenderComposite+ 8)                     ;we need better arglist
+(defconstant +X-RenderScale+ 9)
+(defconstant +X-RenderTrapezoids+ 10)                   ;low-level done
+(defconstant +X-RenderTriangles+ 11)                    ;low-level done
+(defconstant +X-RenderTriStrip+ 12)
+(defconstant +X-RenderTriFan+ 13)
+(defconstant +X-RenderColorTrapezoids+ 14)              ;nyi in X server, not mentioned in renderproto.h
+(defconstant +X-RenderColorTriangles+ 15)               ;nyi in X server, not mentioned in renderproto.h
+(defconstant +X-RenderTransform+ 16)                    ;commented out in render.h
+(defconstant +X-RenderCreateGlyphSet+ 17)               ;done
+(defconstant +X-RenderReferenceGlyphSet+ 18)            ;done
+(defconstant +X-RenderFreeGlyphSet+ 19)                 ;done
+(defconstant +X-RenderAddGlyphs+ 20)                    ;done, untested
+(defconstant +X-RenderAddGlyphsFromPicture+ 21)         ;done, untested
+(defconstant +X-RenderFreeGlyphs+ 22)                   ;done, untested
+(defconstant +X-RenderCompositeGlyphs8+ 23)             ;done
+(defconstant +X-RenderCompositeGlyphs16+ 24)            ;done
+(defconstant +X-RenderCompositeGlyphs32+ 25)            ;done
+
+;; >= 0.1
+  
+(defconstant +X-RenderFillRectangles+ 26)               ;single rectangle version done
+
+;; >= 0.5
+
+(defconstant +X-RenderCreateCursor+ 27)
+
+;; >= 0.6
+
+(defconstant +X-RenderSetPictureTransform+ 28)          ;I don't understand what this one should do.
+(defconstant +X-RenderQueryFilters+ 29)                 ;seems to be there on server side
+                                                        ; some guts of its implementation there.
+(defconstant +X-RenderSetPictureFilter+ 30)
+(defconstant +X-RenderCreateAnimCursor+ 31)             ;What has render to do with cursors?
+
+;;;;
 
 ;; Sanity measures:
 
@@ -215,8 +265,7 @@ by every function, which attempts to generate RENDER requests."
 
 (defun find-window-picture-format (window)
   "Find the picture format which matches the given window."
-  (let* ((cm (window-colormap window))
-         (vi (colormap-visual-info cm))
+  (let* ((vi (window-visual-info window))
          (display (window-display window)))
     (ensure-render-initialized display)
     (case (visual-info-class vi)
@@ -224,6 +273,7 @@ by every function, which attempts to generate RENDER requests."
        (maphash (lambda (k f)
                   (declare (ignore k))
                   (when (and (eql (picture-format-type f) :direct)
+                             (eql (picture-format-depth f) (drawable-depth window))
                              (eql (dpb -1 (picture-format-red-byte f) 0)
                                   (visual-info-red-mask vi))
                              (eql (dpb -1 (picture-format-green-byte f) 0)
@@ -272,8 +322,10 @@ by every function, which attempts to generate RENDER requests."
                (unless (zerop (byte-size (cdr k)))
                  (format bag " ~A~D" (car k) (byte-size (cdr k)))))))))
     (print-unreadable-object (object stream :type t :identity nil)
-      (format stream "~D ~S~A"
+      (format stream "~D ~S ~S ~S~A"
               (picture-format-id object)
+              (picture-format-colormap object)
+              (picture-format-depth object)
               (picture-format-type object) abbrev))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -284,26 +336,58 @@ by every function, which attempts to generate RENDER requests."
   (define-accessor render-op (8)
     ((index) `(member8-get ,index
                :clear :src :dst :over :over-reverse :in :in-reverse
-               :out :out-reverse :atop :atop-reverse :xor :add :saturate :maximum))
+               :out :out-reverse :atop :atop-reverse :xor :add :saturate
+               '#:undefined-pict-op-Eh '#:undefined-pict-op-Fh
+               :disjoint-clear :disjoint-src :disjoint-dst :disjoint-over
+               :disjoint-over-reverse :disjoint-in :disjoint-in-reverse
+               :disjoint-out :disjoint-out-reverse :disjoint-atop
+               :disjoint-atop-reverse :disjoint-xor
+               '#:undefined-pict-op-1Ch '#:undefined-pict-op-1Dh
+               '#:undefined-pict-op-1Eh '#:undefined-pict-op-1Fh
+               :conjoint-clear :conjoint-src :conjoint-dst :conjoint-over
+               :conjoint-over-reverse :conjoint-in :conjoint-in-reverse
+               :conjoint-out :conjoint-out-reverse :conjoint-atop
+               :conjoint-atop-reverse :conjoint-xor))
     ((index thing) `(member8-put ,index ,thing
                      :clear :src :dst :over :over-reverse :in :in-reverse
-                     :out :out-reverse :atop :atop-reverse :xor :add :saturate :maximum))))
+                     :out :out-reverse :atop :atop-reverse :xor :add :saturate
+                     '#:undefined-pict-op-Eh '#:undefined-pict-op-Fh
+                     :disjoint-clear :disjoint-src :disjoint-dst :disjoint-over
+                     :disjoint-over-reverse :disjoint-in :disjoint-in-reverse
+                     :disjoint-out :disjoint-out-reverse :disjoint-atop
+                     :disjoint-atop-reverse :disjoint-xor
+                     '#:undefined-pict-op-1Ch '#:undefined-pict-op-1Dh
+                     '#:undefined-pict-op-1Eh '#:undefined-pict-op-1Fh
+                     :conjoint-clear :conjoint-src :conjoint-dst :conjoint-over
+                     :conjoint-over-reverse :conjoint-in :conjoint-in-reverse
+                     :conjoint-out :conjoint-out-reverse :conjoint-atop
+                     :conjoint-atop-reverse :conjoint-xor)))
+  (deftype render-op ()
+    '(member :clear :src :dst :over :over-reverse :in :in-reverse
+      :out :out-reverse :atop :atop-reverse :xor :add :saturate
+      :disjoint-clear :disjoint-src :disjoint-dst :disjoint-over
+      :disjoint-over-reverse :disjoint-in :disjoint-in-reverse
+      :disjoint-out :disjoint-out-reverse :disjoint-atop
+      :disjoint-atop-reverse :disjoint-xor
+      :conjoint-clear :conjoint-src :conjoint-dst :conjoint-over
+      :conjoint-over-reverse :conjoint-in :conjoint-in-reverse
+      :conjoint-out :conjoint-out-reverse :conjoint-atop
+      :conjoint-atop-reverse :conjoint-xor)))
 
 ;; Now these pictures objects are like graphics contexts. I was about
 ;; to introduce a synchronous mode, realizing that the RENDER protocol
 ;; provides no provision to actually query a picture object's values. 
 ;; *sigh*
 
-(def-clx-class (picture (:copier nil)
-                        )
+(def-clx-class (picture (:copier nil))
   (id 0 :type resource-id)
   (display nil :type (or null display))
   (plist nil :type list)                ; Extension hook
-  format
-  %changed-p 
-  %server-values
-  %values
-  %drawable)
+  (format)
+  (%changed-p)
+  (%server-values)
+  (%values)
+  (%drawable))
 
 (defun picture-drawable (picture)
   (picture-%drawable picture))
@@ -361,9 +445,9 @@ by every function, which attempts to generate RENDER requests."
                                     ,index))
                            (%render-change-picture-clip-rectangles
                             picture (aref (picture-%values picture) ,index))
-                           (setf (aref (picture-%values picture) ,index)
-                            (aref (picture-%server-values picture)
-                             ,index))))
+                           (setf (aref (picture-%server-values picture) ,index)
+                                 (aref (picture-%values picture) ,index))))
+
                    (setf (picture-%changed-p picture) nil)))
 
                (defun render-create-picture
@@ -446,17 +530,18 @@ by every function, which attempts to generate RENDER requests."
      (card32 0)
      (card32 1))
     (values
-     (card16-get 8)
-     (card16-get 10)
-     )))
+     (card32-get 8)
+     (card32-get 12) )))
 
 (defun render-query-picture-formats (display)
   (with-buffer-request-and-reply (display (extension-opcode display "RENDER") nil)
     ((data +X-RenderQueryPictFormats+))
     (let ((n-picture-formats (card32-get 8))
           (n-screens      (card32-get 12))
-          (off 32))
-      (declare (ignore n-screens off))
+          (n-depths       (card32-get 16))
+          (n-visuals      (card32-get 20))
+          (n-subpixel     (card32-get 24)))
+      (declare (ignore n-screens n-depths n-visuals n-subpixel))
       (loop for i below n-picture-formats
             collect
             (let ((off (+ (* 8 4)
@@ -493,6 +578,152 @@ by every function, which attempts to generate RENDER requests."
 
 ;; fill rectangles, colors.
 
+(defun render-triangles-1 (picture op source src-x src-y format coord-sequence)
+  ;; For performance reasons we do a special typecase on (simple-array
+  ;; (unsigned-byte 32) (*)), so that it'll be possible to have high
+  ;; performance rasters.
+  (macrolet ((guts ()
+               '(let ((display (picture-display picture)))
+                 (synchronise-picture-state picture)
+                 (synchronise-picture-state source)
+                 (with-buffer-request (display (extension-opcode display "RENDER"))
+                   (data +X-RenderTriangles+)
+                   (render-op op)                       ;op
+                   (card8 0)                            ;pad
+                   (card16 0)                           ;pad
+                   (resource-id (picture-id source))
+                   (resource-id (picture-id picture))
+                   (picture-format format)
+                   (int16 src-x)
+                   (int16 src-y)
+                   ((sequence :format int32) coord-sequence) ))))
+    (typecase coord-sequence
+      ((simple-array (unsigned-byte 32) (*))
+       (locally
+           (declare (type (simple-array (unsigned-byte 32) (*)) coord-sequence))
+         (guts)))
+      (t
+       (guts)))))
+
+#||
+(defun render-set-picture-transform (picture mxx mxy dx mxy myy dy &optional (mwx 0) (mwy 0) (dw 1))
+  ...)
+||#
+
+(defun render-set-picture-transform (picture a b c d e f p q r)
+  (let ((display (picture-display picture)))
+    (ensure-render-initialized display)
+    (synchronise-picture-state picture)
+    (with-buffer-request (display (extension-opcode display "RENDER"))
+      (data +X-RenderSetPictureTransform+)
+      #|
+      (card8 0) ;; render-op op)                    ;op
+      (card8 0)                         ;pad
+      (card16 0)                        ;pad
+      |#
+      (resource-id (picture-id picture))
+      
+      (card32 a)
+      (card32 b)
+      (card32 c)
+      
+      (card32 d)
+      (card32 e)
+      (card32 f)
+      
+      (card32 p)
+      (card32 q)
+      (card32 r))))
+
+(defun render-query-filters (drawable)
+  (let ((display (drawable-display drawable)))
+    (with-buffer-request-and-reply (display (extension-opcode display "RENDER") nil)
+      ((data +X-RenderQueryFilters+)
+       (drawable drawable))
+      (let* ((len (card32-get 4))
+             (n-aliases (card32-get 8))
+             (n-filters (card32-get 12))
+             (off (+ (* 8 4) (* 4 (ceiling (* 2 n-aliases) 4)))))
+        (print (list :aliases
+                     (loop for i below n-aliases collect (card16-get (+ (* 8 4) (* i 2))))))
+        (print (list :foo len n-aliases n-filters
+                     (loop for i below len
+                           collect (card8-get (+ off 0 (* 4 i)))
+                           collect (card8-get (+ off 1 (* 4 i)))
+                           collect (card8-get (+ off 2 (* 4 i)))
+                           collect (card8-get (+ off 3 (* 4 i))))))
+        (print
+         (labels ((grab-string (j)
+                    (let ((n (card8-get j)))
+                      (incf j)
+                      (values
+                       (map 'string #'code-char (loop repeat n collect (card8-get j) do (incf j)))
+                       j))))
+           (loop repeat n-filters collect
+                 (multiple-value-bind (s j) (grab-string off)
+                   (setf off j)
+                   (intern (string-upcase s) :keyword)))))
+        #+NIL
+        (loop for i below n-picture-formats
+              collect
+              (let ((off (+ (* 8 4)
+                            (* i 28)))) ;size of picture-format-info
+                (make-picture-format
+                 :display display
+                 :id         (card32-get (+ off 0))
+                 :type       (member8-get (+ off 4) :indexed :direct)
+                 :depth      (card8-get   (+ off 5))
+                 :red-byte   (byte (integer-length (card16-get (+ off 10)))
+                                   (card16-get (+ off 8)))
+                 :green-byte (byte (integer-length (card16-get (+ off 14)))
+                                   (card16-get (+ off 12)))
+                 :blue-byte  (byte (integer-length (card16-get (+ off 18)))
+                                   (card16-get (+ off 16)))
+                 :alpha-byte (byte (integer-length (card16-get (+ off 22)))
+                                   (card16-get (+ off 20)))
+                 :colormap   (let ((cmid (card32-get (+ off 24))))
+                               (unless (zerop cmid)
+                                 (lookup-colormap display cmid))))))))))
+
+(defun render-set-filter (picture filter)
+  (let ((display (picture-display picture)))
+    (ensure-render-initialized display)
+    (synchronise-picture-state picture)
+    (with-buffer-request (display (extension-opcode display "RENDER"))
+      (data +X-RenderSetPictureFilter+)
+      (resource-id (picture-id picture))
+      (card16 (length filter))
+      (card16 0)                        ;pad
+      ((sequence :format card8) (map 'vector #'char-code filter)))))
+  
+
+
+#||
+(defun render-triangle (destination source x1 y1 x2 y2 x3 y3 &key (src-x 0) (src-y 0) (format nil) (op :over))
+  (render-triangles-1 destination op source ...)
+  )
+||#
+
+(defun render-trapezoids-1 (picture op source src-x src-y format coord-sequence)
+  ;; coord-sequence is  top bottom
+  ;;                    line-1-x1 line-1-y1 line-1-x2 line-1-y2
+  ;;                    line-2-x1 line-2-y1 line-2-x2 line-2-y2 ...
+  ;;
+  (let ((display (picture-display picture)))
+    (synchronise-picture-state picture)
+    (synchronise-picture-state source)
+    (with-buffer-request (display (extension-opcode display "RENDER"))
+      (data +X-RenderTrapezoids+)
+      (render-op op)                    ;op
+      (card8 0)                         ;pad
+      (card16 0)                        ;pad
+      (resource-id (picture-id source))
+      (resource-id (picture-id picture))
+      (picture-format format)
+      (int16 src-x)
+      (int16 src-y)
+      ((sequence :format int32) coord-sequence) )))
+
 (defun render-composite (op
                          source mask dest
                          src-x src-y mask-x mask-y dst-x dst-y
@@ -509,12 +740,12 @@ by every function, which attempts to generate RENDER requests."
       (resource-id (picture-id source))
       (resource-id (if mask (picture-id mask) 0))
       (resource-id (picture-id dest))
-      (card16 src-x)
-      (card16 src-y)
-      (card16 mask-x)
-      (card16 mask-y)
-      (card16 dst-x)
-      (card16 dst-y)
+      (int16 src-x)
+      (int16 src-y)
+      (int16 mask-x)
+      (int16 mask-y)
+      (int16 dst-x)
+      (int16 dst-y)
       (card16 width)
       (card16 height))))
 
@@ -523,7 +754,7 @@ by every function, which attempts to generate RENDER requests."
   (id 0 :type resource-id)
   (display nil :type (or null display))
   (plist nil :type list)                ; Extension hook
-  format)
+  (format))
 
 (defun render-create-glyph-set (format &key glyph-set)
   (let ((display (picture-format-display format)))
@@ -579,25 +810,63 @@ by every function, which attempts to generate RENDER requests."
       (int16 src-x) (int16 src-y)
       (card8 (- end start)) ;length of glyph elt
       (card8 0) (card16 0) ;padding
-      (card16 dest-x) (card16 dest-y)             ;dx, dy
+      (int16 dest-x) (int16 dest-y)             ;dx, dy
       ((sequence :format card8) sequence))))
 
 (defmacro %render-composite-glyphs
-    (opcode type transform
-          display dest glyph-set source dest-x dest-y sequence alu src-x src-y mask-format start end)
-  `(with-buffer-request (,display (extension-opcode ,display "RENDER"))
-    (data ,opcode)
-    (render-op ,alu)
-    (card8 0) (card16 0)                        ;padding
-    (picture ,source)
-    (picture ,dest)
-    ((or (member :none) picture-format) ,mask-format)
-    (glyph-set ,glyph-set)
-    (int16 ,src-x) (int16 ,src-y)
-    (card8 (- ,end ,start))                     ;length of glyph elt
-    (card8 0) (card16 0)                        ;padding? really?
-    (card16 ,dest-x) (card16 ,dest-y)           ;dx, dy
-    ((sequence :format ,type :start ,start :end ,end :transform ,transform) ,sequence)))
+    (opcode type transform display dest glyph-set source dest-x dest-y sequence
+     alu src-x src-y mask-format start end)
+  (let ((size (ecase type (card8 1) (card16 2) (card32 4)))
+	;; FIXME: the last chunk for CARD8 can be 254.
+	(chunksize (ecase type (card8 252) (card16 254) (card32 254))))
+    `(multiple-value-bind (nchunks leftover)
+         (floor (- end start) ,chunksize)
+       (let* ((payloadsize (+ (* nchunks (+ 8 (* ,chunksize ,size)))
+			      (if (> leftover 0)
+				  (+ 8 (* 4 (ceiling (* leftover ,size) 4)))
+				  0)))
+	      (request-length (+ 7 (/ payloadsize 4))))
+	 (declare (integer request-length))
+	 (with-buffer-request (,display (extension-opcode ,display "RENDER") :length (* 4 request-length))
+	   (data ,opcode)
+	   (length request-length)
+	   (render-op ,alu)
+	   (card8 0) (card16 0)                        ;padding
+	   (picture ,source)
+	   (picture ,dest)
+	   ((or (member :none) picture-format) ,mask-format)
+	   (glyph-set ,glyph-set)
+	   (int16 ,src-x) (int16 ,src-y)
+	   (progn
+	     (let ((boffset (+ buffer-boffset 28))
+		   (start ,start)
+		   (end ,end)
+		   (dest-x ,dest-x)
+		   (dest-y ,dest-y))
+	       (dotimes (i nchunks)
+		 (set-buffer-offset boffset)
+		 (put-items (0)
+		   (card8 ,chunksize)
+		   (card8 0)
+		   (card16 0)
+		   (int16 dest-x)
+		   (int16 dest-y)
+		   ((sequence :start start :end (+ start ,chunksize) :format ,type :transform ,transform :appending t) ,sequence))
+		 (setq dest-x 0 dest-y 0)
+		 (incf boffset (+ 8 (* ,chunksize ,size)))
+		 (incf start ,chunksize))
+	       (when (> leftover 0)
+		 (set-buffer-offset boffset)
+		 (put-items (0)
+		   (card8 leftover)
+		   (card8 0)
+		   (card16 0)
+		   (int16 dest-x)
+		   (int16 dest-y)
+		   ((sequence :start start :end end :format ,type :transform ,transform :appending t) ,sequence))
+		 ;; padding?
+		 (incf boffset (+ 8 (* 4 (ceiling (* leftover ,size) 4)))))
+	       (setf (buffer-boffset ,display) boffset))))))))
 
 (defun render-composite-glyphs (dest glyph-set source dest-x dest-y sequence
                                 &key (op :over)
@@ -795,17 +1064,17 @@ by every function, which attempts to generate RENDER requests."
            (render-fill-rectangle px.pic :src
                                   (list #x8000 #x0000 #x8000 #xFFFF)
                                   0 0 256 256)
-           ;; render-combine simply does not work
-           (render-combine :src pic pic px.pic
-                           350 350 350 350 0 0 256 256)
+
+           (render-composite :src pic pic px.pic
+                             350 350 350 350 0 0 256 256)
            ;;
            (render-fill-rectangle px.pic :over
                                   (list #x8000 #x8000 #x8000 #x8000)
                                   0 0 100 100)
-           (render-combine :src
-                           px.pic px.pic pic
-                           0 0 0 0 350 350
-                           256 256)
+           (render-composite :src
+                             px.pic px.pic pic
+                             0 0 0 0 350 350
+                             256 256)
            (render-fill-rectangle pic op (list #x0 #x0 #x0 #x8000) 200 200 800 800)
            (display-finish-output dpy))
       (close-display dpy))))
@@ -834,23 +1103,22 @@ by every function, which attempts to generate RENDER requests."
                (xlib:draw-point px px.gc x y)
                ))
            (xlib:clear-area win)
-           (let ((q(render-create-picture px
-                                          :format
-                                          (first (find-matching-picture-formats
-                                                  dpy
-                                                  :depth 32
-                                                  :alpha 8 :red 8 :green 8 :blue 8))
-                                          :component-alpha :on
-                                          :repeat :off
-                                          )))
-             (render-combine op
-                             q
-                             q 
-                             pic
-                             0 0
-                             0 0
-                             100 100
-                             400 400))
+           (let ((q (render-create-picture px
+                                           :format
+                                           (first (find-matching-picture-formats
+                                                   dpy
+                                                   :depth 32
+                                                   :alpha 8 :red 8 :green 8 :blue 8))
+                                           :component-alpha :on
+                                           :repeat :off)))
+             (render-composite op
+                               q
+                               q 
+                               pic
+                               0 0
+                               0 0
+                               100 100
+                               400 400))
            (let ()
              ;;(render-fill-rectangle pic op (list 255 255 255 255) 100 100 200 200)
              (display-finish-output dpy)))
@@ -866,3 +1134,21 @@ by every function, which attempts to generate RENDER requests."
     (display-finish-output dpy)
     (close-display dpy)))
 ||#
+
+
+;;;; Cursors
+
+(defun render-create-cursor (picture &optional (x 0) (y 0))
+  (let ((display (picture-display picture)))
+    (ensure-render-initialized display)
+    (synchronise-picture-state picture)
+    (let* ((cursor (make-cursor :display display))
+           (cid (allocate-resource-id display cursor 'cursor)))
+      (setf (cursor-id cursor) cid)
+      (with-buffer-request (display (extension-opcode display "RENDER"))
+        (data +X-RenderCreateCursor+)
+        (resource-id cid)
+        (resource-id (picture-id picture))
+        (card16 x)
+        (card16 y))
+      cursor)))

@@ -689,7 +689,7 @@
   (the short-float (* (the int16 value) #.(coerce (/ pi 180.0 64.0) 'short-float))))
 
 
-#+(or cmu sbcl) (progn
+#+(or cmu sbcl clisp ecl) (progn
 
 ;;; This overrides the (probably incorrect) definition in clx.lisp.  Since PI
 ;;; is irrational, there can't be a precise rational representation.  In
@@ -863,7 +863,7 @@
 
 ;;; MAKE-PROCESS-LOCK: Creating a process lock.
 
-#-(or LispM excl Minima sbcl (and cmu mp))
+#-(or LispM excl Minima sbcl (and cmu mp) (and ecl threads))
 (defun make-process-lock (name)
   (declare (ignore name))
   nil)
@@ -892,6 +892,10 @@
 (defun make-process-lock (name)
   (sb-thread:make-mutex :name name))
 
+#+(and ecl threads)
+(defun make-lock (name)
+  (mp:make-lock :name name))
+
 ;;; HOLDING-LOCK: Execute a body of code with a lock held.
 
 ;;; The holding-lock macro takes a timeout keyword argument.  EVENT-LISTEN
@@ -900,7 +904,7 @@
 
 ;; If you're not sharing DISPLAY objects within a multi-processing
 ;; shared-memory environment, this is sufficient
-#-(or lispm excl lcl3.0 Minima sbcl (and CMU mp) )
+#-(or lispm excl lcl3.0 Minima sbcl (and CMU mp) (and ecl threads))
 (defmacro holding-lock ((locator display &optional whostate &key timeout) &body body)
   (declare (ignore locator display whostate timeout))
   `(progn ,@body))
@@ -934,6 +938,22 @@
   (declare (ignore display))
   `(mp:with-lock-held (,lock ,whostate ,@(and timeout `(:timeout ,timeout)))
     ,@body))
+
+#+clisp
+(defmacro holding-lock ((lock display &optional (whostate "CLX wait")
+                              &key timeout)
+                        &body body)
+  (declare (ignore lock display whostate timeout))
+  `(progn
+     ,@body))
+
+#+(and ecl threads)
+(defmacro holding-lock ((lock display &optional (whostate "CLX wait")
+			      &key timeout)
+			&body body)
+  (declare (ignore display))
+  `(progn (mp:get-lock ,lock)
+	  ,@body))
 
 #+sbcl
 (defmacro holding-lock ((lock display &optional (whostate "CLX wait")
@@ -1102,7 +1122,7 @@
 ;;; Caller guarantees that PROCESS-WAKEUP will be called after the predicate's
 ;;; value changes.
 
-#-(or lispm excl lcl3.0 Minima (and sb-thread sbcl) (and cmu mp))
+#-(or lispm excl lcl3.0 Minima (and sb-thread sbcl) (and cmu mp) (and ecl threads))
 (defun process-block (whostate predicate &rest predicate-args)
   (declare (ignore whostate))
   (or (apply predicate predicate-args)
@@ -1168,6 +1188,15 @@
      (return))
    (yield)))
 
+#+(and ecl threads)
+(defun process-block (whostate predicate &rest predicate-args)
+  (declare (ignore whostate))
+  (declare (type function predicate))
+  (loop
+   (when (apply predicate predicate-args)
+     (return))
+   (mp:process-yield)))
+
 ;;; FIXME: the below implementation for threaded PROCESS-BLOCK using
 ;;; queues and condition variables might seem better, but in fact it
 ;;; turns out to make performance extremely suboptimal, at least as
@@ -1203,7 +1232,7 @@
 
 (declaim (inline process-wakeup))
 
-#-(or excl Genera Minima (and sbcl sb-thread) (and cmu mp))
+#-(or excl Genera Minima (and sbcl sb-thread) (and cmu mp) (and ecl threads))
 (defun process-wakeup (process)
   (declare (ignore process))
   nil)
@@ -1237,6 +1266,12 @@
 (defun process-wakeup (process)
   (declare (ignore process))
   (yield))
+
+#+(and ecl threads)
+(defun process-wakeup (process)
+  (declare (ignore process))
+  (mp:process-yield))
+
 #+(or)
 (defun process-wakeup (process)
   (declare (ignore process))
@@ -1255,7 +1290,7 @@
 
 ;;; Default return NIL, which is acceptable even if there is a scheduler.
 
-#-(or lispm excl lcl3.0 sbcl Minima (and cmu mp))
+#-(or lispm excl lcl3.0 sbcl Minima (and cmu mp) (and ecl threads))
 (defun current-process ()
   nil)
 
@@ -1282,7 +1317,11 @@
 
 #+sbcl
 (defun current-process ()
-  (sb-thread:current-thread-id))
+  sb-thread:*current-thread*)
+
+#+(and ecl threads)
+(defun current-process ()
+  (mp:current-process))
 
 ;;; WITHOUT-INTERRUPTS -- provide for atomic operations.
 
@@ -1310,6 +1349,13 @@
 (defmacro without-interrupts (&body body)
   `(system:without-interrupts ,@body))
 
+#+ecl
+(defmacro without-interrupts (&body body)
+  #+threads
+  `(mp:without-interrupts ,@body)
+  #-threads
+  `(let ((ext:*interrupt-enable* nil)) ,@body))
+
 #+sbcl
 (defvar *without-interrupts-sic-lock*
   (sb-thread:make-mutex :name "lock simulating *without-interrupts*"))
@@ -1329,17 +1375,15 @@
 	    (setf ,place ,new-value)
 	    t))))
 
-;;; we only use this queue for the spinlock word, in fact
 #+sbcl
-(defvar *conditional-store-queue*
-  (sb-thread:make-waitqueue :name "conditional store"))
-
-#+sbcl
-(defmacro conditional-store (place old-value new-value)
-  `(sb-thread::with-spinlock (*conditional-store-queue*)
-     (cond ((eq ,place ,old-value)
-	    (setf ,place ,new-value)
-	    t))))
+(progn
+  (defvar *conditional-store-lock*
+    (sb-thread:make-mutex :name "conditional store"))
+  (defmacro conditional-store (place old-value new-value)
+    `(sb-thread:with-mutex (*conditional-store-lock*)
+       (cond ((eq ,place ,old-value)
+	      (setf ,place ,new-value)
+	      t)))))
 
 ;;;----------------------------------------------------------------------------
 ;;; IO Error Recovery
@@ -1403,10 +1447,33 @@
 ;;; OPEN-X-STREAM - create a stream for communicating to the appropriate X
 ;;; server
 
-#-(or explorer Genera lucid kcl ibcl excl Minima CMU sbcl ecl)
+#-(or explorer Genera lucid kcl ibcl excl Minima CMU sbcl ecl clisp)
 (defun open-x-stream (host display protocol)
   host display protocol ;; unused
   (error "OPEN-X-STREAM not implemented yet."))
+
+#+clisp
+(defun open-x-stream (host display protocol)
+  (declare (ignore protocol)
+           (type (integer 0) display))
+  (let ((socket
+         ;; are we dealing with a localhost?
+         (when (or (string= host "")
+                   (string= host "unix"))
+           ;; ok, try to connect to a AF_UNIX domain socket
+           (sys::make-socket-stream "" display))))
+    (if socket
+        socket
+        ;; try to connect by hand
+        (let ((host (host-address host)))
+          (when host
+            ;; Fixme: get a descent ip standard in CLX: a vector!
+            (let ((ip (format nil
+                              "~{~D~^.~}"
+                              (rest host))))
+              (socket:socket-connect (+ 6000 display) ip
+                                     :element-type '(unsigned-byte 8))))))))
+
 
 ;;; Genera:
 
@@ -1512,18 +1579,14 @@
 			  :foreign-port (+ *x-tcp-port* display)))
 
 #+(or sbcl ecl)
-(defconstant +X-unix-socket-path+
-  "/tmp/.X11-unix/X"
-  "The location of the X socket")
-
-#+sbcl
 (defun open-x-stream (host display protocol)  
   (declare (ignore protocol)
            (type (integer 0) display))
+  (let ((local-socket-path (unix-socket-path-from-host host display)))
   (socket-make-stream 
-   (if (or (string= host "") (string= host "unix")) ; AF_LOCAL domain socket
+     (if local-socket-path
        (let ((s (make-instance 'local-socket :type :stream)))
-	 (socket-connect s (format nil "~A~D" +X-unix-socket-path+ display))
+	   (socket-connect s local-socket-path)
 	 s)
        (let ((host (car (host-ent-addresses (get-host-by-name host)))))
 	 (when host
@@ -1531,17 +1594,7 @@
 	     (socket-connect s host (+ 6000 display))
 	     s))))
    :element-type '(unsigned-byte 8)
-   :input t :output t :buffering :none))
-
-#+ecl
-(defun open-x-stream (host display protocol)
-  (declare (ignore protocol)
-	   (type (integer 0) display))
-  (let (socket)
-    (if (or (string= host "") (string= host "unix")) ; AF_UNIX doamin socket
-	(sys::open-unix-socket-stream
-	 (format nil "~A~D" +X-unix-socket-path+ display))
-	(si::open-client-stream host (+ 6000 display)))))
+     :input t :output t :buffering :none)))
 
 ;;; BUFFER-READ-DEFAULT - read data from the X stream
 
@@ -1655,7 +1708,7 @@
 	  vector start (- end start))
 	 nil)))
 
-#+ecl
+#+(or ecl clisp)
 (defun buffer-read-default (display vector start end timeout)
   (declare (type display display)
 	   (type buffer-bytes vector)
@@ -1677,7 +1730,7 @@
 ;;;	receiving all data from the X Window System server.
 ;;;	You are encouraged to write a specialized version of
 ;;;	buffer-read-default that does block transfers.
-#-(or Genera explorer excl lcl3.0 Minima CMU sbcl ecl)
+#-(or Genera explorer excl lcl3.0 Minima CMU sbcl ecl clisp)
 (defun buffer-read-default (display vector start end timeout)
   (declare (type display display)
 	   (type buffer-bytes vector)
@@ -1759,25 +1812,13 @@
   (system:output-raw-bytes (display-output-stream display) vector start end)
   nil)
 
-#+sbcl
+#+(or sbcl ecl clisp)
 (defun buffer-write-default (vector display start end)
   (declare (type buffer-bytes vector)
 	   (type display display)
 	   (type array-index start end))
   #.(declare-buffun)
-  (sb-impl::output-raw-bytes (display-output-stream display) vector start end)
-  nil)
-
-#+ecl
-(defun buffer-write-default (vector display start end)
-  (declare (type buffer-bytes vector)
-	   (type display display)
-	   (type array-index start end))
-  #.(declare-buffun)
-  (write-sequence vector
-                  (display-output-stream display)
-                  :start start
-                  :end end)
+  (write-sequence vector (display-output-stream display) :start start :end end)
   nil)
 
 ;;; WARNING:
@@ -1786,7 +1827,7 @@
 ;;;	You are STRONGLY encouraged to write a specialized version
 ;;;	of buffer-write-default that does block transfers.
 
-#-(or Genera explorer excl lcl3.0 Minima CMU sbcl)
+#-(or Genera explorer excl lcl3.0 Minima CMU sbcl clisp)
 (defun buffer-write-default (vector display start end)
   ;; The default buffer write function for use with common-lisp streams
   (declare (type buffer-bytes vector)
@@ -1849,7 +1890,7 @@
 #-(or Genera explorer excl lcl3.0 CMU sbcl)
 (defparameter *buffer-read-polling-time* 0.5)
 
-#-(or Genera explorer excl lcl3.0 CMU sbcl)
+#-(or Genera explorer excl lcl3.0 CMU sbcl clisp)
 (defun buffer-input-wait-default (display timeout)
   (declare (type display display)
 	   (type (or null (real 0 *)) timeout))
@@ -1873,7 +1914,7 @@
 		 (return-from buffer-input-wait-default nil)))
 	     :timeout)))))
 
-#+(or CMU sbcl)
+#+(or CMU sbcl clisp)
 (defun buffer-input-wait-default (display timeout)
   (declare (type display display)
 	   (type (or null number) timeout))
@@ -1887,7 +1928,10 @@
 						   :input timeout)
 	       #+mp (mp:process-wait-until-fd-usable
 		     (system:fd-stream-fd stream) :input timeout)
-	       #-(or sbcl mp) (system:wait-until-fd-usable
+               #+clisp (multiple-value-bind (sec usec) (floor (or timeout 0))
+                         (ext:socket-status stream (and timeout sec)
+                                            (round usec 1d-6)))
+	       #-(or sbcl mp clisp) (system:wait-until-fd-usable
 			       (system:fd-stream-fd stream) :input timeout)
 	       nil
 	       :timeout)))))
@@ -2254,9 +2298,9 @@
 ;; dispatching, not just type checking.  -- Ram.
 
 (defmacro type? (object type)
-  #+(or cmu sbcl)
+  #+(or cmu sbcl clisp)
   `(typep ,object ,type)
-  #-(or cmu sbcl)
+  #-(or cmu sbcl clisp)
   (if (not (constantp type))
       `(typep ,object ,type)
     (progn
@@ -2327,12 +2371,12 @@
   (declare (dbg:error-reporter))
   (apply #'sys:signal condition :continue-format-string proceed-format-string keyargs))
 
-#+(or clx-ansi-common-lisp excl lcl3.0 (and CMU mp))
+#+(or clx-ansi-common-lisp excl lcl3.0 clisp (and CMU mp))
 (defun x-error (condition &rest keyargs)
   (declare (dynamic-extent keyargs))
   (apply #'error condition keyargs))
 
-#+(or clx-ansi-common-lisp excl lcl3.0 CMU)
+#+(or clx-ansi-common-lisp excl lcl3.0 CMU clisp)
 (defun x-cerror (proceed-format-string condition &rest keyargs)
   (declare (dynamic-extent keyargs))
   (apply #'cerror proceed-format-string condition keyargs))
@@ -2355,12 +2399,12 @@
 	(ext::disable-clx-event-handling disp)))
     (error condx)))
 
-#-(or lispm ansi-common-lisp excl lcl3.0 CMU sbcl)
+#-(or lispm ansi-common-lisp excl lcl3.0 CMU sbcl clisp)
 (defun x-error (condition &rest keyargs)
   (error "X-Error: ~a"
 	 (princ-to-string (apply #'make-condition condition keyargs))))
 
-#-(or lispm clx-ansi-common-lisp excl lcl3.0 CMU sbcl)
+#-(or lispm clx-ansi-common-lisp excl lcl3.0 CMU sbcl clisp)
 (defun x-cerror (proceed-format-string condition &rest keyargs)
   (cerror proceed-format-string "X-Error: ~a"
 	 (princ-to-string (apply #'make-condition condition keyargs))))
@@ -2453,7 +2497,7 @@
 (sys:defmethod (dbg:document-proceed-type x-error :continue) (stream)
   (format stream continue-format-string))
 
-#+(or clx-ansi-common-lisp excl lcl3.0 CMU sbcl)
+#+(or clx-ansi-common-lisp excl lcl3.0 CMU sbcl clisp)
 (define-condition x-error (error) ())
 
 #-(or lispm clx-ansi-common-lisp excl lcl3.0 CMU sbcl)
@@ -2497,7 +2541,7 @@
 	       ,condition))
 	 ',name))))
 
-#-(or lispm clx-ansi-common-lisp excl lcl3.0 CMU sbcl)
+#-(or lispm clx-ansi-common-lisp excl lcl3.0 CMU sbcl clisp)
 (defun condition-print (condition stream depth)
   (declare (type x-error condition)
 	   (type stream stream)
@@ -2507,14 +2551,14 @@
     (funcall (x-error-report-function condition) condition stream))
   condition)
   
-#-(or lispm clx-ansi-common-lisp excl lcl3.0 CMU sbcl)
+#-(or lispm clx-ansi-common-lisp excl lcl3.0 CMU sbcl clisp)
 (defun make-condition (type &rest slot-initializations)
   (declare (dynamic-extent slot-initializations))
   (let ((make-function (intern (concatenate 'string (string 'make-) (string type))
 			       (symbol-package type))))
     (apply make-function slot-initializations)))
 
-#-(or clx-ansi-common-lisp excl lcl3.0 CMU sbcl)
+#-(or clx-ansi-common-lisp excl lcl3.0 CMU sbcl clisp)
 (define-condition type-error (x-error)
   ((datum :reader type-error-datum :initarg :datum)
    (expected-type :reader type-error-expected-type :initarg :expected-type))
@@ -2529,7 +2573,7 @@
 ;;  HOST hacking
 ;;-----------------------------------------------------------------------------
 
-#-(or explorer Genera Minima Allegro CMU sbcl ecl)
+#-(or explorer Genera Minima Allegro CMU sbcl ecl clisp)
 (defun host-address (host &optional (family :internet))
   ;; Return a list whose car is the family keyword (:internet :DECnet :Chaos)
   ;; and cdr is a list of network address bytes.
@@ -2538,6 +2582,45 @@
   (declare (clx-values list))
   host family
   (error "HOST-ADDRESS not implemented yet."))
+
+#+clisp
+(defun host-address (host &optional (family :internet))
+  "Return a list whose car is the family keyword (:internet :DECnet :Chaos)
+  and cdr is a list of network address bytes."
+  (declare (type stringable host)
+           (type (or null (member :internet :decnet :chaos) card8) family))
+  (declare (clx-values list))
+  (labels ((no-host-error ()
+             (error "Unknown host ~S" host))
+           (no-address-error ()
+             (error "Host ~S has no ~S address" host family)))
+
+    (let ((hostent (posix::resolve-host-ipaddr (string host))))
+      (when (not (posix::hostent-addr-list hostent))
+        (no-host-error))
+      (ecase family
+        ((:internet nil 0)
+         (unless (= (posix::hostent-addrtype hostent) 2)
+           (no-address-error))
+         (let ((addr (first (posix::hostent-addr-list hostent))))
+           (etypecase addr
+             (integer
+              (list :internet
+                    (ldb (byte 8 24) addr)
+                    (ldb (byte 8 16) addr)
+                    (ldb (byte 8  8) addr)
+                    (ldb (byte 8  0) addr)))
+             (string
+              (let ((parts (read-from-string
+                            (nsubstitute #\Space #\. (ext:string-concat
+                                                      "(" addr ")")))))
+                (check-type parts (cons (unsigned-byte 8)
+                                        (cons (unsigned-byte 8)
+                                              (cons (unsigned-byte 8)
+                                                    (cons (unsigned-byte 8)
+                                                          NULL)))))
+                (cons :internet parts))))))))))
+
 
 #+explorer
 (defun host-address (host &optional (family :internet))
@@ -2810,7 +2893,8 @@
   #+CMU (cdr (assoc name ext:*environment-list* :test #'string=))
   #+sbcl (sb-ext:posix-getenv name)
   #+ecl (si:getenv name)
-  #-(or sbcl excl lcl3.0 CMU ecl) (progn name nil))
+  #+clisp (ext:getenv name)
+  #-(or sbcl excl lcl3.0 CMU ecl clisp) (progn name nil))
 
 (defun get-host-name ()
   "Return the same hostname as gethostname(3) would"
@@ -2820,7 +2904,8 @@
   ;; resources-pathname was using short-site-name for this purpose
   #+excl (short-site-name)
   #+ecl (si:getenv "HOST")
-  #-(or excl cmu sbcl ecl) (error "get-host-name not implemented"))
+  #+clisp (let ((s (machine-instance))) (subseq s 0 (position #\Space s)))
+  #-(or excl cmu sbcl ecl clisp) (error "get-host-name not implemented"))
 
 (defun homedir-file-pathname (name)
   (and #-(or unix mach) (search "Unix" (software-type) :test #'char-equal)
@@ -2849,6 +2934,10 @@
 	(and xauthority
 	     (pathname xauthority)))
       (homedir-file-pathname ".Xauthority")))
+
+#+ecl
+(eval-when (:load-toplevel :execute :compile-toplevel)
+  (pushnew :unix *features*))
 
 ;;; this particular defaulting behaviour is typical to most Unices, I think
 #+unix
@@ -2893,11 +2982,6 @@ Returns a list of (host display-number screen protocol)."
 				 :keyword))
 		(t :internet))))
     (list host (or display 0) (or screen 0) protocol)))
-
-#+win32
-(defun get-default-display (&optional display-name)
-  (declare (ignore display-name))
-  (list "127.0.0.1" 0 0 :internet))
 
 
 ;;-----------------------------------------------------------------------------
@@ -2993,7 +3077,7 @@ Returns a list of (host display-number screen protocol)."
       (setf (char-bit object :hyper) 1)))
   object)
 
-#+(or (and clx-ansi-common-lisp (not lispm) (not allegro)) CMU sbcl)
+#+(or (and clx-ansi-common-lisp (not lispm) (not allegro)) CMU sbcl clisp)
 (defun default-keysym-translate (display state object)
   (declare (type display display)
 	   (type card16 state)
@@ -3550,7 +3634,7 @@ Returns a list of (host display-number screen protocol)."
 	   (count height (1- count)))
 	  ((zerop count))
 	(declare (type array-index src-idx dest-idx count))
-	(sb-kernel:bit-bash-copy sdata src-idx ddata dest-idx width)))))
+	(sb-kernel:ub1-bash-copy sdata src-idx ddata dest-idx width)))))
 
 #+(or CMU sbcl)
 (defun fast-read-pixarray-using-bitblt

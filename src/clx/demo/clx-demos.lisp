@@ -36,11 +36,11 @@
        (unless *display*
 	 #+:cmu
 	 (multiple-value-setq (*display* *screen*) (ext:open-clx-display))
-	 #+(or ecl sbcl)
+	 #+(or sbcl allegro clisp)
 	 (progn
 	   (setf *display* (xlib::open-default-display))
 	   (setf *screen* (xlib:display-default-screen *display*)))
-	 #-(or cmu sbcl ecl)
+	 #-(or cmu sbcl allegro clisp)
 	 (progn
 	   ;; Portable method
 	   (setf *display* (xlib:open-display (machine-instance)))

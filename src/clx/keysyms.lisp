@@ -33,6 +33,16 @@
 (define-keysym-set :publish	(keysym 10 0) (keysym 10 255))
 (define-keysym-set :apl		(keysym 11 0) (keysym 11 255))
 (define-keysym-set :hebrew	(keysym 12 0) (keysym 12 255))
+(define-keysym-set :thai        (keysym 13 0) (keysym 13 255))
+(define-keysym-set :korean      (keysym 14 0) (keysym 14 255))
+(define-keysym-set :latin-5     (keysym 15 0) (keysym 15 255))
+(define-keysym-set :latin-6     (keysym 16 0) (keysym 16 255))
+(define-keysym-set :latin-7     (keysym 17 0) (keysym 17 255))
+(define-keysym-set :latin-8     (keysym 18 0) (keysym 18 255))
+(define-keysym-set :latin-9     (keysym 19 0) (keysym 19 255))
+(define-keysym-set :currency    (keysym 32 0) (keysym 32 255))
+(define-keysym-set :|3270|      (keysym 253 0) (keysym 253 255))
+(define-keysym-set :xkb         (keysym 254 0) (keysym 254 255))
 (define-keysym-set :keyboard	(keysym 255 0) (keysym 255 255))
 
 (define-keysym :character-set-switch character-set-switch-keysym)
@@ -155,6 +165,21 @@
   (define-keysym #\return (keysym 255 013))	; :tty
   (define-keysym #\backspace (keysym 255 008))	; :tty
   )
+
+;;; these keysym definitions are only correct if the underlying lisp's
+;;; definition of characters between 160 and 255 match latin1 exactly.
+;;; If the characters are in some way locale-dependent (as, I believe,
+;;; in Allegro8) or are treated as opaque without any notions of
+;;; graphicness or case (as in cmucl and openmcl) then defining these
+;;; keysyms is either not useful or wrong.  -- CSR, 2006-03-14
+#+sbcl
+(progn
+  (do ((i 160 (+ i 1)))
+      ((>= i 256))
+    (if (or (<= #xc0 i #xd6)
+            (<= #xd8 i #xde))
+        (define-keysym (code-char i) i :lowercase (+ i 32))
+        (define-keysym (code-char i) i))))
 
 #+(or lispm excl)
 (progn   ;; Nonstandard characters 

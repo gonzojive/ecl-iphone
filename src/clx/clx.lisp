@@ -343,6 +343,7 @@
   (atom-id-map (make-hash-table :test (resource-id-map-test)
 				:size *atom-cache-size*)
 	       :type hash-table)
+  (extended-max-request-length 0 :type card32)
   )
 
 (defun print-display-name (display stream)
@@ -381,7 +382,7 @@
   (print-unreadable-object (drawable stream :type t)
     (print-display-name (drawable-display drawable) stream)
     (write-string " " stream)
-    (prin1 (drawable-id drawable) stream)))
+    (let ((*print-base* 16)) (prin1 (drawable-id drawable) stream))))
 
 (def-clx-class (window (:include drawable) (:copier nil)
 		       (:print-function print-drawable))
@@ -580,10 +581,13 @@
   '(or mask32 (clx-list event-mask-class)))
 
 (defconstant +pointer-event-mask-vector+
- '#(%error %error :button-press :button-release
-    :enter-window :leave-window :pointer-motion :pointer-motion-hint
-    :button-1-motion :button-2-motion :button-3-motion :button-4-motion
-    :button-5-motion :button-motion :keymap-state))
+  ;; the first two elements used to be '%error '%error (i.e. symbols, 
+  ;; and not keywords) but the vector is supposed to contain 
+  ;; keywords, so I renamed them -dan 2004.11.13
+  '#(:%error :%error :button-press :button-release
+     :enter-window :leave-window :pointer-motion :pointer-motion-hint
+     :button-1-motion :button-2-motion :button-3-motion :button-4-motion
+     :button-5-motion :button-motion :keymap-state))
 
 (deftype pointer-event-mask-class ()
   '(member :button-press :button-release
@@ -635,15 +639,16 @@
 	   :arc-mode))
 
 (deftype event-key ()
-  '(member :key-press :key-release :button-press :button-release :motion-notify
-	   :enter-notify :leave-notify :focus-in :focus-out :keymap-notify
-	   :exposure :graphics-exposure :no-exposure :visibility-notify
-	   :create-notify :destroy-notify :unmap-notify :map-notify :map-request
-	   :reparent-notify :configure-notify :gravity-notify :resize-request
-	   :configure-request :circulate-notify :circulate-request :property-notify
-	   :selection-clear :selection-request :selection-notify
-	   :colormap-notify :client-message :mapping-notify
-           :shape-notify :xfree86-vidmode-notify))
+  '(or (member :key-press :key-release :button-press :button-release 
+        :motion-notify :enter-notify :leave-notify :focus-in :focus-out 
+        :keymap-notify :exposure :graphics-exposure :no-exposure 
+        :visibility-notify :create-notify :destroy-notify :unmap-notify 
+        :map-notify :map-request :reparent-notify :configure-notify 
+        :gravity-notify :resize-request :configure-request :circulate-notify 
+        :circulate-request :property-notify :selection-clear 
+        :selection-request :selection-notify :colormap-notify :client-message 
+        :mapping-notify)
+       (satisfies extension-event-key-p)))
 
 (deftype error-key ()
   '(member :access :alloc :atom :colormap :cursor :drawable :font :gcontext :id-choice
@@ -821,19 +826,18 @@
   (getf (font-properties font) name))
 
 (macrolet ((make-mumble-equal (type)
-	     ;; When cached, EQ works fine, otherwise test resource id's and displays
+	     ;; Since caching is only done for objects created by the
+	     ;; client, we must always compare ID and display for
+	     ;; non-identical mumbles.
 	     (let ((predicate (xintern type '-equal))
 		   (id (xintern type '-id))
 		   (dpy (xintern type '-display)))
-	       (if (member type +clx-cached-types+)
-		   `(within-definition (,type make-mumble-equal)
-		      (declaim (inline ,predicate))
-		      (defun ,predicate (a b) (eq a b)))
-		   `(within-definition (,type make-mumble-equal)
-		      (defun ,predicate (a b)
-			(declare (type ,type a b))
-			(and (= (,id a) (,id b))
-			     (eq (,dpy a) (,dpy b)))))))))
+		`(within-definition (,type make-mumble-equal)
+		   (defun ,predicate (a b)
+		     (declare (type ,type a b))
+		     (or (eql a b)
+			 (and (= (,id a) (,id b))
+			      (eq (,dpy a) (,dpy b)))))))))
   (make-mumble-equal window)
   (make-mumble-equal pixmap)
   (make-mumble-equal cursor)
@@ -847,10 +851,10 @@
 ;;;    Converts from keyword-lists to integer and back
 ;;;
 (defun encode-mask (key-vector key-list key-type)
-  ;; KEY-VECTOR is a vector containg bit-position keywords.  The position of the
-  ;; keyword in the vector indicates its bit position in the resulting mask
-  ;; KEY-LIST is either a mask or a list of KEY-TYPE
-  ;; Returns NIL when KEY-LIST is not a list or mask.
+  ;; KEY-VECTOR is a vector containg bit-position keywords.  The
+  ;; position of the keyword in the vector indicates its bit position
+  ;; in the resulting mask.  KEY-LIST is either a mask or a list of
+  ;; KEY-TYPE Returns NIL when KEY-LIST is not a list or mask.
   (declare (type (simple-array keyword (*)) key-vector)
 	   (type (or mask32 list) key-list))
   (declare (clx-values (or mask32 null)))

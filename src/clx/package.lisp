@@ -98,7 +98,8 @@
     device-event-mask-class discard-current-event discard-font-info display
     display-after-function display-authorization-data display-authorization-name
     display-bitmap-format display-byte-order display-default-screen
-    display-display display-error-handler display-finish-output
+    display-display display-error-handler 
+    display-extended-max-request-length display-finish-output
     display-force-output display-host display-image-lsb-first-p
     display-invoke-after-function display-keycode-range display-max-keycode
     display-max-request-length display-min-keycode display-motion-buffer-size
@@ -226,6 +227,10 @@
 #+clx-ansi-common-lisp
 (common-lisp:in-package :common-lisp-user)
 
+#+ecl
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (require 'sockets))
+
 #+clx-ansi-common-lisp
 (defpackage xlib
   (:use common-lisp)
@@ -238,7 +243,7 @@
   #+lcl3.0 (:import-from lcl arglist)
   #+lispm (:import-from lisp char-bit)
   #+lispm (:import-from sys arglist with-stack-list with-stack-list*)
-  #+sbcl (:use sb-bsd-sockets)
+  #+(or sbcl ecl) (:use sb-bsd-sockets)
   (:export
     *version* access-control access-error access-hosts
     activate-screen-saver add-access-host add-resource add-to-save-set
@@ -268,7 +273,8 @@
     device-event-mask-class discard-current-event discard-font-info display
     display-after-function display-authorization-data display-authorization-name
     display-bitmap-format display-byte-order display-default-screen
-    display-display display-error-handler display-finish-output
+    display-display display-error-handler 
+    display-extended-max-request-length display-finish-output
     display-force-output display-host display-image-lsb-first-p
     display-invoke-after-function display-keycode-range display-max-keycode
     display-max-request-length display-min-keycode display-motion-buffer-size

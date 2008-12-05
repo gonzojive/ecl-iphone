@@ -106,6 +106,11 @@
     (declare (clx-values event-key))
     (kintern event)))
 
+(defun extension-event-key-p (key)
+  (dolist (extension *extensions* nil)
+    (when (member key (second extension))
+      (return t))))
+    
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun allocate-extension-event-code (name)
     ;; Allocate an event-code for an extension.  This is executed at
@@ -117,9 +122,7 @@
       (declare (type (or null card8) event-code))
       (unless event-code
 	;; First ensure the name is for a declared extension
-	(unless (dolist (extension *extensions*)
-		  (when (member name (second extension))
-		    (return t)))
+        (unless (extension-event-key-p name)
 	  (x-type-error name 'event-key))
 	(setq event-code (position nil *event-key-vector*
 				   :start *first-extension-event-code*))
@@ -936,20 +939,20 @@
 (declare-event :circulate-notify
   (card16 sequence)
   (window event-window window parent)
-  ((member16 :top :bottom) place))
+  ((member8 :top :bottom) place))
 
 (declare-event :circulate-request
   (card16 sequence)
   (window (parent event-window) window)
   (pad16 1 2)
-  ((member16 :top :bottom) place))
+  ((member8 :top :bottom) place))
 
 (declare-event :property-notify
   (card16 sequence)
   (window (window event-window))
   (keyword atom) ;; keyword
   ((or null card32) time)
-  ((member16 :new-value :deleted) state))
+  ((member8 :new-value :deleted) state))
 
 (declare-event :selection-clear
   (card16 sequence)
@@ -1773,6 +1776,13 @@
     (lambda (condition stream)
       (format stream "inconsistent-parameters:~{ ~s~}"
 	      (inconsistent-parameters-parameters condition)))))
+
+(define-condition resource-ids-exhausted (x-error)
+  ()
+  (:report
+    (lambda (condition stream)
+      (declare (ignore condition))
+      (format stream "All X resource IDs are in use."))))
 
 (defun get-error-key (display error-code)
   (declare (type display display)
