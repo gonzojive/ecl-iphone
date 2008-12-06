@@ -1187,9 +1187,6 @@ c_labels_flet(int op, cl_object args, int flags) {
 		return c_locally(args, flags);
 	}
 
-	/* Remove declarations */
-	args = c_process_declarations(args);
-
 	/* If compiling a LABELS form, add the function names to the lexical
 	   environment before compiling the functions */
 	if (op == OP_FLET)
@@ -1219,7 +1216,7 @@ c_labels_flet(int op, cl_object args, int flags) {
 
 	/* Compile the body of the form with the local functions in the lexical
 	   environment. */
-	flags = compile_body(args, flags);
+	flags = c_locally(args, flags);
 
 	/* Restore and return */
 	c_undo_bindings(old_vars);
