@@ -1843,6 +1843,10 @@ ecl_invalid_character_p(int c)
 		entry->syntax_type = cat_non_terminating;
 	else
 		entry->syntax_type = cat_terminating;
+	while (Null(cl_functionp(fnc))) {
+		fnc = ecl_type_error(@'set-macro-character',"new_function",
+				     fnc, @'function');
+	}
 	entry->macro = fnc;
 	@(return Ct)
 @)
