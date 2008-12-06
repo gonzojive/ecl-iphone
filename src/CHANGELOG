@@ -196,6 +196,8 @@ ECL 8.9.0:
    (...) ...)  This is now solved by replacing parts of these types with the
    simple type FUNCTION.
 
+ - Hash tables were not properly serialized.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

@@ -104,7 +104,9 @@ printer and we should rather use MAKE-LOAD-FORM."
 	  :rehash-size ,(hash-table-rehash-size object)
 	  :rehash-threshold ,(hash-table-rehash-threshold object)
 	  :test ',(hash-table-test object))
-	`(dolist (i ,(maphash (lambda (key obj) (cons key obj)) object))
+	`(dolist (i ',(loop for key being each hash-key in object
+			 using (hash-value obj)
+			 collect (cons key obj)))
 	  (setf (gethash (car i) ,object) (cdr i)))))
       (t
        (error "Cannot externalize object ~a" object)))))
