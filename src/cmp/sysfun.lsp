@@ -363,8 +363,8 @@
 (proclaim-function input-stream-p (stream) t :predicate t)
 (def-inline input-stream-p :always (stream) :bool "ecl_input_stream_p(#0)")
 
-(proclaim-function output-stream-p (t) t :predicate t)
-(def-inline input-stream-p :always (stream) :bool "ecl_output_stream_p(#0)")
+(proclaim-function output-stream-p (stream) t :predicate t)
+(def-inline output-stream-p :always (stream) :bool "ecl_output_stream_p(#0)")
 
 (proclaim-function stream-element-type (t) t)
 (proclaim-function close (stream *) t)
