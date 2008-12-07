@@ -198,6 +198,8 @@ ECL 8.9.0:
 
  - Hash tables were not properly serialized.
 
+ - WRITE-LINE did not work with gray streams (A. Vodonosov)
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
