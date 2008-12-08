@@ -200,6 +200,8 @@ ECL 8.9.0:
 
  - WRITE-LINE did not work with gray streams (A. Vodonosov)
 
+ - When working with Gray streams, READ-LINE did not handle the EOF properly.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

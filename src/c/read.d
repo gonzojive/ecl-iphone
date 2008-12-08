@@ -1522,7 +1522,13 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 	strm = stream_or_default_input(strm);
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) != t_stream) {
-		return funcall(2, @'gray::stream-read-line', strm);
+		cl_object out = funcall(2, @'gray::stream-read-line', strm);
+		if (!Null(VALUES(1))) {
+			if (!Null(eof_errorp))
+				FEend_of_file(strm);
+			out = eof_value;
+		}
+		return out;
 	}
 #endif
 	token = si_get_buffer_string();
