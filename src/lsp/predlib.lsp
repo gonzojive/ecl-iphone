@@ -213,6 +213,13 @@ called simple-strings."
   "A string which is made of BASE-CHAR."
   (if size `(array base-char (,size)) '(array base-char (*))))
 
+(deftype extended-string (&optional size)
+  "A string which is nt a base string"
+  #-unicode
+  NIL
+  #+unicode
+  (if size `(array character (,size)) '(array character (*))))
+
 (deftype bit-vector (&optional size)
   "A bit-vector is a vector of bits.  A bit-vector is notated by '#*' followed
 by its elements (0 or 1).  Bit-vectors may be displaced to another array, may

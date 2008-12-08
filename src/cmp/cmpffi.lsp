@@ -31,8 +31,8 @@
     :float (single-float "float")
     :double (double-float "double")
     #+:long-float :long-double #+:long-float (long-float "long double")
-    :char (base-char "char")
     :unsigned-char (base-char "char")
+    :char (base-char "char")
     :wchar (character "cl_index")
     :object (t "cl_object")
     :bool (t "bool")
@@ -120,7 +120,7 @@
 	(t
 	 (case (first loc)
 	   (FIXNUM-VALUE :fixnum)
-	   (CHARACTER-VALUE (if (<= (second loc) 255) :char :wchar))
+	   (CHARACTER-VALUE (if (<= (second loc) 255) :unsigned-char :wchar))
 	   (DOUBLE-FLOAT-VALUE :double)
 	   (SINGLE-FLOAT-VALUE :float)
 	   (LONG-FLOAT-VALUE :long-double)
