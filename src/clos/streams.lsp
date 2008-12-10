@@ -196,6 +196,10 @@
   (:documentation
    "This is like CL:WRITE-SEQUENCE, but for Gray streams."))
 
+(defgeneric stream-file-position (stream &optional position)
+  (:documentation
+   "This is like CL:FILE-POSITION, but for Gray streams."))
+
 
 ;;;
 ;;; Our class hierarchy looks like the one from Gray streams
@@ -520,6 +524,14 @@
 (defmethod stream-start-line-p ((stream fundamental-character-output-stream))
   (eql (stream-line-column stream) 0))
 
+;; FILE-POSITION
+
+(defmethod stream-file-position ((stream ansi-stream) &optional position)
+  (file-position stream position))
+
+(defmethod stream-file-position ((stream t) &optional position)
+  (declare (ignore stream position))
+  nil)
 
 ;; STREAM-P
 

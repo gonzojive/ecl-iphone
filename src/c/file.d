@@ -2115,8 +2115,9 @@ ecl_file_position(cl_object strm)
 	cl_object output;
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
-	if (ECL_INSTANCEP(strm))
-		FEerror("file-position not implemented for CLOS streams", 0);
+	if (ECL_INSTANCEP(strm)) {
+		return funcall(2, @'gray::stream-file-position', strm);
+	}
 #endif
 	if (type_of(strm) != t_stream)
 		FEtype_error_stream(strm);
@@ -2206,8 +2207,9 @@ ecl_file_position_set(cl_object strm, cl_object large_disp)
 	int extra = 0;
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
-	if (ECL_INSTANCEP(strm))
-		FEerror("file-position not implemented for CLOS streams", 0);
+	if (ECL_INSTANCEP(strm)) {
+		return funcall(3, @'gray::stream-file-position', strm, large_disp);
+	}
 #endif
 	if (type_of(strm) != t_stream) 
 		FEtype_error_stream(strm);

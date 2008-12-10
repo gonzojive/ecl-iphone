@@ -75,6 +75,8 @@ ECL 8.9.0:
 
  - We now ship version 0.7.3 of the portable CLX library.
 
+ - A new method, STREAM-FILE-POSITION, has been added to the Gray streams package.
+
 * Embedding:
 
  - ECL now implements a more transparent interface for setting and querying
