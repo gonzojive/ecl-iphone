@@ -300,9 +300,7 @@ because it contains a reference to the undefined class~%  ~A"
   (std-class-generate-accessors class))
 
 (defmethod compute-class-precedence-list ((class class))
-  (cons class
-	(compute-clos-class-precedence-list (class-name class)
-					    (class-direct-superclasses class))))
+  (compute-clos-class-precedence-list class (class-direct-superclasses class)))
 
 (defmethod compute-slots ((class class))
   ;; INV: for some classes ECL expects that the order of the inherited slots is
