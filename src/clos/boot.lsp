@@ -93,7 +93,7 @@
     (setf (class-precedence-list standard-class) cpl
 	  (class-precedence-list the-class) (cdr cpl)
 	  (class-precedence-list standard-object) (cddr cpl)
-	  (class-precedence-list the-t) nil))
+	  (class-precedence-list the-t) (cdddr cpl)))
 
   ;; 5) Generate accessors (In macros.lsp)
 )
