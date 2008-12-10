@@ -202,6 +202,10 @@ ECL 8.9.0:
 
  - When working with Gray streams, READ-LINE did not handle the EOF properly.
 
+ - The routine that computed the class precedence list produced the wrong
+   result for moderately complex class hierarchies. It has been replaced with
+   a version that exactly implements the algorithm in the ANSI specification.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
