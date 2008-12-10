@@ -1522,13 +1522,12 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 	strm = stream_or_default_input(strm);
 #ifdef ECL_CLOS_STREAMS
 	if (type_of(strm) != t_stream) {
-		cl_object out = funcall(2, @'gray::stream-read-line', strm);
+		token = funcall(2, @'gray::stream-read-line', strm);
 		if (!Null(VALUES(1))) {
-			if (!Null(eof_errorp))
-				FEend_of_file(strm);
-			out = eof_value;
+			c = EOF;
+			goto EOFCHK;
 		}
-		return out;
+		return token;
 	}
 #endif
 	token = si_get_buffer_string();
@@ -1538,7 +1537,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 			break;
 		ecl_string_push_extend(token, c);
 	} while(1);
-	if (c == EOF && token->base_string.fillp == 0) {
+EOFCHK:	if (c == EOF && token->base_string.fillp == 0) {
 		if (!Null(eof_errorp))
 			FEend_of_file(strm);
 		value0 = eof_value;
