@@ -375,9 +375,10 @@
     (when (and (consp i) (eq (first i) 'optimize))
       (dolist (j (rest i))
 	(cond ((consp j)
-	       (when (eq (first j) what) (return (second j))))
+	       (when (eq (first j) what)
+		 (return-from search-optimization-quality (second j))))
 	      ((eq j what)
-	       (return 3)))))))
+	       (return-from search-optimization-quality 3)))))))
 
 (defun c1add-declarations (decls &aux (dl nil) (optimizations))
   (dolist (decl decls)
