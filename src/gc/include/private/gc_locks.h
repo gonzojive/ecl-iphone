@@ -174,7 +174,11 @@
         }
 #     define GC_TEST_AND_SET_DEFINED
       inline static void GC_clear(volatile unsigned int *addr) {
+#ifdef __NO_LWSYNC_
 	__asm__ __volatile__("lwsync" : : : "memory");
+#else
+	__asm__ __volatile__("sync" : : : "memory");
+#endif
         *(addr) = 0;
       }
 #     define GC_CLEAR_DEFINED
