@@ -994,7 +994,11 @@ ecl_read_byte(cl_object strm)
 BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (ECL_INSTANCEP(strm)) {
-		return funcall(2, @'gray::stream-read-byte', strm);
+		cl_object b = funcall(2, @'gray::stream-read-byte', strm);
+		if (FIXNUMP(b) || type_of(b) == t_bignum) {
+			return b;
+		}
+		return Cnil;
 	}
 #endif
 	if (type_of(strm) != t_stream) 

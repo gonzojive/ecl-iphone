@@ -200,7 +200,7 @@ ECL 8.9.0:
 
  - Hash tables were not properly serialized.
 
- - WRITE/READ-LINE did not work with gray streams (A. Vodonosov)
+ - WRITE/READ-LINE and READ-BYTE did not work with gray streams (A. Vodonosov)
 
  - When working with Gray streams, READ-LINE did not handle the EOF properly.
 
