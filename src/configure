@@ -5004,7 +5004,7 @@ if test "${with_fpe}" != yes; then
 _ACEOF
 
 fi
-if test "${with_signed_zero}" == yes; then
+if test "${with_signed_zero}" = yes; then
    cat >>confdefs.h <<\_ACEOF
 #define ECL_SIGNED_ZERO 1
 _ACEOF
