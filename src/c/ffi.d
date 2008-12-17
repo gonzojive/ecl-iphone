@@ -119,7 +119,10 @@ si_allocate_foreign_data(cl_object tag, cl_object size)
 	cl_index bytes = fixnnint(size);
 	output->foreign.tag = tag;
 	output->foreign.size = bytes;
-	output->foreign.data = bytes? cl_alloc_atomic(bytes) : NULL;
+	/* FIXME! Should be atomic uncollectable or malloc, but we do not export
+	 * that garbage collector interface and malloc may be overwritten
+	 * by the GC library */
+	output->foreign.data = bytes? ecl_alloc_uncollectable(bytes) : NULL;
 	@(return output)
 }
 
@@ -130,7 +133,8 @@ si_free_foreign_data(cl_object f)
 		FEwrong_type_argument(@'si::foreign-data', f);
 	}
 	if (f->foreign.size) {
-		cl_dealloc(f->foreign.data);
+		/* See si_allocate_foreign_data() */
+		ecl_free_uncollectable(f->foreign.data);
 	}
 	f->foreign.size = 0;
 	f->foreign.data = NULL;
