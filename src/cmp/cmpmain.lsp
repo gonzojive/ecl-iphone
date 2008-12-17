@@ -44,6 +44,8 @@
       (:h (setf extension "h"))
       (:object (setf extension +object-file-extension+))
       (:program (setf format +executable-file-format+))
+      #+msvc
+      (:import-library (setf extension "implib"))
       ((:fasl :fas) (setf extension "fas")))
     (if format
 	(merge-pathnames (format nil format (pathname-name output-file))
@@ -122,7 +124,11 @@
 	   #-msvc *ld-bundle-flags*
 	   #+msvc (concatenate 'string *ld-bundle-flags*
 			       " /EXPORT:" init-name
-			       " /LIBPATH:" (ecl-library-directory))))
+			       " /LIBPATH:" (ecl-library-directory)
+			       " /IMPLIB:"
+			       (si::coerce-to-filename
+				(compile-file-pathname
+				 o-pathname :type :import-library)))))
   #+(or mingw32)
   (safe-system
    (format nil
