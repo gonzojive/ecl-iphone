@@ -387,7 +387,6 @@ under certain conditions; see file 'Copyright' for details.")
 	 (*ihs-current* (if broken-at (ihs-prev *ihs-top*) *ihs-top*))
 	 (*frs-base* (or (sch-frs-base *frs-top* *ihs-base*) (1+ (frs-top))))
 	 (*frs-top* (frs-top))
-	 (*read-suppress* nil)
 	 (*quit-tags* (cons *quit-tag* *quit-tags*))
 	 (*quit-tag* *quit-tags*)	; any unique new value
 	 (*tpl-level* (1+ *tpl-level*))
@@ -421,7 +420,7 @@ under certain conditions; see file 'Copyright' for details.")
 	       (- *tpl-level* *step-level* -1)
 	       ""))))
 
-(defun tpl-read ()
+(defun tpl-read (&aux (*read-suppress* nil))
   (finish-output)
   (loop
     (case (peek-char nil *standard-input* nil :EOF)

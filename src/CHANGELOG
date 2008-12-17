@@ -208,6 +208,10 @@ ECL 8.9.0:
    result for moderately complex class hierarchies. It has been replaced with
    a version that exactly implements the algorithm in the ANSI specification.
 
+ - At the toplevel, the value of *read-suppress* is ignored, so that
+   setting (setf *read-suppress* nil) does not prevent the user from entering
+   new commands.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
