@@ -1398,7 +1398,7 @@ GET-NAME-SERVICE-ERRNO")
 	int ret;
 
 	tv.tv_sec = (int)tmp;
-	tv.tv_usec = (int)((tmp-trunc(tmp))*1000000.0);
+	tv.tv_usec = (int)((tmp-floor(tmp))*1000000.0);
 
         ret = setsockopt(#0,SOL_SOCKET,#1,&tv,sizeof(struct timeval));
         @(return) = (ret == 0) ? Ct : Cnil;
