@@ -64,10 +64,11 @@ disassemble_vars(const char *message, cl_object *data, cl_index step) {
 
 static void
 disassemble_lambda(cl_object bytecodes) {
+	const cl_env_ptr env = ecl_process_env();
 	cl_object *data;
 	cl_opcode *vector;
 
-	bds_bind(@'*print-pretty*', Cnil);
+	ecl_bds_bind(env, @'*print-pretty*', Cnil);
 
 	if (bytecodes->bytecodes.name == OBJNULL ||
 	    bytecodes->bytecodes.name == @'si::bytecodes') {
@@ -109,7 +110,7 @@ NO_ARGS:
 	base = vector = (cl_opcode *)bytecodes->bytecodes.code;
 	disassemble(bytecodes, vector);
 
-	bds_unwind1();
+	ecl_bds_unwind1(env);
 }
 
 /* -------------------- DISASSEMBLER CORE -------------------- */
@@ -629,6 +630,7 @@ si_bc_disassemble(cl_object v)
 cl_object
 si_bc_split(cl_object b)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object vector;
 	cl_object data;
 	cl_object lex = Cnil;
@@ -649,6 +651,7 @@ si_bc_split(cl_object b)
 cl_object
 si_bc_file(cl_object b)
 {
+	cl_env_ptr the_env = ecl_process_env();
 	if (type_of(b) == t_bclosure) {
 		b = b->bclosure.code;
 	}

@@ -75,7 +75,7 @@ void
 FEcircular_list(cl_object x)
 {
 	/* FIXME: Is this the right way to rebind it? */
-	bds_bind(@'*print-circle*', Ct);
+	ecl_bds_bind(ecl_process_env(), @'*print-circle*', Ct);
 	cl_error(9, @'simple-type-error', @':format-control',
 		    make_constant_base_string("Circular list ~D"),
 		    @':format-arguments', cl_list(1, x),

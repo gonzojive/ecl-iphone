@@ -61,6 +61,7 @@ copy_object_file(cl_object original)
 	int err;
 	cl_object s, copy = make_constant_base_string("TMP:ECL");
 	copy = si_coerce_to_filename(si_mkstemp(copy));
+	ecl_disable_interrupts();
 #ifdef HAVE_LSTAT
 	err = unlink(copy->base_string.self) ||
 	      symlink(original->base_string.self, copy->base_string.self);
@@ -71,6 +72,7 @@ copy_object_file(cl_object original)
 	err = 1;
 #endif
 #endif
+	ecl_enable_interrupts();
 	if (err) {
 		FEerror("Unable to copy file ~A to ~A", 2, original, copy);
 	}
@@ -81,10 +83,9 @@ copy_object_file(cl_object original)
 static cl_object
 ecl_library_find_by_name(cl_object filename)
 {
-	cl_object libraries = cl_core.libraries;
-	cl_index i;
-	for (i = 0; i < libraries->vector.fillp; i++) {
-		cl_object other = libraries->vector.self.t[i];
+	cl_object l;
+	for (l = cl_core.libraries; l != Cnil; l = ECL_CONS_CDR(l)) {
+		cl_object other = ECL_CONS_CAR(l);
 		cl_object name = other->cblock.name;
 		if (!Null(name) && ecl_string_eq(name, filename)) {
 			return other;
@@ -96,10 +97,9 @@ ecl_library_find_by_name(cl_object filename)
 static cl_object
 ecl_library_find_by_handle(void *handle)
 {
-	cl_object libraries = cl_core.libraries;
-	cl_index i;
-	for (i = 0; i < libraries->vector.fillp; i++) {
-		cl_object other = libraries->vector.self.t[i];
+	cl_object l;
+	for (l = cl_core.libraries; l != Cnil; l = ECL_CONS_CDR(l)) {
+		cl_object other = ECL_CONS_CAR(l);
 		if (handle == other->cblock.handle) {
 			return other;
 		}
@@ -110,13 +110,13 @@ ecl_library_find_by_handle(void *handle)
 cl_object
 ecl_library_open(cl_object filename, bool force_reload) {
 	cl_object block;
-	cl_object libraries = cl_core.libraries;
 	bool self_destruct = 0;
 	cl_index i;
+	char *filename_string;
 
 	/* Coerces to a file name but does not merge with cwd */
-	filename = coerce_to_physical_pathname(filename);
-	filename = cl_namestring(filename);
+	filename = si_coerce_to_filename(filename);
+	filename_string = (char*)filename->base_string.self;
 
 	if (!force_reload) {
 		/* When loading a foreign library, such as a dll or a
@@ -147,22 +147,36 @@ ecl_library_open(cl_object filename, bool force_reload) {
 		}
 #endif
 	}
-	block = cl_alloc_object(t_codeblock);
+	block = ecl_alloc_object(t_codeblock);
 	block->cblock.self_destruct = self_destruct;
+	block->cblock.locked = 0;
+	block->cblock.handle = NULL;
+	block->cblock.entry = NULL;
+	block->cblock.data = NULL;
+	block->cblock.data_size = 0;
+	block->cblock.temp_data = NULL;
+	block->cblock.temp_data_size = 0;
+	block->cblock.data_text = NULL;
+	block->cblock.data_text_size = 0;
 	block->cblock.name = filename;
+	block->cblock.next = Cnil;
+	block->cblock.links = Cnil;
+	block->cblock.cfuns_size = 0;
+	block->cblock.cfuns = NULL;
+
+	ecl_disable_interrupts();
 #ifdef HAVE_DLFCN_H
-	block->cblock.handle = dlopen(filename->base_string.self,
-				      RTLD_NOW|RTLD_GLOBAL);
+	block->cblock.handle = dlopen(filename_string, RTLD_NOW|RTLD_GLOBAL);
 #endif
 #ifdef HAVE_MACH_O_DYLD_H
 	{
 	NSObjectFileImage file;
         static NSObjectFileImageReturnCode code;
-	code = NSCreateObjectFileImageFromFile(filename->base_string.self, &file);
+	code = NSCreateObjectFileImageFromFile(filename_string, &file);
 	if (code != NSObjectFileImageSuccess) {
 		block->cblock.handle = NULL;
 	} else {
-		NSModule out = NSLinkModule(file, filename->base_string.self,
+		NSModule out = NSLinkModule(file, filename_string,
 					    NSLINKMODULE_OPTION_PRIVATE|
 					    NSLINKMODULE_OPTION_BINDNOW|
 					    NSLINKMODULE_OPTION_RETURN_ON_ERROR);
@@ -170,8 +184,9 @@ ecl_library_open(cl_object filename, bool force_reload) {
 	}}
 #endif
 #if defined(mingw32) || defined(_MSC_VER)
-	block->cblock.handle = LoadLibrary(filename->base_string.self);
+	block->cblock.handle = LoadLibrary(filename_string);
 #endif
+	ecl_enable_interrupts();
 	/*
 	 * A second pass to ensure that the dlopen routine has not
 	 * returned a library that we had already loaded. If this is
@@ -188,7 +203,7 @@ ecl_library_open(cl_object filename, bool force_reload) {
 		block = other;
 	} else {
 		si_set_finalizer(block, Ct);
-		cl_vector_push_extend(2, block, libraries);
+		cl_core.libraries = CONS(block, cl_core.libraries);
 	}
 	}
 	return block;
@@ -198,17 +213,13 @@ void *
 ecl_library_symbol(cl_object block, const char *symbol, bool lock) {
 	void *p;
 	if (block == @':default') {
-		cl_object l = cl_core.libraries;
-		if (l) {
-			cl_index i;
-			for (i = 0; i < l->vector.fillp; i++) {
-				cl_object block = l->vector.self.t[i];
-				p = ecl_library_symbol(block, symbol, lock);
-				if (p) {
-					return p;
-				}
-			}
+		cl_object l;
+		for (l = cl_core.libraries; l != Cnil; l = ECL_CONS_CDR(l)) {
+			cl_object block = ECL_CONS_CAR(l);
+			p = ecl_library_symbol(block, symbol, lock);
+			if (p) return p;
 		}
+		ecl_disable_interrupts();
 #if defined(mingw32) || defined(_MSC_VER)
  		{
 		HANDLE hndSnap = NULL;
@@ -226,16 +237,18 @@ ecl_library_symbol(cl_object block, const char *symbol, bool lock) {
 			}
 			CloseHandle(hndSnap);
 		}
-		return hnd;
+		p = (void*)hnd;
 		}
 #endif
 #ifdef HAVE_DLFCN_H
-		return dlsym(0, symbol);
+		p = dlsym(0, symbol);
 #endif
 #if !defined(mingw32) && !defined(_MSC_VER) && !defined(HAVE_DLFCN_H)
-		return 0;
+		p = 0;
 #endif
+		ecl_enable_interrupts();
 	} else {
+		ecl_disable_interrupts();
 #ifdef HAVE_DLFCN_H
 		p = dlsym(block->cblock.handle, symbol);
 #endif
@@ -253,51 +266,58 @@ ecl_library_symbol(cl_object block, const char *symbol, bool lock) {
 			p = NSAddressOfSymbol(sym);
 		}
 #endif
+		ecl_enable_interrupts();
 		/* Libraries whose symbols are being referenced by the FFI should not
 		 * get garbage collected. Until we find a better solution we simply lock
 		 * them for the rest of the runtime */
 		if (p) {
 			block->cblock.locked |= lock;
 		}
-		return p;
 	}
+	return p;
 }
 
 cl_object
 ecl_library_error(cl_object block) {
-	const char *message;
+	cl_object output;
+	ecl_disable_interrupts();
 #ifdef HAVE_DLFCN_H
-	message = dlerror();
+	output = make_base_string_copy(dlerror());
 #endif
 #ifdef HAVE_MACH_O_DYLD_H
-	NSLinkEditErrors c;
-	int number;
-	const char *filename;
-	NSLinkEditError(&c, &number, &filename, &message);
+	{
+		NSLinkEditErrors c;
+		int number;
+		const char *filename;
+		NSLinkEditError(&c, &number, &filename, &message);
+		output = make_base_string_copy(message);
+	}
 #endif
 #if defined(mingw32) || defined(_MSC_VER)
-	cl_object output;
-	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
-		      FORMAT_MESSAGE_ALLOCATE_BUFFER,
-		      0, GetLastError(), 0, (void*)&message, 0, NULL);
-	output = make_base_string_copy(message);
-	LocalFree(message);
-	return output;
+	{
+		const char *message;
+		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
+			      FORMAT_MESSAGE_ALLOCATE_BUFFER,
+			      0, GetLastError(), 0, (void*)&message, 0, NULL);
+		output = make_base_string_copy(message);
+		LocalFree(message);
+	}
 #endif
-	return make_base_string_copy(message);
+	ecl_enable_interrupts();
+	return output;
 }
 
 void
 ecl_library_close(cl_object block) {
 	const char *filename;
-	bool verbose = SYM_VAL(@'si::*gc-verbose*') != Cnil;
-	cl_object libraries = cl_core.libraries;
+	bool verbose = ecl_symbol_value(@'si::*gc-verbose*') != Cnil;
+	cl_object l;
 	int i;
 
 	if (Null(block->cblock.name))
 		filename = "<anonymous>";
 	else
-		filename = block->cblock.name->base_string.self;
+		filename = (char*)block->cblock.name->base_string.self;
 	if (!Null(block->cblock.links)) {
 		cl_mapc(2, @'si::unlink-symbol', block->cblock.links);
 	}
@@ -305,6 +325,7 @@ ecl_library_close(cl_object block) {
 		if (verbose) {
 			fprintf(stderr, ";;; Freeing library %s\n", filename);
 		}
+		ecl_disable_interrupts();
 #ifdef HAVE_DLFCN_H
 		dlclose(block->cblock.handle);
 #endif
@@ -314,6 +335,7 @@ ecl_library_close(cl_object block) {
 #if defined(mingw32) || defined(_MSC_VER)
 		FreeLibrary(block->cblock.handle);
 #endif
+		ecl_enable_interrupts();
         }
 	if (block->cblock.self_destruct) {
 		if (verbose) {
@@ -321,42 +343,35 @@ ecl_library_close(cl_object block) {
 		}
 		unlink(filename);
         }
-	for (i = 0; i < libraries->vector.fillp; i++) {
-		if (libraries->vector.self.t[i] == block) {
-			memmove(libraries->vector.self.t+i,
-				libraries->vector.self.t+i+1,
-				(libraries->vector.fillp-i-1) * sizeof(cl_object));
-			libraries->vector.fillp--;
-			break;
-		}
-	}
+	cl_core.libraries = ecl_remove_eq(block, cl_core.libraries);
 }
 
 void
 ecl_library_close_all(void)
 {
-	int i;
-	while ((i = cl_core.libraries->vector.fillp))
-		ecl_library_close(cl_core.libraries->vector.self.t[--i]);
+	while (cl_core.libraries != Cnil) {
+		ecl_library_close(ECL_CONS_CAR(cl_core.libraries));
+	}
 }
 
 cl_object
 si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object block;
 	cl_object basename;
 	cl_object prefix;
 	cl_object output;
 
 	/* We need the full pathname */
-	filename = cl_namestring(cl_truename(filename));
+	filename = cl_truename(filename);
 
 #ifdef ECL_THREADS
 	/* Loading binary code is not thread safe. When another thread tries
 	   to load the same file, we may end up initializing twice the same
 	   module. */
 	mp_get_lock(1, ecl_symbol_value(@'mp::+load-compile-lock+'));
-	CL_UNWIND_PROTECT_BEGIN {
+	CL_UNWIND_PROTECT_BEGIN(the_env) {
 #endif
 	/* Try to load shared object file */
 	block = ecl_library_open(filename, 1);
@@ -381,7 +396,7 @@ si_load_binary(cl_object filename, cl_object verbose, cl_object print)
 						 make_constant_base_string("_"));
 	basename = cl_pathname_name(1,filename);
 	basename = @si::base-string-concatenate(2, prefix, @string-upcase(1, funcall(4, @'nsubstitute', CODE_CHAR('_'), CODE_CHAR('-'), basename)));
-	block->cblock.entry = ecl_library_symbol(block, basename->base_string.self, 0);
+	block->cblock.entry = ecl_library_symbol(block, (char*)basename->base_string.self, 0);
 
 	if (block->cblock.entry == NULL) {
 		output = ecl_library_error(block);
@@ -407,6 +422,7 @@ OUTPUT:
 cl_object
 si_load_source(cl_object source, cl_object verbose, cl_object print)
 {
+	cl_env_ptr the_env = ecl_process_env();
 	cl_object x, strm;
 
 	/* Source may be either a stream or a filename */
@@ -414,14 +430,15 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 		/* INV: if "source" is not a valid stream, file.d will complain */
 		strm = source;
 	} else {
-		strm = ecl_open_stream(source, smm_input, Cnil, Cnil, 8, 1, 1);
+		strm = ecl_open_stream(source, smm_input, Cnil, Cnil, 8,
+				       ECL_STREAM_DEFAULT_FORMAT);
 		if (Null(strm))
 			@(return Cnil)
 	}
-	CL_UNWIND_PROTECT_BEGIN {
+	CL_UNWIND_PROTECT_BEGIN(the_env) {
 		cl_object form_index = MAKE_FIXNUM(0);
 		cl_object location = CONS(source, form_index);
-		bds_bind(@'ext::*source-location*', location);
+		ecl_bds_bind(the_env, @'ext::*source-location*', location);
 		for (;;) {
 			x = cl_read(3, strm, Cnil, OBJNULL);
 			if (x == OBJNULL)
@@ -434,7 +451,7 @@ si_load_source(cl_object source, cl_object verbose, cl_object print)
 			form_index = ecl_plus(MAKE_FIXNUM(1),form_index);
 			ECL_RPLACD(location, form_index);
 		}
-		bds_unwind1();
+		ecl_bds_unwind1(the_env);
 	} CL_UNWIND_PROTECT_EXIT {
 		/* We do not want to come back here if close_stream fails,
 		   therefore, first we frs_pop() current jump point, then
@@ -517,10 +534,11 @@ NOT_A_FILENAME:
 		cl_format(3, Ct, make_constant_base_string("~&;;; Loading ~s~%"),
 			  filename);
 	}
-	bds_bind(@'*package*', ecl_symbol_value(@'*package*'));
-	bds_bind(@'*readtable*', ecl_symbol_value(@'*readtable*'));
-	bds_bind(@'*load-pathname*', not_a_filename? Cnil : source);
-	bds_bind(@'*load-truename*', not_a_filename? Cnil : cl_truename(filename));
+	ecl_bds_bind(the_env, @'*package*', ecl_symbol_value(@'*package*'));
+	ecl_bds_bind(the_env, @'*readtable*', ecl_symbol_value(@'*readtable*'));
+	ecl_bds_bind(the_env, @'*load-pathname*', not_a_filename? Cnil : source);
+	ecl_bds_bind(the_env, @'*load-truename*',
+		     not_a_filename? Cnil : (filename = cl_truename(filename)));
 	if (!Null(function)) {
 		ok = funcall(4, function, filename, verbose, print);
 	} else {
@@ -542,7 +560,7 @@ NOT_A_FILENAME:
 #endif
 		ok = si_load_source(filename, verbose, print);
 	}
-	bds_unwind_n(4);
+	ecl_bds_unwind_n(the_env, 4);
 	if (!Null(ok))
 		FEerror("LOAD: Could not load file ~S (Error: ~S)",
 			2, filename, ok);

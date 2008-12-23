@@ -123,6 +123,7 @@ int connect_to_server(char *host, int port)
   if ((fd = socket((int) addr->sa_family, SOCK_STREAM, 0)) < 0)
     return(0);			/* errno set by system call. */
 
+  ecl_disable_interrupts();
 #ifdef TCP_NODELAY
   /* make sure to turn off TCP coalescence */
 #if defined(_MSC_VER) || defined(mingw32)
@@ -135,20 +136,15 @@ int connect_to_server(char *host, int port)
   }
 #endif
 #endif
-  start_critical_section();
   if (connect(fd, addr, addrlen) == -1) {
 #if defined(_MSC_VER) || defined(mingw32)
     closesocket(fd);
 #else
     (void) close (fd);
 #endif
-    end_critical_section();
-    return(0);		/* errno set by system call. */
+    fd = 0;
   }
-  /*
-   * Return the id if the connection succeeded.
-   */
-  end_critical_section();
+  ecl_enable_interrupts();
   return(fd);
 }
 
@@ -279,17 +275,17 @@ si_open_client_stream(cl_object host, cl_object port)
    if (host->base_string.fillp > BUFSIZ - 1)
      FEerror("~S is a too long file name.", 1, host);
 
-   start_critical_section();
-   fd = connect_to_server(host->base_string.self, fix(port)); 
-   end_critical_section();
+   ecl_disable_interrupts();
+   fd = connect_to_server((char*)host->base_string.self, fix(port)); 
+   ecl_enable_interrupts();
 
    if (fd == 0)
      @(return Cnil)
 
 #if defined(_MSC_VER) || defined(mingw32)
-   stream = ecl_make_stream_from_fd(host, fd, smm_io_wsock);
+   stream = ecl_make_stream_from_fd(host, fd, smm_io_wsock, 8, 0);
 #else
-   stream = ecl_make_stream_from_fd(host, fd, smm_io);
+   stream = ecl_make_stream_from_fd(host, fd, smm_io, 8, 0);
 #endif
 
    @(return stream)
@@ -302,17 +298,12 @@ si_open_server_stream(cl_object port)
    cl_index p;
    cl_object output;
 
-   start_critical_section();
    p = ecl_fixnum_in_range(@'si::open-client-stream',"port",port,0,65535);
+   ecl_disable_interrupts();
    fd = create_server_port(p);
-   end_critical_section();
+   ecl_enable_interrupts();
 
-   if (fd == 0)
-     output = Cnil;
-   else {
-     output = ecl_make_stream_from_fd(Cnil, fd, smm_io);
-   }
-   @(return output)
+   @(return ((fd == 0)? Cnil : ecl_make_stream_from_fd(Cnil, fd, smm_io, 8, 0)))
 }
 
 /************************************************************
@@ -350,7 +341,7 @@ si_open_unix_socket_stream(cl_object path)
 		@(return Cnil)
 	}
 
-	@(return ecl_make_stream_from_fd(path, fd, smm_io))
+	@(return ecl_make_stream_from_fd(path, fd, smm_io, 8, 0))
 #endif
 }
 
@@ -360,6 +351,7 @@ si_open_unix_socket_stream(cl_object path)
 cl_object
 si_lookup_host_entry(cl_object host_or_address)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	struct hostent *he;
 	unsigned long l;
 	char address[4];
@@ -371,7 +363,7 @@ si_lookup_host_entry(cl_object host_or_address)
 	switch (type_of(host_or_address)) {
 	case t_base_string:
 		host_or_address = si_copy_to_simple_base_string(host_or_address);
-		he = gethostbyname(host_or_address->base_string.self);
+		he = gethostbyname((char*)host_or_address->base_string.self);
 		break;
 	case t_fixnum:
 		l = fix(host_or_address);

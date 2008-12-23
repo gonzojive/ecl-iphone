@@ -21,9 +21,10 @@
 cl_object
 cl_set(cl_object var, cl_object val)
 {
+	const cl_env_ptr env = ecl_process_env();
 	if (ecl_symbol_type(var) & stp_constant)
 		FEinvalid_variable("Cannot assign to the constant ~S.", var);
-	return1(ECL_SETQ(var, val));
+	return1(ECL_SETQ(env, var, val));
 }
 
 @(defun si::fset (fname def &optional macro pprint)
@@ -116,6 +117,7 @@ ecl_clear_compiler_properties(cl_object sym)
 cl_object
 si_get_sysprop(cl_object sym, cl_object prop)
 {
+	cl_env_ptr the_env = ecl_process_env();
 	cl_object plist = ecl_gethash_safe(sym, cl_core.system_properties, Cnil);
 	prop = ecl_getf(plist, prop, OBJNULL);
 	if (prop == OBJNULL) {

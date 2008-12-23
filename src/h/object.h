@@ -454,8 +454,11 @@ struct ecl_structure {		/*  structure header  */
 
 enum ecl_smmode {		/*  stream mode  */
 	smm_input,		/*  input  */
+	smm_input_file,		/*  input  */
 	smm_output,		/*  output  */
+	smm_output_file,	/*  output  */
 	smm_io,			/*  input-output  */
+	smm_io_file,		/*  input-output  */
 	smm_synonym,		/*  synonym  */
 	smm_broadcast,		/*  broadcast  */
 	smm_concatenated,	/*  concatenated  */
@@ -472,22 +475,71 @@ enum ecl_smmode {		/*  stream mode  */
 #endif
 };
 
+struct ecl_file_ops {
+	cl_index (*write_byte8)(cl_object strm, unsigned char *c, cl_index n);
+	cl_index (*read_byte8)(cl_object strm, unsigned char *c, cl_index n);
+
+	int (*read_char)(cl_object strm);
+	int (*write_char)(cl_object strm, int c);
+	void (*unread_char)(cl_object strm, int c);
+	int (*peek_char)(cl_object strm);
+
+	cl_index (*read_vector)(cl_object strm, cl_object data, cl_index start, cl_index end);
+	cl_index (*write_vector)(cl_object strm, cl_object data, cl_index start, cl_index end);
+
+	int (*listen)(cl_object strm);
+	void (*clear_input)(cl_object strm);
+	void (*clear_output)(cl_object strm);
+	void (*finish_output)(cl_object strm);
+	void (*force_output)(cl_object strm);
+
+	int (*input_p)(cl_object strm);
+	int (*output_p)(cl_object strm);
+	int (*interactive_p)(cl_object strm);
+	cl_object (*element_type)(cl_object strm);
+
+	cl_object (*length)(cl_object strm);
+	cl_object (*get_position)(cl_object strm);
+	cl_object (*set_position)(cl_object strm, cl_object pos);
+	int (*column)(cl_object strm);
+
+	cl_object (*close)(cl_object strm);
+};
+
+enum {
+	ECL_STREAM_BINARY = 0,
+	ECL_STREAM_FORMAT = 0xF,
+#ifdef ECL_UNICODE
+	ECL_STREAM_DEFAULT_FORMAT = 2,
+#else
+	ECL_STREAM_DEFAULT_FORMAT = 1,
+#endif
+	ECL_STREAM_ISO_8859_1 = 1,
+	ECL_STREAM_LATIN_1 = 1,
+	ECL_STREAM_UTF_8 = 2,
+	ECL_STREAM_UCS_2 = 3,
+	ECL_STREAM_UCS_4 = 4,
+	ECL_STREAM_SIGNED_BYTES = 16,
+	ECL_STREAM_C_STREAM = 32,
+	ECL_STREAM_MIGHT_SEEK = 64
+};
+
 struct ecl_stream {
-	HEADER4(mode,closed,char_stream_p,signed_bytes);
-				/*  stream mode of enum smmode  */
-				/*  stream element type  */
-	void	*file;		/*  file pointer  */
+	HEADER2(mode,closed);
+       				/*  stream mode of enum smmode  */
+				/*  closed stream?  */
+	struct ecl_file_ops *ops; /*  dispatch table  */
+	void *file;		/*  file pointer  */
 	cl_object object0;	/*  some object  */
 	cl_object object1;	/*  some object */
+	cl_fixnum unread;	/*  one-char buffer for unread-char  */
 	cl_fixnum int0;		/*  some int  */
 	cl_fixnum int1;		/*  some int  */
-	char	*buffer;	/*  file buffer  */
 	cl_index byte_size;	/*  size of byte in binary streams  */
-	unsigned char bit_buffer;
-	uint8_t bits_left;
-	int8_t buffer_state;	/* 0: unknown, 1: reading, -1: writing */
-	uint8_t header;		/* number of significant bits in the last byte */
-	int8_t last_op;		/* 0: unknown, 1: reading, -1: writing */
+	cl_fixnum last_op;	/*  0: unknown, 1: reading, -1: writing */
+	char *buffer;		/*  buffer for FILE  */
+	cl_object format;	/*  external format  */
+	int flags;		/*  character table, flags, etc  */
 };
 
 struct ecl_random {
@@ -506,13 +558,7 @@ enum ecl_chattrib {		/*  character attribute  */
 
 struct ecl_readtable_entry {		/*  read table entry  */
 	enum ecl_chattrib syntax_type;	/*  character attribute  */
-	cl_object macro;		/*  macro function  */
-	cl_object *dispatch_table;	/*  pointer to the  */
-					/*  dispatch table  */
-					/*  NULL for  */
-					/*  non-dispatching  */
-					/*  macro character, or  */
-					/*  non-macro character  */
+	cl_object dispatch;		/*  a macro, a hash or NIL  */
 };
 
 enum ecl_readtable_case {
@@ -522,10 +568,13 @@ enum ecl_readtable_case {
 	ecl_case_preserve,
 };
 
-struct ecl_readtable {			/*  read table  */
+struct ecl_readtable {		/*  read table  */
 	HEADER;
 	enum ecl_readtable_case read_case; /*  readtable-case  */
 	struct ecl_readtable_entry *table; /*  read table itself  */
+#ifdef ECL_UNICODE
+	cl_object hash;		/* hash for values outside base-char range */
+#endif
 };
 
 struct ecl_pathname {
@@ -566,7 +615,7 @@ struct ecl_bytecodes {
 	char *code;		/*  the intermediate language  */
 	cl_object *data;	/*  non-inmediate constants used in the code  */
 	cl_object file;		/*  file where it was defined...  */
-	cl_index file_position;	/*  and where it was created  */
+	cl_object file_position;/*  and where it was created  */
 };
 
 struct ecl_bclosure {
@@ -645,6 +694,7 @@ struct ecl_stack_frame {
 	cl_object *bottom;	/*  Bottom part  */
 	cl_object *top;		/*  Top part  */
 	cl_object *stack;	/*  Is this relative to the lisp stack?  */
+	struct cl_env_struct *env;
 };
 
 /*

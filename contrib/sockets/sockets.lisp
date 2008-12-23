@@ -86,10 +86,14 @@
         "
 {
 	WSADATA wsadata;
+	cl_object output;
+	ecl_disable_interrupts();
 	if (WSAStartup(MAKEWORD(2,2), &wsadata) == NO_ERROR)
-		@(return) = Ct;
+		output = Ct;
 	else
-		@(return) = Cnil;
+		output = Cnil;
+	ecl_enable_interrupts();
+	@(return output)
 }")
         (setf +wsock-initialized+ t)
 	(error "Unable to initialize Windows Socket library"))))
@@ -121,10 +125,10 @@
 
 ;; Foreign functions
 
-(defentry ff-socket (:int :int :int) (:int "socket"))
-(defentry ff-listen (:int :int) (:int "listen"))
-(defentry ff-close (:int) (:int "close"))
-#+:wsock (defentry ff-closesocket (:int) (:int "closesocket"))
+(defentry ff-socket (:int :int :int) (:int "socket") :no-interrupts t)
+(defentry ff-listen (:int :int) (:int "listen") :no-interrupts t)
+(defentry ff-close (:int) (:int "close") :no-interrupts t)
+#+:wsock (defentry ff-closesocket (:int) (:int "closesocket") :no-interrupts t)
 
 ;;; This courtesy of Pierre Mai in comp.lang.lisp 08 Jan 1999 00:51:44 +0100
 ;;; Message-ID: <87lnjebq0f.fsf@orion.dent.isdn.cs.tu-berlin.de>
@@ -236,7 +240,9 @@ weird stuff - see gethostbyname(3) for grisly details."
 	vector[1] = fixint(ecl_aref(#0,1));
 	vector[2] = fixint(ecl_aref(#0,2));
 	vector[3] = fixint(ecl_aref(#0,3));
+	ecl_disable_interrupts();
 	hostent = gethostbyaddr(vector,4,AF_INET);
+	ecl_enable_interrupts();
 
 	if (hostent != NULL) {
  	        char **aliases;
@@ -479,9 +485,12 @@ safe_buffer_pointer(cl_object x, cl_index size)
                     ( #4 ? MSG_PEEK : 0 ) |
                     ( #5 ? MSG_WAITALL : 0 );
         cl_type type = type_of(#1);
+	ssize_t len;
 
-        ssize_t len = recvfrom(#0, safe_buffer_pointer(#1, #2),
-                               #2, flags, NULL,NULL);
+        ecl_disable_interrupts();
+        len = recvfrom(#0, safe_buffer_pointer(#1, #2),
+                       #2, flags, NULL,NULL);
+	ecl_enable_interrupts();
         if (len >= 0) {
                if (type == t_vector) { #1->vector.fillp = len; }
                else if (type == t_base_string) { #1->base_string.fillp = len; }
@@ -568,9 +577,12 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
 		     "
 {
 	struct sockaddr_in sockaddr;
-
+	int output;
+	ecl_disable_interrupts();
 	fill_inet_sockaddr(&sockaddr, #0, #1, #2, #3, #4);
-	@(return) = bind(#5,(struct sockaddr*)&sockaddr, sizeof(struct sockaddr_in));
+	output = bind(#5,(struct sockaddr*)&sockaddr, sizeof(struct sockaddr_in));
+	ecl_enable_interrupts();
+	@(return) = output;
 }"
 		     :side-effects t))
 	(socket-error "bind"))))
@@ -582,7 +594,11 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
 "{
         struct sockaddr_in sockaddr;
         socklen_t addr_len = (socklen_t)sizeof(struct sockaddr_in);
-        int new_fd = accept(#0, (struct sockaddr*)&sockaddr, &addr_len);
+        int new_fd;
+
+	ecl_disable_interrupts();
+	new_fd = accept(#0, (struct sockaddr*)&sockaddr, &addr_len);
+	ecl_enable_interrupts();
 
 	@(return 0) = new_fd;
 	@(return 1) = Cnil;
@@ -621,9 +637,14 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
 		     "
 {
 	struct sockaddr_in sockaddr;
+	int output;
 
+	ecl_disable_interrupts();
 	fill_inet_sockaddr(&sockaddr, #0, #1, #2, #3, #4);
-	@(return) = connect(#5,(struct sockaddr*)&sockaddr, sizeof(struct sockaddr_in));
+	output = connect(#5,(struct sockaddr*)&sockaddr, sizeof(struct sockaddr_in));
+	ecl_enable_interrupts();
+
+	@(return) = output;
 }"))
 	(socket-error "connect"))))
 
@@ -634,7 +655,11 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
 "@01;{
         struct sockaddr_in name;
         socklen_t len = sizeof(struct sockaddr_in);
-        int ret = getpeername(#0,(struct sockaddr*)&name,&len);
+        int ret;
+
+	ecl_disable_interrupts();
+	ret = getpeername(#0,(struct sockaddr*)&name,&len);
+	ecl_enable_interrupts();
 
         if (ret == 0) {
                 uint32_t ip = ntohl(name.sin_addr.s_addr);
@@ -661,7 +686,11 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
 "@01;{
         struct sockaddr_in name;
         socklen_t len = sizeof(struct sockaddr_in);
-        int ret = getsockname(#0,(struct sockaddr*)&name,&len);
+        int ret;
+
+	ecl_disable_interrupts();
+	ret = getsockname(#0,(struct sockaddr*)&name,&len);
+	ecl_enable_interrupts();
 
         if (ret == 0) {
                 uint32_t ip = ntohl(name.sin_addr.s_addr);
@@ -721,11 +750,12 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
         struct sockaddr_in sockaddr;
 	ssize_t len;
 
+	ecl_disable_interrupts();
 	fill_inet_sockaddr(&sockaddr, #3, #4, #5, #6, #7);
-
         len = sendto(#0, safe_buffer_pointer(#1,#2),
                      #2, flags,(struct sockaddr*)&sockaddr, 
                      sizeof(struct sockaddr_in));
+	ecl_enable_interrupts();
         @(return) = len;
 }
 "
@@ -744,8 +774,10 @@ static void fill_inet_sockaddr(struct sockaddr_in *sockaddr, int port,
                     ( #7 ? MSG_NOSIGNAL : 0 ) |
                     ( #8 ? MSG_CONFIRM : 0 );
         cl_type type = type_of(#1);
-
-        ssize_t len = send(#0, safe_buffer_pointer(#1,#2), #2, flags);
+        ssize_t len;
+	ecl_disable_interrupts();
+	len = send(#0, safe_buffer_pointer(#1,#2), #2, flags);
+	ecl_enable_interrupts();
         @(return) = len;
 }
 "
@@ -779,7 +811,7 @@ also known as unix-domain sockets."))
 {
         struct sockaddr_un sockaddr;
 	size_t size;
-
+	int output;
 #ifdef BSD
         sockaddr.sun_len = sizeof(struct sockaddr_un);
 #endif
@@ -787,7 +819,11 @@ also known as unix-domain sockets."))
         strncpy(sockaddr.sun_path,#1,sizeof(sockaddr.sun_path));
 	sockaddr.sun_path[sizeof(sockaddr.sun_path)-1] = '\0';
 
-        @(return) = bind(#0,(struct sockaddr*)&sockaddr, sizeof(struct sockaddr_un));
+	ecl_disable_interrupts();
+	output = bind(#0,(struct sockaddr*)&sockaddr, sizeof(struct sockaddr_un));
+	ecl_enable_interrupts();
+
+        @(return) = output;
 }"))
 	(socket-error "bind"))))
 
@@ -797,7 +833,10 @@ also known as unix-domain sockets."))
 "{
         struct sockaddr_un sockaddr;
         socklen_t addr_len = (socklen_t)sizeof(struct sockaddr_un);
-        int new_fd = accept(#0, (struct sockaddr *)&sockaddr, &addr_len);
+        int new_fd;
+	ecl_disable_interrupts();
+	new_fd = accept(#0, (struct sockaddr *)&sockaddr, &addr_len);
+	ecl_enable_interrupts();
 	@(return 0) = new_fd;
 	@(return 1) = (new_fd == -1) ? Cnil : make_base_string_copy(sockaddr.sun_path);
 }")
@@ -822,7 +861,7 @@ also known as unix-domain sockets."))
 		     "
 {
         struct sockaddr_un sockaddr;
-
+	int output;
 #ifdef BSD
         sockaddr.sun_len = sizeof(struct sockaddr_un);
 #endif
@@ -830,7 +869,11 @@ also known as unix-domain sockets."))
         strncpy(sockaddr.sun_path,#2,sizeof(sockaddr.sun_path));
 	sockaddr.sun_path[sizeof(sockaddr.sun_path)-1] = '\0';
 
-        @(return) = connect(#0,(struct sockaddr*)&sockaddr, sizeof(struct sockaddr_un));
+	ecl_disable_interrupts();
+	output = connect(#0,(struct sockaddr*)&sockaddr, sizeof(struct sockaddr_un));
+	ecl_enable_interrupts();
+
+        @(return) = output;
 }"))
 	(socket-error "connect"))))
 
@@ -841,7 +884,11 @@ also known as unix-domain sockets."))
 {
         struct sockaddr_un name;
         socklen_t len = sizeof(struct sockaddr_un);
-        int ret = getpeername(#0,(struct sockaddr*)&name,&len);
+        int ret;
+
+	ecl_disable_interrupts();
+	ret = getpeername(#0,(struct sockaddr*)&name,&len);
+	ecl_enable_interrupts();
 
         if (ret == 0) {
                 @(return) = make_base_string_copy(name.sun_path);
@@ -952,7 +999,9 @@ also known as unix-domain sockets."))
          (hnd (c-inline (pipe-name) (:cstring) :int
 	                "
 {
-	HANDLE hnd = CreateNamedPipe(
+	HANDLE hnd;
+	ecl_disable_interrupts();
+	hnd = CreateNamedPipe(
 			#0,
 			PIPE_ACCESS_DUPLEX,
 			PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
@@ -961,6 +1010,7 @@ also known as unix-domain sockets."))
 			4096,
 			NMPWAIT_USE_DEFAULT_WAIT,
 			NULL);
+	ecl_enable_interrupts();
 	if (hnd == INVALID_HANDLE_VALUE)
 		@(return) = -1;
 	else
@@ -977,10 +1027,12 @@ also known as unix-domain sockets."))
 	                "
 {
 	HANDLE hnd = _get_osfhandle(#0), dupHnd;
+	ecl_disable_interrupts();
 	if (ConnectNamedPipe(hnd, NULL) != 0 || GetLastError() == ERROR_PIPE_CONNECTED) {
 		@(return) = #0;
 	} else
 		@(return) = -1;
+	ecl_enable_interrupts();
 }"
                         :one-liner nil)))
     (cond
@@ -1006,7 +1058,9 @@ also known as unix-domain sockets."))
 	         (c-inline (pipe-name) (:cstring) :int
 		     "
 {
-	HANDLE hnd = CreateFile(
+	HANDLE hnd;
+	ecl_disable_interrupts();
+	hnd = CreateFile(
 			#0,
 			GENERIC_READ | GENERIC_WRITE,
 			0,
@@ -1018,6 +1072,7 @@ also known as unix-domain sockets."))
 		@(return) = -1;
 	else
 		@(return) = _open_osfhandle(hnd, O_RDWR);
+	ecl_enable_interrupts();
 }")))
 	(socket-error "connect")
 	(setf (slot-value socket 'pipe-name) pipe-name))))
@@ -1032,7 +1087,9 @@ also known as unix-domain sockets."))
                      "
 {
 	DWORD mode = PIPE_READMODE_BYTE | (#1 == Ct ? PIPE_NOWAIT : PIPE_WAIT);
+	ecl_disable_interrupts();
 	@(return) = SetNamedPipeHandleState(_get_osfhandle(#0), &mode, NULL, NULL);
+	ecl_enable_interrupts();
 }"
                      :one-liner nil))
       (socket-error "SetNamedPipeHandleState")
@@ -1044,12 +1101,14 @@ also known as unix-domain sockets."))
                   "
 {
 	DWORD flags;
+	ecl_disable_interrupts();
 	if (!GetNamedPipeInfo(_get_osfhandle(#0), &flags, NULL, NULL, NULL))
 		@(return) = Cnil;
 	if (flags == PIPE_CLIENT_END || DisconnectNamedPipe(_get_osfhandle(#0)))
 		@(return) = Ct;
 	else
 		@(return) = Cnil;
+	ecl_enable_interrupts();
 }"
                   :one-liner nil)
       (socket-error "DisconnectNamedPipe"))
@@ -1078,7 +1137,9 @@ also known as unix-domain sockets."))
 	      "
 {
 	int blocking_flag = (#1 ? 1 : 0);
+	ecl_disable_interrupts();
 	@(return) = ioctlsocket(#0, FIONBIO, (u_long*)&blocking_flag);
+	ecl_enable_interrupts();
 }"
 	      #-:wsock
 	      "
@@ -1086,7 +1147,9 @@ also known as unix-domain sockets."))
         int oldflags = fcntl(#0,F_GETFL,NULL);
         int newflags = (oldflags & ~O_NONBLOCK) |
                        (#1 ? O_NONBLOCK : 0);
+	ecl_disable_interrupts();
         @(return) = fcntl(#0,F_SETFL,newflags);
+	ecl_enable_interrupts();
 }"))
 	(socket-error #-:wsock "fcntl" #+:wsock "ioctlsocket")
 	#-:wsock non-blocking-p
@@ -1119,7 +1182,7 @@ also known as unix-domain sockets."))
 		  buffering)
 	    (t :int :int :object)
 	    t
-	    "si_set_buffering_mode(ecl_make_stream_from_fd(#0,#1,(enum ecl_smmode)#2), #3)"
+	    "si_set_buffering_mode(ecl_make_stream_from_fd(#0,#1,(enum ecl_smmode)#2,8,1), #3)"
 	    :one-liner t))
 
 (defmethod socket-make-stream ((socket socket)  &rest args &key (buffering-mode NIL))
@@ -1164,6 +1227,7 @@ also known as unix-domain sockets."))
   (c-inline (num) (:int) t
 	"{char *lpMsgBuf;
 	  cl_object msg;
+	  ecl_disable_interrupts();
 	  FormatMessage(
 	    FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
 	    NULL,
@@ -1174,6 +1238,7 @@ also known as unix-domain sockets."))
 	    NULL);
 	  msg = make_base_string_copy(lpMsgBuf);
 	  LocalFree(lpMsgBuf);
+	  ecl_enable_interrupts();
 	  @(return) = msg;}"
 	  :one-liner nil))
 
@@ -1324,9 +1389,12 @@ GET-NAME-SERVICE-ERRNO")
 (defun get-sockopt-int (fd const)
   (let ((ret (c-inline (fd const) (:int :int) t
 "{
-        int sockopt;
+        int sockopt, ret;
         socklen_t socklen = sizeof(int);
-        int ret = getsockopt(#0,SOL_SOCKET,#1,&sockopt,&socklen);
+
+	ecl_disable_interrupts();
+	ret = getsockopt(#0,SOL_SOCKET,#1,&sockopt,&socklen);
+	ecl_enable_interrupts();
 
         @(return) = (ret == 0) ? ecl_make_integer(sockopt) : Cnil;
 }")))
@@ -1338,9 +1406,12 @@ GET-NAME-SERVICE-ERRNO")
 (defun get-sockopt-bool (fd const)
   (let ((ret (c-inline (fd const) (:int :int) t
 "{
-        int sockopt;
+        int sockopt, ret;
         socklen_t socklen = sizeof(int);
-        int ret = getsockopt(#0,SOL_SOCKET,#1,&sockopt,&socklen);
+
+	ecl_disable_interrupts();
+        ret = getsockopt(#0,SOL_SOCKET,#1,&sockopt,&socklen);
+	ecl_enable_interrupts();
 
         @(return) = (ret == 0) ? Ct : Cnil;
 }")))
@@ -1358,7 +1429,11 @@ GET-NAME-SERVICE-ERRNO")
 "{
 	struct timeval tv;
         socklen_t socklen = sizeof(struct timeval);
-        int ret = getsockopt(#0,SOL_SOCKET,#1,&tv,&socklen);
+        int ret;
+
+	ecl_disable_interrupts();
+	ret = getsockopt(#0,SOL_SOCKET,#1,&tv,&socklen);
+	ecl_enable_interrupts();
 
         @(return) = (ret == 0) ? ecl_make_doublefloat((double)tv.tv_sec
 					+ ((double)tv.tv_usec) / 1000000.0) : Cnil;
@@ -1371,7 +1446,12 @@ GET-NAME-SERVICE-ERRNO")
   (let ((ret (c-inline (fd const value) (:int :int :int) t
 "{
         int sockopt = #2;
-        int ret = setsockopt(#0,SOL_SOCKET,#1,&sockopt,sizeof(int));
+        int ret;
+
+	ecl_disable_interrupts();
+	ret = setsockopt(#0,SOL_SOCKET,#1,&sockopt,sizeof(int));
+	ecl_enable_interrupts();
+
         @(return) = (ret == 0) ? Ct : Cnil;
 }")))
     (if ret
@@ -1382,7 +1462,12 @@ GET-NAME-SERVICE-ERRNO")
   (let ((ret (c-inline (fd const value) (:int :int :object) t
 "{
         int sockopt = (#2 == Cnil) ? 0 : 1;
-        int ret = setsockopt(#0,SOL_SOCKET,#1,&sockopt,sizeof(int));
+        int ret;
+
+	ecl_disable_interrupts();
+	ret = setsockopt(#0,SOL_SOCKET,#1,&sockopt,sizeof(int));
+	ecl_enable_interrupts();
+
         @(return) = (ret == 0) ? Ct : Cnil;
 }")))
     (if ret
@@ -1397,10 +1482,12 @@ GET-NAME-SERVICE-ERRNO")
 	double tmp = #2;
 	int ret;
 
+	ecl_disable_interrupts();
 	tv.tv_sec = (int)tmp;
 	tv.tv_usec = (int)((tmp-floor(tmp))*1000000.0);
-
         ret = setsockopt(#0,SOL_SOCKET,#1,&tv,sizeof(struct timeval));
+	ecl_enable_interrupts();
+
         @(return) = (ret == 0) ? Ct : Cnil;
 }")))
     (if ret

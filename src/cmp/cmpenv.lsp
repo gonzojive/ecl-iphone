@@ -614,6 +614,10 @@
       (space (third x))
       (speed (fourth x)))))
 
+(defun policy-check-stack-overflow (&optional (env *cmp-env*))
+  "Do we add a stack check to every function?"
+  (>= (cmp-env-optimization 'safety env) 2))
+
 (defun policy-inline-slot-access-p (&optional (env *cmp-env*))
   "Do we inline access to structures and sealed classes?"
   (or (< (cmp-env-optimization 'safety env) 2)

@@ -727,7 +727,7 @@ contblock_sweep_phase(void)
 			q = p + 4;
 			while (q < e && !get_mark_bit((int *)q))
 				q += 4;
-			cl_dealloc(p);
+			ecl_dealloc(p);
 			p = q + 4;
 		}
 		i = j + 1;
@@ -746,6 +746,7 @@ cl_object (*GC_exit_hook)() = NULL;
 void
 ecl_gc(cl_type t)
 {
+	const cl_env_ptr env = ecl_process_env();
 	int i, j;
 	int tm;
 	int gc_start = ecl_runtime();
@@ -775,8 +776,8 @@ ecl_gc(cl_type t)
 #error "We need to stop all other threads"
 #endif /* THREADS */
 
-	interrupts = ecl_interrupt_enable;
-	ecl_interrupt_enable = 0;
+	interrupts = env->disable_interrupts;
+	env->disable_interrupts = 1;
 
 	collect_blocks = t > t_end;
 	if (collect_blocks)
@@ -863,7 +864,7 @@ ecl_gc(cl_type t)
 		fflush(stdout);
 	}
 
-	ecl_interrupt_enable = interrupts;
+	env->disable_interrupts = interrupts;
 
 	if (GC_exit_hook != NULL)
 		(*GC_exit_hook)();
@@ -884,9 +885,7 @@ ecl_gc(cl_type t)
 		fflush(stdout);
 	}
 
-	if (cl_env.interrupt_pending) si_check_pending_interrupts();
-	
-	end_critical_section();
+	if (env->interrupt_pending) ecl_check_pending_interrupts();
 }
 
 /*

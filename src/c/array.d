@@ -335,12 +335,12 @@ si_make_pure_array(cl_object etype, cl_object dims, cl_object adj,
 		FEerror(":FILL-POINTER may not be specified for an array of rank ~D",
 			1, MAKE_FIXNUM(r));
 	}
-	x = cl_alloc_object(t_array);
+	x = ecl_alloc_object(t_array);
 	x->array.displaced = Cnil;
 	x->array.self.t = NULL;		/* for GC sake */
 	x->array.rank = r;
 	x->array.elttype = (short)ecl_symbol_to_elttype(etype);
-	x->array.dims = (cl_index *)cl_alloc_atomic_align(sizeof(cl_index)*r, sizeof(cl_index));
+	x->array.dims = (cl_index *)ecl_alloc_atomic_align(sizeof(cl_index)*r, sizeof(cl_index));
 	for (i = 0, s = 1;  i < r;  i++, dims = ECL_CONS_CDR(dims)) {
 		j = ecl_fixnum_in_range(@'make-array', "dimension",
 					ECL_CONS_CAR(dims), 0, ADIMLIM);
@@ -374,15 +374,15 @@ si_make_vector(cl_object etype, cl_object dim, cl_object adj,
 	aet = ecl_symbol_to_elttype(etype);
 	d = ecl_fixnum_in_range(@'make-array',"dimension",dim,0,ADIMLIM);
 	if (aet == aet_bc) {
-		x = cl_alloc_object(t_base_string);
+		x = ecl_alloc_object(t_base_string);
 	} else if (aet == aet_bit) {
-		x = cl_alloc_object(t_bitvector);
+		x = ecl_alloc_object(t_bitvector);
 #ifdef ECL_UNICODE
 	} else if (aet == aet_ch) {
-		x = cl_alloc_object(t_string);
+		x = ecl_alloc_object(t_string);
 #endif
 	} else {
-		x = cl_alloc_object(t_vector);
+		x = ecl_alloc_object(t_vector);
 		x->vector.elttype = (short)aet;
 	}
 	x->vector.self.t = NULL;		/* for GC sake */
@@ -419,12 +419,11 @@ ecl_array_allocself(cl_object x)
 	cl_index i, d;
 
 	d = x->array.dim;
-	start_critical_section(); /* avoid losing elts */
 	switch (ecl_array_elttype(x)) {
 	/* assign self field only after it has been filled, for GC sake  */
 	case aet_object: {
 		cl_object *elts;
-		elts = (cl_object *)cl_alloc_align(sizeof(cl_object)*d, sizeof(cl_object));
+		elts = (cl_object *)ecl_alloc_align(sizeof(cl_object)*d, sizeof(cl_object));
 		for (i = 0;  i < d;  i++)
 			elts[i] = Cnil;
 		x->array.self.t = elts;
@@ -433,7 +432,7 @@ ecl_array_allocself(cl_object x)
 #ifdef ECL_UNICODE
 	case aet_ch: {
 		cl_object *elts;
-		elts = (cl_object *)cl_alloc_align(sizeof(cl_object)*d, sizeof(cl_object));
+		elts = (cl_object *)ecl_alloc_align(sizeof(cl_object)*d, sizeof(cl_object));
 		for (i = 0;  i < d;  i++)
 			elts[i] = CODE_CHAR(' ');
 		x->string.self = elts;
@@ -441,8 +440,7 @@ ecl_array_allocself(cl_object x)
 	      }
 #endif
 	case aet_bc: {
-		char *elts;
-		elts = (char *)cl_alloc_atomic(d+1);
+		unsigned char *elts = (unsigned char *)ecl_alloc_atomic(d+1);
 		for (i = 0;  i < d;  i++)
 			elts[i] = ' ';
 		elts[d] = '\0';
@@ -452,7 +450,7 @@ ecl_array_allocself(cl_object x)
 	case aet_bit: {
 		byte *elts;
 		d = (d+(CHAR_BIT-1))/CHAR_BIT;
-		elts = (byte *)cl_alloc_atomic(d);
+		elts = (byte *)ecl_alloc_atomic(d);
 		for (i = 0;  i < d;  i++)
 			elts[i] = '\0';
 		x->vector.offset = 0;
@@ -461,7 +459,7 @@ ecl_array_allocself(cl_object x)
 	      }
 	case aet_fix: {
 		cl_fixnum *elts;
-		elts = (cl_fixnum *)cl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
+		elts = (cl_fixnum *)ecl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
 		for (i = 0;  i < d;  i++)
 			elts[i] = 0;
 		x->array.self.fix = elts;
@@ -469,7 +467,7 @@ ecl_array_allocself(cl_object x)
 	      }
 	case aet_index: {
 		cl_fixnum *elts;
-		elts = (cl_fixnum *)cl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
+		elts = (cl_fixnum *)ecl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
 		for (i = 0;  i < d;  i++)
 			elts[i] = 0;
 		x->array.self.fix = elts;
@@ -477,7 +475,7 @@ ecl_array_allocself(cl_object x)
 	      }
 	case aet_sf: {
 		float *elts;
-		elts = (float *)cl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
+		elts = (float *)ecl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
 		for (i = 0;  i < d;  i++)
 			elts[i] = 0.0;
 		x->array.self.sf = elts;
@@ -485,7 +483,7 @@ ecl_array_allocself(cl_object x)
 	      }
 	case aet_df: {
 		double *elts;
-		elts = (double *)cl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
+		elts = (double *)ecl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
 		for (i = 0;  i < d;  i++)
 			elts[i] = 0.0;
 		x->array.self.df = elts;
@@ -493,7 +491,7 @@ ecl_array_allocself(cl_object x)
 	      }
 	case aet_b8: {
 		uint8_t *elts;
-		elts = (uint8_t *)cl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
+		elts = (uint8_t *)ecl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
 		for (i = 0;  i < d;  i++)
 			elts[i] = 0;
 		x->array.self.b8 = elts;
@@ -501,14 +499,13 @@ ecl_array_allocself(cl_object x)
 	      }
 	case aet_i8: {
 		int8_t *elts;
-		elts = (int8_t *)cl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
+		elts = (int8_t *)ecl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
 		for (i = 0;  i < d;  i++)
 			elts[i] = 0;
 		x->array.self.i8 = elts;
 		break;
 	      }
 	}
-	end_critical_section();
 }
 
 cl_elttype
@@ -738,6 +735,7 @@ cl_adjustable_array_p(cl_object a)
 cl_object
 cl_array_displacement(cl_object a)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object to_array;
 	cl_index offset;
 
@@ -789,6 +787,7 @@ cl_array_displacement(cl_object a)
 cl_object
 cl_svref(cl_object x, cl_object index)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_index i;
 
 	while (type_of(x) != t_vector ||
@@ -806,6 +805,7 @@ cl_svref(cl_object x, cl_object index)
 cl_object
 si_svset(cl_object x, cl_object index, cl_object v)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_index i;
 
 	while (type_of(x) != t_vector ||
@@ -823,6 +823,7 @@ si_svset(cl_object x, cl_object index, cl_object v)
 cl_object
 cl_array_has_fill_pointer_p(cl_object a)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object r;
  AGAIN:
 	switch (type_of(a)) {
@@ -847,6 +848,7 @@ cl_array_has_fill_pointer_p(cl_object a)
 cl_object
 cl_fill_pointer(cl_object a)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	assert_type_vector(a);
 	if (!a->vector.hasfillp) {
 		a = ecl_type_error(@'fill-pointer', "argument",
@@ -861,6 +863,7 @@ cl_fill_pointer(cl_object a)
 cl_object
 si_fill_pointer_set(cl_object a, cl_object fp)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	assert_type_vector(a);
  AGAIN:
 	if (a->vector.hasfillp) {
@@ -883,6 +886,7 @@ si_fill_pointer_set(cl_object a, cl_object fp)
 cl_object
 si_replace_array(cl_object olda, cl_object newa)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object dlist;
 	if (type_of(olda) != type_of(newa)
 	    || (type_of(olda) == t_array && olda->array.rank != newa->array.rank))

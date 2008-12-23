@@ -532,6 +532,8 @@ AC_CHECK_FUNCS( [expf logf sqrtf cosf sinf tanf sinhf coshf tanhf] \
 
 AC_CHECK_FUNCS( [sched_yield uname fseeko] )
 
+AC_CHECK_FUNC( [mprotect], AC_DEFINE(ECL_USE_MPROTECT) )
+
 dnl =====================================================================
 dnl Checks for system services
 

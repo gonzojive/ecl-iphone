@@ -111,7 +111,7 @@ make_package_hashtable()
 	cl_object h;
 	cl_index hsize = 128;
 
-	h = cl_alloc_object(t_hashtable);
+	h = ecl_alloc_object(t_hashtable);
 	h->hash.lockable = 0;
 	h->hash.test = htt_pack;
 	h->hash.size = hsize;
@@ -120,7 +120,7 @@ make_package_hashtable()
 	h->hash.factor = 0.7;
 	h->hash.entries = 0;
 	h->hash.data = NULL; /* for GC sake */
-	h->hash.data = (struct ecl_hashtable_entry *)cl_alloc(hsize * sizeof(struct ecl_hashtable_entry));
+	h->hash.data = (struct ecl_hashtable_entry *)ecl_alloc(hsize * sizeof(struct ecl_hashtable_entry));
 	return cl_clrhash(h);
 }
 
@@ -169,7 +169,7 @@ ecl_make_package(cl_object name, cl_object nicknames, cl_object use_list)
 				other, 1, name);
 		return other;
 	}
-	x = cl_alloc_object(t_package);
+	x = ecl_alloc_object(t_package);
 	x->pack.internal = make_package_hashtable();
 	x->pack.external = make_package_hashtable();
 #ifdef ECL_THREADS
@@ -279,7 +279,7 @@ ecl_find_package_nolock(cl_object name)
 	/* Note that this function may actually be called _before_ symbols are set up
 	 * and bound! */
 	if (ecl_get_option(ECL_OPT_BOOTED) &&
-	    SYM_VAL(@'si::*relative-package-names*') != Cnil) {
+	    ECL_SYM_VAL(ecl_process_env(), @'si::*relative-package-names*') != Cnil) {
 		return si_find_relative_package(1, name);
 	}
 #endif
@@ -301,15 +301,14 @@ si_coerce_to_package(cl_object p)
 cl_object
 ecl_current_package(void)
 {
-	cl_object x;
-
-	x = ecl_symbol_value(@'*package*');
+	cl_object x = ecl_symbol_value(@'*package*');
 	if (type_of(x) != t_package) {
-		ECL_SETQ(@'*package*', cl_core.user_package);
+		const cl_env_ptr env = ecl_process_env();
+		ECL_SETQ(env, @'*package*', cl_core.user_package);
 		FEerror("The value of *PACKAGE*, ~S, was not a package",
 			1, x);
 	}
-	return(x);
+	return x;
 }
 
 /*
@@ -329,11 +328,6 @@ ecl_intern(cl_object name, cl_object p, int *intern_flag)
 	cl_object s, ul;
 
 	name = ecl_check_type_string(@'intern', name);
-#ifdef ECL_UNICODE
-	if (ecl_fits_in_base_string(name)) {
-		name = si_copy_to_simple_base_string(name);
-	}
-#endif
 	p = si_coerce_to_package(p);
  TRY_AGAIN_LABEL:
 	PACKAGE_LOCK(p);
@@ -389,11 +383,6 @@ ecl_find_symbol_nolock(cl_object name, cl_object p, int *intern_flag)
 	cl_object s, ul;
 
 	name = ecl_check_type_string(@'find-symbol', name);
-#ifdef ECL_UNICODE
-	if (ecl_fits_in_base_string(name)) {
-		name = si_copy_to_simple_base_string(name);
-	}
-#endif
 	s = ecl_gethash_safe(name, p->pack.external, OBJNULL);
 	if (s != OBJNULL) {
 		*intern_flag = EXTERNAL;
@@ -782,8 +771,9 @@ ecl_unuse_package(cl_object x, cl_object p)
 cl_object
 si_select_package(cl_object pack_name)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object p = si_coerce_to_package(pack_name);
-	@(return (ECL_SETQ(@'*package*', p)))
+	@(return (ECL_SETQ(the_env, @'*package*', p)))
 }
 
 cl_object
@@ -1051,6 +1041,7 @@ BEGIN:
 cl_object
 si_package_hash_tables(cl_object p)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object he, hi, u;
 	assert_type_package(p);
 	PACKAGE_LOCK(p);

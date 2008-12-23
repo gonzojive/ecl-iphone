@@ -128,6 +128,7 @@
 	    " VLEX" *reservation-cmacro*
             " CLSR" *reservation-cmacro*
 	    " STCK" *reservation-cmacro*)
+    (wt-nl "const cl_env_ptr cl_env_copy = ecl_process_env();")
     (wt-nl "cl_object value0;")
     (wt-nl "cl_object *VVtemp;")
     (when shared-data
@@ -349,7 +350,7 @@
       " CLSR" *reservation-cmacro*
       " STCK" *reservation-cmacro*)
   (wt-nl "cl_object value0;")
-  (when sp (wt-nl "bds_check;"))
+  (when sp (wt-nl "ecl_bds_check(cl_env_copy);"))
   ; (when (compiler-push-events) (wt-nl "ihs_check;"))
   )
 
@@ -403,7 +404,7 @@
     (wt-nl1 "{")
     (when (compiler-check-args)
       (wt-nl "check_arg(" (length arg-types) ");"))
-    (wt-nl "NVALUES=1;")
+    (wt-nl "cl_env_copy->nvalues=1;")
     (wt-nl "return " (case return-type
                             (FIXNUM "MAKE_FIXNUM")
                             (CHARACTER "CODE_CHAR")
@@ -587,9 +588,12 @@
 	" VLEX" *reservation-cmacro*
 	" CLSR" *reservation-cmacro*
 	" STCK" *reservation-cmacro*)
+    (wt-nl "const cl_env_ptr cl_env_copy = ecl_process_env();")
     (wt-nl *volatile* "cl_object value0;")
     (when (>= (fun-debug fun) 2)
       (wt-nl "struct ihs_frame ihs;"))
+    (when (policy-check-stack-overflow)
+      (wt-nl "ecl_cs_check(cl_env_copy,value0);"))
     (when (eq (fun-closure fun) 'CLOSURE)
       (let ((clv-used (remove-if
 		       #'(lambda (x)
@@ -627,7 +631,7 @@
     ;; name into the invocation stack
     (when (>= (fun-debug fun) 2)
       (push 'IHS *unwind-exit*)
-      (wt-nl "ihs_push(&ihs," (add-symbol (fun-name fun)) ",Cnil);"))
+      (wt-nl "ecl_ihs_push(cl_env_copy,&ihs," (add-symbol (fun-name fun)) ",Cnil);"))
 
     (c2lambda-expr (c1form-arg 0 lambda-expr)
 		   (c1form-arg 2 lambda-expr)

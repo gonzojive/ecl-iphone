@@ -636,6 +636,8 @@ put_declaration(void)
   int i;
   int simple_varargs;
 
+  put_lineno();
+  fprintf(out, "\tconst cl_env_ptr the_env = ecl_process_env();\n");
   for (i = 0;  i < nopt;  i++) {
     put_lineno();
     fprintf(out, "\tcl_object %s;\n", optional[i].o_var);
@@ -774,10 +776,10 @@ put_return(void)
 		fprintf(out, "cl_object __value%d = %s;\n", i, result[i]);
 	  }
 	  put_tabs(t);
-	  fprintf(out, "NVALUES = %d;\n", nres);
+	  fprintf(out, "the_env->nvalues = %d;\n", nres);
 	  for (i = nres-1;  i > 0;  i--) {
 		put_tabs(t);
-		fprintf(out, "VALUES(%d) = __value%d;\n", i, i);
+		fprintf(out, "the_env->values[%d] = __value%d;\n", i, i);
 	  }
 	  put_tabs(t);
 	  fprintf(out, "return __value0;\n");

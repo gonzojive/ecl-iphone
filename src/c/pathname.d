@@ -23,6 +23,7 @@
 
 #include <ecl/ecl.h>
 #include <ecl/ecl-inl.h>
+#include <ecl/internal.h>
 #include <limits.h>
 #include <string.h>
 #include <ctype.h>
@@ -122,7 +123,7 @@ ecl_make_pathname(cl_object host, cl_object device, cl_object directory,
 {
 	cl_object x, p, component;
 
-	p = cl_alloc_object(t_pathname);
+	p = ecl_alloc_object(t_pathname);
 	if (ecl_stringp(host))
 		p->pathname.logical = ecl_logical_hostname_p(host);
 	else if (host == Cnil)
@@ -624,10 +625,11 @@ si_default_pathname_defaults(void)
 	 * this routine might itself try to use the value of this variable. */
 	cl_object path = ecl_symbol_value(@'*default-pathname-defaults*');
 	while (type_of(path) != t_pathname) {
-		bds_bind(@'*default-pathname-defaults*', si_getcwd(0));
+		const cl_env_ptr the_env = ecl_process_env();
+		ecl_bds_bind(the_env, @'*default-pathname-defaults*', si_getcwd(0));
 		path = ecl_type_error(@'pathname', "*default-pathname-defaults*",
 				      path, @'pathname');
-		bds_unwind1();
+		ecl_bds_unwind1(the_env);
 	}
 	@(return path)
 }
@@ -642,25 +644,21 @@ L:
 #endif
 	case t_base_string:
 		x = cl_parse_namestring(1, x);
-
 	case t_pathname:
 		break;
-
 	case t_stream:
 		switch ((enum ecl_smmode)x->stream.mode) {
 		case smm_input:
 		case smm_output:
 		case smm_probe:
 		case smm_io:
-			x = x->stream.object1;
-			/*
-				The file was stored in stream.object1.
-				See open.
-			*/
+		case smm_input_file:
+		case smm_output_file:
+		case smm_io_file:
+			x = IO_STREAM_FILENAME(x);
 			goto L;
-
 		case smm_synonym:
-			x = ecl_symbol_value(x->stream.object0);
+			x = SYNONYM_STREAM_STREAM(x);
 			goto L;
 		default:
 			;/* Fall through to error message */
@@ -807,8 +805,10 @@ si_coerce_to_filename(cl_object pathname_orig)
 		FEerror("Too long filename: ~S.", 1, namestring);
 #ifdef ECL_UNICODE
 	if (type_of(namestring) == t_string) {
-		FEerror("The filesystem does not accept filenames with extended characters: ~S",
-			1, namestring);
+		if (!ecl_fits_in_base_string(namestring))
+			FEerror("The filesystem does not accept filenames with extended characters: ~S",
+				1, namestring);
+		namestring = si_copy_to_simple_base_string(namestring);
 	}
 #endif
 	return namestring;
@@ -881,7 +881,7 @@ ecl_namestring(cl_object x, int truncate_if_unreadable)
 	 * or using ecl_make_pathname(). In all of these cases ECL will complain
 	 * at creation time if the pathname has wrong components.
 	 */
-	buffer = ecl_make_string_output_stream(128);
+	buffer = ecl_make_string_output_stream(128, 1);
 	logical = x->pathname.logical;
 	host = x->pathname.host;
 	if (logical) {
@@ -1534,7 +1534,7 @@ copy_list_wildcards(cl_object *wilds, cl_object to)
 
 	if (source->pathname.logical != from->pathname.logical)
 		goto error;
-	out = cl_alloc_object(t_pathname);
+	out = ecl_alloc_object(t_pathname);
 	out->pathname.logical = to->pathname.logical;
 
 	/* Match host names */

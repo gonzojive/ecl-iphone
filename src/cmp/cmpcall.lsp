@@ -299,7 +299,7 @@
       (format nil "env~D" n)))
 
 (defun wt-stack-pointer (narg)
-  (wt "cl_env.stack_top-" narg))
+  (wt "cl_env_copy->stack_top-" narg))
 
 (defun wt-call (fun args &optional fname)
   (wt fun "(")

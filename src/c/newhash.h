@@ -144,7 +144,7 @@ static cl_index hash_word(cl_index c, cl_index w)
 	return c;
 }
 
-static cl_index hash_base_string(const char *s, cl_index len, cl_index h)
+static cl_index hash_base_string(const unsigned char *s, cl_index len, cl_index h)
 {
 	cl_index a = GOLDEN_RATIO, b = GOLDEN_RATIO, i;
 	for (i = len; i >= 3; i -= 3) {
@@ -179,4 +179,3 @@ static cl_index hash_full_string(const cl_object *s, cl_index len, cl_index h)
 	mix(a, b, h);
 	return h;
 }
-

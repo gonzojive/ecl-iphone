@@ -102,16 +102,17 @@ static cl_object doformat(cl_narg narg, cl_object strm, cl_object string, cl_va_
 static cl_object
 get_aux_stream(void)
 {
+	cl_env_ptr env = ecl_process_env();
 	cl_object stream;
 
-	start_critical_section();
-	if (cl_env.fmt_aux_stream == Cnil)
-		stream = ecl_make_string_output_stream(64);
-	else {
-		stream = cl_env.fmt_aux_stream;
-		cl_env.fmt_aux_stream = Cnil;
+	ecl_disable_interrupts_env(env);
+	if (env->fmt_aux_stream == Cnil) {
+		stream = ecl_make_string_output_stream(64, 1);
+	} else {
+		stream = env->fmt_aux_stream;
+		env->fmt_aux_stream = Cnil;
 	}
-	end_critical_section();
+	ecl_enable_interrupts_env(env);
 	return stream;
 }
 
@@ -410,15 +411,16 @@ static void
 fmt_integer(format_stack fmt, cl_object x, bool colon, bool atsign,
 	    int radix, int mincol, int padchar, int commachar)
 {
+	const cl_env_ptr env = ecl_process_env();
 	int l, l1;
 	int s;
 
 	if (!FIXNUMP(x) && type_of(x) != t_bignum) {
 		fmt_prepare_aux_stream(fmt);
-		bds_bind(@'*print-escape*', Cnil);
-		bds_bind(@'*print-base*', MAKE_FIXNUM(radix));
+		ecl_bds_bind(env, @'*print-escape*', Cnil);
+		ecl_bds_bind(env, @'*print-base*', MAKE_FIXNUM(radix));
 		si_write_object(x, fmt->aux_stream);
-		bds_unwind_n(2);
+		ecl_bds_unwind_n(env, 2);
 		l = fmt->aux_string->string.fillp;
 		mincol -= l;
 		while (mincol-- > 0)
@@ -428,10 +430,10 @@ fmt_integer(format_stack fmt, cl_object x, bool colon, bool atsign,
 		return;
 	}
 	fmt_prepare_aux_stream(fmt);
-	bds_bind(@'*print-radix*', Cnil);
-	bds_bind(@'*print-base*', MAKE_FIXNUM(radix));
+	ecl_bds_bind(env, @'*print-radix*', Cnil);
+	ecl_bds_bind(env, @'*print-base*', MAKE_FIXNUM(radix));
 	si_write_object(x, fmt->aux_stream);
-	bds_unwind_n(2);
+	ecl_bds_unwind_n(env, 2);
 	l = l1 = fmt->aux_string->string.fillp;
 	s = 0;
 	if (tempstr(fmt, s) == '-')
@@ -623,6 +625,7 @@ fmt_roman(format_stack fmt, int i, int one, int five, int ten, bool colon)
 static void
 fmt_radix(format_stack fmt, bool colon, bool atsign)
 {
+	const cl_env_ptr env = ecl_process_env();
 	int radix, mincol, padchar, commachar;
 	cl_object x;
 	int i, j, k;
@@ -649,10 +652,10 @@ fmt_radix(format_stack fmt, bool colon, bool atsign)
 			return;
 		}
 		fmt_prepare_aux_stream(fmt);
-		bds_bind(@'*print-radix*', Cnil);
-		bds_bind(@'*print-base*', MAKE_FIXNUM(10));
+		ecl_bds_bind(env, @'*print-radix*', Cnil);
+		ecl_bds_bind(env, @'*print-base*', MAKE_FIXNUM(10));
 		si_write_object(x, fmt->aux_stream);
-		bds_unwind_n(2);
+		ecl_bds_unwind_n(env, 2);
 		s = 0;
 		i = fmt->aux_string->string.fillp;
 		if (i == 1 && tempstr(fmt, s) == '0') {
@@ -1428,7 +1431,7 @@ fmt_case(format_stack fmt, bool colon, bool atsign)
 	int up_colon;
 	bool b;
 
-	x = ecl_make_string_output_stream(64);
+	x = ecl_make_string_output_stream(64, 1);
 	i = fmt->ctl_index;
 	j = fmt_skip(fmt);
 	if (fmt->ctl_str[--j] != ')' || fmt->ctl_str[--j] != '~')
@@ -1441,7 +1444,7 @@ fmt_case(format_stack fmt, bool colon, bool atsign)
 	else
 		format(fmt, fmt->ctl_str + i, j - i);
 	fmt_copy1(fmt, &fmt_old);
-	x = x->stream.object0;
+	x = STRING_OUTPUT_STRING(x);
 	if (!colon && !atsign)
 		for (i = 0;  i < x->string.fillp;  i++) {
 			if (isupper(j = x->string.self[i]))
@@ -1706,7 +1709,7 @@ fmt_justification(format_stack fmt, volatile bool colon, bool atsign)
 
 	fields = Cnil;
 	for (;;) {
-		cl_object this_field = ecl_make_string_output_stream(64);
+		cl_object this_field = ecl_make_string_output_stream(64, 1);
 		i = fmt->ctl_index;
 		j0 = j = fmt_skip(fmt);
 		while (fmt->ctl_str[--j] != '~')
@@ -1726,7 +1729,7 @@ fmt_justification(format_stack fmt, volatile bool colon, bool atsign)
 		}
 		fmt->stream = this_field;
 		format(fmt, fmt->ctl_str + i, j - i);
-		fields = CONS(this_field->stream.object0, fields);
+		fields = CONS(STRING_OUTPUT_STRING(this_field), fields);
 		fmt_copy1(fmt, &fmt_old);
 
 		if (fmt->ctl_str[--j0] == '>') {
@@ -1864,7 +1867,7 @@ doformat(cl_narg narg, cl_object strm, cl_object string, cl_va_list args, bool i
 		fmt.indents = 0;
 	fmt.string = string;
 	fmt.aux_stream = get_aux_stream();
-	fmt.aux_string = fmt.aux_stream->stream.object0;
+	fmt.aux_string = STRING_OUTPUT_STRING(fmt.aux_stream);
 	if ((colon = ecl_setjmp(*fmt.jmp_buf))) {
 		if (--colon)
 			fmt_error(&fmt, "illegal ~:^");
@@ -1872,7 +1875,7 @@ doformat(cl_narg narg, cl_object strm, cl_object string, cl_va_list args, bool i
 		format(&fmt, string->string.self, string->string.fillp);
 		ecl_force_output(strm);
 	}
-	cl_env.fmt_aux_stream = fmt.aux_stream;
+	ecl_process_env()->fmt_aux_stream = fmt.aux_stream;
 	if (!in_formatter)
 		output = Cnil;
 	return output;
@@ -2103,12 +2106,16 @@ DIRECTIVE:
 	int null_strm = 0;
 @
 	if (Null(strm)) {
+#ifdef ECL_UNICODE
+		strm = ecl_alloc_adjustable_extended_string(64);
+#else
 		strm = cl_alloc_adjustable_base_string(64);
+#endif
 		null_strm = 1;
 	} else if (strm == Ct) {
 		strm = ecl_symbol_value(@'*standard-output*');
 	}
-	if (type_of(strm) == t_base_string) {
+	if (ecl_stringp(strm)) {
 		output = strm;
 		if (!output->base_string.hasfillp) {
 			cl_error(7, @'si::format-error',
@@ -2118,8 +2125,7 @@ DIRECTIVE:
 				 @':control-string', string,
 				 @':offset', MAKE_FIXNUM(0));
 			}
-		strm = ecl_make_string_output_stream(0);
-		strm->stream.object0 = output;
+		strm = si_make_string_output_stream_from_string(strm);
 		if (null_strm == 0)
 			output = Cnil;
 	}

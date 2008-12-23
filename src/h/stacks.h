@@ -5,6 +5,7 @@
 /*
     Copyright (c) 1984, Taiichi Yuasa and Masami Hagiya.
     Copyright (c) 1990, Giuseppe Attardi.
+    Copyright (c) 2000, Juan Jose Garcia-Ripoll
 
     ECoLisp is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
@@ -23,9 +24,9 @@ extern "C" {
  ***********/
 
 #ifdef ECL_DOWN_STACK
-#define ecl_cs_check(var) if ((int*)(&var) <= cl_env.cs_limit) ecl_cs_overflow()
+#define ecl_cs_check(env,var) if ((int*)(&var) <= (env)->cs_limit) ecl_cs_overflow()
 #else
-#define ecl_cs_check(var) if ((int*)(&var) >= cl_env.cs_limit) ecl_cs_overflow()
+#define ecl_cs_check(env,var) if ((int*)(&var) >= (env)->cs_limit) ecl_cs_overflow()
 #endif
 
 /**************
@@ -37,39 +38,46 @@ typedef struct bds_bd {
 	cl_object value;	/*  previous value of the symbol  */
 } *bds_ptr;
 
-#define	bds_check  \
-	((cl_env.bds_top >= cl_env.bds_limit)? bds_overflow() : (void)0)
+#define	ecl_bds_check(env) \
+	((env->bds_top >= env->bds_limit)? ecl_bds_overflow() : (void)0)
+
+typedef struct cl_env_struct *cl_env_ptr;
 
 #ifdef ECL_THREADS
-extern ECL_API void bds_bind(cl_object symbol, cl_object value);
-extern ECL_API void bds_push(cl_object symbol);
-extern ECL_API void bds_unwind1();
-extern ECL_API cl_object *ecl_symbol_slot(cl_object s);
-#define SYM_VAL(s) (*ecl_symbol_slot(s))
-#if 0
+extern ECL_API void ecl_bds_bind(cl_env_ptr env, cl_object symbol, cl_object v);
+extern ECL_API void ecl_bds_push(cl_env_ptr env, cl_object symbol);
+extern ECL_API void ecl_bds_unwind1(cl_env_ptr env);
+extern ECL_API cl_object *ecl_symbol_slot(cl_env_ptr env, cl_object s);
+extern ECL_API cl_object ecl_set_symbol(cl_env_ptr env, cl_object s, cl_object v);
+#define ECL_SYM_VAL(env,s) (*ecl_symbol_slot(env,s))
 #define ECL_SET(s,v) ((s)->symbol.value=(v))
-#define ECL_SETQ(s,v) (*ecl_symbol_slot(s)=(v))
+#define ECL_SETQ(env,s,v) (ecl_set_symbol(env,s,v))
 #else
-extern ECL_API cl_object ecl_set_symbol(cl_object s, cl_object v);
-#define ECL_SET(s,v) (ecl_set_symbol(s,v))
-#define ECL_SETQ(s,v) (ecl_set_symbol(s,v))
-#endif
-#else
-#define SYM_VAL(s) ((s)->symbol.value)
+#define ECL_SYM_VAL(env,s) ((s)->symbol.value)
 #define ECL_SET(s,v) ((s)->symbol.value=(v))
-#define ECL_SETQ(s,v) ((s)->symbol.value=(v))
-#define	bds_bind(sym, val)  \
-	(bds_check,(++cl_env.bds_top)->symbol = (sym),  \
-	cl_env.bds_top->value = SYM_VAL(sym),  \
-	SYM_VAL(sym) = (val))
-
-#define bds_push(sym) \
-	(bds_check,(++cl_env.bds_top)->symbol = (sym), cl_env.bds_top->value = SYM_VAL(sym))
-
-#define	bds_unwind1()  \
-	(SYM_VAL(cl_env.bds_top->symbol) = cl_env.bds_top->value, --cl_env.bds_top)
+#define ECL_SETQ(env,s,v) ((s)->symbol.value=(v))
+#define	ecl_bds_bind(env,sym,val) do {	\
+	const cl_env_ptr env_copy = (env);	\
+	const cl_object s = (sym);		\
+	const cl_object v = (val);		\
+	ecl_bds_check(env_copy);		\
+	(++(env_copy->bds_top))->symbol = s,	\
+	env_copy->bds_top->value = s->symbol.value; \
+	s->symbol.value = v; } while (0)
+#define	ecl_bds_push(env,sym) do {	\
+	const cl_env_ptr env_copy = (env);	\
+	const cl_object s = (sym);		\
+	const cl_object v = s->symbol.value;	\
+	ecl_bds_check(env_copy);		\
+	(++(env_copy->bds_top))->symbol = s,	\
+	env_copy->bds_top->value = s->symbol.value; } while (0);
+#define	ecl_bds_unwind1(env)  do {	\
+	const cl_env_ptr env_copy = (env); 		\
+	const cl_object s = env_copy->bds_top->symbol;	\
+	s->symbol.value = env_copy->bds_top->value;	\
+	--(env_copy->bds_top); } while (0)
 #endif /* ECL_THREADS */
-extern ECL_API void bds_unwind_n(int n);
+extern ECL_API void ecl_bds_unwind_n(cl_env_ptr env, int n);
 
 /****************************
  * INVOCATION HISTORY STACK
@@ -82,15 +90,20 @@ typedef struct ihs_frame {
 	cl_index index;
 } *ihs_ptr;
 
-#define ihs_push(r,f,e) do {	\
-	(r)->next=cl_env.ihs_top; (r)->function=(f); (r)->lex_env=(e); \
-	(r)->index=cl_env.ihs_top->index+1;\
-	cl_env.ihs_top = (r); \
+#define ecl_ihs_push(env,rec,fun,lisp_env) do { \
+	const cl_env_ptr __the_env = (env);	\
+	struct ihs_frame * const r = (rec);	\
+	r->next=__the_env->ihs_top;		\
+	r->function=(fun);			\
+	r->lex_env=(lisp_env);			\
+	r->index=__the_env->ihs_top->index+1;	\
+	__the_env->ihs_top = r; 		\
 } while(0)
 
-#define ihs_pop() do {\
-	if (cl_env.ihs_top->next == NULL) ecl_internal_error("Underflow in IHS stack"); \
-	cl_env.ihs_top = cl_env.ihs_top->next; \
+#define ecl_ihs_pop(env) do {				\
+	const cl_env_ptr __the_env = (env);		\
+	struct ihs_frame *r = __the_env->ihs_top;	\
+	if (r) __the_env->ihs_top = r->next;		\
 } while(0)
 
 extern ECL_API cl_object ihs_top_function_name(void);
@@ -102,16 +115,16 @@ extern ECL_API cl_object ihs_top_function_name(void);
  * Frames are established, for instance, by CATCH, BLOCK, TAGBODY,
  * LAMBDA, UNWIND-PROTECT, etc.
  *
- * Frames are established by frs_push(). For each call to frs_push()
- * there must be a corresponding frs_pop(). More precisely, since our
+ * Frames are established by ecl_frs_push(). For each call to ecl_frs_push()
+ * there must be a corresponding ecl_frs_pop(). More precisely, since our
  * frame mechanism relies on the C stack and on the setjmp/longjmp
  * functions, any function that creates a frame must also destroy it
- * with frs_pop() before returning.
+ * with ecl_frs_pop() before returning.
  *
  * Frames are identified by a value frs_val. This can be either a
  * unique identifier, created for each CATCH, BLOCK, etc, or a common
  * one ECL_PROTECT_TAG, used by UNWIND-PROTECT forms. The first type
- * of frames can be target of a search frs_sch() and thus one can jump
+ * of frames can be target of a search ecl_frs_sch() and thus one can jump
  * to them. The second type of frames are like barriers designed to
  * intercept the jumps to the outer frames and are called
  * automatically by the function unwind() whenever it jumps to a frame
@@ -126,9 +139,9 @@ typedef struct ecl_frame {
 	cl_index	frs_sp;
 } *ecl_frame_ptr;
 
-extern ECL_API ecl_frame_ptr _frs_push(register cl_object val);
-#define frs_push(val)  ecl_setjmp(_frs_push(val)->frs_jmpbuf)
-#define frs_pop() (cl_env.frs_top--)
+extern ECL_API ecl_frame_ptr _ecl_frs_push(register cl_env_ptr, register cl_object);
+#define ecl_frs_push(env,val)  ecl_setjmp(_ecl_frs_push(env,val)->frs_jmpbuf)
+#define ecl_frs_pop(env) ((env)->frs_top--)
 
 /*******************
  * ARGUMENTS STACK
@@ -202,47 +215,52 @@ extern ECL_API ecl_frame_ptr _frs_push(register cl_object val);
  *********************************/
 
 #define CL_NEWENV_BEGIN {\
-	cl_index __i = cl_stack_push_values(); \
+	const cl_env_ptr the_env = ecl_process_env(); \
+	cl_index __i = ecl_stack_push_values(the_env); \
 
 #define CL_NEWENV_END \
-	cl_stack_pop_values(__i); }
+	ecl_stack_pop_values(the_env,__i); }
 
-#define CL_UNWIND_PROTECT_BEGIN {\
+#define CL_UNWIND_PROTECT_BEGIN(the_env) do {	   \
 	bool __unwinding; ecl_frame_ptr __next_fr; \
+	const cl_env_ptr __the_env = (the_env);	   \
 	cl_index __nr; \
-	if (frs_push(ECL_PROTECT_TAG)) { \
-		__unwinding=1; __next_fr=cl_env.nlj_fr; \
+	if (ecl_frs_push(__the_env,ECL_PROTECT_TAG)) {	\
+		__unwinding=1; __next_fr=__the_env->nlj_fr; \
 	} else {
 
 #define CL_UNWIND_PROTECT_EXIT \
 	__unwinding=0; } \
-	frs_pop(); \
-	__nr = cl_stack_push_values();
+	ecl_frs_pop(__the_env); \
+	__nr = ecl_stack_push_values(__the_env);
 
 #define CL_UNWIND_PROTECT_END \
-	cl_stack_pop_values(__nr); \
-	if (__unwinding) ecl_unwind(__next_fr); }
+	ecl_stack_pop_values(__the_env,__nr);	\
+	if (__unwinding) ecl_unwind(__the_env,__next_fr); } while(0)
 
-#define CL_BLOCK_BEGIN(id) { \
-	cl_object id = new_frame_id(); \
-	if (frs_push(id) == 0)
+#define CL_BLOCK_BEGIN(the_env,id) do {   	\
+	const cl_object __id = new_frame_id();	\
+	const cl_env_ptr __the_env = (the_env);	\
+	if (ecl_frs_push(__the_env,__id) == 0)
 
-#define CL_BLOCK_END } \
-	frs_pop()
+#define CL_BLOCK_END \
+	ecl_frs_pop(__the_env); } while(0)
 
-#define CL_CATCH_BEGIN(tag) \
-	if (frs_push(tag) == 0) {
+#define CL_CATCH_BEGIN(the_env,tag) do {	\
+	const cl_env_ptr __the_env = (the_env);	\
+	if (ecl_frs_push(__the_env,tag) == 0) {
 
 #define CL_CATCH_END } \
-	frs_pop();
+	frs_pop(); } while (0)
 
-#define CL_CATCH_ALL_BEGIN \
-	if (frs_push(ECL_PROTECT_TAG) == 0) {
+#define CL_CATCH_ALL_BEGIN(the_env) do {	\
+	const cl_env_ptr __the_env = (the_env);	\
+	if (ecl_frs_push(__the_env,ECL_PROTECT_TAG) == 0) {
 
 #define CL_CATCH_ALL_IF_CAUGHT } else {
 
 #define CL_CATCH_ALL_END } \
-	frs_pop()
+	ecl_frs_pop(__the_env); } while(0)
 
 #ifdef __cplusplus
 }

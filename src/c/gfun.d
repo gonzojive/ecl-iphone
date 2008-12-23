@@ -41,7 +41,7 @@ si_set_raw_funcallable(cl_object instance, cl_object function)
         if (Null(function)) {
 		if (instance->instance.isgf == 2) {
                         int        length          = instance->instance.length-1;
-                        cl_object *slots           = (cl_object*)cl_alloc(sizeof(cl_object)*(length));
+                        cl_object *slots           = (cl_object*)ecl_alloc(sizeof(cl_object)*(length));
 			instance->instance.isgf    = 2;
                         memcpy(slots, instance->instance.slots, sizeof(cl_object)*(length));
 			instance->instance.slots   = slots;
@@ -51,7 +51,7 @@ si_set_raw_funcallable(cl_object instance, cl_object function)
 	} else	{
 		if (instance->instance.isgf == 0) {
                         int        length          = instance->instance.length+1;
-                        cl_object *slots           = (cl_object*)cl_alloc(sizeof(cl_object)*length);
+                        cl_object *slots           = (cl_object*)ecl_alloc(sizeof(cl_object)*length);
                         memcpy(slots, instance->instance.slots, sizeof(cl_object)*(length-1));
 			instance->instance.slots   = slots;
 			instance->instance.length  = length;
@@ -201,8 +201,9 @@ vector_hash_key(cl_object keys)
  */
 
 static cl_object *
-search_method_hash(cl_object keys, cl_object table)
+search_method_hash(cl_env_ptr env, cl_object keys)
 {
+	cl_object table = env->method_hash;
 	cl_index argno = keys->vector.fillp;
 	cl_index i = vector_hash_key(keys);
 	cl_index total_size = table->vector.dim;
@@ -211,7 +212,7 @@ search_method_hash(cl_object keys, cl_object table)
 	int k;
 	i = i % total_size;
 	i = i - (i % 3);
-	min_gen = cl_env.method_generation;
+	min_gen = env->method_generation;
 	min_e = 0;
 	for (k = 20; k--; ) {
 		cl_object *e = table->vector.self.t + i;
@@ -253,7 +254,7 @@ search_method_hash(cl_object keys, cl_object table)
 		ecl_internal_error("search_method_hash");
 	}
 	RECORD_KEY(min_e) = OBJNULL;
-	cl_env.method_generation++;
+	env->method_generation++;
  FOUND:
 	/*
 	 * Once we have reached here, we set the new generation of
@@ -261,12 +262,12 @@ search_method_hash(cl_object keys, cl_object table)
 	 * generation number does not become too large and we can
 	 * expire some elements.
 	 */
-	gen = cl_env.method_generation;
+	gen = env->method_generation;
 	RECORD_GEN_SET(min_e, gen);
 	if (gen >= total_size/2) {
 		cl_object *e = table->vector.self.t;
 		gen = 0.5*gen;
-		cl_env.method_generation -= gen;
+		env->method_generation -= gen;
 		for (i = table->vector.dim; i; i-= 3, e += 3) {
 			cl_fixnum g = RECORD_GEN(e) - gen;
 			if (g <= 0) {
@@ -281,12 +282,12 @@ search_method_hash(cl_object keys, cl_object table)
 }
 
 static cl_object
-get_spec_vector(cl_object frame, cl_object gf)
+get_spec_vector(cl_env_ptr env, cl_object frame, cl_object gf)
 {
 	cl_object *args = frame->frame.bottom;
 	cl_index narg = frame->frame.top - args;
 	cl_object spec_how_list = GFUN_SPEC(gf);
-	cl_object vector = cl_env.method_spec_vector;
+	cl_object vector = env->method_spec_vector;
 	cl_object *argtype = vector->vector.self.t;
 	int spec_no = 1;
 	argtype[0] = gf;
@@ -331,6 +332,7 @@ compute_applicable_method(cl_object frame, cl_object gf)
 cl_object
 _ecl_standard_dispatch(cl_object frame, cl_object gf)
 {
+	const cl_env_ptr env = ecl_process_env();
 	cl_object func, vector;
 	/*
 	 * We have to copy the frame because it might be stored in cl_env.values
@@ -346,23 +348,22 @@ _ecl_standard_dispatch(cl_object frame, cl_object gf)
 	
 #ifdef ECL_THREADS
 	/* See whether we have to clear the hash from some generic functions right now. */
-	if (cl_env.method_hash_clear_list != Cnil) {
+	if (env->method_hash_clear_list != Cnil) {
 		cl_object clear_list;
 		THREAD_OP_LOCK();
-		clear_list = cl_env.method_hash_clear_list;
+		clear_list = env->method_hash_clear_list;
 		loop_for_on_unsafe(clear_list) {
 			do_clear_method_hash(&cl_env, ECL_CONS_CAR(clear_list));
 		} end_loop_for_on;
-		cl_env.method_hash_clear_list = Cnil;
+		env->method_hash_clear_list = Cnil;
 		THREAD_OP_UNLOCK();
 	}
 #endif
-	vector = get_spec_vector(frame, gf);
+	vector = get_spec_vector(env, frame, gf);
 	if (vector == OBJNULL) {
 		func = compute_applicable_method(frame, gf);
 	} else {
-		cl_object table = cl_env.method_hash;
-		cl_object *e = search_method_hash(vector, table);
+		cl_object *e = search_method_hash(env, vector);
 		if (RECORD_KEY(e) != OBJNULL) {
 			func = RECORD_VALUE(e);
 		} else {
@@ -371,7 +372,7 @@ _ecl_standard_dispatch(cl_object frame, cl_object gf)
 			if (RECORD_KEY(e) != OBJNULL) {
 				/* The cache might have changed while we
 				 * computed applicable methods */
-				e = search_method_hash(vector, table);
+				e = search_method_hash(env, vector);
 			}
 			RECORD_KEY(e) = keys;
 			RECORD_VALUE(e) = func;

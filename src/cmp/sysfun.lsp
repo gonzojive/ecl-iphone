@@ -355,8 +355,6 @@
 (proclaim-function make-echo-stream (stream stream) echo-stream)
 (proclaim-function make-string-input-stream (*) string-stream)
 (proclaim-function make-string-output-stream (*) string-stream)
-(def-inline make-string-output-stream :always () string-stream
- "ecl_make_string_output_stream(128)")
 
 (proclaim-function get-output-stream-string (string-stream) string)
 (proclaim-function streamp (t) t :predicate t)
@@ -1108,7 +1106,7 @@ type_of(#0)==t_bitvector")
 (proclaim-function fboundp (symbol) t :predicate t)
 (proclaim-function symbol-value (symbol) t)
 (proclaim-function boundp (symbol) t :predicate t :no-side-effects t)
-(def-inline boundp :always (symbol) :bool "SYM_VAL(#0)!=OBJNULL")
+(def-inline boundp :always (symbol) :bool "ECL_SYM_VAL(cl_env_copy,#0)!=OBJNULL")
 
 (proclaim-function macro-function (symbol) t)
 (proclaim-function special-operator-p (symbol) t :predicate t)

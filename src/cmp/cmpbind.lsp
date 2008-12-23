@@ -86,9 +86,9 @@
   (cond ((and (var-p loc)
 	      (member (var-kind loc) '(global special))
 	      (eq (var-name loc) (var-name var)))
-	 (wt-nl "bds_push(" (var-loc var) ");"))
+	 (wt-nl "ecl_bds_push(cl_env_copy," (var-loc var) ");"))
 	(t
-	 (wt-nl "bds_bind(" (var-loc var) ",")
+	 (wt-nl "ecl_bds_bind(cl_env_copy," (var-loc var) ",")
 	 (wt-coerce-loc :object loc)
 	 (wt ");")))
   (push 'BDS-BIND *unwind-exit*)

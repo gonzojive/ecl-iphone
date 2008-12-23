@@ -196,13 +196,16 @@ typedef unsigned int uint32_t;
 /* Assembler implementation of APPLY and friends			*/
 /* #undef ECL_ASM_APPLY */
 
+/* Stack grows downwards						*/
+#define ECL_DOWN_STACK 1
+
+/* Use mprotect for fast interrupt dispatch				*/
+/* #undef ECL_USE_MPROTECT */
 
 /*
  * SYSTEM FEATURES:
  */
 
-/* Stack grows downwards						*/
-#define DOWN_STACK 1
 /* Arguments cannot be accessed as array				*/
 /* #undef NO_ARGS_ARRAY */
 /* Most significant byte first						*/

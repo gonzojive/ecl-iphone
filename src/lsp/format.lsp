@@ -1996,7 +1996,7 @@
 							:downcase)))))
 	    ,@(expand-directive-list before))
 	 #+ecl
-	 `(let ((string (make-array 10 :element-type 'base-char
+	 `(let ((string (make-array 10 :element-type 'character
 				       :fill-pointer 0 :adjustable t)))
 	    (unwind-protect
 		 (with-output-to-string (stream string)
@@ -2033,7 +2033,7 @@
 	     (before (subseq directives 0 posn))
 	     (jumped t)
 	     (after (nthcdr (1+ posn) directives))
-	     (string (make-array 10 :element-type 'base-char
+	     (string (make-array 10 :element-type 'character
 				    :adjustable t :fill-pointer 0)))
 	(unwind-protect
 	     (with-output-to-string (stream string)

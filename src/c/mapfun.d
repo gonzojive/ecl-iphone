@@ -22,7 +22,8 @@
 	struct ecl_stack_frame cdrs_frame_aux, cars_frame_aux; \
 	cl_object cdrs_frame, cars_frame; \
 	cl_index nargs; \
-	cdrs_frame = ecl_stack_frame_from_va_list((cl_object)&cdrs_frame_aux, list); \
+	cdrs_frame = ecl_stack_frame_from_va_list(ecl_process_env(),\
+						  (cl_object)&cdrs_frame_aux, list); \
 	cars_frame = ecl_stack_frame_copy((cl_object)&cars_frame_aux, cdrs_frame); \
 	nargs = ECL_STACK_FRAME_SIZE(cars_frame); \
 	if (nargs == 0) { \

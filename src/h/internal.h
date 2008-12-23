@@ -25,8 +25,8 @@ extern "C" {
 extern void init_all_symbols(void);
 extern void init_alloc(void);
 extern void init_backq(void);
-extern void init_big(void);
-extern void init_big_registers(void);
+extern void init_big(cl_env_ptr);
+extern void init_big_registers(cl_env_ptr);
 #ifdef CLOS
 extern void init_clos(void);
 #endif
@@ -39,17 +39,23 @@ extern void init_GC(void);
 extern void init_macros(void);
 extern void init_number(void);
 extern void init_read(void);
-extern void init_stacks(struct cl_env_struct *, int *);
+extern void init_stacks(cl_env_ptr, int *);
 extern void init_unixint(int pass);
 extern void init_unixtime(void);
 #ifdef mingw32
 extern void init_compiler(void);
 #endif
-extern void ecl_init_env(struct cl_env_struct *);
+#ifdef ECL_THREADS
+extern void init_threads(cl_env_ptr);
+#endif
+extern void ecl_init_env(cl_env_ptr);
 extern void init_lib_LSP(cl_object);
+
+extern cl_env_ptr _ecl_alloc_env(void);
 
 /* alloc.d/alloc_2.d */
 
+extern void _ecl_set_max_heap_size(cl_index new_size);
 extern cl_object ecl_alloc_bytecodes(cl_index data_size, cl_index code_size);
 
 /* compiler.d */
@@ -70,12 +76,12 @@ typedef struct cl_compiler_env *cl_compiler_env_ptr;
 
 /* interpreter.d */
 
-#define cl_stack_ref(n) cl_env.stack[n]
-#define cl_stack_index() (cl_env.stack_top-cl_env.stack)
+#define ecl_stack_ref(env,n) (env)->stack[n]
+#define ecl_stack_index(env) ((env)->stack_top-(env)->stack)
 
-#define ECL_BUILD_STACK_FRAME(name,frame)	\
+#define ECL_BUILD_STACK_FRAME(env,name,frame)	\
 	struct ecl_stack_frame frame;\
-	cl_object name = ecl_stack_frame_open((cl_object)&frame, 0);
+	cl_object name = ecl_stack_frame_open(env, (cl_object)&frame, 0);
 
 /* ffi.d */
 
@@ -116,6 +122,28 @@ extern void* ecl_dynamic_callback_make(cl_object data, enum ecl_ffi_calling_conv
 #define OPEN_RW	"w+b"
 #define OPEN_A	"ab"
 #define OPEN_RA	"a+b"
+
+#define STRING_OUTPUT_STRING(strm) (strm)->stream.object0
+#define STRING_OUTPUT_COLUMN(strm) (strm)->stream.int1
+#define STRING_INPUT_STRING(strm) (strm)->stream.object0
+#define STRING_INPUT_POSITION(strm) (strm)->stream.int0
+#define STRING_INPUT_LIMIT(strm) (strm)->stream.int1
+#define TWO_WAY_STREAM_INPUT(strm) (strm)->stream.object0
+#define TWO_WAY_STREAM_OUTPUT(strm) (strm)->stream.object1
+#define SYNONYM_STREAM_SYMBOL(strm) (strm)->stream.object0
+#define SYNONYM_STREAM_STREAM(strm) ecl_symbol_value((strm)->stream.object0)
+#define BROADCAST_STREAM_LIST(strm) (strm)->stream.object0
+#define ECHO_STREAM_INPUT(strm) (strm)->stream.object0
+#define ECHO_STREAM_OUTPUT(strm) (strm)->stream.object1
+#define CONCATENATED_STREAM_LIST(strm) (strm)->stream.object0
+#define IO_STREAM_FILE(strm) (FILE*)((strm)->stream.file)
+#define IO_STREAM_COLUMN(strm) (strm)->stream.int1
+#define IO_STREAM_ELT_TYPE(strm) (strm)->stream.object0
+#define IO_STREAM_FILENAME(strm) (strm)->stream.object1
+#define IO_FILE_DESCRIPTOR(strm) (int)((strm)->stream.file)
+#define IO_FILE_COLUMN(strm) (strm)->stream.int1
+#define IO_FILE_ELT_TYPE(strm) (strm)->stream.object0
+#define IO_FILE_FILENAME(strm) (strm)->stream.object1
 
 /* format.d */
 
@@ -192,8 +220,6 @@ extern void cl_write_object(cl_object x, cl_object stream);
 extern cl_fixnum ecl_runtime(void);
 
 /* unixint.d */
-
-extern bool ecl_interrupt_enable;
 
 #if defined(_MSC_VER) || defined(mingw32)
 # include <float.h>

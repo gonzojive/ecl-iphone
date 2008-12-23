@@ -392,7 +392,7 @@
 	       (loop for v in output-vars
 		     for i from 0
 		     do (let ((*destination* `(VALUE ,i))) (set-loc v)))
-	       (wt "NVALUES=" (length output-vars) ";")
+	       (wt "cl_env_copy->nvalues=" (length output-vars) ";")
 	       'VALUES))))))
 
 (defun c2c-inline (arguments &rest rest)

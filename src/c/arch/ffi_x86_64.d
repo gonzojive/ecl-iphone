@@ -31,7 +31,7 @@ struct ecl_fficall_reg *
 ecl_fficall_prepare_extra(struct ecl_fficall_reg *registers)
 {
 	if (registers == 0) {
-		registers = cl_alloc_atomic_align(sizeof(*registers), sizeof(long));
+		registers = ecl_alloc_atomic_align(sizeof(*registers), sizeof(long));
 	}
 	registers->int_registers_size = 0;
 	registers->fp_registers_size = 0;
@@ -165,8 +165,9 @@ ecl_dynamic_callback_execute(long i1, long i2, long i3, long i4, long i5, long i
 	enum ecl_ffi_tag tag;
 	long i_reg[MAX_INT_REGISTERS];
 	double f_reg[MAX_FP_REGISTERS];
+	cl_env_ptr env = ecl_process_env();
 
-	ECL_BUILD_STACK_FRAME(frame, aux);
+	ECL_BUILD_STACK_FRAME(env, frame, aux);
 
 	fun = CAR(cbk_info);
 	rtype = CADR(cbk_info);
@@ -276,7 +277,7 @@ ecl_dynamic_callback_make(cl_object data, enum ecl_ffi_calling_convention cc_typ
 	 *	nop				90
 	 *	nop				90
 	 */
-	char *buf = (char*)cl_alloc_atomic_align(sizeof(char)*32, 8);
+	char *buf = (char*)ecl_alloc_atomic_align(sizeof(char)*32, 8);
 	*(char*) (buf+0)  = 0x55;
 	*(char*) (buf+1)  = 0x54;
 	*(short*)(buf+2)  = 0xb848;

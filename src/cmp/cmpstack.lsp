@@ -39,7 +39,7 @@
   (let* ((new-destination (tmp-destination *destination*))
 	 (*temp* *temp*))
     (wt-nl "{ struct ecl_stack_frame _ecl_inner_frame_aux;")
-    (wt-nl *volatile* "cl_object _ecl_inner_frame = ecl_stack_frame_open((cl_object)&_ecl_inner_frame_aux,0);")
+    (wt-nl *volatile* "cl_object _ecl_inner_frame = ecl_stack_frame_open(cl_env_copy,(cl_object)&_ecl_inner_frame_aux,0);")
     (let* ((*destination* new-destination)
 	   (*unwind-exit* `((STACK ,+ecl-stack-frame-variable+) ,@*unwind-exit*)))
       (c2expr* body))
@@ -72,12 +72,12 @@
 
 (defun c1stack-pop (args)
   (c1expr `(c-inline ,args (t) (values &rest t)
-		     "VALUES(0)=ecl_stack_frame_pop_values(#0);"
+		     "cl_env_copy->values[0]=ecl_stack_frame_pop_values(#0);"
 		     :one-liner nil :side-effects t)))
 
 (defun c1apply-from-stack-frame (args)
   (c1expr `(c-inline ,args (t t) (values &rest t)
-		     "VALUES(0)=ecl_apply_from_stack_frame(#0,#1);"
+		     "cl_env_copy->values[0]=ecl_apply_from_stack_frame(#0,#1);"
 		     :one-liner nil :side-effects t)))
 
 (put-sysprop 'with-stack 'C1 #'c1with-stack)

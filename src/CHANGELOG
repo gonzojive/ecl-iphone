@@ -70,12 +70,51 @@ ECL 8.9.0:
 
  - *DEFAULT-PATHNAME-DEFAULTS* is initialized to the value of EXT:GETCWD.
 
+ - In an effort to convert all functions to the ecl_* prefix, we are deprecating
+   names while keeping the old definitions as macros. Look at external.h for
+   the list of already deprecated names.
+
+ - ECL builds using thread local storage when configured with --with-__thread and
+   the feature works on that platform.
+
+ - Functions compiled with (OPTIMIZE (SAFETY >= 2)) have an explicit stack
+   overflow check.
+
+ - Binary streams now can only read or write bytes whose size is a multiple of 8.
+
+ - ECL now has an implicit memory limit of 128Mb, which can be raised using
+   ecl_set_option(ECL_OPT_HEAP_SIZE, new_limit). Out of memory conditions are
+   detected and gracefully handled.
+
  - A new command line option, -debug, enables the debugger whenever an error
    happens. The converse is -nodebug.
 
  - We now ship version 0.7.3 of the portable CLX library.
 
  - A new method, STREAM-FILE-POSITION, has been added to the Gray streams package.
+
+* Streams:
+
+ - ECL has now a new and more easily extensible implementation of streams, based
+   on C structures with a method dispatch table. Apart from code reuse and better
+   maintainability, this allows a more sensible design of read/write-sequence.
+
+ - *STANDARD-INPUT*, *{STANDARD,ERROR,TRACE}-OUTPUT* are no longer synonyms to
+   *TERMINAL-IO* but directly the input or output streams associated to stdin,
+   stdout and stderr.
+
+ - Internally, ECL allows to work with POSIX file descriptors directly, without
+   using C streams.
+
+ - POSIX files and C streams now support different external formats. ECL
+   understands right now :UTF-8, :UCS-2 (bigendian), :UCS-4 (bigendian),
+   :LATIN-1 and :ISO-8859-1. If built _without_ support for Unicode, only the
+   last two are available.
+
+ - Readtables now include entries for extended characters.
+
+ - When a string is read, if the characters are base-char, the string is read
+   as a base-string.
 
 * Embedding:
 
@@ -101,6 +140,8 @@ ECL 8.9.0:
 	ECL_OPT_C_STACK_SIZE,
 	ECL_OPT_C_STACK_SAFETY_AREA,
 	ECL_OPT_SIGALTSTACK_SIZE,
+	ECL_OPT_HEAP_SIZE,
+	ECL_OPT_HEAP_SAFETY_AREA,
 	ECL_OPT_LIMIT
 
  - Two new convenience functions, ecl_defparameter() and ecl_defvar.
@@ -172,7 +213,7 @@ ECL 8.9.0:
 		(handler-bind ((ext:stack-overflow #'handle-overflow))
 		  (foo 1))))
 
- - New function (EXT:SET-STACK-SIZE type size) can resize type =
+ - New function (EXT:SET-LIMIT type size) can resize type =
    EXT:BINDING-STACK, EXT:LISP-STACK and EXT:FRAME-STACK.
 
  - FLOAT-SIGN returns the right value on negative zeros.
@@ -211,6 +252,8 @@ ECL 8.9.0:
  - At the toplevel, the value of *read-suppress* is ignored, so that
    setting (setf *read-suppress* nil) does not prevent the user from entering
    new commands.
+
+ - The routines for printing symbols expected the names to be base strings.
 
 ;;; Local Variables: ***
 ;;; mode:text ***

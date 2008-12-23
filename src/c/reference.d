@@ -126,14 +126,16 @@ si_coerce_to_function(cl_object fun)
 cl_object
 cl_symbol_value(cl_object sym)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object value;
 	if (Null(sym)) {
 		value = sym;
 	} else {
+		const cl_env_ptr env = ecl_process_env();
 		if (!SYMBOLP(sym)) {
 			FEtype_error_symbol(sym);
 		}
-		value = SYM_VAL(sym);
+		value = ECL_SYM_VAL(the_env, sym);
 		if (value == OBJNULL)
 			FEunbound_variable(sym);
 	}
@@ -143,13 +145,14 @@ cl_symbol_value(cl_object sym)
 cl_object
 cl_boundp(cl_object sym)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object output;
 	if (Null(sym)) {
 		output = Ct;
 	} else {
 		if (!SYMBOLP(sym))
 			FEtype_error_symbol(sym);
-		if (SYM_VAL(sym) == OBJNULL)
+		if (ECL_SYM_VAL(the_env, sym) == OBJNULL)
 			output = Cnil;
 		else
 			output = Ct;
@@ -160,6 +163,7 @@ cl_boundp(cl_object sym)
 cl_object
 cl_special_operator_p(cl_object form)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	int special = ecl_symbol_type(form) & stp_special_form;
 	@(return (special? Ct : Cnil))
 }

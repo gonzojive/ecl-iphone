@@ -80,12 +80,12 @@ cl_alloc_simple_base_string(cl_index length)
 {
 	cl_object x;
 
-	x = cl_alloc_object(t_base_string);
+	x = ecl_alloc_object(t_base_string);
 	x->base_string.hasfillp     = FALSE;
 	x->base_string.adjustable   = FALSE;
 	x->base_string.displaced    = Cnil;
 	x->base_string.dim          = (x->base_string.fillp = length);
-	x->base_string.self         = (char *)cl_alloc_atomic(length+1);
+	x->base_string.self         = (unsigned char*)ecl_alloc_atomic(length+1);
 	x->base_string.self[length] = x->base_string.self[0] = 0;
 	return(x);
 }
@@ -97,12 +97,12 @@ cl_alloc_simple_extended_string(cl_index length)
 	cl_object x;
 
         /* should this call si_make_vector? */
-	x = cl_alloc_object(t_string);
+	x = ecl_alloc_object(t_string);
 	x->string.hasfillp   = FALSE;
 	x->string.adjustable = FALSE;
 	x->string.displaced  = Cnil;
 	x->string.dim        = x->string.fillp = length;
-	x->string.self       = (cl_object *)cl_alloc_align(sizeof (cl_object)*length, sizeof (cl_object));
+	x->string.self       = (cl_object *)ecl_alloc_align(sizeof (cl_object)*length, sizeof (cl_object));
 	return(x);
 }
 #endif
@@ -122,6 +122,18 @@ cl_alloc_adjustable_base_string(cl_index l)
 	return output;
 }
 
+#ifdef ECL_UNICODE
+cl_object
+ecl_alloc_adjustable_extended_string(cl_index l)
+{
+	cl_object output = cl_alloc_simple_extended_string(l);
+	output->base_string.fillp = 0;
+	output->base_string.hasfillp = TRUE;
+ 	output->base_string.adjustable = TRUE;
+	return output;
+}
+#endif
+
 /*
 	Make_simple_base_string(s) makes a simple-base string from C string s.
 */
@@ -131,12 +143,12 @@ make_simple_base_string(char *s)
 	cl_object x;
 	cl_index l = strlen(s);
 
-	x = cl_alloc_object(t_base_string);
+	x = ecl_alloc_object(t_base_string);
 	x->base_string.hasfillp = FALSE;
 	x->base_string.adjustable = FALSE;
 	x->base_string.displaced = Cnil;
 	x->base_string.dim = (x->base_string.fillp = l);
-	x->base_string.self = s;
+	x->base_string.self = (unsigned char *)s;
 	
 	return(x);
 }
@@ -445,7 +457,8 @@ compare_strings(cl_object string1, cl_index s1, cl_index e1,
 #endif
 
 static int
-compare_base(char *s1, cl_index l1, char *s2, cl_index l2, int case_sensitive, cl_index *m)
+compare_base(unsigned char *s1, cl_index l1, unsigned char *s2, cl_index l2,
+	     int case_sensitive, cl_index *m)
 {
 	cl_index l, c1, c2;
 	for (l = 0; l < l1; l++, s1++, s2++) {
@@ -944,14 +957,14 @@ nstring_case(cl_narg narg, cl_object fun, int (*casefun)(int, bool *), cl_va_lis
 	for (i = 0, l = 0; i < narg; i++) {
 		cl_object s = si_coerce_to_base_string(cl_va_arg(args));
 		if (s->base_string.fillp) {
-			cl_stack_push(s);
+			ecl_stack_push(the_env, s);
 			l += s->base_string.fillp;
 		}
 	}
 	/* Do actual copying by recovering those strings */
 	output = cl_alloc_simple_base_string(l);
 	while (l) {
-		cl_object s = cl_stack_pop();
+		cl_object s = ecl_stack_pop(the_env);
 		size_t bytes = s->base_string.fillp;
 		l -= bytes;
 		memcpy(output->base_string.self + l, s->base_string.self, bytes);

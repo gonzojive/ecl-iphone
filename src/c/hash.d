@@ -92,12 +92,14 @@ _hash_equal(int depth, cl_hashkey h, cl_object x)
 		x = x->symbol.name;
 #ifdef ECL_UNICODE
 	case t_base_string:
-		return hash_base_string(x->base_string.self, x->base_string.fillp, h);
+		return hash_base_string((unsigned char *)x->base_string.self,
+					x->base_string.fillp, h);
 	case t_string:
-		return hash_full_string(x->base_string.self, x->base_string.fillp, h);
+		return hash_full_string(x->string.self, x->string.fillp, h);
 #else
 	case t_base_string:
-		return hash_string(h, x->base_string.self, x->base_string.fillp);
+		return hash_string(h, (unsigned char *)x->base_string.self,
+				   x->base_string.fillp);
 #endif
 	case t_pathname:
 		h = _hash_equal(0, h, x->pathname.directory);
@@ -349,13 +351,13 @@ ecl_extend_hashtable(cl_object hashtable)
 	} else {
 		new_size = fix(new_size_obj);
 	}
-	old = cl_alloc_object(t_hashtable);
+	old = ecl_alloc_object(t_hashtable);
 	old->hash = hashtable->hash;
 	hashtable->hash.data = NULL; /* for GC sake */
 	hashtable->hash.entries = 0;
 	hashtable->hash.size = new_size;
 	hashtable->hash.data = (struct ecl_hashtable_entry *)
-	  cl_alloc(new_size * sizeof(struct ecl_hashtable_entry));
+	  ecl_alloc(new_size * sizeof(struct ecl_hashtable_entry));
 	for (i = 0;  i < new_size;  i++) {
 		hashtable->hash.data[i].key = OBJNULL;
 		hashtable->hash.data[i].value = OBJNULL;
@@ -451,13 +453,13 @@ cl__make_hash_table(cl_object test, cl_object size, cl_object rehash_size,
 	/*
 	 * Build actual hash.
 	 */
-	h = cl_alloc_object(t_hashtable);
+	h = ecl_alloc_object(t_hashtable);
 	h->hash.test = htt;
 	h->hash.size = hsize;
         h->hash.entries = 0;
 	h->hash.data = NULL;	/* for GC sake */
 	h->hash.data = (struct ecl_hashtable_entry *)
-		cl_alloc(hsize * sizeof(struct ecl_hashtable_entry));
+		ecl_alloc(hsize * sizeof(struct ecl_hashtable_entry));
 	do_clrhash(h);
 
 	h->hash.rehash_size = rehash_size;
@@ -579,6 +581,7 @@ cl_hash_table_count(cl_object ht)
 static cl_object
 si_hash_table_iterate(cl_narg narg, cl_object env)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object index = CAR(env);
 	cl_object ht = CADR(env);
 	cl_fixnum i;

@@ -735,7 +735,7 @@ defined Lisp function and VALUE-TYPE is its the return type."
      (c-inline ,args ,arg-types ,result-type
 	       ,C-expr :one-liner t))))
 
-(defmacro defentry (name arg-types c-name)
+(defmacro defentry (name arg-types c-name &key no-interrupts)
 "Syntax: (defentry symbol ({arg-type}*) (value-type function-name))
 
 The compiler defines a Lisp function named by SYMBOL whose body consists of a
@@ -748,9 +748,15 @@ CHAR, CHAR*, FLOAT, DOUBLE are allowed for these types."
     (if (consp c-name)
 	(setf output-type (first c-name)
 	      c-name (second c-name)))
-    (setf c-name (string c-name))
-    `(defun ,name ,args
-       (c-inline ,args ,arg-types ,output-type
-                 ,(produce-function-call c-name (length arg-types))
-		 :one-liner t))))
+    (let* ((call (produce-function-call (string c-name) (length arg-types)))
+	   (full-text (if no-interrupts
+			  (concatenate 'string
+				       "ecl_disable_interrupts();@(return)="
+				       call
+				       ";ecl_enable_interrupts();")
+			  call)))
+      `(defun ,name ,args
+	 (c-inline ,args ,arg-types ,output-type
+		   ,full-text
+		   :one-liner ,(not no-interrupts))))))
 

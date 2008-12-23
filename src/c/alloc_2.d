@@ -37,6 +37,24 @@ static void finalize_queued();
  *		OBJECT ALLOCATION			  *
  **********************************************************/
 
+void
+_ecl_set_max_heap_size(cl_index new_size)
+{
+	const cl_env_ptr the_env = ecl_process_env();
+	ecl_disable_interrupts_env(the_env);
+	GC_set_max_heap_size(cl_core.max_heap_size = new_size);
+	ecl_enable_interrupts_env(the_env);
+}
+
+static void
+out_of_memory(cl_env_ptr the_env)
+{
+	the_env->string_pool = Cnil;
+	_ecl_set_max_heap_size(cl_core.max_heap_size +
+			       ecl_get_option(ECL_OPT_HEAP_SAFETY_AREA));
+	cl_error(1, @'ext::storage-exhausted');
+}
+
 #ifdef alloc_object
 #undef alloc_object
 #endif
@@ -44,9 +62,9 @@ static void finalize_queued();
 static size_t type_size[t_end];
 
 cl_object
-cl_alloc_object(cl_type t)
+ecl_alloc_object(cl_type t)
 {
-	cl_object obj;
+	const cl_env_ptr the_env = ecl_process_env();
 
 	/* GC_MALLOC already resets objects */
 	switch (t) {
@@ -54,18 +72,6 @@ cl_alloc_object(cl_type t)
 		return MAKE_FIXNUM(0); /* Immediate fixnum */
 	case t_character:
 		return CODE_CHAR(' '); /* Immediate character */
-	case t_codeblock:
-		obj = (cl_object)GC_MALLOC(sizeof(struct ecl_codeblock));
-		obj->cblock.locked = 0;
-		obj->cblock.links = Cnil;
-		obj->cblock.name = Cnil;
-		obj->cblock.next = Cnil;
-		obj->cblock.data_text = NULL;
-		obj->cblock.data = NULL;
-		obj->cblock.data_text_size = 0;
-		obj->cblock.data_size = 0;
-		obj->cblock.handle = NULL;
-		break;
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 #endif
@@ -73,9 +79,17 @@ cl_alloc_object(cl_type t)
 	case t_longfloat:
 #endif
 	case t_singlefloat:
-	case t_doublefloat:
+	case t_doublefloat: {
+		cl_object obj;
+		ecl_disable_interrupts_env(the_env);
 		obj = (cl_object)GC_MALLOC_ATOMIC(type_size[t]);
+		ecl_enable_interrupts_env(the_env);
+		if (obj != NULL) {
+			obj->d.t = t;
+			return obj;
+		}
 		break;
+	}
 	case t_bignum:
 	case t_ratio:
 	case t_complex:
@@ -109,14 +123,23 @@ cl_alloc_object(cl_type t)
         case t_condition_variable:
 #endif
 	case t_foreign:
+	case t_codeblock: {
+		cl_object obj;
+		ecl_disable_interrupts_env(the_env);
 		obj = (cl_object)GC_MALLOC(type_size[t]);
+		ecl_enable_interrupts_env(the_env);
+		if (obj != NULL) {
+			obj->d.t = t;
+			return obj;
+		}
 		break;
+	}
 	default:
 		printf("\ttype = %d\n", t);
 		ecl_internal_error("alloc botch.");
 	}
-	obj->d.t = t;
-	return obj;
+	out_of_memory(the_env);
+	return OBJNULL;
 }
 
 #ifdef make_cons
@@ -126,7 +149,12 @@ cl_alloc_object(cl_type t)
 cl_object
 ecl_cons(cl_object a, cl_object d)
 {
-	struct ecl_cons *obj = GC_MALLOC(sizeof(struct ecl_cons));
+	const cl_env_ptr the_env = ecl_process_env();
+	struct ecl_cons *obj;
+	ecl_disable_interrupts_env(the_env);
+	obj = GC_MALLOC(sizeof(struct ecl_cons));
+	ecl_enable_interrupts_env(the_env);
+	if (obj == NULL) out_of_memory(the_env);
 #ifdef ECL_SMALL_CONS
 	obj->car = a;
 	obj->cdr = d;
@@ -142,7 +170,12 @@ ecl_cons(cl_object a, cl_object d)
 cl_object
 ecl_list1(cl_object a)
 {
-	struct ecl_cons *obj = GC_MALLOC(sizeof(struct ecl_cons));
+	const cl_env_ptr the_env = ecl_process_env();
+	struct ecl_cons *obj;
+	ecl_disable_interrupts_env(the_env);
+	obj = GC_MALLOC(sizeof(struct ecl_cons));
+	ecl_enable_interrupts_env(the_env);
+	if (obj == NULL) out_of_memory(the_env);
 #ifdef ECL_SMALL_CONS
 	obj->car = a;
 	obj->cdr = Cnil;
@@ -156,11 +189,11 @@ ecl_list1(cl_object a)
 }
 
 cl_object
-cl_alloc_instance(cl_index slots)
+ecl_alloc_instance(cl_index slots)
 {
 	cl_object i;
-	i = cl_alloc_object(t_instance);
-	i->instance.slots = (cl_object *)cl_alloc(sizeof(cl_object) * slots);
+	i = ecl_alloc_object(t_instance);
+	i->instance.slots = (cl_object *)ecl_alloc(sizeof(cl_object) * slots);
 	i->instance.length = slots;
 	return i;
 }
@@ -168,13 +201,55 @@ cl_alloc_instance(cl_index slots)
 void *
 ecl_alloc_uncollectable(size_t size)
 {
-	return GC_MALLOC_UNCOLLECTABLE(size);
+	const cl_env_ptr the_env = ecl_process_env();
+	void *output;
+	ecl_disable_interrupts_env(the_env);
+	output = GC_MALLOC_UNCOLLECTABLE(size);
+	ecl_enable_interrupts_env(the_env);
+	if (output == NULL) out_of_memory(the_env);
+	return output;
 }
 
 void
 ecl_free_uncollectable(void *pointer)
 {
+	const cl_env_ptr the_env = ecl_process_env();
+	ecl_disable_interrupts_env(the_env);
 	GC_FREE(pointer);
+	ecl_enable_interrupts_env(the_env);
+}
+
+void *
+ecl_alloc(cl_index n)
+{
+	const cl_env_ptr the_env = ecl_process_env();
+	void *output;
+	ecl_disable_interrupts_env(the_env);
+	output = GC_MALLOC_IGNORE_OFF_PAGE(n);
+	ecl_enable_interrupts_env(the_env);
+	if (output == NULL) out_of_memory(the_env);
+	return output;
+}
+
+void *
+ecl_alloc_atomic(cl_index n)
+{
+	const cl_env_ptr the_env = ecl_process_env();
+	void *output;
+	ecl_disable_interrupts_env(the_env);
+	output = GC_MALLOC_ATOMIC_IGNORE_OFF_PAGE(n);
+	ecl_enable_interrupts_env(the_env);
+	if (output == NULL) out_of_memory(the_env);
+	return output;
+}
+
+void
+ecl_dealloc(void *ptr)
+{
+	const cl_env_ptr the_env = ecl_process_env();
+	ecl_disable_interrupts_env(the_env);
+	GC_FREE(ptr);
+	ecl_enable_interrupts_env(the_env);
 }
 
 static int alloc_initialized = FALSE;
@@ -214,6 +289,7 @@ init_alloc(void)
 #endif
 	GC_clear_roots();
 	GC_disable();
+	GC_set_max_heap_size(cl_core.max_heap_size = ecl_get_option(ECL_OPT_HEAP_SIZE));
 
 #define init_tm(x,y,z) type_size[x] = (z)
 	for (i = 0; i < t_end; i++) {
@@ -287,20 +363,28 @@ standard_finalizer(cl_object o)
 		cl_close(1, o);
 		break;
 #ifdef ECL_THREADS
-	case t_lock:
+	case t_lock: {
+		const cl_env_ptr the_env = ecl_process_env();
+		ecl_disable_interrupts_env(the_env);
 #if defined(_MSC_VER) || defined(mingw32)
 		CloseHandle(o->lock.mutex);
 #else
 		pthread_mutex_destroy(&o->lock.mutex);
 #endif
+		ecl_enable_interrupts_env(the_env);
 		break;
-	case t_condition_variable:
+	}
+	case t_condition_variable: {
+		const cl_env_ptr the_env = ecl_process_env();
+		ecl_disable_interrupts_env(the_env);
 #if defined(_MSC_VER) || defined(mingw32)
 		CloseHandle(o->condition_variable.cv);
 #else
 		pthread_cond_destroy(&o->condition_variable.cv);
 #endif
+		ecl_enable_interrupts_env(the_env);
 		break;
+	}
 #endif
 	default:;
 	}
@@ -338,10 +422,13 @@ queueing_finalizer(cl_object o, cl_object finalizer)
 			volatile cl_object aux = ACONS(o, finalizer, Cnil);
 			cl_object l = cl_core.to_be_finalized;
 			if (ATOM(l)) {
+				const cl_env_ptr the_env = ecl_process_env();
 				GC_finalization_proc ofn;
 				void *odata;
 				cl_core.to_be_finalized = aux;
+				ecl_disable_interrupts_env(the_env);
 				GC_register_finalizer_no_order(aux, (GC_finalization_proc*)group_finalizer, NULL, &ofn, &odata);
+				ecl_enable_interrupts_env(the_env);
 			} else {
 				ECL_RPLACD(aux, ECL_CONS_CDR(l));
 				ECL_RPLACD(l, aux);
@@ -353,9 +440,11 @@ queueing_finalizer(cl_object o, cl_object finalizer)
 cl_object
 si_get_finalizer(cl_object o)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object output;
 	GC_finalization_proc ofn;
 	void *odata;
+	ecl_disable_interrupts_env(the_env);
 	GC_register_finalizer_no_order(o, (GC_finalization_proc)0, 0, &ofn, &odata);
 	if (ofn == 0) {
 		output = Cnil;
@@ -365,25 +454,30 @@ si_get_finalizer(cl_object o)
 		output = Cnil;
 	}
 	GC_register_finalizer_no_order(o, ofn, odata, &ofn, &odata);
+	ecl_enable_interrupts_env(the_env);
 	@(return output)
 }
 
 cl_object
 si_set_finalizer(cl_object o, cl_object finalizer)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	GC_finalization_proc ofn;
 	void *odata;
+	ecl_disable_interrupts_env(the_env);
 	if (finalizer == Cnil) {
 		GC_register_finalizer_no_order(o, (GC_finalization_proc)0, 0, &ofn, &odata);
 	} else {
 		GC_register_finalizer_no_order(o, (GC_finalization_proc)queueing_finalizer, finalizer, &ofn, &odata);
 	}
+	ecl_enable_interrupts_env(the_env);
 	@(return)
 }
 
 cl_object
 si_gc_stats(cl_object enable)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object old_status = cl_core.gc_stats? Ct : Cnil;
 	cl_core.gc_stats = (enable != Cnil);
 	if (cl_core.bytes_consed == Cnil) {
@@ -391,9 +485,9 @@ si_gc_stats(cl_object enable)
 		cl_core.bytes_consed = MAKE_FIXNUM(0);
 		cl_core.gc_counter = MAKE_FIXNUM(0);
 #else
-		cl_core.bytes_consed = cl_alloc_object(t_bignum);
+		cl_core.bytes_consed = ecl_alloc_object(t_bignum);
 		mpz_init2(cl_core.bytes_consed->big.big_num, 128);
-		cl_core.gc_counter = cl_alloc_object(t_bignum);
+		cl_core.gc_counter = ecl_alloc_object(t_bignum);
 		mpz_init2(cl_core.gc_counter->big.big_num, 128);
 #endif
 	}
@@ -471,25 +565,14 @@ ecl_mark_env(struct cl_env_struct *env)
 		GC_set_mark_bit((void *)env->bds_org);
 	}
 #endif
-#if 0
-	GC_push_all(&(env->lex_env), &(env->lex_env)+1);
-	GC_push_all(&(env->string_pool), &(env->print_base));
-#if !defined(ECL_CMU_FORMAT)
-	GC_push_all(&(env->queue), &(env->qh));
-#endif
-	GC_push_all(env->big_register, env->big_register + 3);
-	if (env->nvalues)
-		GC_push_all(env->values, env->values + env->nvalues + 1);
-#else
 	/*memset(env->values[env->nvalues], 0, (64-env->nvalues)*sizeof(cl_object));*/
-#ifdef ECL_THREADS
+#if defined(ECL_THREADS) && !defined(ECL_USE_MPROTECT)
 	/* When using threads, "env" is a pointer to memory allocated by ECL. */
 	GC_push_conditional((void *)env, (void *)(env + 1), 1);
 	GC_set_mark_bit((void *)env);
 #else
-	/* When not using threads, "env" is a statically allocated structure. */
+	/* When not using threads, "env" is mmaped or statically allocated. */
 	GC_push_all((void *)env, (void *)(env + 1));
-#endif
 #endif
 }
 
@@ -499,15 +582,13 @@ stacks_scanner()
 	cl_object l;
 	l = cl_core.libraries;
 	if (l) {
-		int i;
-		for (i = 0; i < l->vector.fillp; i++) {
-			cl_object dll = l->vector.self.t[i];
+		for (; l != Cnil; l = ECL_CONS_CDR(l)) {
+			cl_object dll = ECL_CONS_CAR(l);
 			if (dll->cblock.locked) {
 				GC_push_conditional((void *)dll, (void *)(&dll->cblock + 1), 1);
 				GC_set_mark_bit((void *)dll);
 			}
 		}
-		GC_set_mark_bit((void *)l->vector.self.t);
 	}
 	GC_push_all((void *)(&cl_core), (void *)(&cl_core + 1));
 	GC_push_all((void *)cl_symbols, (void *)(cl_symbols + cl_num_symbols_in_core));
@@ -531,91 +612,35 @@ stacks_scanner()
 }
 
 /**********************************************************
- *		MALLOC SUBSTITUTION			  *
- **********************************************************/
-
-#if 0 && defined(NEED_MALLOC)
-#undef malloc
-#undef calloc
-#undef free
-#undef cfree
-#undef realloc
-
-void *
-malloc(size_t size)
-{
-	return GC_MALLOC(size);
-}
-
-void
-free(void *ptr)
-{
-	GC_free(ptr);
-}
-
-void *
-realloc(void *ptr, size_t size)
-{
-	return GC_realloc(ptr, size);
-}
-
-void *
-calloc(size_t nelem, size_t elsize)
-{
-	char *ptr;
-	size_t i;
-	ptr = GC_MALLOC(i = nelem*elsize);
-	memset(ptr, 0 , i);
-	return ptr;
-}
-
-void
-cfree(void *ptr)
-{
-	GC_free(ptr);
-}
-
-#define ALLOC_ALIGNED(f, size, align) \
-	((align) <= 4 ? (int)(f)(size) : \
-	   ((align) * (((unsigned)(f)(size + (size ? (align) - 1 : 0)) + (align) - 1)/(align))))
-
-void *
-memalign(size_t align, size_t size)
-{
-	return (void *)ALLOC_ALIGNED(GC_MALLOC, size, align);
-}
-
-# ifdef WANT_VALLOC
-char *
-valloc(size_t size)
-{
-	return memalign(getpagesize(), size);
-}
-# endif /* WANT_VALLOC */
-#endif /* NEED_MALLOC */
-
-
-/**********************************************************
  *		GARBAGE COLLECTION			  *
  **********************************************************/
 
 void
 ecl_register_root(cl_object *p)
 {
+	const cl_env_ptr the_env = ecl_process_env();
+	ecl_disable_interrupts_env(the_env);
 	GC_add_roots((char*)p, (char*)(p+1));
+	ecl_enable_interrupts_env(the_env);
 }
 
 cl_object
 si_gc(cl_object area)
 {
+	const cl_env_ptr the_env = ecl_process_env();
+	ecl_disable_interrupts_env(the_env);
 	GC_gcollect();
+	ecl_enable_interrupts_env(the_env);
 	@(return)
 }
 
 cl_object
 si_gc_dump()
 {
+	const cl_env_ptr the_env = ecl_process_env();
+	ecl_disable_interrupts_env(the_env);
 	GC_dump();
+	ecl_enable_interrupts_env(the_env);
 	@(return)
 }
 

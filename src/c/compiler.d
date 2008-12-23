@@ -59,12 +59,12 @@
 
 /********************* PRIVATE ********************/
 
-#define asm_begin() cl_stack_index()
-#define asm_clear(h) cl_stack_set_index(h)
-#define current_pc() cl_stack_index()
-#define set_pc(n) cl_stack_set_index(n)
-#define asm_op(o) cl_stack_push((cl_object)((cl_fixnum)(o)))
-#define asm_ref(n) (cl_fixnum)(cl_env.stack[n])
+#define asm_begin() ecl_stack_index(ecl_process_env())
+#define asm_clear(h) ecl_stack_set_index(ecl_process_env(), h)
+#define current_pc() ecl_stack_index(ecl_process_env())
+#define set_pc(n) ecl_stack_set_index(ecl_process_env(), n)
+#define asm_op(o) ecl_stack_push(ecl_process_env(), (cl_object)((cl_fixnum)(o)))
+#define asm_ref(n) (cl_fixnum)(ecl_process_env()->stack[n])
 static void asm_op2(int op, int arg);
 static cl_object asm_end(cl_index handle);
 static cl_index asm_jmp(register int op);
@@ -151,25 +151,26 @@ pop_maybe_nil(cl_object *l) {
 
 static cl_object
 asm_end(cl_index beginning) {
+	cl_env_ptr env = ecl_process_env();
 	cl_object bytecodes;
 	cl_index code_size, data_size, i;
 	cl_opcode *code;
-	cl_object file = SYM_VAL(@'*load-truename*');
-	cl_object position = cl_cdr(SYM_VAL(@'ext::*source-location*'));
+	cl_object file = ECL_SYM_VAL(env,@'*load-truename*');
+	cl_object position = cl_cdr(ECL_SYM_VAL(env,@'ext::*source-location*'));
 
 	/* Save bytecodes from this session in a new vector */
 	code_size = current_pc() - beginning;
 	data_size = ecl_length(ENV->constants);
-	bytecodes = cl_alloc_object(t_bytecodes);
+	bytecodes = ecl_alloc_object(t_bytecodes);
 	bytecodes->bytecodes.name = @'si::bytecodes';
 	bytecodes->bytecodes.code_size = code_size;
 	bytecodes->bytecodes.data_size = data_size;
-	bytecodes->bytecodes.code = cl_alloc_atomic(code_size * sizeof(cl_opcode));
-	bytecodes->bytecodes.data = (cl_object*)cl_alloc(data_size * sizeof(cl_object));
+	bytecodes->bytecodes.code = ecl_alloc_atomic(code_size * sizeof(cl_opcode));
+	bytecodes->bytecodes.data = (cl_object*)ecl_alloc(data_size * sizeof(cl_object));
 	bytecodes->bytecodes.file = (file == OBJNULL)? Cnil : file;
 	bytecodes->bytecodes.file_position = (position == OBJNULL)? Cnil : position;
 	for (i = 0, code = (cl_opcode *)bytecodes->bytecodes.code; i < code_size; i++) {
-		code[i] = (cl_opcode)(cl_fixnum)cl_env.stack[beginning+i];
+		code[i] = (cl_opcode)(cl_fixnum)(env->stack[beginning+i]);
 	}
 	for (i=0; i < data_size; i++) {
 		bytecodes->bytecodes.data[i] = CAR(ENV->constants);
@@ -219,6 +220,7 @@ asm_jmp(register int op) {
 
 static void
 asm_complete(register int op, register cl_index pc) {
+	cl_env_ptr env = ecl_process_env();
 	cl_fixnum delta = current_pc() - pc;  /* [1] */
 	if (op && (asm_ref(pc-1) != op))
 		FEprogram_error("Non matching codes in ASM-COMPLETE2", 0);
@@ -229,14 +231,14 @@ asm_complete(register int op, register cl_index pc) {
 		unsigned char low = delta & 0xFF;
 		char high = delta >> 8;
 # ifdef WORDS_BIGENDIAN
-		cl_env.stack[pc] = (cl_object)(cl_fixnum)high;
-		cl_env.stack[pc+1] = (cl_object)(cl_fixnum)low;
+		env->stack[pc] = (cl_object)(cl_fixnum)high;
+		env->stack[pc+1] = (cl_object)(cl_fixnum)low;
 # else
-		cl_env.stack[pc] = (cl_object)(cl_fixnum)low;
-		cl_env.stack[pc+1] = (cl_object)(cl_fixnum)high;
+		env->stack[pc] = (cl_object)(cl_fixnum)low;
+		env->stack[pc+1] = (cl_object)(cl_fixnum)high;
 # endif
 #else
-		cl_env.stack[pc] = (cl_object)(cl_fixnum)delta;
+		env->stack[pc] = (cl_object)(cl_fixnum)delta;
 #endif
 	}
 }
@@ -597,7 +599,7 @@ c_var_ref(cl_object var, int allow_symbol_macro, bool ensure_defined)
 		}
 	}
 	if (ensure_defined) {
-		l = SYM_VAL(@'si::*action-on-undefined-variable*');
+		l = ecl_symbol_value(@'si::*action-on-undefined-variable*');
 		if (l != Cnil) {
 			funcall(3, l, make_simple_base_string("Undefined variable referenced in interpreted code.~%Name: ~A"),
 				var);
@@ -1010,16 +1012,17 @@ c_catch(cl_object args, int flags) {
 static int
 c_compiler_let(cl_object args, int flags) {
 	cl_object bindings;
-	cl_index old_bds_top_index = cl_env.bds_top - cl_env.bds_org;
+	const cl_env_ptr env = ecl_process_env();
+	cl_index old_bds_top_index = env->bds_top - env->bds_org;
 
 	for (bindings = pop(&args); !ecl_endp(bindings); ) {
 		cl_object form = pop(&bindings);
 		cl_object var = pop(&form);
 		cl_object value = pop_maybe_nil(&form);
-		bds_bind(var, value);
+		ecl_bds_bind(env, var, value);
 	}
 	flags = compile_body(args, flags);
-	bds_unwind(old_bds_top_index);
+	ecl_bds_unwind(env, old_bds_top_index);
 	return flags;
 }
 
@@ -1946,16 +1949,17 @@ c_values(cl_object args, int flags) {
 
 static int
 compile_form(cl_object stmt, int flags) {
-	cl_object code_walker = SYM_VAL(@'si::*code-walker*');
+	const cl_env_ptr env = ecl_process_env();
+	cl_object code_walker = ECL_SYM_VAL(env,@'si::*code-walker*');
 	compiler_record *l;
 	cl_object function;
 	bool push = flags & FLAG_PUSH;
 	int new_flags;
 
-	bds_bind(@'si::*current-form*', stmt);
+	ecl_bds_bind(env, @'si::*current-form*', stmt);
  BEGIN:
 	if (code_walker != OBJNULL) {
-		stmt = funcall(3, SYM_VAL(@'si::*code-walker*'), stmt,
+		stmt = funcall(3, ECL_SYM_VAL(env,@'si::*code-walker*'), stmt,
 			       CONS(ENV->variables, ENV->macros));
 	}
 	/*
@@ -2089,7 +2093,7 @@ for special form ~S.", 1, function);
 	} else if (new_flags & FLAG_PUSH) {
 		FEerror("Internal error in bytecodes compiler", 0);
 	}
-	bds_unwind1();
+	ecl_bds_unwind1(env);
 	return flags;
 }
 
@@ -2347,7 +2351,7 @@ si_process_lambda_list(cl_object org_lambda_list, cl_object context)
 #define AT_KEYS		3
 #define AT_OTHER_KEYS	4
 #define AT_AUXS		5
-
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_object v, key, init, spp, lambda_list = org_lambda_list;
 	cl_object reqs = Cnil, opts = Cnil, keys = Cnil, rest = Cnil, auxs = Cnil;
 	int nreq = 0, nopt = 0, nkey = 0, naux = 0, stage = 0;
@@ -2512,17 +2516,21 @@ ILLEGAL_LAMBDA:
 static cl_object
 c_default(cl_index base_pc, cl_object deflt) {
 	cl_type t = type_of(deflt);
-	if (((t == t_symbol) && (ecl_symbol_type(deflt) & stp_constant) &&
-	     !FIXNUMP(SYM_VAL(deflt)))) {
-		/* FIXME! Shouldn't this happen only in unsafe mode */
-		deflt = SYM_VAL(deflt);
-	} else if (CONSP(deflt) && (CAR(deflt) == @'quote') && !FIXNUMP(CADR(deflt))) {
-		deflt = CADR(deflt);
-	} else if ((t == t_symbol) || (t == t_list) || (t == t_fixnum)) {
+	if ((t == t_symbol) && (ecl_symbol_type(deflt) & stp_constant)) {
+		cl_object value = ecl_symbol_value(deflt);
+		if (!FIXNUMP(value)) {
+			/* FIXME! Shouldn't this happen only in unsafe mode */
+			return value;
+		}
+	}
+	if (CONSP(deflt) && (CAR(deflt) == @'quote') && !FIXNUMP(CADR(deflt))) {
+		return CADR(deflt);
+	}
+	if ((t == t_symbol) || (t == t_list) || (t == t_fixnum)) {
 		cl_index pc = current_pc()-base_pc;
 		compile_form(deflt, FLAG_VALUES);
 		asm_op(OP_EXIT);
-		deflt = MAKE_FIXNUM(pc);
+		return MAKE_FIXNUM(pc);
 	}
 	return deflt;
 }
@@ -2558,9 +2566,10 @@ ecl_make_lambda(cl_object name, cl_object lambda) {
 	int nopts, nkeys;
 	cl_index handle;
 	struct cl_compiler_env *old_c_env, new_c_env;
+	const cl_env_ptr env = ecl_process_env();
 
-	bds_bind(@'si::*current-form*',
-		 @list*(3, @'ext::lambda-block', name, lambda));
+	ecl_bds_bind(env, @'si::*current-form*',
+		     @list*(3, @'ext::lambda-block', name, lambda));
 
 	old_c_env = ENV;
 	c_new_env(&new_c_env, Cnil, old_c_env);
@@ -2662,12 +2671,12 @@ ecl_make_lambda(cl_object name, cl_object lambda) {
 	output = asm_end(handle);
 	output->bytecodes.name = name;
 	output->bytecodes.specials = specials;
-	output->bytecodes.definition = Null(SYM_VAL(@'si::*keep-definitions*'))?
+	output->bytecodes.definition = Null(ecl_symbol_value(@'si::*keep-definitions*'))?
 		Cnil : lambda;
 
 	ENV = old_c_env;
 
-	bds_unwind1();
+	ecl_bds_unwind1(env);
 
 	return output;
 }
@@ -2705,7 +2714,7 @@ si_make_lambda(cl_object name, cl_object rest)
 	struct cl_compiler_env new_c_env;
 
 	c_new_env(&new_c_env, Cnil, 0);
-	CL_UNWIND_PROTECT_BEGIN {
+	CL_UNWIND_PROTECT_BEGIN(ecl_process_env()) {
 		lambda = ecl_make_lambda(name,rest);
 	} CL_UNWIND_PROTECT_EXIT {
 		ENV = old_c_env;
@@ -2735,7 +2744,7 @@ si_make_lambda(cl_object name, cl_object rest)
 	ENV->lex_env = env;
 	ENV->stepping = stepping != Cnil;
 	handle = asm_begin();
-	CL_UNWIND_PROTECT_BEGIN {
+	CL_UNWIND_PROTECT_BEGIN(ecl_process_env()) {
 		compile_form(form, FLAG_VALUES);
 		asm_op(OP_EXIT);
 		bytecodes = asm_end(handle);
@@ -2749,7 +2758,7 @@ si_make_lambda(cl_object name, cl_object rest)
 	/*
 	 * Interpret using the given lexical environment.
 	 */
-	ihs_push(&ihs, bytecodes, Cnil);
+	ecl_ihs_push(the_env, &ihs, bytecodes, Cnil);
 	VALUES(0) = Cnil;
 	NVALUES = 0;
 	{
@@ -2759,7 +2768,7 @@ si_make_lambda(cl_object name, cl_object rest)
 	GC_free(bytecodes->bytecodes.data);
 	GC_free(bytecodes);
 #endif
-	ihs_pop();
+	ecl_ihs_pop(the_env);
 	return output;
 	}
 @)

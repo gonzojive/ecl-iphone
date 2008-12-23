@@ -169,31 +169,31 @@ ecl_aset_bv(cl_object x, cl_index index, int value)
 void
 cl_throw(cl_object tag)
 {
-  ecl_frame_ptr fr = frs_sch(tag);
-  if (fr == NULL)
-    FEcontrol_error("THROW: The catch ~S is undefined.", 1, tag);
-  ecl_unwind(fr);
+	ecl_frame_ptr fr = frs_sch(tag);
+	if (fr == NULL)
+		FEcontrol_error("THROW: The catch ~S is undefined.", 1, tag);
+	ecl_unwind(ecl_process_env(), fr);
 }
 
 void
 cl_return_from(cl_object block_id, cl_object block_name)
 {
-  ecl_frame_ptr fr = frs_sch(block_id);
-  if (fr == NULL)
-    FEcontrol_error("RETURN-FROM: The block ~S with id ~S is missing.",
-		    2, block_name, block_id);
-  ecl_unwind(fr);
+	ecl_frame_ptr fr = frs_sch(block_id);
+	if (fr == NULL)
+		FEcontrol_error("RETURN-FROM: The block ~S with id ~S is missing.",
+				2, block_name, block_id);
+	ecl_unwind(ecl_process_env(), fr);
 }
 
 void
 cl_go(cl_object tag_id, cl_object label)
 {
-  ecl_frame_ptr fr = frs_sch(tag_id);
-  if (fr == NULL)
-    FEcontrol_error("GO: The tagbody ~S is missing.", 1, tag_id);
-  VALUES(0)=label;
-  NVALUES=1;
-  ecl_unwind(fr);
+	ecl_frame_ptr fr = frs_sch(tag_id);
+	if (fr == NULL)
+		FEcontrol_error("GO: The tagbody ~S is missing.", 1, tag_id);
+	VALUES(0)=label;
+	NVALUES=1;
+	ecl_unwind(ecl_process_env(), fr);
 }
 
 cl_object

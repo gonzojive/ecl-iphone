@@ -1369,7 +1369,7 @@ cl_symbols[] = {
 {KEY_ "UP",NULL},
 {KEY_ "UPCASE",NULL},
 {KEY_ "USE",NULL},
-{KEY_ "USE-HEADER-P",NULL},
+{KEY_ "CSTREAM",NULL},
 {KEY_ "VERBOSE",NULL},
 {KEY_ "VERSION",NULL},
 {KEY_ "WILD",NULL},
@@ -1489,7 +1489,6 @@ cl_symbols[] = {
 {MP_ "+LOAD-COMPILE-LOCK+",NULL},
 {MP_ "WITH-LOCK",NULL},
 {MP_ "WITHOUT-INTERRUPTS",NULL},
-{MP_ "CHECK-PENDING-INTERRUPTS","si_check_pending_interrupts"},
 #endif
 
 {SYS_ "WHILE",NULL},
@@ -1707,10 +1706,21 @@ cl_symbols[] = {
 {EXT_ "FRAME-STACK",NULL},
 {EXT_ "LISP-STACK",NULL},
 {EXT_ "C-STACK",NULL},
-{EXT_ "SET-STACK-SIZE","si_set_stack_size"},
+{EXT_ "SET-LIMIT","si_set_limit"},
+{EXT_ "GET-LIMIT","si_get_limit"},
 {EXT_ "SEGMENTATION-VIOLATION",NULL},
 
 {EXT_ "EXTENDED-STRING",NULL},
+
+{SYS_ "CHECK-PENDING-INTERRUPTS","si_check_pending_interrupts"},
+
+{KEY_ "LATIN-1",NULL},
+{KEY_ "ISO-8859-1",NULL},
+{KEY_ "UTF-8",NULL},
+{KEY_ "UCS-2",NULL},
+{KEY_ "UCS-4",NULL},
+
+{EXT_ "STORAGE-EXHAUSTED",NULL},
 
 /* Tag for end of list */
 {NULL,NULL}};

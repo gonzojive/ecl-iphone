@@ -23,7 +23,7 @@ cl_make_cfun(void *c_function, cl_object name, cl_object cblock, int narg)
 {
 	cl_object cf;
 
-	cf = cl_alloc_object(t_cfunfixed);
+	cf = ecl_alloc_object(t_cfunfixed);
 	cf->cfun.entry = c_function;
 	cf->cfun.name = name;
 	cf->cfun.block = cblock;
@@ -38,7 +38,7 @@ cl_make_cfun_va(void *c_function, cl_object name, cl_object cblock)
 {
 	cl_object cf;
 
-	cf = cl_alloc_object(t_cfun);
+	cf = ecl_alloc_object(t_cfun);
 	cf->cfun.entry = c_function;
 	cf->cfun.name = name;
 	cf->cfun.block = cblock;
@@ -51,7 +51,7 @@ cl_make_cclosure_va(void *c_function, cl_object env, cl_object block)
 {
 	cl_object cc;
 
-	cc = cl_alloc_object(t_cclosure);
+	cc = ecl_alloc_object(t_cclosure);
 	cc->cclosure.entry = c_function;
 	cc->cclosure.env = env;
 	cc->cclosure.block = block;
@@ -85,6 +85,7 @@ cl_def_c_function_va(cl_object sym, void *c_function)
 cl_object
 si_compiled_function_name(cl_object fun)
 {
+	cl_env_ptr the_env = ecl_process_env();
 	cl_object output;
 
 	switch(type_of(fun)) {
@@ -106,6 +107,7 @@ si_compiled_function_name(cl_object fun)
 cl_object
 cl_function_lambda_expression(cl_object fun)
 {
+	cl_env_ptr the_env = ecl_process_env();
 	cl_object output, name = Cnil, lex = Cnil;
 
 	switch(type_of(fun)) {

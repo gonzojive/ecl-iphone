@@ -32,6 +32,9 @@
 #   include <unistd.h>
 # endif
 #endif
+#ifdef ECL_USE_MPROTECT
+# include <sys/mman.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <ecl/internal.h>
@@ -40,9 +43,9 @@ extern int GC_dont_gc;
 /******************************* EXPORTS ******************************/
 
 #if !defined(ECL_THREADS)
-struct cl_env_struct cl_env;
+cl_env_ptr cl_env_p = NULL;
 #elif defined(WITH___THREAD)
-__thread struct cl_env_struct * cl_env_p;
+__thread cl_env_ptr cl_env_p = NULL;
 #endif
 struct cl_core_struct cl_core;
 const char *ecl_self;
@@ -72,6 +75,8 @@ static cl_fixnum option_values[ECL_OPT_LIMIT+1] = {
 	131072,	/* ECL_OPT_C_STACK_SIZE */
 	4192,	/* ECL_OPT_C_STACK_SAFETY_AREA */
 	1,	/* ECL_OPT_SIGALTSTACK_SIZE */
+	128*1024*1024, /* ECL_OPT_HEAP_SIZE */
+	1024*1024, /* ECL_OPT_HEAP_SAFETY_AREA */
 	0};
 
 #if !defined(GBC_BOEHM)
@@ -95,7 +100,7 @@ ecl_set_option(int option, cl_fixnum value)
 	if (option > ECL_OPT_LIMIT || option < 0) {
 		FEerror("Invalid boot option ~D", 1, MAKE_FIXNUM(option));
 	} else {
-		if (option > ECL_OPT_BOOTED &&
+		if (option < ECL_OPT_BOOTED &&
 		    option_values[ECL_OPT_BOOTED]) {
 			FEerror("Cannot change option ~D while ECL is running",
 				1, MAKE_FIXNUM(option));
@@ -105,7 +110,7 @@ ecl_set_option(int option, cl_fixnum value)
 }
 
 void
-ecl_init_env(struct cl_env_struct *env)
+ecl_init_env(cl_env_ptr env)
 {
 	int i;
 
@@ -117,13 +122,13 @@ ecl_init_env(struct cl_env_struct *env)
 	env->stack_top = NULL;
 	env->stack_limit = NULL;
 	env->stack_size = 0;
-	cl_stack_set_size(ecl_get_option(ECL_OPT_LISP_STACK_SIZE));
+	ecl_stack_set_size(env, ecl_get_option(ECL_OPT_LISP_STACK_SIZE));
 
 #if !defined(ECL_CMU_FORMAT)
 	env->print_pretty = FALSE;
-	env->queue = cl_alloc_atomic(ECL_PPRINT_QUEUE_SIZE * sizeof(short));
-	env->indent_stack = cl_alloc_atomic(ECL_PPRINT_INDENTATION_STACK_SIZE * sizeof(short));
-	env->fmt_aux_stream = ecl_make_string_output_stream(64);
+	env->queue = ecl_alloc_atomic(ECL_PPRINT_QUEUE_SIZE * sizeof(short));
+	env->indent_stack = ecl_alloc_atomic(ECL_PPRINT_INDENTATION_STACK_SIZE * sizeof(short));
+	env->fmt_aux_stream = ecl_make_string_output_stream(64, 1);
 #endif
 #if !defined(GBC_BOEHM)
 # if defined(THREADS)
@@ -137,7 +142,7 @@ ecl_init_env(struct cl_env_struct *env)
 #endif /* !GBC_BOEHM */
 
 #ifdef ECL_DYNAMIC_FFI
-	env->fficall = cl_alloc(sizeof(struct ecl_fficall));
+	env->fficall = ecl_alloc(sizeof(struct ecl_fficall));
 	((struct ecl_fficall*)env->fficall)->registers = 0;
 #endif
 
@@ -196,11 +201,37 @@ static const struct {
 	{NULL, -1}
 };
 
+cl_env_ptr
+_ecl_alloc_env()
+{
+	/*
+	 * Allocates the lisp environment for a thread. Depending on which
+	 * mechanism we use for detecting delayed signals, we may allocate
+	 * the environment using mmap or the garbage collector.
+	 */
+	cl_env_ptr output;
+#if defined(ECL_USE_MPROTECT)
+	output = mmap(0, sizeof(*output), PROT_READ | PROT_WRITE,
+			MAP_ANON | MAP_PRIVATE, 0, 0);
+	if (output < 0)
+		ecl_internal_error("Unable to allocate environment structure.");
+#else
+	output = ecl_alloc(sizeof(*output));
+#endif
+	/*
+	 * An uninitialized environment _always_ disables interrupts. They
+	 * are activated later on by the thread entry point or init_unixint().
+	 */
+	output->disable_interrupts = 1;
+	return output;
+}
+
 int
 cl_shutdown(void)
 {
+	const cl_env_ptr env = ecl_process_env();
 	if (ecl_get_option(ECL_OPT_BOOTED) > 0) {
-		cl_object l = SYM_VAL(@'si::*exit-hooks*');
+		cl_object l = ecl_symbol_value(@'si::*exit-hooks*');
 		cl_object form = cl_list(2, @'funcall', Cnil);
 		while (CONSP(l)) {
 			ecl_elt_set(form, 1, ECL_CONS_CAR(l));
@@ -225,6 +256,7 @@ cl_boot(int argc, char **argv)
 	cl_object aux;
 	cl_object features;
 	int i;
+	cl_env_ptr env;
 
 	i = ecl_get_option(ECL_OPT_BOOTED);
 	if (i) {
@@ -247,12 +279,11 @@ cl_boot(int argc, char **argv)
 	init_unixint(0);
 	init_alloc();
 	GC_disable();
-#ifdef ECL_THREADS
-	init_threads();
-#endif
-
-#if !defined(MSDOS) && !defined(cygwin)
-	ecl_self = ecl_expand_pathname(ecl_self);
+	env = _ecl_alloc_env();
+#if !defined(ECL_THREADS) || defined(WITH__THREAD)
+	cl_env_p = env;
+#else
+	init_threads(env);
 #endif
 
 	/*
@@ -361,9 +392,7 @@ cl_boot(int argc, char **argv)
 	/* LIBRARIES is an adjustable vector of objects. It behaves as
 	   a vector of weak pointers thanks to the magic in
 	   gbc.d/alloc_2.d */
-	cl_core.libraries = si_make_vector(@'t', MAKE_FIXNUM(0),
-					   @'t', MAKE_FIXNUM(0),
-					   @'nil', @'nil');
+	cl_core.libraries = Cnil;
 #if 0
 	/* FINALIZERS and FINALIZABLE_OBJECTS are also like LIBRARIES */
 	cl_core.finalizable_objects = si_make_vector(@'t', MAKE_FIXNUM(512),
@@ -407,7 +436,7 @@ cl_boot(int argc, char **argv)
 	 *    This cannot come later, because some routines need the
 	 *    frame stack immediately (for instance SI:PATHNAME-TRANSLATIONS).
 	 */
-	ecl_init_env(&cl_env);
+	ecl_init_env(env);
 #if !defined(GBC_BOEHM)
 	/* We need this because a lot of stuff is to be created */
 	init_GC();
@@ -415,11 +444,11 @@ cl_boot(int argc, char **argv)
 	GC_enable();
 
 #ifdef ECL_THREADS
-	cl_env.bindings_hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
+	env->bindings_hash = cl__make_hash_table(@'eq', MAKE_FIXNUM(1024),
 						   ecl_make_singlefloat(1.5f),
 						   ecl_make_singlefloat(0.75f),
 						   Cnil); /* no locking */
-	ECL_SET(@'mp::*current-process*', cl_env.own_process);
+	ECL_SET(@'mp::*current-process*', env->own_process);
 #endif
 
 	/*
@@ -608,7 +637,7 @@ si_getenv(cl_object var)
 	const char *value;
 
 	var = ecl_check_cl_type(@'ext::getenv', var, t_base_string);
-	value = getenv(var->base_string.self);
+	value = getenv((char*)var->base_string.self);
 	@(return ((value == NULL)? Cnil : make_base_string_copy(value)))
 }
 
@@ -616,6 +645,7 @@ si_getenv(cl_object var)
 cl_object
 si_setenv(cl_object var, cl_object value)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	cl_fixnum ret_val;
 
 	var = ecl_check_cl_type(@'ext::setenv', var, t_base_string);
@@ -624,26 +654,27 @@ si_setenv(cl_object var, cl_object value)
 		/* Remove the variable when setting to nil, so that
 		 * (si:setenv "foo" nil), then (si:getenv "foo) returns
 		 * the right thing. */
-		unsetenv(var->base_string.self);
+		unsetenv((char*)var->base_string.self);
 #else
 #if defined(_MSC_VER) || defined(mingw32)
 		si_setenv(var, make_simple_base_string(""));
 #else
-		putenv(var->base_string.self);
+		putenv((char*)var->base_string.self);
 #endif
 #endif
 		ret_val = 0;
 	} else {
 #ifdef HAVE_SETENV
 		value = ecl_check_cl_type(@'intern', value, t_base_string);
-		ret_val = setenv(var->base_string.self, value->base_string.self, 1);
+		ret_val = setenv((char*)var->base_string.self,
+				 (char*)value->base_string.self, 1);
 #else
 		cl_object temp =
 		  cl_format(4, Cnil, make_constant_base_string("~A=~A"), var,
 			    value);
 		if (temp->base_string.hasfillp && temp->base_string.fillp < temp->base_string.dim)
 		  temp->base_string.self[temp->base_string.fillp] = '\0';
-		putenv(temp->base_string.self);
+		putenv((char*)temp->base_string.self);
 #endif
 	}
 	if (ret_val == -1)
@@ -656,6 +687,7 @@ si_setenv(cl_object var, cl_object value)
 cl_object
 si_pointer(cl_object x)
 {
+	const cl_env_ptr the_env = ecl_process_env();
 	@(return ecl_make_unsigned_integer((cl_index)x))
 }
 

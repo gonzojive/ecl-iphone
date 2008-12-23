@@ -19,14 +19,16 @@
   (when stack-frame
     (if (stringp stack-frame)
 	(wt-nl "ecl_stack_frame_close(" stack-frame ");")
-	(wt-nl "cl_stack_set_index(" stack-frame ");")))
+	(wt-nl "ecl_stack_set_index(cl_env_copy," stack-frame ");")))
   (when bds-lcl
-    (wt-nl "bds_unwind(" bds-lcl ");"))
+    (wt-nl "ecl_bds_unwind(cl_env_copy," bds-lcl ");"))
   (if (< bds-bind 4)
-      (dotimes (n bds-bind) (declare (fixnum n)) (wt-nl "bds_unwind1();"))
-      (wt-nl "bds_unwind_n(" bds-bind ");"))
+      (dotimes (n bds-bind)
+	(declare (fixnum n))
+	(wt-nl "ecl_bds_unwind1(cl_env_copy);"))
+      (wt-nl "ecl_bds_unwind_n(cl_env_copy," bds-bind ");"))
   (when ihs-p
-    (wt-nl "ihs_pop();")))
+    (wt-nl "ecl_ihs_pop(cl_env_copy);")))
 
 (defun unwind-exit (loc &optional (jump-p nil) &aux (bds-lcl nil) (bds-bind 0) (stack-frame nil) (ihs-p nil))
   (declare (fixnum bds-bind))
@@ -81,7 +83,7 @@
 	     (cond ((eq loc 'VALUES)
 		    ;; from multiple-value-prog1 or values
 		    (unwind-bds bds-lcl bds-bind stack-frame ihs-p)
-		    (wt-nl "return VALUES(0);"))
+		    (wt-nl "return cl_env_copy->values[0];"))
 		   ((eq loc 'RETURN)
 		    ;; from multiple-value-prog1 or values
 		    (unwind-bds bds-lcl bds-bind stack-frame ihs-p)
@@ -116,7 +118,7 @@
 	    (let ((*destination* (tmp-destination *destination*)))
 	      (set-loc loc)
 	      (setq loc *destination*))
-	    (wt-nl "frs_pop();"))
+	    (wt-nl "ecl_frs_pop(cl_env_copy);"))
 	   (TAIL-RECURSION-MARK)
 	   (JUMP (setq jump-p t))
 	   (t (baboon))))))
@@ -143,7 +145,7 @@
           (baboon))
         ;;; Never reached
         )
-       ((eq ue 'FRAME) (wt-nl "frs_pop();"))
+       ((eq ue 'FRAME) (wt-nl "ecl_frs_pop(cl_env_copy);"))
        ((eq ue 'TAIL-RECURSION-MARK)
         (if (eq exit 'TAIL-RECURSION-MARK)
           (progn (unwind-bds bds-lcl bds-bind stack-frame ihs-p)
