@@ -29,6 +29,8 @@ ECL 9.1.0:
  - (FLOOR X X), (CEILING X X), etc, might return a second value which is a
    signed zero if X is a float with a negative sign.
 
+ - (SXHASH -0.0) != (SXHASH 0.0)
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

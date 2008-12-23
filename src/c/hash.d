@@ -117,6 +117,35 @@ _hash_equal(int depth, cl_hashkey h, cl_object x)
 		return hash_string(h, x->vector.self.ch, x->vector.fillp / 8);
 	case t_random:
 		return _hash_equal(0, h, x->random.value);
+#ifdef ECL_SIGNED_ZERO
+# ifdef ECL_SHORT_FLOAT
+	case t_shortfloat: {
+		float f = ecl_short_float(x);
+		return hash_string(h, (unsigned char*)&f, sizeof(f));
+	}
+# endif
+	case t_singlefloat: {
+		float f = sf(x);
+		if (f == 0.0) f = 0.0;
+		return hash_string(h, (unsigned char*)&f, sizeof(f));
+	}
+	case t_doublefloat: {
+		double f = df(x);
+		if (f == 0.0) f = 0.0;
+		return hash_string(h, (unsigned char*)&f, sizeof(f));
+	}
+# ifdef ECL_LONG_FLOAT
+	case t_longfloat: {
+		long double f = ecl_long_float(x);
+		if (f == 0.0) f = 0.0;
+		return hash_string(h, (unsigned char*)&f, sizeof(f));
+	}
+# endif
+	case t_complex: {
+		h = _hash_equal(depth, h, x->complex.real);
+		return _hash_equal(depth, h, x->complex.imag);
+	}
+#endif
 	default:
 		return _hash_eql(h, x);
 	}
