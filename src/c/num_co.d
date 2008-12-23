@@ -379,7 +379,7 @@ ecl_floor2(cl_object x, cl_object y)
 		float p = sf(x)/n;
 		float q = floorf(p);
 		v0 = float_to_integer(q);
-		v1 = make_shortfloat((p - q)*n);
+		v1 = make_shortfloat(p*n - q*n);
 		break;
 	}
 #endif
@@ -388,7 +388,10 @@ ecl_floor2(cl_object x, cl_object y)
 		float p = sf(x)/n;
 		float q = floorf(p);
 		v0 = float_to_integer(q);
-		v1 = ecl_make_singlefloat((p - q)*n);
+		/* We cannot factor these two multiplications because
+		 * if we have signed zeros (1 - 1) * (-1) = -0 while
+		 * 1*(-1) - 1*(-1) = +0 */
+		v1 = ecl_make_singlefloat(p*n - q*n);
 		break;
 	}
 	case t_doublefloat: {		/* DF / ANY */
@@ -396,7 +399,7 @@ ecl_floor2(cl_object x, cl_object y)
 		double p = df(x)/n;
 		double q = floor(p);
 		v0 = double_to_integer(q);
-		v1 = ecl_make_doublefloat((p - q)*n);
+		v1 = ecl_make_doublefloat(p*n - q*n);
 		break;
 	}
 #ifdef ECL_LONG_FLOAT
@@ -405,7 +408,7 @@ ecl_floor2(cl_object x, cl_object y)
 		long double p = ecl_long_float(x)/n;
 		long double q = floorl(p);
 		v0 = long_double_to_integer(q);
-		v1 = make_longfloat((p - q)*n);
+		v1 = make_longfloat(p*n - q*n);
 		break;
 	}
 #endif
@@ -535,7 +538,7 @@ ecl_ceiling2(cl_object x, cl_object y)
 		  float p = fix(x)/n;
 		  float q = ceilf(p);
 		  v0 = float_to_integer(q);
-		  v1 = ecl_make_singlefloat((p - q)*n);
+		  v1 = ecl_make_singlefloat(p*n - q*n);
 		  break;
 		}
 #endif
@@ -544,7 +547,7 @@ ecl_ceiling2(cl_object x, cl_object y)
 		  float p = fix(x)/n;
 		  float q = ceilf(p);
 		  v0 = float_to_integer(q);
-		  v1 = ecl_make_singlefloat((p - q)*n);
+		  v1 = ecl_make_singlefloat(p*n - q*n);
 		  break;
 		}
 		case t_doublefloat: {	/* FIX / DF */
@@ -552,7 +555,7 @@ ecl_ceiling2(cl_object x, cl_object y)
 		  double p = fix(x)/n;
 		  double q = ceil(p);
 		  v0 = double_to_integer(q);
-		  v1 = ecl_make_doublefloat((p - q)*n);
+		  v1 = ecl_make_doublefloat(p*n - q*n);
 		  break;
 		}
 #ifdef ECL_LONG_FLOAT
@@ -561,7 +564,7 @@ ecl_ceiling2(cl_object x, cl_object y)
 		  long double p = fix(x)/n;
 		  long double q = ceill(p);
 		  v0 = long_double_to_integer(q);
-		  v1 = make_longfloat((p - q)*n);
+		  v1 = make_longfloat(p*n - q*n);
 		  break;
 		}
 #endif
@@ -609,7 +612,7 @@ ecl_ceiling2(cl_object x, cl_object y)
 		  float p = big_to_double(x)/n;
 		  float q = ceilf(p);
 		  v0 = float_to_integer(q);
-		  v1 = make_shortfloat((p - q)*n);
+		  v1 = make_shortfloat(p*n - q*n);
 		  break;
 		}
 #endif
@@ -618,7 +621,7 @@ ecl_ceiling2(cl_object x, cl_object y)
 		  float p = big_to_double(x)/n;
 		  float q = ceilf(p);
 		  v0 = float_to_integer(q);
-		  v1 = ecl_make_singlefloat((p - q)*n);
+		  v1 = ecl_make_singlefloat(p*n - q*n);
 		  break;
 		}
 		case t_doublefloat: {	/* BIG / DF */
@@ -626,7 +629,7 @@ ecl_ceiling2(cl_object x, cl_object y)
 		  double p = big_to_double(x)/n;
 		  double q = ceil(p);
 		  v0 = double_to_integer(q);
-		  v1 = ecl_make_doublefloat((p - q)*n);
+		  v1 = ecl_make_doublefloat(p*n - q*n);
 		  break;
 		}
 #ifdef ECL_LONG_FLOAT
@@ -635,7 +638,7 @@ ecl_ceiling2(cl_object x, cl_object y)
 		  long double p = big_to_double(x)/n;
 		  long double q = ceill(p);
 		  v0 = long_double_to_integer(q);
-		  v1 = make_longfloat((p - q)*n);
+		  v1 = make_longfloat(p*n - q*n);
 		  break;
 		}
 #endif
@@ -661,7 +664,7 @@ ecl_ceiling2(cl_object x, cl_object y)
 		float p = sf(x)/n;
 		float q = ceilf(p);
 		v0 = float_to_integer(q);
-		v1 = make_shortfloat((p - q)*n);
+		v1 = make_shortfloat(p*n - q*n);
 		break;
 	}
 #endif
@@ -670,7 +673,7 @@ ecl_ceiling2(cl_object x, cl_object y)
 		float p = sf(x)/n;
 		float q = ceilf(p);
 		v0 = float_to_integer(q);
-		v1 = ecl_make_singlefloat((p - q)*n);
+		v1 = ecl_make_singlefloat(p*n - q*n);
 		break;
 	}
 	case t_doublefloat: {		/* DF / ANY */
@@ -678,7 +681,7 @@ ecl_ceiling2(cl_object x, cl_object y)
 		double p = df(x)/n;
 		double q = ceil(p);
 		v0 = double_to_integer(q);
-		v1 = ecl_make_doublefloat((p - q)*n);
+		v1 = ecl_make_doublefloat(p*n - q*n);
 		break;
 	}
 #ifdef ECL_LONG_FLOAT
@@ -687,7 +690,7 @@ ecl_ceiling2(cl_object x, cl_object y)
 		long double p = ecl_long_float(x)/n;
 		long double q = ceill(p);
 		v0 = long_double_to_integer(q);
-		v1 = make_longfloat((p - q)*n);
+		v1 = make_longfloat(p*n - q*n);
 		break;
 	}
 #endif
