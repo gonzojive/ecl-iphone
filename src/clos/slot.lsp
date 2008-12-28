@@ -11,7 +11,7 @@
 
 (in-package "CLOS")
 
-(defconstant +initform-unsupplied+ '+initiform-unsupplied+)
+(defconstant +initform-unsupplied+ '+initform-unsupplied+)
 
 ;;; ----------------------------------------------------------------------
 ;;; SLOT descriptors
@@ -32,7 +32,7 @@
 
 (defconstant +slot-definition-slots+
   '((name :initarg :name :initform nil :accessor slot-definition-name)
-    (initform :initarg :initform :initform nil :accessor slot-definition-initform)
+    (initform :initarg :initform :initform #.+initform-unsupplied+ :accessor slot-definition-initform)
     (initfunction :initarg :initfunction :initform nil :accessor slot-definition-initfunction)
     (type :initarg :type :initform t :accessor slot-definition-type)
     (allocation :initarg :allocation :initform :instance :accessor slot-definition-allocation)
@@ -43,7 +43,9 @@
     (location :initarg :location :initform nil :accessor slot-definition-location)
     ))
 
-(defun make-simple-slotd (&key name initform initfunction type allocation initargs readers writers documentation location)
+(defun make-simple-slotd (&key name (initform +initform-unsupplied+) initfunction
+			  (type 'T) (allocation :instance)
+			  initargs readers writers documentation location)
   (list name initform initfunction type allocation initargs readers writers documentation location))
 
 (defun canonical-slot-to-direct-slot (class slotd)
@@ -72,62 +74,55 @@
 ;;; a slot in DEFCLASS.
 ;;;
 
-;;; FIXME! This can be hugely simplified. We do not need all this checking.
-
-(defun PARSE-SLOT (slot)
+(defun parse-slot (slot &optional (full nil))
   (declare (si::c-local))
-  (let*((name nil)
-        (initargs nil)
-        (initform '+INITFORM-UNSUPPLIED+)	; default
-        (readers ())
-        (writers ())
-        (allocation ':INSTANCE)
-        (type 'T)				; default
-	(documentation nil)
-	(extra nil))
-    (cond ((symbolp slot)     (setq name slot))
-          ((null (cdr slot))  (setq name (car slot)))
-          (t
-           (setq name (car slot))
-           (let*((options (cdr slot))
-		 (option nil)
-		 (value nil))
-             (loop (when (null options) (return t))
-		   (setq option (pop options))
-		   (if (endp options)
-		     (si::simple-program-error
-		      "In the slot description ~S,~%the option ~S is missing an argument"
-		      slot option)
-		     (setq value (pop options)))
-		   (when (and (member option '(:allocation :initform :type :documentation))
-			      (getf options option))
-		     (si::simple-program-error
-		      "In the slot description ~S,~%the option ~S is duplicated"
-		      slot option))
-                   (case option
-                     (:initarg    (push value initargs))
-                     (:initform   (setq initform value))
-                     (:accessor   (push value readers) (push `(setf ,value) writers))
-                     (:reader     (push value readers))
-                     (:writer     (push value writers))
-                     (:allocation (setq allocation value))
-                     (:type       (setq type value))
-                     (:documentation     (push value documentation))
-		     (otherwise	  (setf extra (list* value option extra))))))))
-    (list* :name name :initform initform :initfunction nil :initargs initargs
-	   :readers readers :writers writers :allocation allocation
-	   :documentation documentation (nreverse extra))))
+  (if (symbolp slot)
+      (list* :name slot
+	     (when full (list :initform '+INITFORM-UNSUPPLIED+ :initfunction nil
+			      :initargs nil :readers nil :writers nil
+			      :allocation :instance :documentation nil
+			      :type 'T)))
+      (do* ((output (parse-slot (first slot) full))
+	    (options (rest slot))
+	    (value nil)
+	    (extra nil))
+	   ((null options)
+	    (nconc output (nreverse extra)))
+	(let ((option (pop options)))
+	  (when (endp options)
+	    (si::simple-program-error
+	     "In the slot description ~S,~%the option ~S is missing an argument"
+	     slot option))
+	  (let ((value (pop options)))
+	    (when (and (member option '(:allocation :initform :type :documentation))
+		       (getf options option))
+	      (si::simple-program-error
+	       "In the slot description ~S,~%the option ~S is duplicated"
+	       slot option))
+	    (case option
+	      (:initarg    (push value (getf output :initargs)))
+	      (:initform   (setf (getf output :initform) value)
+			   (setf (getf output :initfunction) nil))
+	      (:accessor   (push value (getf output :readers))
+			   (push `(setf ,value) (getf output :writers)))
+	      (:reader     (push value (getf output :readers)))
+	      (:writer     (push value (getf output :writers)))
+	      (:allocation (push value (getf output :allocation)))
+	      (:type       (setf (getf output :type) value))
+	      (:documentation  (push value (getf output :documentation)))
+	      (otherwise   (setf extra (list* value output extra)))))))))
 
-(defun PARSE-SLOTS (slots)
+(defun parse-slots (slots)
   (do ((scan slots (cdr scan))
        (collect))
       ((null scan) (nreverse collect))
     (let* ((slotd (parse-slot (first scan)))
 	   (name (second slotd)))
-      (when (find name collect :key #'second)
-	(si::simple-program-error
-	 "A definition for the slot ~S appeared twice in a DEFCLASS form"
-	 name))
+      (dolist (other-slotd collect)
+	(when (eq name (getf other-slotd :name))
+	  (si::simple-program-error
+	   "A definition for the slot ~S appeared twice in a DEFCLASS form"
+	   name)))
       (push slotd collect))))
 
 ;;; ----------------------------------------------------------------------

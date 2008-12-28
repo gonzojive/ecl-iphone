@@ -97,12 +97,12 @@
 		   (list 'quote (mapcar #'si::maybe-unquote slots))
 		   `(list ,@slots))))
       (let* ((slotd (first l))
-	     (initform (make-function-initform (getf slotd :initform nil))))
+	     (initform (make-function-initform (getf slotd :initform +initform-unsupplied+))))
 	(if (eq (first initform) 'QUOTE)
-	    (setf (getf slotd :initform nil) (second initform)
+	    (setf (getf slotd :initform) (second initform)
 		  slotd (list 'quote slotd))
 	    (setf slotd (mapcar #'(lambda (x) `',x) slotd)
-		  (getf slotd :initform nil) initform
+		  (getf slotd :initform) initform
 		  slotd (list* 'list slotd)))
 	(setf (first l) slotd)))
     (dolist (option args)

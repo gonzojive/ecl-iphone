@@ -31,6 +31,8 @@ ECL 9.1.0:
 
  - (SXHASH -0.0) != (SXHASH 0.0)
 
+ - In DEFCLASS, the :type of slots was ignored.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
