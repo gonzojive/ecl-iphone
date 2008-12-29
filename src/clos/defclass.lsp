@@ -24,36 +24,6 @@
 	   (member form '(t nil +initform-unsupplied+))
 	   (and (boundp form) (constantp form) (eq (symbol-value form) form)))))
 
-(defun make-function-initform (form)
-  ;; INITFORM is a form that is to be evaluated at runtime. If it is a
-  ;; constant value, we output simply a quoted form. If it is not,
-  ;; we output a function that can be invoked at runtime to retrieve
-  ;; the value.
-  ;;
-  ;; Output => (FUNCTION (LAMBDA () form))
-  ;;        => (QUOTE ...)
-  ;;
-  (flet ((enclose (form) `#'(lambda () ,form)))
-    (cond
-      ;; We generate function for non constant forms
-      ((not (constantp form))
-       (enclose form))
-      ;; Constants other than functions become quoted
-      ((and (not (functionp form))
-	    (self-evaluating-p form))
-       (list 'quote form))
-      ;; Quoted forms with arguments which are not functions are
-      ;; output as such. (the check for functions is weird, but we are
-      ;; paranoid anyway)
-      ((and (consp form)
-	    (eq (first form) 'quote)
-	    (not (functionp (second form))))
-       form)
-      ;; All other stuff, including symbols other than keywords, T and NIL
-      ;; gets in a function form
-      (t
-       (enclose form)))))
-
 (defun parse-default-initargs (default-initargs)
   (declare (si::c-local))
   (do* ((output-list nil)
@@ -94,16 +64,15 @@
 	((endp l)
 	 (setf slots
 	       (if (every #'constantp slots)
-		   (list 'quote (mapcar #'si::maybe-unquote slots))
+		   (ext:maybe-quote (mapcar #'ext:maybe-unquote slots))
 		   `(list ,@slots))))
       (let* ((slotd (first l))
-	     (initform (make-function-initform (getf slotd :initform +initform-unsupplied+))))
-	(if (eq (first initform) 'QUOTE)
-	    (setf (getf slotd :initform) (second initform)
-		  slotd (list 'quote slotd))
-	    (setf slotd (mapcar #'(lambda (x) `',x) slotd)
-		  (getf slotd :initform) initform
-		  slotd (list* 'list slotd)))
+	     (initfun (getf slotd :initfunction nil)))
+	(if initfun
+	    (progn
+	      (remf slotd :initfunction)
+	      (setf slotd (list* 'list :initfunction initfun (mapcar #'ext:maybe-quote slotd))))
+	    (setf slotd (ext:maybe-quote slotd)))
 	(setf (first l) slotd)))
     (dolist (option args)
       (let ((option-name (first option))
@@ -116,13 +85,13 @@
 	(setq option-value
 	      (case option-name
 		((:metaclass :documentation)
-		 (list 'quote (second option)))
+		 (ext:maybe-quote (second option)))
 		(:default-initargs
 		 (setf option-name :direct-default-initargs)
 		 (parse-default-initargs (rest option)))
 		(otherwise
-		 (list 'quote (rest option)))))
-	(setf options (list* `',option-name option-value options))))
+		 (ext:maybe-quote (rest option)))))
+	(setf options (list* (ext:maybe-quote option-name) option-value options))))
     `(eval-when (compile load eval)
        ,(ext:register-with-pde form
 			       `(ensure-class ',name :direct-superclasses

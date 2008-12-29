@@ -31,7 +31,15 @@ ECL 9.1.0:
 
  - (SXHASH -0.0) != (SXHASH 0.0)
 
- - In DEFCLASS, the :type of slots was ignored.
+* AMOP:
+
+ - In DEFCLASS, the :TYPE of slots was ignored.
+
+ - ECL now sets the proper value for the SLOT-DEFINITION-INITFUNCTION and
+   SLOT-DEFINITION-INITFORM of each effective and direct slot definition.
+
+ - The canonicalized default arguments list now contains functions instead
+   of the forms to be evaluated.
 
 ;;; Local Variables: ***
 ;;; mode:text ***

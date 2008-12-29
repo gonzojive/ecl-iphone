@@ -1722,5 +1722,11 @@ cl_symbols[] = {
 
 {EXT_ "STORAGE-EXHAUSTED",NULL},
 
+{EXT_ "CONSTANTLY-T",NULL},
+{EXT_ "CONSTANTLY-NIL",NULL},
+
+{EXT_ "MAYBE-QUOTE",NULL},
+{EXT_ "MAYBE-UNQUOTE",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};

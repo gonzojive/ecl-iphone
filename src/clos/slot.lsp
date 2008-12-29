@@ -46,6 +46,8 @@
 (defun make-simple-slotd (&key name (initform +initform-unsupplied+) initfunction
 			  (type 'T) (allocation :instance)
 			  initargs readers writers documentation location)
+  (when (listp initfunction)
+    (setf initfunction (eval initfunction)))
   (list name initform initfunction type allocation initargs readers writers documentation location))
 
 (defun canonical-slot-to-direct-slot (class slotd)
@@ -74,6 +76,22 @@
 ;;; a slot in DEFCLASS.
 ;;;
 
+(defun make-function-initform (form)
+  ;; INITFORM is a form that is to be evaluated at runtime. If it is a
+  ;; constant value, we output simply a quoted form. If it is not,
+  ;; we output a function that can be invoked at runtime to retrieve
+  ;; the value.
+  ;;
+  ;; Output => (FUNCTION (LAMBDA () form))
+  ;;        => (QUOTE ...)
+  ;;
+  (if (constantp form)
+      (let ((value (eval form)))
+	(cond ((null value) ''si::constantly-nil)
+	      ((eq value t) ''si::constantly-t)
+	      (t `(constantly ,form))))
+      `#'(lambda () ,form)))
+
 (defun parse-slot (slot &optional (full nil))
   (declare (si::c-local))
   (if (symbolp slot)
@@ -101,16 +119,17 @@
 	       slot option))
 	    (case option
 	      (:initarg    (push value (getf output :initargs)))
-	      (:initform   (setf (getf output :initform) value)
-			   (setf (getf output :initfunction) nil))
+	      (:initform   (setf (getf output :initform) value
+				 (getf output :initfunction)
+				 (make-function-initform value)))
 	      (:accessor   (push value (getf output :readers))
 			   (push `(setf ,value) (getf output :writers)))
 	      (:reader     (push value (getf output :readers)))
 	      (:writer     (push value (getf output :writers)))
-	      (:allocation (push value (getf output :allocation)))
+	      (:allocation (setf (getf output :allocation) value))
 	      (:type       (setf (getf output :type) value))
 	      (:documentation  (push value (getf output :documentation)))
-	      (otherwise   (setf extra (list* value output extra)))))))))
+	      (otherwise   (setf extra (list* value option extra)))))))))
 
 (defun parse-slots (slots)
   (do ((scan slots (cdr scan))

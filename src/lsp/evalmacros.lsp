@@ -355,3 +355,12 @@ values of the last FORM.  If no FORM is given, returns NIL."
   (if (and (consp form) (eq (car form) 'quote))
       (second form)
       form))
+
+(defun maybe-quote (form)
+  ;; Quotes a form only if strictly required. This happens only when FORM is
+  ;; either a symbol and not a keyword
+  (if (if (atom form)
+	  (typep form '(and symbol (not keyword) (not boolean)))
+	  (not (eq (first form) 'quote)))
+      (list 'quote form)
+      form))
