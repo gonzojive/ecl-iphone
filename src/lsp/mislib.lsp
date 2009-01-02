@@ -253,28 +253,28 @@ Returns the current day-and-time as nine values:
 Sunday is the *last* day of the week!!"
   (decode-universal-time (get-universal-time)))
 
-(defun ensure-directories-exist (a-pathname &key verbose)
+(defun ensure-directories-exist (pathname &key verbose)
 "Args: (ensure-directories pathname &key :verbose)
 Creates tree of directories specified by the given pathname. Outputs
 	(VALUES pathname created)
 where CREATED is true only if we succeeded on creating all directories."
   (let* ((created nil)
+	 (full-pathname (merge-pathnames pathname))
 	 d)
-    (when (or (wild-pathname-p a-pathname :directory)
-	      (wild-pathname-p a-pathname :host)
-	      (wild-pathname-p a-pathname :device))
-      (error 'file-error :pathname a-pathname))
-    (setf a-pathname (merge-pathnames a-pathname))
-    (dolist (item (pathname-directory a-pathname))
+    (when (or (wild-pathname-p full-pathname :directory)
+	      (wild-pathname-p full-pathname :host)
+	      (wild-pathname-p full-pathname :device))
+      (error 'file-error :pathname pathname))
+    (dolist (item (pathname-directory full-pathname))
       (setf d (nconc d (list item)))
       (let ((p (make-pathname :name nil :type nil :directory d
-			      :defaults a-pathname)))
+						  :defaults full-pathname)))
 	(unless (or (symbolp item) (si::file-kind p nil))
 	  (setf created t)
 	  (when verbose
 	    (format t "~%;;; Making directory ~A" p))
 	  (si::mkdir p #o777))))
-    (values a-pathname created)))
+    (values pathname created)))
 
 (defmacro with-hash-table-iterator ((iterator package) &body body)
 "Syntax: (with-hash-table-iterator (iterator package) &body body)
