@@ -126,10 +126,14 @@ install-base:
 	# Here we would use the option -s but the install program in sourceforge-solaris
 	# is broken.
 	$(mkinstalldirs) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) \
-	  $(DESTDIR)$(ecldir) $(DESTDIR)$(includedir) $(DESTDIR)$(includedir)/ecl
+	  $(DESTDIR)$(ecldir) $(DESTDIR)$(includedir) $(DESTDIR)$(includedir)/ecl \
+	  $(DESTDIR)$(ecldir)/encodings
 	for i in $(TARGETS); do \
 	  $(INSTALL_PROGRAM) $$i $(DESTDIR)$(bindir); \
-	done;
+	done
+	for i in ../contrib/encodings/*; do \
+	  $(INSTALL_DATA) $$i $(DESTDIR)$(ecldir)/encodings; \
+	done
 	sed '/-CUT-/,$$d' ./ecl/config.h > ./ecl/config-install.h
 	$(INSTALL_DATA) ./ecl/*.h $(DESTDIR)$(includedir)/ecl
 	if (echo $(SUBDIRS) | grep gc); then \

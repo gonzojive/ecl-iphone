@@ -1736,5 +1736,8 @@ cl_symbols[] = {
 {KEY_ "UCS-2LE",NULL},
 {KEY_ "UCS-4LE",NULL},
 
+{EXT_ "LOAD-ENCODING",NULL},
+{EXT_ "MAKE-ENCODING",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};

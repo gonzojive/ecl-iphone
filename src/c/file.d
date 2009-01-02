@@ -2635,6 +2635,11 @@ parse_external_format(cl_object stream, cl_object format)
 		stream->stream.format_table = format;
 		return ECL_STREAM_USER_FORMAT;
 	}
+	if (SYMBOLP(format)) {
+		stream->stream.format_table = cl_funcall(2, @'ext::make-encoding',
+							 format);
+		return ECL_STREAM_USER_FORMAT;
+	}
 	FEerror("Unknown external format: ~A", 1, format);
 	return ECL_STREAM_DEFAULT_FORMAT;
 }
