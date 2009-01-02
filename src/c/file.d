@@ -436,11 +436,11 @@ eformat_unread_char(cl_object strm, int c)
 		int ndx = 0;
 		cl_fixnum i = strm->stream.last_code[0];
 		if (i != EOF) {
-			ndx += strm->stream.encoder(buffer, i);
+			ndx += strm->stream.encoder(strm, buffer, i);
 		}
 		i = strm->stream.last_code[1];
 		if (i != EOF) {
-			ndx += strm->stream.encoder(buffer, i);
+			ndx += strm->stream.encoder(strm, buffer, i);
 		}
 		while (ndx != 0) {
 			l = CONS(MAKE_FIXNUM(buffer[--ndx]), l);
@@ -453,7 +453,7 @@ eformat_unread_char(cl_object strm, int c)
 static int
 eformat_read_char(cl_object strm)
 {
-	int c = strm->stream.decoder(strm->stream.ops->read_byte8, strm);
+	int c = strm->stream.decoder(strm, strm->stream.ops->read_byte8, strm);
 	if (c < EOF) {
 		FEerror("Encoding error when reading from stream ~A", 1, strm);
 	}
@@ -469,7 +469,7 @@ static int
 eformat_write_char(cl_object strm, int c)
 {
 	unsigned char buffer[4];
-	int nbytes = strm->stream.encoder(buffer, c);
+	int nbytes = strm->stream.encoder(strm, buffer, c);
 	if (nbytes == 0) {
 		character_size_overflow(strm, c);
 	}
@@ -538,7 +538,7 @@ eformat_write_char_crlf(cl_object strm, int c)
 }
 
 static int
-latin1_decoder(cl_eformat_read_byte8 read_byte8, cl_object source)
+latin1_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object source)
 {
 	unsigned char aux;
 	if (read_byte8(source, &aux, 1) < 1)
@@ -548,7 +548,7 @@ latin1_decoder(cl_eformat_read_byte8 read_byte8, cl_object source)
 }
 
 static int
-latin1_encoder(unsigned char *buffer, int c)
+latin1_encoder(cl_object stream, unsigned char *buffer, int c)
 {
 	if (c > 0xFF) {
 		return 0;
@@ -563,7 +563,7 @@ latin1_encoder(unsigned char *buffer, int c)
  */
 
 static int
-ucs_4_decoder(cl_eformat_read_byte8 read_byte8, cl_object source)
+ucs_4be_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object source)
 {
 	unsigned char buffer[4];
 	if (read_byte8(source, buffer, 4) < 4) {
@@ -574,7 +574,7 @@ ucs_4_decoder(cl_eformat_read_byte8 read_byte8, cl_object source)
 }
 
 static int
-ucs_4_encoder(unsigned char *buffer, int c)
+ucs_4be_encoder(cl_object stream, unsigned char *buffer, int c)
 {
 	buffer[3] = c & 8; c >>= 8;
 	buffer[2] = c & 8; c >>= 8;
@@ -584,11 +584,70 @@ ucs_4_encoder(unsigned char *buffer, int c)
 }
 
 /*
+ * UCS-4 LITTLE ENDIAN
+ */
+
+static int
+ucs_4le_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object source)
+{
+	unsigned char buffer[4];
+	if (read_byte8(source, buffer, 4) < 4) {
+		return EOF;
+	} else {
+		return buffer[0]+buffer[1]<<8+buffer[2]<<16+buffer[3]<<24;
+	}
+}
+
+static int
+ucs_4le_encoder(cl_object stream, unsigned char *buffer, int c)
+{
+	buffer[0] = c & 8; c >>= 8;
+	buffer[1] = c & 8; c >>= 8;
+	buffer[2] = c & 8; c >>= 8;
+	buffer[3] = c;
+	return 4;
+}
+
+/*
+ * UCS-4 BOM ENDIAN
+ */
+
+static int
+ucs_4_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object source)
+{
+	cl_fixnum c = ucs_4be_decoder(stream, read_byte8, source);
+	if (c == 0xFEFF) {
+		stream->stream.decoder = ucs_4be_decoder;
+		stream->stream.encoder = ucs_4be_encoder;
+		return ucs_4be_decoder(stream, read_byte8, source);
+	} else if (c == 0xFFFE0000) {
+		stream->stream.decoder = ucs_4le_decoder;
+		stream->stream.encoder = ucs_4le_encoder;
+		return ucs_4le_decoder(stream, read_byte8, source);
+	} else {
+		stream->stream.decoder = ucs_4be_decoder;
+		stream->stream.encoder = ucs_4be_encoder;
+		return c;
+	}
+}
+
+static int
+ucs_4_encoder(cl_object stream, unsigned char *buffer, int c)
+{
+	stream->stream.decoder = ucs_4be_decoder;
+	stream->stream.encoder = ucs_4be_encoder;
+	buffer[0] = 0xFF;
+	buffer[1] = 0xFE;
+	buffer[2] = buffer[3] = 0;
+	return 4 + ucs_4be_encoder(stream, buffer+4, c);
+}
+
+/*
  * UCS-2 BIG ENDIAN
  */
 
 static int
-ucs_2_decoder(cl_eformat_read_byte8 read_byte8, cl_object strm)
+ucs_2be_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object strm)
 {
 	unsigned char buffer[2];
 	if (read_byte8(strm, buffer, 2) < 2) {
@@ -599,7 +658,7 @@ ucs_2_decoder(cl_eformat_read_byte8 read_byte8, cl_object strm)
 }
 
 static int
-ucs_2_encoder(unsigned char *buffer, int c)
+ucs_2be_encoder(cl_object stream, unsigned char *buffer, int c)
 {
 	if (c > 0xFFFF)
 		return 0;
@@ -609,11 +668,69 @@ ucs_2_encoder(unsigned char *buffer, int c)
 }
 
 /*
+ * UCS-2 LITTLE ENDIAN
+ */
+
+static int
+ucs_2le_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object strm)
+{
+	unsigned char buffer[2];
+	if (read_byte8(strm, buffer, 2) < 2) {
+		return EOF;
+	} else {
+		return buffer[0]+buffer[1]<<8;
+	}
+}
+
+static int
+ucs_2le_encoder(cl_object stream, unsigned char *buffer, int c)
+{
+	if (c > 0xFFFF)
+		return 0;
+	buffer[0] = c & 8; c >>= 8;
+	buffer[1] = c;
+	return 2;
+}
+
+/*
+ * UCS-2 BOM ENDIAN
+ */
+
+static int
+ucs_2_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object source)
+{
+	int c = ucs_2be_decoder(stream, read_byte8, source);
+	if (c == 0xFEFF) {
+		stream->stream.decoder = ucs_2be_decoder;
+		stream->stream.encoder = ucs_2be_encoder;
+		return ucs_2be_decoder(stream, read_byte8, source);
+	} else if (c == 0xFFFE) {
+		stream->stream.decoder = ucs_2le_decoder;
+		stream->stream.encoder = ucs_2le_encoder;
+		return ucs_2le_decoder(stream, read_byte8, source);
+	} else {
+		stream->stream.decoder = ucs_2be_decoder;
+		stream->stream.encoder = ucs_2be_encoder;
+		return c;
+	}
+}
+
+static int
+ucs_2_encoder(cl_object stream, unsigned char *buffer, int c)
+{
+	stream->stream.decoder = ucs_2be_decoder;
+	stream->stream.encoder = ucs_2be_encoder;
+	buffer[0] = 0xFF;
+	buffer[1] = 0xFE;
+	return 2 + ucs_2be_encoder(stream, buffer+2, c);
+}
+
+/*
  * UTF-8
  */
 
 static int
-utf_8_decoder(cl_eformat_read_byte8 read_byte8, cl_object source)
+utf_8_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object source)
 {
 	/* In understanding this code:
 	 * 0x8 = 1000, 0xC = 1100, 0xE = 1110, 0xF = 1111
@@ -673,7 +790,7 @@ utf_8_decoder(cl_eformat_read_byte8 read_byte8, cl_object source)
 }
 
 static int
-utf_8_encoder(unsigned char *buffer, int c)
+utf_8_encoder(cl_object stream, unsigned char *buffer, int c)
 {
 	int nbytes;
 	if (c < 0) {
@@ -2423,8 +2540,20 @@ parse_external_format(cl_object strm, cl_object format)
 	if (format == @':UCS-2') {
 		return ECL_STREAM_UCS_2;
 	}
+	if (format == @':UCS-2BE') {
+		return ECL_STREAM_UCS_2BE;
+	}
+	if (format == @':UCS-2LE') {
+		return ECL_STREAM_UCS_2LE;
+	}
 	if (format == @':UCS-4') {
 		return ECL_STREAM_UCS_4;
+	}
+	if (format == @':UCS-4BE') {
+		return ECL_STREAM_UCS_4BE;
+	}
+	if (format == @':UCS-4LE') {
+		return ECL_STREAM_UCS_4LE;
 	}
 #else
 	if (format == @':UTF-8' || format == @':UCS-2' || format == @':UCS-4') {
@@ -2471,7 +2600,9 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags,
 		t = @'unsigned-byte';
 	}
 	flags |= parse_external_format(stream, external_format);
-	switch (flags & (ECL_STREAM_FORMAT & ~(ECL_STREAM_CR | ECL_STREAM_LF))) {
+	stream->stream.ops->read_char = eformat_read_char;
+	stream->stream.ops->write_char = eformat_write_char;
+	switch (flags & ~(ECL_STREAM_CR | ECL_STREAM_LF)) {
 	case ECL_STREAM_BINARY:
 		IO_STREAM_ELT_TYPE(stream) = cl_list(2, t, MAKE_FIXNUM(byte_size));
 		stream->stream.format = Cnil;
@@ -2485,8 +2616,6 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags,
 		stream->stream.format = @':latin-1';
 		stream->stream.encoder = latin1_encoder;
 		stream->stream.decoder = latin1_decoder;
-		stream->stream.ops->read_char = eformat_read_char;
-		stream->stream.ops->write_char = eformat_write_char;
 		break;
 #ifdef ECL_UNICODE
 	case ECL_STREAM_UTF_8:
@@ -2495,8 +2624,6 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags,
 		stream->stream.format = @':utf-8';
 		stream->stream.encoder = utf_8_encoder;
 		stream->stream.decoder = utf_8_decoder;
-		stream->stream.ops->read_char = eformat_read_char;
-		stream->stream.ops->write_char = eformat_write_char;
 		break;
 	case ECL_STREAM_UCS_2:
 		IO_STREAM_ELT_TYPE(stream) = @'character';
@@ -2504,17 +2631,41 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags,
 		stream->stream.format = @':ucs-2';
 		stream->stream.encoder = ucs_2_encoder;
 		stream->stream.decoder = ucs_2_decoder;
-		stream->stream.ops->read_char = eformat_read_char;
-		stream->stream.ops->write_char = eformat_write_char;
+		break;
+	case ECL_STREAM_UCS_2BE:
+		IO_STREAM_ELT_TYPE(stream) = @'character';
+		byte_size = 8*2;
+		stream->stream.format = @':ucs-2be';
+		stream->stream.encoder = ucs_2be_encoder;
+		stream->stream.decoder = ucs_2be_decoder;
+		break;
+	case ECL_STREAM_UCS_2LE:
+		IO_STREAM_ELT_TYPE(stream) = @'character';
+		byte_size = 8*2;
+		stream->stream.format = @':ucs-2le';
+		stream->stream.encoder = ucs_2le_encoder;
+		stream->stream.decoder = ucs_2le_decoder;
 		break;
 	case ECL_STREAM_UCS_4:
 		IO_STREAM_ELT_TYPE(stream) = @'character';
 		byte_size = 8*4;
-		stream->stream.format = @':ucs-4';
+		stream->stream.format = @':ucs-4be';
 		stream->stream.encoder = ucs_4_encoder;
 		stream->stream.decoder = ucs_4_decoder;
-		stream->stream.ops->read_char = eformat_read_char;
-		stream->stream.ops->write_char = eformat_write_char;
+		break;
+	case ECL_STREAM_UCS_4BE:
+		IO_STREAM_ELT_TYPE(stream) = @'character';
+		byte_size = 8*4;
+		stream->stream.format = @':ucs-4be';
+		stream->stream.encoder = ucs_4be_encoder;
+		stream->stream.decoder = ucs_4be_decoder;
+		break;
+	case ECL_STREAM_UCS_4LE:
+		IO_STREAM_ELT_TYPE(stream) = @'character';
+		byte_size = 8*4;
+		stream->stream.format = @':ucs-4le';
+		stream->stream.encoder = ucs_4le_encoder;
+		stream->stream.decoder = ucs_4le_decoder;
 		break;
 #endif
 	default:

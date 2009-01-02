@@ -511,7 +511,7 @@ struct ecl_file_ops {
 
 enum {
 	ECL_STREAM_BINARY = 0,
-	ECL_STREAM_FORMAT = 0x1F,
+	ECL_STREAM_FORMAT = 0x2F,
 #ifdef ECL_UNICODE
 	ECL_STREAM_DEFAULT_FORMAT = 2,
 #else
@@ -521,18 +521,22 @@ enum {
 	ECL_STREAM_LATIN_1 = 1,
 	ECL_STREAM_UTF_8 = 2,
 	ECL_STREAM_UCS_2 = 3,
-	ECL_STREAM_UCS_4 = 4,
+	ECL_STREAM_UCS_2LE = 4,
+	ECL_STREAM_UCS_2BE = 5,
+	ECL_STREAM_UCS_4 = 6,
+	ECL_STREAM_UCS_4LE = 7,
+	ECL_STREAM_UCS_4BE = 8,
 	ECL_STREAM_8BIT = 5,
 	ECL_STREAM_CR = 8,
 	ECL_STREAM_LF = 16,
 	ECL_STREAM_SIGNED_BYTES = 32,
 	ECL_STREAM_C_STREAM = 64,
-	ECL_STREAM_MIGHT_SEEK = 128,
+	ECL_STREAM_MIGHT_SEEK = 128
 };
 
-typedef int (*cl_eformat_encoder)(unsigned char *buffer, int c);
+typedef int (*cl_eformat_encoder)(cl_object stream, unsigned char *buffer, int c);
 typedef cl_index (*cl_eformat_read_byte8)(cl_object object, unsigned char *buffer, cl_index n);
-typedef int (*cl_eformat_decoder)(cl_eformat_read_byte8 read_byte8, cl_object source);
+typedef int (*cl_eformat_decoder)(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object source);
 
 struct ecl_stream {
 	HEADER2(mode,closed);	/*  stream mode of enum smmode  */
@@ -547,7 +551,7 @@ struct ecl_stream {
 	cl_fixnum int0;		/*  some int  */
 	cl_fixnum int1;		/*  some int  */
 	cl_index byte_size;	/*  size of byte in binary streams  */
-	cl_fixnum last_op;	/*  0: unknown, 1: reading, -1: writing */
+	cl_index last_op;	/*  0: unknown, 1: reading, -1: writing */
 	char *buffer;		/*  buffer for FILE  */
 	cl_object format;	/*  external format  */
 	cl_eformat_encoder encoder;

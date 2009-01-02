@@ -26,7 +26,7 @@ ECL 9.1.0:
 
  - ECL supports external formats. They may be a symbol, denoting the encoding
    or an encoding option, or a list of symbols. Valid symbols are :DEFAULT,
-   :LATIN-1, :ISO-8859-1, :UTF-8, :UCS-2, :UCS-4, :CR, :LF and :CRLF. Default
+   :LATIN-1, :ISO-8859-1, :UTF-8, :UCS-{2,4}{,BE,LE} :CR, :LF and :CRLF. Default
    option is :LF.
 
 * Bugs fixed:
@@ -35,6 +35,8 @@ ECL 9.1.0:
    signed zero if X is a float with a negative sign.
 
  - (SXHASH -0.0) != (SXHASH 0.0)
+
+ - (UNREAD-CHAR c) did not decrease the file position accordingly.
 
 * AMOP:
 

@@ -1731,6 +1731,10 @@ cl_symbols[] = {
 {KEY_ "CR",NULL},
 {KEY_ "LF",NULL},
 {KEY_ "CRLF",NULL},
+{KEY_ "UCS-2BE",NULL},
+{KEY_ "UCS-4BE",NULL},
+{KEY_ "UCS-2LE",NULL},
+{KEY_ "UCS-4LE",NULL},
 
 /* Tag for end of list */
 {NULL,NULL}};
