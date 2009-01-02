@@ -1728,5 +1728,9 @@ cl_symbols[] = {
 {EXT_ "MAYBE-QUOTE",NULL},
 {EXT_ "MAYBE-UNQUOTE",NULL},
 
+{KEY_ "CR",NULL},
+{KEY_ "LF",NULL},
+{KEY_ "CRLF",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};

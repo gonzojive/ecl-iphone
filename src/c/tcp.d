@@ -283,9 +283,9 @@ si_open_client_stream(cl_object host, cl_object port)
      @(return Cnil)
 
 #if defined(_MSC_VER) || defined(mingw32)
-   stream = ecl_make_stream_from_fd(host, fd, smm_io_wsock, 8, 0);
+   stream = ecl_make_stream_from_fd(host, fd, smm_io_wsock, 8, 0, Cnil);
 #else
-   stream = ecl_make_stream_from_fd(host, fd, smm_io, 8, 0);
+   stream = ecl_make_stream_from_fd(host, fd, smm_io, 8, 0, Cnil);
 #endif
 
    @(return stream)
@@ -303,7 +303,7 @@ si_open_server_stream(cl_object port)
    fd = create_server_port(p);
    ecl_enable_interrupts();
 
-   @(return ((fd == 0)? Cnil : ecl_make_stream_from_fd(Cnil, fd, smm_io, 8, 0)))
+   @(return ((fd == 0)? Cnil : ecl_make_stream_from_fd(Cnil, fd, smm_io, 8, 0, Cnil)))
 }
 
 /************************************************************
@@ -341,7 +341,7 @@ si_open_unix_socket_stream(cl_object path)
 		@(return Cnil)
 	}
 
-	@(return ecl_make_stream_from_fd(path, fd, smm_io, 8, 0))
+	@(return ecl_make_stream_from_fd(path, fd, smm_io, 8, 0, Cnil))
 #endif
 }
 

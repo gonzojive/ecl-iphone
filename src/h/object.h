@@ -137,6 +137,9 @@ typedef cl_object (*cl_objectfn_fixed)();
 #define	CODE_CHAR(c)		((cl_object)(((cl_fixnum)((c & 0xff) << 2)|CHARACTER_TAG)))
 #define	CHAR_CODE(obje)		((((cl_fixnum)(obje)) >> 2) & 0xff)
 #endif
+#define ECL_CHAR_CODE_RETURN	13
+#define ECL_CHAR_CODE_NEWLINE	10
+#define ECL_CHAR_CODE_LINEFEED	10
 
 #define ECL_NUMBER_TYPE_P(t)	(t >= t_fixnum && t <= t_complex)
 #define REAL_TYPE(t)		(t >= t_fixnum && t < t_complex)
@@ -508,7 +511,7 @@ struct ecl_file_ops {
 
 enum {
 	ECL_STREAM_BINARY = 0,
-	ECL_STREAM_FORMAT = 0xF,
+	ECL_STREAM_FORMAT = 0x1F,
 #ifdef ECL_UNICODE
 	ECL_STREAM_DEFAULT_FORMAT = 2,
 #else
@@ -519,26 +522,38 @@ enum {
 	ECL_STREAM_UTF_8 = 2,
 	ECL_STREAM_UCS_2 = 3,
 	ECL_STREAM_UCS_4 = 4,
-	ECL_STREAM_SIGNED_BYTES = 16,
-	ECL_STREAM_C_STREAM = 32,
-	ECL_STREAM_MIGHT_SEEK = 64
+	ECL_STREAM_8BIT = 5,
+	ECL_STREAM_CR = 8,
+	ECL_STREAM_LF = 16,
+	ECL_STREAM_SIGNED_BYTES = 32,
+	ECL_STREAM_C_STREAM = 64,
+	ECL_STREAM_MIGHT_SEEK = 128,
 };
 
+typedef int (*cl_eformat_encoder)(unsigned char *buffer, int c);
+typedef cl_index (*cl_eformat_read_byte8)(cl_object object, unsigned char *buffer, cl_index n);
+typedef int (*cl_eformat_decoder)(cl_eformat_read_byte8 read_byte8, cl_object source);
+
 struct ecl_stream {
-	HEADER2(mode,closed);
-       				/*  stream mode of enum smmode  */
+	HEADER2(mode,closed);	/*  stream mode of enum smmode  */
 				/*  closed stream?  */
 	struct ecl_file_ops *ops; /*  dispatch table  */
 	void *file;		/*  file pointer  */
 	cl_object object0;	/*  some object  */
 	cl_object object1;	/*  some object */
-	cl_fixnum unread;	/*  one-char buffer for unread-char  */
+	cl_object byte_stack;	/*  buffer for unread bytes  */
+	cl_fixnum last_char;	/*  last character read  */
+	cl_fixnum last_code[2];	/*  actual composition of last character  */
 	cl_fixnum int0;		/*  some int  */
 	cl_fixnum int1;		/*  some int  */
 	cl_index byte_size;	/*  size of byte in binary streams  */
 	cl_fixnum last_op;	/*  0: unknown, 1: reading, -1: writing */
 	char *buffer;		/*  buffer for FILE  */
 	cl_object format;	/*  external format  */
+	cl_eformat_encoder encoder;
+	cl_eformat_decoder decoder;
+	cl_object encoder_table;
+	cl_object decoder_table;
 	int flags;		/*  character table, flags, etc  */
 };
 

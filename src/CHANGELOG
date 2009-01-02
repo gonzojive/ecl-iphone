@@ -24,6 +24,11 @@ ECL 9.1.0:
  - When a string is read, if the characters are base-char, the string is read
    as a base-string.
 
+ - ECL supports external formats. They may be a symbol, denoting the encoding
+   or an encoding option, or a list of symbols. Valid symbols are :DEFAULT,
+   :LATIN-1, :ISO-8859-1, :UTF-8, :UCS-2, :UCS-4, :CR, :LF and :CRLF. Default
+   option is :LF.
+
 * Bugs fixed:
 
  - (FLOOR X X), (CEILING X X), etc, might return a second value which is a
