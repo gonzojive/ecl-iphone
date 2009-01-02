@@ -726,6 +726,56 @@ ucs_2_encoder(cl_object stream, unsigned char *buffer, int c)
 }
 
 /*
+ * UCS-2 BOM ENDIAN
+ */
+
+static int
+user_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object source)
+{
+	cl_object table = stream->stream.format_table;
+	cl_object character, byte;
+	unsigned char buffer[2];
+	if (read_byte8(source, buffer, 1) < 1) {
+		return EOF;
+	}
+	byte = MAKE_FIXNUM(buffer);
+	character = ecl_gethash_safe(MAKE_FIXNUM(buffer[0]), table, Cnil);
+	if (Null(character)) {
+		return EOF-2;
+	}
+	if (character == Ct) {
+		if (read_byte8(source, buffer+1, 1) < 1) {
+			return EOF;
+		}
+		character = ecl_gethash_safe(MAKE_FIXNUM((buffer[0]<<8+buffer[1])),
+					     table, Cnil);
+		if (Null(character)) {
+			return EOF-2;
+		}
+	}
+	return CHAR_CODE(character);
+}
+
+static int
+user_encoder(cl_object stream, unsigned char *buffer, int c)
+{
+	cl_object byte = ecl_gethash_safe(CODE_CHAR(c), stream->stream.format_table, Cnil);
+	if (Null(byte)) {
+		return 0;
+	} else {
+		cl_fixnum code = fix(byte);
+		if (c > 0xFF) {
+			buffer[1] = c & 8; c >>= 8;
+			buffer[0] = c;
+			return 2;
+		} else {
+			buffer[0] = c;
+			return 1;
+		}
+	}
+}
+
+/*
  * UTF-8
  */
 
@@ -2519,15 +2569,14 @@ const struct ecl_file_ops input_file_ops = {
 
 
 static int
-parse_external_format(cl_object strm, cl_object format)
+parse_external_format(cl_object stream, cl_object format)
 {
 	if (CONSP(format)) {
 		int flags = 0;
 		do {
-			flags |= parse_external_format(strm, ECL_CONS_CAR(format));
+			flags |= parse_external_format(stream, ECL_CONS_CAR(format));
 			format = cl_cdr(format);
 		} while (CONSP(format));
-		printf("%d\n", flags);
 		return flags;
 	}
 	if (FIXNUMP(format)) {
@@ -2581,6 +2630,10 @@ parse_external_format(cl_object strm, cl_object format)
 	if (format == Cnil) {
 		/* Binary stream */
 		return 0;
+	}
+	if (type_of(format) == t_hashtable) {
+		stream->stream.format_table = format;
+		return ECL_STREAM_USER_FORMAT;
 	}
 	FEerror("Unknown external format: ~A", 1, format);
 	return ECL_STREAM_DEFAULT_FORMAT;
@@ -2668,6 +2721,13 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags,
 		stream->stream.decoder = ucs_4le_decoder;
 		break;
 #endif
+	case ECL_STREAM_USER_FORMAT:
+		IO_STREAM_ELT_TYPE(stream) = @'character';
+		byte_size = 8;
+		stream->stream.format = stream->stream.format_table;
+		stream->stream.encoder = user_encoder;
+		stream->stream.decoder = user_decoder;
+		break;
 	default:
 		FEerror("Invalid external format code ~D with ~A",
 			1, MAKE_FIXNUM(flags), external_format);

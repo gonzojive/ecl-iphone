@@ -526,12 +526,12 @@ enum {
 	ECL_STREAM_UCS_4 = 6,
 	ECL_STREAM_UCS_4LE = 7,
 	ECL_STREAM_UCS_4BE = 8,
-	ECL_STREAM_8BIT = 5,
-	ECL_STREAM_CR = 8,
-	ECL_STREAM_LF = 16,
-	ECL_STREAM_SIGNED_BYTES = 32,
-	ECL_STREAM_C_STREAM = 64,
-	ECL_STREAM_MIGHT_SEEK = 128
+	ECL_STREAM_USER_FORMAT = 9,
+	ECL_STREAM_CR = 16,
+	ECL_STREAM_LF = 32,
+	ECL_STREAM_SIGNED_BYTES = 64,
+	ECL_STREAM_C_STREAM = 128,
+	ECL_STREAM_MIGHT_SEEK = 256
 };
 
 typedef int (*cl_eformat_encoder)(cl_object stream, unsigned char *buffer, int c);
@@ -556,8 +556,7 @@ struct ecl_stream {
 	cl_object format;	/*  external format  */
 	cl_eformat_encoder encoder;
 	cl_eformat_decoder decoder;
-	cl_object encoder_table;
-	cl_object decoder_table;
+	cl_object format_table;
 	int flags;		/*  character table, flags, etc  */
 };
 
