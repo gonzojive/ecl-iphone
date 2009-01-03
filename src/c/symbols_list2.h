@@ -1739,5 +1739,7 @@ cl_symbols[] = {
 {EXT_ "LOAD-ENCODING",NULL},
 {EXT_ "MAKE-ENCODING",NULL},
 
+{KEY_ "US-ASCII",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};

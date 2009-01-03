@@ -81,6 +81,10 @@ static void unread_error(cl_object strm);
 static void unread_twice(cl_object strm);
 static void io_error(cl_object strm);
 static void character_size_overflow(cl_object strm, int c);
+static void unsupported_character(cl_object strm);
+static void malformed_character(cl_object strm);
+static void too_long_utf8_sequence(cl_object strm);
+static void invalid_codepoint(cl_object strm, int c);
 static void wrong_file_handler(cl_object strm);
 
 /**********************************************************************
@@ -454,9 +458,6 @@ static int
 eformat_read_char(cl_object strm)
 {
 	int c = strm->stream.decoder(strm, strm->stream.ops->read_byte8, strm);
-	if (c < EOF) {
-		FEerror("Encoding error when reading from stream ~A", 1, strm);
-	}
 	if (c != EOF) {
 		strm->stream.last_char = c;
 		strm->stream.last_code[0] = c;
@@ -536,6 +537,37 @@ eformat_write_char_crlf(cl_object strm, int c)
 	}
 	return eformat_write_char(strm, c);
 }
+
+/*
+ * US ASCII, that is the 128 (0-127) lowest codes of Unicode
+ */
+
+static int
+ascii_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object source)
+{
+	unsigned char aux;
+	if (read_byte8(source, &aux, 1) < 1) {
+		return EOF;
+	} else if (aux > 127) {
+		invalid_codepoint(stream, aux);
+	} else {
+		return aux;
+	}
+}
+
+static int
+ascii_encoder(cl_object stream, unsigned char *buffer, int c)
+{
+	if (c > 127) {
+		return 0;
+	}
+	buffer[0] = c;
+	return 1;
+}
+
+/*
+ * LATIN-1, ISO-8859-1, that is the 256 lowest codes of Unicode
+ */
 
 static int
 latin1_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object source)
@@ -733,24 +765,24 @@ static int
 user_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object source)
 {
 	cl_object table = stream->stream.format_table;
-	cl_object character, byte;
+	cl_object character;
 	unsigned char buffer[2];
 	if (read_byte8(source, buffer, 1) < 1) {
 		return EOF;
 	}
-	byte = MAKE_FIXNUM(buffer);
 	character = ecl_gethash_safe(MAKE_FIXNUM(buffer[0]), table, Cnil);
 	if (Null(character)) {
-		return EOF-2;
+		invalid_codepoint(stream, buffer[0]);
 	}
 	if (character == Ct) {
 		if (read_byte8(source, buffer+1, 1) < 1) {
 			return EOF;
-		}
-		character = ecl_gethash_safe(MAKE_FIXNUM((buffer[0]<<8+buffer[1])),
-					     table, Cnil);
-		if (Null(character)) {
-			return EOF-2;
+		} else {
+			cl_fixnum byte = buffer[0]<<8+buffer[1];
+			character = ecl_gethash_safe(MAKE_FIXNUM(byte), table, Cnil);
+			if (Null(character)) {
+				invalid_codepoint(stream, byte);
+			}
 		}
 	}
 	return CHAR_CODE(character);
@@ -795,7 +827,7 @@ utf_8_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object sour
 		return buffer[0];
 	}
 	if ((buffer[0] & 0x40) == 0)
-		goto MALFORMED;
+		malformed_character(stream);
 	if ((buffer[0] & 0x20) == 0) {
 		buffer[0] &= 0x1F;
 		nbytes = 1;
@@ -806,10 +838,10 @@ utf_8_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object sour
 		buffer[0] &= 0x07;
 		nbytes = 3;
 	} else {
-		FEerror("ECL does not support Unicode characters with more than 21 bits.", 0);
+		unsupported_character(stream);
 	}
 	if (buffer[0] == 0) {
-		goto TOO_LONG;
+		too_long_utf8_sequence(stream);
 	}
 	if (read_byte8(source, buffer+1, nbytes) < nbytes)
 		return EOF;
@@ -817,26 +849,18 @@ utf_8_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object sour
 		unsigned char c = buffer[i];
 		/*printf(": %04x :", c);*/
 		if ((c & 0xC0) != 0x80)
-			goto MALFORMED;
+			malformed_character(stream);
 		c &= 0x3F;
-		if (c == 0)
-			goto TOO_LONG;
 		cum = (cum << 6) | c;
 	}
 	if (cum >= 0xd800) {
 		if (cum <= 0xdfff)
-			goto INVALID_CODE_POINT;
+			invalid_codepoint(stream, cum);
 		if (cum >= 0xFFFE && cum <= 0xFFFF)
-			goto INVALID_CODE_POINT;
+			invalid_codepoint(stream, cum);
 	}
 	/*printf("; %04x ;", cum);*/
 	return cum;
- TOO_LONG:
-	return EOF - 1;
- MALFORMED:
-	return EOF - 2;
- INVALID_CODE_POINT:
-	return EOF - 3;
 }
 
 static int
@@ -2618,6 +2642,9 @@ parse_external_format(cl_object stream, cl_object format)
 	if (format == @':LATIN-1') {
 		return ECL_STREAM_LATIN_1;
 	}
+	if (format == @':US-ASCII') {
+		return ECL_STREAM_US_ASCII; 
+	}
 	if (format == @':CR') {
 		return ECL_STREAM_CR;
 	}
@@ -2733,9 +2760,16 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags,
 		stream->stream.encoder = user_encoder;
 		stream->stream.decoder = user_decoder;
 		break;
+	case ECL_STREAM_US_ASCII:
+		IO_STREAM_ELT_TYPE(stream) = @'base-char';
+		byte_size = 8;
+		stream->stream.format = @':us-ascii';
+		stream->stream.encoder = ascii_encoder;
+		stream->stream.decoder = ascii_decoder;
+		break;
 	default:
-		FEerror("Invalid external format code ~D with ~A",
-			1, MAKE_FIXNUM(flags), external_format);
+		FEerror("Invalid or unsupported external format ~A with code ~D",
+			2, external_format, MAKE_FIXNUM(flags));
  	}
 	if (stream->stream.ops->write_char == eformat_write_char &&
 	    (flags & ECL_STREAM_CR)) {
@@ -4311,6 +4345,35 @@ character_size_overflow(cl_object strm, int c)
 	FEerror("Tried to write a character code ~D in a ~A stream.", 0,
 		MAKE_FIXNUM(c),
 		cl_stream_external_format(strm));
+}
+
+static void
+unsupported_character(cl_object stream)
+{
+	FEerror("In stream ~A, found a Unicode character code that "
+		"exceeds the limit of 21 bits.",
+		1, stream);
+}
+
+static void
+invalid_codepoint(cl_object stream, cl_fixnum c)
+{
+	FEerror("When reading stream ~A with external format ~A,~%"
+		"found an invalid character code, ~D.",
+		3, stream, cl_stream_external_format(stream), MAKE_FIXNUM(c));
+}
+
+static void
+malformed_character(cl_object stream)
+{
+	FEerror("Stream ~A with external format ~A contains an invalid octet sequence.",
+		2, stream, cl_stream_external_format(stream));
+}
+
+static void
+too_long_utf8_sequence(cl_object stream)
+{
+	CEerror(Cnil, "In stream ~S, found a too long UTF-8 sequence.", 1, stream);
 }
 
 static void
