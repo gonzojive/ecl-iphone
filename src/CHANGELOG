@@ -33,6 +33,9 @@ ECL 9.1.0:
  - The external format options :BIG-ENDIAN or :LITTLE-ENDIAN also affect the
    behavior of READ-BYTE and WRITE-BYTE. Default value is :BIG-ENDIAN.
 
+ - The interpretation of newline characters defaults to CRLF in Windows and
+   LF elsewhere.
+
 * Bugs fixed:
 
  - (FLOOR X X), (CEILING X X), etc, might return a second value which is a

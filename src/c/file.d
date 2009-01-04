@@ -4497,6 +4497,9 @@ init_file(void)
 	cl_object aux;
 	cl_object null_stream;
 	cl_object x;
+#if defined(_MSVC)
+	flags |= ECL_STREAM_CRLF;
+#endif
 
 	null_stream = ecl_make_stream_from_FILE(make_constant_base_string("/dev/null"),
 						NULL, smm_io, 8, flags, Cnil);
