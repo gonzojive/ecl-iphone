@@ -676,58 +676,95 @@ ucs_4_encoder(cl_object stream, unsigned char *buffer, int c)
 	return 4 + ucs_4be_encoder(stream, buffer+4, c);
 }
 
+
 /*
- * UCS-2 BIG ENDIAN
+ * UTF-16 BIG ENDIAN
  */
 
 static int
-ucs_2be_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object strm)
+ucs_2be_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object source)
 {
 	unsigned char buffer[2];
-	if (read_byte8(strm, buffer, 2) < 2) {
+	if (read_byte8(source, buffer, 2) < 2) {
 		return EOF;
 	} else {
-		return buffer[1] + (buffer[0]<<8);
+		int c = ((int)buffer[0] << 8) | buffer[1];
+		if ((buffer[0] & 0xFC) == 0xD8) {
+			if (read_byte8(source, buffer, 2) < 2) {
+				return EOF;
+			} else {
+				int aux = ((int)buffer[0] << 8) | buffer[1];
+				if ((buffer[0] & 0xF8) != 0xDC) {
+					malformed_character(stream);
+				}
+				c = ((c & 0x3FFF) << 10) + (aux & 0x3FFF) + 0x10000;
+			}
+		} else {
+			return c;
+		}
 	}
 }
 
 static int
 ucs_2be_encoder(cl_object stream, unsigned char *buffer, int c)
 {
-	if (c > 0xFFFF)
-		return 0;
-	buffer[1] = c & 0xFF; c >>= 8;
-	buffer[0] = c;
-	return 2;
+	if (c >= 0x10000) {
+		c -= 0x10000;
+		ucs_2be_encoder(stream, buffer, (c >> 10) | 0xD800);
+		ucs_2be_encoder(stream, buffer+2, (c & 0x3FFF) | 0xDC00);
+		return 4;
+	} else {
+		buffer[1] = c & 0xFF; c >>= 8;
+		buffer[0] = c;
+		return 2;
+	}
 }
 
 /*
- * UCS-2 LITTLE ENDIAN
+ * UTF-16 LITTLE ENDIAN
  */
 
 static int
-ucs_2le_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object strm)
+ucs_2le_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object source)
 {
 	unsigned char buffer[2];
-	if (read_byte8(strm, buffer, 2) < 2) {
+	if (read_byte8(source, buffer, 2) < 2) {
 		return EOF;
 	} else {
-		return buffer[0] + (buffer[1]<<8);
+		int c = ((int)buffer[1] << 8) | buffer[0];
+		if ((buffer[1] & 0xFC) == 0xD8) {
+			if (read_byte8(source, buffer, 2) < 2) {
+				return EOF;
+			} else {
+				int aux = ((int)buffer[1] << 8) | buffer[0];
+				if ((buffer[1] & 0xF8) != 0xDC) {
+					malformed_character(stream);
+				}
+				c = ((c & 0x3FFF) << 10) + (aux & 0x3FFF) + 0x10000;
+			}
+		} else {
+			return c;
+		}
 	}
 }
 
 static int
 ucs_2le_encoder(cl_object stream, unsigned char *buffer, int c)
 {
-	if (c > 0xFFFF)
-		return 0;
-	buffer[0] = c & 0xFF; c >>= 8;
-	buffer[1] = c;
-	return 2;
+	if (c >= 0x10000) {
+		c -= 0x10000;
+		ucs_2le_encoder(stream, buffer, (c >> 10) | 0xD8000);
+		ucs_2le_encoder(stream, buffer+2, (c & 0x3FFF) | 0xD800);
+		return 4;
+	} else {
+		buffer[0] = c & 0xFF; c >>= 8;
+		buffer[1] = c & 0xFF;
+		return 2;
+	}
 }
 
 /*
- * UCS-2 BOM ENDIAN
+ * UTF-16 BOM ENDIAN
  */
 
 static int
@@ -760,7 +797,7 @@ ucs_2_encoder(cl_object stream, unsigned char *buffer, int c)
 }
 
 /*
- * UCS-2 BOM ENDIAN
+ * USER DEFINED ENCODINGS
  */
 
 static int
@@ -4468,3 +4505,4 @@ init_file(void)
 	ECL_SET(@'*query-io*', aux);
 	ECL_SET(@'*debug-io*', aux);
 }
+
