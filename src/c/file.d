@@ -319,11 +319,6 @@ generic_read_byte(cl_object strm)
 {
 	cl_index (*read_byte8)(cl_object, unsigned char *, cl_index);
 	cl_index bs;
-#ifdef ECL_CLOS_STREAMS
-	if (ECL_INSTANCEP(strm)) {
-		return funcall(2, @'gray::stream-read-byte', strm);
-	}
-#endif
 	read_byte8 = stream_dispatch_table(strm)->read_byte8;
 	bs = strm->stream.byte_size;
 	if (bs == 8) {
@@ -335,7 +330,7 @@ generic_read_byte(cl_object strm)
 		} else {
 			return MAKE_FIXNUM((unsigned char)c);
 		}
-	} else {
+	} else if (strm->stream.flags & ECL_STREAM_LITTLE_ENDIAN) {
 		unsigned char c;
 		cl_index nb;
 		cl_object output = MAKE_FIXNUM(0);
@@ -349,6 +344,22 @@ generic_read_byte(cl_object strm)
 				aux = MAKE_FIXNUM((unsigned char)c);
 			output = cl_logior(2, output, cl_ash(aux, MAKE_FIXNUM(nb)));
 		}
+	} else {
+		unsigned char c;
+		cl_object output = NULL;
+		for (; bs >= 8; bs -= 8) {
+			cl_object aux;
+			if (read_byte8(strm, &c, 1) < 1)
+				return Cnil;
+			if (!output) {
+				output = cl_logior(2, MAKE_FIXNUM(c),
+						   cl_ash(output, MAKE_FIXNUM(8)));
+			} else if (strm->stream.flags & ECL_STREAM_SIGNED_BYTES) {
+				aux = MAKE_FIXNUM((signed char)c);
+			} else {
+				aux = MAKE_FIXNUM((unsigned char)c);
+			}
+		}
 	}
 }
 
@@ -357,30 +368,33 @@ generic_write_byte(cl_object c, cl_object strm)
 {
 	cl_index (*write_byte8)(cl_object strm, unsigned char *c, cl_index n);
 	cl_index bs;
-	/*
-	 * The first part is only for composite or complex streams.
-	 */
-BEGIN:
-#ifdef ECL_CLOS_STREAMS
-	if (ECL_INSTANCEP(strm)) {
-		funcall(3, @'gray::stream-write-byte', strm, c);
-		return;
-	}
-#endif
 	write_byte8 = stream_dispatch_table(strm)->write_byte8;
 	bs = strm->stream.byte_size;
 	if (bs == 8) {
 		cl_fixnum i = (strm->stream.flags & ECL_STREAM_SIGNED_BYTES)? fixint(c) : fixnnint(c);
 		unsigned char c = (unsigned char)i;
 		write_byte8(strm, &c, 1);
-	} else do {
-		cl_object b = cl_logand(2, c, MAKE_FIXNUM(0xFF));
-		unsigned char aux = (unsigned char)fix(b);
-		if (write_byte8(strm, &aux, 1) < 1)
-			break;
-		c = cl_ash(c, MAKE_FIXNUM(-8));
-		bs -= 8;
-	} while (bs);
+	} else if (strm->stream.flags & ECL_STREAM_LITTLE_ENDIAN) {
+		do {
+			cl_object b = cl_logand(2, c, MAKE_FIXNUM(0xFF));
+			unsigned char aux = (unsigned char)fix(b);
+			if (write_byte8(strm, &aux, 1) < 1)
+				break;
+			c = cl_ash(c, MAKE_FIXNUM(-8));
+			bs -= 8;
+		} while (bs);
+	} else {
+		do {
+			unsigned char aux;
+			cl_object b;
+			bs -= 8;
+			b = cl_logand(2, MAKE_FIXNUM(0xFF),
+				      bs? cl_ash(c, MAKE_FIXNUM(-bs)) : c);
+			aux = (unsigned char)fix(b);
+			if (write_byte8(strm, &aux, 1) < 1)
+				break;
+		} while (bs);
+	}
 }
 
 static int
@@ -2473,7 +2487,7 @@ io_file_clear_input(cl_object strm)
 	}
 #endif
 	while (file_listen(f) == ECL_LISTEN_AVAILABLE) {
-		io_file_read_char(strm);
+		eformat_read_char(strm);
 	}
 }
 
@@ -3902,7 +3916,7 @@ normalize_stream_element_type(cl_object element_type)
 		if (CAR(element_type) == @'signed-byte')
 			return -fixnnint(cl_cadr(element_type));
 	}
-	for (size = 1; 1; size++) {
+	for (size = 8; 1; size++) {
 		cl_object type;
 		type = cl_list(2, sign>0? @'unsigned-byte' : @'signed-byte',
 			       MAKE_FIXNUM(size));
@@ -3910,6 +3924,7 @@ normalize_stream_element_type(cl_object element_type)
 			return size * sign;
 		}
 	}
+	FEerror("Not a valid stream element type: ~A", 1, element_type);
 }
 
 cl_object
@@ -4092,8 +4107,8 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 		byte_size = normalize_stream_element_type(element_type);
 	}
 	if (byte_size != 0) {
-		if (external_format != @':default') {
-			FEerror("Cannot specify an external format for binary streams.", 0);
+		if (flags & ECL_STREAM_FORMAT) {
+			FEerror("Cannot specify a character external format for binary streams.", 0);
 		}
 		external_format = Cnil;
 	}

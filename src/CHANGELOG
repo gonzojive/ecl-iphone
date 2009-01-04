@@ -26,8 +26,12 @@ ECL 9.1.0:
 
  - ECL supports external formats. They may be a symbol, denoting the encoding
    or an encoding option, an association table between bytes and unicode codes
-   or a list of these. Valid symbols are :DEFAULT, :LATIN-1, :ISO-8859-1,
-   :UTF-8, :UCS-{2,4}{,BE,LE}, :US-ASCII :CR, :LF and :CRLF. Default option is :LF.
+   or a list of these. Some valid symbols are :DEFAULT, :LATIN-1, :ISO-8859-1,
+   :UTF-8, :UCS-{2,4}{,BE,LE}, :US-ASCII :CR, :LF, :CRLF, :BIG-ENDIAN and
+   :LITTLE-ENDIAN.
+
+ - The external format options :BIG-ENDIAN or :LITTLE-ENDIAN also affect the
+   behavior of READ-BYTE and WRITE-BYTE. Default value is :BIG-ENDIAN.
 
 * Bugs fixed:
 
