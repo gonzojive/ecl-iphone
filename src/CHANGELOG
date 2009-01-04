@@ -38,6 +38,9 @@ ECL 9.1.0:
 
  - (UNREAD-CHAR c) did not decrease the file position accordingly.
 
+ - FILE-STRING-LENGTH only works with file streams, for which it returns
+   the right value, and with Gray streams, which output NIL.
+
 * AMOP:
 
  - In DEFCLASS, the :TYPE of slots was ignored.

@@ -539,6 +539,33 @@ eformat_write_char_crlf(cl_object strm, int c)
 }
 
 /*
+ * If we use Unicode, this is LATIN-1, ISO-8859-1, that is the 256
+ * lowest codes of Unicode. Otherwise, we simply assume the file and
+ * the strings use the same format.
+ */
+
+static int
+passthrough_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object source)
+{
+	unsigned char aux;
+	if (read_byte8(source, &aux, 1) < 1)
+		return EOF;
+	else
+		return aux;
+}
+
+static int
+passthrough_encoder(cl_object stream, unsigned char *buffer, int c)
+{
+	if (c > 0xFF) {
+		return 0;
+	}
+	buffer[0] = c;
+	return 1;
+}
+
+#ifdef ECL_UNICODE
+/*
  * US ASCII, that is the 128 (0-127) lowest codes of Unicode
  */
 
@@ -565,31 +592,6 @@ ascii_encoder(cl_object stream, unsigned char *buffer, int c)
 	return 1;
 }
 
-/*
- * LATIN-1, ISO-8859-1, that is the 256 lowest codes of Unicode
- */
-
-static int
-latin1_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8, cl_object source)
-{
-	unsigned char aux;
-	if (read_byte8(source, &aux, 1) < 1)
-		return EOF;
-	else
-		return aux;
-}
-
-static int
-latin1_encoder(cl_object stream, unsigned char *buffer, int c)
-{
-	if (c > 0xFF) {
-		return 0;
-	}
-	buffer[0] = c;
-	return 1;
-}
-
-#ifdef ECL_UNICODE
 /*
  * UCS-4 BIG ENDIAN
  */
@@ -1169,9 +1171,21 @@ si_make_string_output_stream_from_string(cl_object s)
 	strm->stream.mode = (short)smm_string_output;
 	STRING_OUTPUT_STRING(strm) = s;
 	STRING_OUTPUT_COLUMN(strm) = 0;
-	strm->stream.format = @':latin-1';
-	strm->stream.flags = ECL_STREAM_LATIN_1;
+#ifndef ECL_UNICODE
+	strm->stream.format = @':default';
+	strm->stream.flags = ECL_STREAM_DEFAULT_FORMAT;
 	strm->stream.byte_size = 8;
+#else
+	if (type_of(s) == t_base_string) {
+		strm->stream.format = @':latin-1';
+		strm->stream.flags = ECL_STREAM_LATIN_1;
+		strm->stream.byte_size = 8;
+	} else {
+		strm->stream.format = @':ucs-4';
+		strm->stream.flags = ECL_STREAM_UCS_4;
+		strm->stream.byte_size = 32;
+	}
+#endif
 	@(return strm)
 }
 
@@ -1359,9 +1373,21 @@ ecl_make_string_input_stream(cl_object strng, cl_index istart, cl_index iend)
 	STRING_INPUT_STRING(strm) = strng;
 	STRING_INPUT_POSITION(strm) = istart;
 	STRING_INPUT_LIMIT(strm) = iend;
-	strm->stream.format = @':latin-1';
-	strm->stream.flags = ECL_STREAM_LATIN_1;
+#ifndef ECL_UNICODE
+	strm->stream.format = @':default';
+	strm->stream.flags = ECL_STREAM_DEFAULT_FORMAT;
 	strm->stream.byte_size = 8;
+#else
+	if (type_of(strng) == t_base_string) {
+		strm->stream.format = @':latin-1';
+		strm->stream.flags = ECL_STREAM_LATIN_1;
+		strm->stream.byte_size = 8;
+	} else {
+		strm->stream.format = @':ucs-4';
+		strm->stream.flags = ECL_STREAM_UCS_4;
+		strm->stream.byte_size = 32;
+	}
+#endif
 	return strm;
 }
 
@@ -2603,6 +2629,22 @@ parse_external_format(cl_object stream, cl_object format)
 	if (FIXNUMP(format)) {
 		return fix(format) & ECL_STREAM_FORMAT;
 	}
+	if (format == @':default' || format == Ct) {
+		return ECL_STREAM_DEFAULT_FORMAT;
+	}
+	if (format == @':CR') {
+		return ECL_STREAM_CR;
+	}
+	if (format == @':LF') {
+		return ECL_STREAM_LF;
+	}
+	if (format == @':CRLF') {
+		return ECL_STREAM_CR+ECL_STREAM_LF;
+	}
+	if (format == Cnil) {
+		/* Binary stream */
+		return 0;
+	}
 #ifdef ECL_UNICODE
 	if (format == @':UTF-8') {
 		return ECL_STREAM_UTF_8; 
@@ -2625,14 +2667,6 @@ parse_external_format(cl_object stream, cl_object format)
 	if (format == @':UCS-4LE') {
 		return ECL_STREAM_UCS_4LE;
 	}
-#else
-	if (format == @':UTF-8' || format == @':UCS-2' || format == @':UCS-4') {
-		FEerror("Unsupported external format: ~A", 1, format);
-	}
-#endif
-	if (format == @':default' || format == Ct) {
-		return ECL_STREAM_DEFAULT_FORMAT;
-	}
 	if (format == @':ISO-8859-1') {
 		return ECL_STREAM_ISO_8859_1;
 	}
@@ -2641,19 +2675,6 @@ parse_external_format(cl_object stream, cl_object format)
 	}
 	if (format == @':US-ASCII') {
 		return ECL_STREAM_US_ASCII; 
-	}
-	if (format == @':CR') {
-		return ECL_STREAM_CR;
-	}
-	if (format == @':LF') {
-		return ECL_STREAM_LF;
-	}
-	if (format == @':CRLF') {
-		return ECL_STREAM_CR+ECL_STREAM_LF;
-	}
-	if (format == Cnil) {
-		/* Binary stream */
-		return 0;
 	}
 	if (type_of(format) == t_hashtable) {
 		stream->stream.format_table = format;
@@ -2664,7 +2685,8 @@ parse_external_format(cl_object stream, cl_object format)
 							 format);
 		return ECL_STREAM_USER_FORMAT;
 	}
-	FEerror("Unknown external format: ~A", 1, format);
+#endif
+	FEerror("Unknown or unsupported external format: ~A", 1, format);
 	return ECL_STREAM_DEFAULT_FORMAT;
 }
 
@@ -2691,15 +2713,15 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags,
 		stream->stream.ops->read_char = not_character_read_char;
 		stream->stream.ops->write_char = not_character_write_char;
 		break;
+#ifdef ECL_UNICODE
 	/*case ECL_ISO_8859_1:*/
 	case ECL_STREAM_LATIN_1:
 		IO_STREAM_ELT_TYPE(stream) = @'base-char';
 		byte_size = 8;
 		stream->stream.format = @':latin-1';
-		stream->stream.encoder = latin1_encoder;
-		stream->stream.decoder = latin1_decoder;
+		stream->stream.encoder = passthrough_encoder;
+		stream->stream.decoder = passthrough_decoder;
 		break;
-#ifdef ECL_UNICODE
 	case ECL_STREAM_UTF_8:
 		IO_STREAM_ELT_TYPE(stream) = @'character';
 		byte_size = 8;
@@ -2749,7 +2771,6 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags,
 		stream->stream.encoder = ucs_4le_encoder;
 		stream->stream.decoder = ucs_4le_decoder;
 		break;
-#endif
 	case ECL_STREAM_USER_FORMAT:
 		IO_STREAM_ELT_TYPE(stream) = @'character';
 		byte_size = 8;
@@ -2764,6 +2785,15 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags,
 		stream->stream.encoder = ascii_encoder;
 		stream->stream.decoder = ascii_decoder;
 		break;
+#else
+	case ECL_STREAM_DEFAULT_FORMAT:
+		IO_STREAM_ELT_TYPE(stream) = @'base-char';
+		byte_size = 8;
+		stream->stream.format = @':default';
+		stream->stream.encoder = passthrough_encoder;
+		stream->stream.decoder = passthrough_decoder;
+		break;
+#endif
 	default:
 		FEerror("Invalid or unsupported external format ~A with code ~D",
 			2, external_format, MAKE_FIXNUM(flags));
@@ -3536,6 +3566,23 @@ writestr_stream(const char *s, cl_object strm)
 		ecl_write_char(*s++, strm);
 }
 
+static cl_index
+compute_char_size(cl_object stream, int c)
+{
+	unsigned char buffer[5];
+	int l = 0;
+	if (c == ECL_CHAR_CODE_NEWLINE) {
+		int flags = stream->stream.flags;
+		if (flags & ECL_STREAM_CR)
+			l += stream->stream.encoder(stream, buffer, ECL_CHAR_CODE_RETURN);
+		if (flags & ECL_STREAM_LF)
+			l += stream->stream.encoder(stream, buffer, ECL_CHAR_CODE_LINEFEED);
+	} else {
+		l += stream->stream.encoder(stream, buffer, c);
+	}
+	return l;
+}
+
 cl_object
 cl_file_string_length(cl_object stream, cl_object string)
 {
@@ -3544,57 +3591,27 @@ cl_file_string_length(cl_object stream, cl_object string)
 	 * Why not simply leaving the value unspecified, as with other
 	 * streams one cannot write to???
 	 */
-	if (type_of(stream) == t_stream &&
-	    stream->stream.mode == smm_broadcast) {
-		stream = BROADCAST_STREAM_LIST(stream);
-		if (ecl_endp(stream))
-			@(return MAKE_FIXNUM(1))
+#ifdef ECL_CLOS_STREAMS
+	if (ECL_INSTANCEP(stream)) {
+		@(return Cnil)
+	}
+#endif
+	if (!ECL_FILE_STREAMP(stream)) {
+		not_a_file_stream(stream);
 	}
 	switch (type_of(string)) {
 #ifdef ECL_UNICODE
-	case t_string: {
-		cl_object f = cl_stream_external_format(stream);
-		int flags = parse_external_format(Cnil, f);
-		if ((flags & ECL_STREAM_CR) && (flags & ECL_STREAM_LF)) {
-			cl_index i;
-			for (i = 0; i < string->string.fillp; i++) {
-				cl_index c = ecl_char(string, i);
-				if (c == ECL_CHAR_CODE_NEWLINE) {
-					l++;
-				}
-			}
-		}
-		switch (flags & ~(ECL_STREAM_CR | ECL_STREAM_LF)) {
-		case ECL_STREAM_UTF_8: {
-			cl_index i;
-			for (i = 0; i < string->string.fillp; i++) {
-				cl_index c = ecl_char(string, i);
-				l++;
-				if (c >= 0x7f) l++;
-				if (c >= 0x7ff) l++;
-				if (c >= 0xffff) l++;
-				if (c >= 0x1fffffL) l++;
-			}
-			break;
-		}
-		case ECL_STREAM_UCS_2:
-			l += string->string.fillp * 2;
-			break;
-		case ECL_STREAM_UCS_4:
-			l += string->string.fillp * 4;
-			break;
-		case ECL_STREAM_LATIN_1:
-		default:
-			l += string->string.fillp;
+	case t_string:
+#endif
+	case t_base_string: {
+		cl_index i;
+		for (i = 0; i < string->base_string.fillp; i++) {
+			l += compute_char_size(stream, ecl_char(string, i));
 		}
 		break;
 	}
-#endif
-	case t_base_string:
-		l = string->base_string.fillp;
-		break;
 	case t_character:
-		l = 1;
+		l = compute_char_size(stream, CHAR_CODE(string));
 		break;
 	default:
 		FEwrong_type_argument(@'string', string);
@@ -4221,7 +4238,8 @@ alloc_stream()
 	x->stream.object0 =
 	x->stream.object1 = OBJNULL;
 	x->stream.int0 = x->stream.int1 = 0;
-	x->stream.flags = ECL_STREAM_LATIN_1;
+	x->stream.format = Cnil;
+	x->stream.flags = 0;
 	x->stream.byte_size = 8;
 	x->stream.buffer = NULL;
 	x->stream.encoder = NULL;
@@ -4343,6 +4361,7 @@ character_size_overflow(cl_object strm, int c)
 		CODE_CHAR(c), cl_stream_external_format(strm));
 }
 
+#ifdef ECL_UNICODE
 static void
 unsupported_character(cl_object stream)
 {
@@ -4371,6 +4390,7 @@ too_long_utf8_sequence(cl_object stream)
 {
 	CEerror(Cnil, "In stream ~S, found a too long UTF-8 sequence.", 1, stream);
 }
+#endif
 
 static void
 wrong_file_handler(cl_object strm)
