@@ -74,6 +74,21 @@ struct cl_compiler_env {
 
 typedef struct cl_compiler_env *cl_compiler_env_ptr;
 
+/* character.d */
+
+#ifdef ECL_UNICODE
+#define ECL_UCS_NONCHARACTER(c) \
+	(((c) >= 0xFDD0 && (c) <= 0xFDEF) || \
+	 (((c) & 0xFFFF) >= 0xFFFE && (((c) & 0xFFFF) <= 0xFFFF)))
+#define ECL_UCS_PRIVATE(c) \
+	(((c) >= 0xE000 && (c) <= 0xF8FF) || \
+	 ((c) >= 0xF0000 && (c) <= 0xFFFD) || \
+	 ((c) >= 0x100000 && (c) <= 0x10FFFD))
+#define ECL_UCS_HIGH_SURROGATE(c) ((c) >= 0xD800 && (c) <= 0xDBFF)
+#define ECL_UCS_LOW_SURROGATE(c) ((c) >= 0xDC00 && (c) <= 0xDFFF)
+#endif
+
+
 /* interpreter.d */
 
 #define ecl_stack_ref(env,n) (env)->stack[n]
