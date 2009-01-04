@@ -81,11 +81,15 @@
     ("DOS-CP869" . "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP869.TXT")
     ("DOS-CP874" . "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP874.TXT") 
 
-    ("WINDOWS-CP874" . "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP874.TXT")
+    ; Redundant WINDOWS-CP874 DOS-CP874
+    ;("WINDOWS-CP874" . "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP874.TXT")
+
+    ; Too large: not in default image.
     ;("WINDOWS-CP932" . "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP932.TXT")
     ;("WINDOWS-CP936" . "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP936.TXT")
     ;("WINDOWS-CP949" . "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP949.TXT")
     ;("WINDOWS-CP950" . "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP950.TXT")
+
     ("WINDOWS-CP1250" . "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1250.TXT")
     ("WINDOWS-CP1251" . "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1251.TXT")
     ("WINDOWS-CP1252" . "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1252.TXT")
@@ -98,5 +102,75 @@
     ))
 
 (loop for (name . url) in +all-mappings+
-     do (generate-mapping name url))
+   for orig = (merge-pathnames name "ext:encodings;")
+   for copy = (ensure-directories-exist (merge-pathnames name "build:encodings;"))
+   do (progn
+	(unless (probe-file orig)
+	  (error)
+	  (generate-mapping name url))
+	(format t "~%;;; Copying ~A to ~A" orig copy)
+	(with-open-file (in orig :direction :input)
+	  (with-open-file (out copy :direction :output :if-exists :supersede
+			       :if-does-not-exist :create)
+	    (loop for line = (read-line in nil nil)
+	       while line
+	       do (write-line line out))))))
 
+(defconstant +aliases+
+  '((:us-ascii :ascii)
+    (:utf8 :utf-8)
+    (:ucs-2 :ucs2 :utf-16 :unicode)
+    (:ucs-2le :ucs2le :utf-16le)
+    (:ucs-2be :ucs2be :utf-16be)
+    (:ucs-4 :ucs4 :utf-32)
+    (:ucs-4be :ucs4be :utf-32be)
+    (:ucs-4le :ucs4le :utf-32le)
+
+    (:koi8-r :koi8r)
+    
+    (:iso-8859-1 :latin-1 :latin1)
+    (:iso-8859-2 :latin-2 :latin2)
+    (:iso-8859-3 :latin-3 :latin3)
+    (:iso-8859-4 :latin-4 :latin4)
+    (:iso-8859-5 :latin-5 :latin5 :cyrillic)
+    (:iso-8859-6 :latin-6 :latin6 :arabic)
+    (:iso-8859-7 :latin-7 :latin7 :greek)
+    (:iso-8859-8 :latin-8 :latin8 :hebrew)
+    (:iso-8859-9 :latin-9 :latin9)
+    (:iso-8859-10 :latin-10 :latin10)
+    (:iso-8859-11 :latin-11 :latin11 :thai)
+    (:iso-8859-15 :latin-0 :latin0)
+
+    (:dos-cp437 :ibm437)
+    (:dos-cp850 :ibm850)
+    (:dos-cp852 :ibm852)
+    (:dos-cp855 :ibm855)
+    (:dos-cp857 :ibm857)
+    (:dos-cp860 :ibm860)
+    (:dos-cp861 :ibm861)
+    (:dos-cp862 :ibm862)
+    (:dos-cp863 :ibm863)
+    (:dos-cp864 :ibm864)
+    (:dos-cp865 :ibm865)
+    (:dos-cp866 :ibm866)
+    (:dos-cp869 :ibm869)
+
+    (:windows-1250 :windows-1250)
+    (:windows-1251 :windows-1251)
+    (:windows-1252 :windows-1252)
+    (:windows-1253 :windows-1253)
+    (:windows-1254 :windows-1254)
+    (:windows-1255 :windows-1255)
+    (:windows-1256 :windows-1256)
+    (:windows-1257 :windows-1257)
+    (:windows-1258 :windows-1258)
+    ))
+
+(loop for (name . aliases) in +aliases+
+   do (loop for alias in aliases
+	 for filename0 = (merge-pathnames (symbol-name alias) "build:encodings;")
+	 for filename = (ensure-directories-exist filename0)
+	 do (with-open-file (out filename :direction :output :if-exists :supersede
+				 :if-does-not-exist :create :element-type 'base-char)
+	      (format t "~%;;; Creating alias ~A -> ~A, ~A" alias name filename)
+	      (princ name out))))

@@ -195,6 +195,12 @@
 	      :prefix "EXT")
 
 ;;;
+;;; * External formats
+;;;
+#+UNICODE
+(load "ext:encodings;generate.lisp")
+
+;;;
 ;;; * Compile the portable CLX library.
 ;;;
 
