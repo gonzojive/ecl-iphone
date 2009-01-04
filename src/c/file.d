@@ -2756,10 +2756,10 @@ parse_external_format(cl_object stream, cl_object format, int flags)
 		return flags;
 	}
 	if (format == @':CR') {
-		return flags | ECL_STREAM_CR;
+		return (flags | ECL_STREAM_CR) & ~ECL_STREAM_LF;
 	}
 	if (format == @':LF') {
-		return flags | ECL_STREAM_LF;
+		return (flags | ECL_STREAM_LF) & ~ECL_STREAM_CR;
 	}
 	if (format == @':CRLF') {
 		return flags | (ECL_STREAM_CR+ECL_STREAM_LF);
