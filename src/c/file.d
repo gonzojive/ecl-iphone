@@ -119,6 +119,32 @@ not_binary_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 	return 0;
 }
 
+static void
+not_output_write_byte(cl_object c, cl_object strm)
+{
+	return not_an_output_stream(strm);
+}
+
+static cl_object
+not_input_read_byte(cl_object strm)
+{
+	not_an_input_stream(strm);
+	return OBJNULL;
+}
+
+static void
+not_binary_write_byte(cl_object c, cl_object strm)
+{
+	return not_a_binary_stream(strm);
+}
+
+static cl_object
+not_binary_read_byte(cl_object strm)
+{
+	not_a_binary_stream(strm);
+	return OBJNULL;
+}
+
 static int
 not_input_read_char(cl_object strm)
 {
@@ -286,29 +312,75 @@ closed_stream_set_position(cl_object strm, cl_object position)
  * Versions of the methods which are defined in terms of others
  */
 /*
- * Byte operations for devices that are character based. We assume that
- * the character size matches that of the byte.
+ * Byte operations based on octet operators.
  */
-static cl_index
-generic_write_byte8(cl_object strm, unsigned char *c, cl_index n)
+static cl_object
+generic_read_byte(cl_object strm)
 {
-	const struct ecl_file_ops *ops = stream_dispatch_table(strm);
-	cl_index i;
-	for (i = 0; i < n; i++) {
-		ops->write_char(strm, c[i]);
+	cl_index (*read_byte8)(cl_object, unsigned char *, cl_index);
+	cl_index bs;
+#ifdef ECL_CLOS_STREAMS
+	if (ECL_INSTANCEP(strm)) {
+		return funcall(2, @'gray::stream-read-byte', strm);
 	}
-	return n;
+#endif
+	read_byte8 = stream_dispatch_table(strm)->read_byte8;
+	bs = strm->stream.byte_size;
+	if (bs == 8) {
+		unsigned char c;
+		if (read_byte8(strm, &c, 1) < 1)
+			return Cnil;
+		if (strm->stream.flags & ECL_STREAM_SIGNED_BYTES) {
+			return MAKE_FIXNUM((signed char)c);
+		} else {
+			return MAKE_FIXNUM((unsigned char)c);
+		}
+	} else {
+		unsigned char c;
+		cl_index nb;
+		cl_object output = MAKE_FIXNUM(0);
+		for (nb = 0; bs >= 8; bs -= 8, nb += 8) {
+			cl_object aux;
+			if (read_byte8(strm, &c, 1) < 1)
+				return Cnil;
+			if (bs <= 8 && (strm->stream.flags & ECL_STREAM_SIGNED_BYTES))
+				aux = MAKE_FIXNUM((signed char)c);
+			else
+				aux = MAKE_FIXNUM((unsigned char)c);
+			output = cl_logior(2, output, cl_ash(aux, MAKE_FIXNUM(nb)));
+		}
+	}
 }
 
-static cl_index
-generic_read_byte8(cl_object strm, unsigned char *c, cl_index n)
+static void
+generic_write_byte(cl_object c, cl_object strm)
 {
-	const struct ecl_file_ops *ops = stream_dispatch_table(strm);
-	cl_index i;
-	for (i = 0; i < n; i++) {
-		c[i] = ops->read_char(strm);
+	cl_index (*write_byte8)(cl_object strm, unsigned char *c, cl_index n);
+	cl_index bs;
+	/*
+	 * The first part is only for composite or complex streams.
+	 */
+BEGIN:
+#ifdef ECL_CLOS_STREAMS
+	if (ECL_INSTANCEP(strm)) {
+		funcall(3, @'gray::stream-write-byte', strm, c);
+		return;
 	}
-	return n;
+#endif
+	write_byte8 = stream_dispatch_table(strm)->write_byte8;
+	bs = strm->stream.byte_size;
+	if (bs == 8) {
+		cl_fixnum i = (strm->stream.flags & ECL_STREAM_SIGNED_BYTES)? fixint(c) : fixnnint(c);
+		unsigned char c = (unsigned char)i;
+		write_byte8(strm, &c, 1);
+	} else do {
+		cl_object b = cl_logand(2, c, MAKE_FIXNUM(0xFF));
+		unsigned char aux = (unsigned char)fix(b);
+		if (write_byte8(strm, &aux, 1) < 1)
+			break;
+		c = cl_ash(c, MAKE_FIXNUM(-8));
+		bs -= 8;
+	} while (bs);
 }
 
 static int
@@ -938,7 +1010,7 @@ clos_stream_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	cl_index i;
 	for (i = 0; i < n; i++) {
-		cl_object byte = funcall(3, @'gray::stream-read-byte', strm);
+		cl_object byte = funcall(2, @'gray::stream-read-byte', strm);
 		if (!FIXNUMP(byte))
 			break;
 		c[i] = fix(byte);
@@ -957,6 +1029,19 @@ clos_stream_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 			break;
 	}
 	return i;
+}
+
+static cl_object
+clos_stream_read_byte(cl_object strm)
+{
+	return funcall(2, @'gray::stream-read-byte', strm);
+}
+
+static void
+clos_stream_write_byte(cl_object c, cl_object strm)
+{
+	funcall(3, @'gray::stream-write-byte', strm, c);
+	return;
 }
 
 static int
@@ -1064,6 +1149,9 @@ const struct ecl_file_ops clos_stream_ops = {
 	clos_stream_write_byte8,
 	clos_stream_read_byte8,
 
+	clos_stream_write_byte,
+	clos_stream_read_byte,
+
 	clos_stream_read_char,
 	clos_stream_write_char,
 	clos_stream_unread_char,
@@ -1094,13 +1182,6 @@ const struct ecl_file_ops clos_stream_ops = {
  * STRING OUTPUT STREAMS
  */
 
-#define str_out_read_byte8 not_input_read_byte8
-#define str_out_write_byte8 not_binary_write_byte8
-#define str_out_read_char not_input_read_char
-#define str_out_unread_char not_input_unread_char
-#define str_out_peek_char generic_peek_char
-#define str_out_listen not_input_listen
-
 static int
 str_out_write_char(cl_object strm, int c)
 {
@@ -1115,13 +1196,6 @@ str_out_write_char(cl_object strm, int c)
 	return c;
 }
 
-#define str_out_clear_input not_input_clear_input
-#define str_out_clear_output generic_void
-#define str_out_force_output generic_void
-#define str_out_finish_output generic_void
-#define str_out_input_p generic_always_false
-#define str_out_output_p generic_always_true
-
 static cl_object
 str_out_element_type(cl_object strm)
 {
@@ -1130,8 +1204,6 @@ str_out_element_type(cl_object strm)
 		return @'base-char';
 	return @'character';
 }
-
-#define str_out_length not_a_file_stream
 
 static cl_object
 str_out_get_position(cl_object strm)
@@ -1165,36 +1237,37 @@ str_out_column(cl_object strm)
 	return STRING_OUTPUT_COLUMN(strm);
 }
 
-#define str_out_close generic_close
-
 const struct ecl_file_ops str_out_ops = {
-	str_out_write_byte8,
-	str_out_read_byte8,
+	not_output_write_byte8,
+	not_binary_read_byte8,
 
-	str_out_read_char,
+	not_binary_write_byte,
+	not_input_read_byte,
+
+	not_input_read_char,
 	str_out_write_char,
-	str_out_unread_char,
-	str_out_peek_char,
+	not_input_unread_char,
+	generic_peek_char,
 
 	generic_read_vector,
 	generic_write_vector,
 
-	str_out_listen,
-	str_out_clear_input,
-	str_out_clear_output,
-	str_out_finish_output,
-	str_out_force_output,
+	not_input_listen,
+	not_input_clear_input,
+	generic_void, /* clear-output */
+	generic_void, /* finish-output */
+	generic_void, /* force-output */
 
-	str_out_input_p,
-	str_out_output_p,
+	generic_always_false, /* input_p */
+	generic_always_true, /* output_p */
 	generic_always_false,
 	str_out_element_type,
 
-	str_out_length,
+	not_a_file_stream, /* length */
 	str_out_get_position,
 	str_out_set_position,
 	str_out_column,
-	str_out_close
+	generic_close
 };
 
 
@@ -1277,9 +1350,6 @@ cl_get_output_stream_string(cl_object strm)
  * STRING INPUT STREAMS
  */
 
-#define str_in_read_byte8 not_binary_read_byte8
-#define str_in_write_byte8 not_output_write_byte8
-
 static int
 str_in_read_char(cl_object strm)
 {
@@ -1293,8 +1363,6 @@ str_in_read_char(cl_object strm)
 	}
 	return c;
 }
-
-#define str_in_write_char not_output_write_char
 
 static void
 str_in_unread_char(cl_object strm, int c)
@@ -1326,13 +1394,6 @@ str_in_listen(cl_object strm)
 		return ECL_LISTEN_EOF;
 }
 
-#define str_in_clear_input generic_void
-#define str_in_clear_output not_output_clear_output
-#define str_in_force_output not_output_force_output
-#define str_in_finish_output not_output_finish_output
-#define str_in_input_p generic_always_true
-#define str_in_output_p generic_always_false
-
 static cl_object
 str_in_element_type(cl_object strm)
 {
@@ -1341,8 +1402,6 @@ str_in_element_type(cl_object strm)
 		return @'base-char';
 	return @'character';
 }
-
-#define str_in_length not_a_file_stream
 
 static cl_object
 str_in_get_position(cl_object strm)
@@ -1366,15 +1425,15 @@ str_in_set_position(cl_object strm, cl_object pos)
 	return Ct;
 }
 
-#define str_in_column generic_column
-#define str_in_close generic_close
-
 const struct ecl_file_ops str_in_ops = {
-	str_in_write_byte8,
-	str_in_read_byte8,
+	not_output_write_byte8,
+	not_binary_read_byte8,
+
+	not_output_write_byte,
+	not_binary_read_byte,
 
 	str_in_read_char,
-	str_in_write_char,
+	not_output_write_char,
 	str_in_unread_char,
 	str_in_peek_char,
 
@@ -1382,21 +1441,21 @@ const struct ecl_file_ops str_in_ops = {
 	generic_write_vector,
 
 	str_in_listen,
-	str_in_clear_input,
-	str_in_clear_output,
-	str_in_finish_output,
-	str_in_force_output,
+	generic_void, /* clear-input */
+	not_output_clear_output,
+	not_output_finish_output,
+	not_output_force_output,
 
-	str_in_input_p,
-	str_in_output_p,
+	generic_always_true, /* input_p */
+	generic_always_false, /* output_p */
 	generic_always_false,
 	str_in_element_type,
 
-	str_in_length,
+	not_a_file_stream, /* length */
 	str_in_get_position,
 	str_in_set_position,
-	str_in_column,
-	str_in_close
+	generic_column,
+	generic_close
 };
 
 cl_object
@@ -1472,6 +1531,18 @@ two_way_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 	return ecl_write_byte8(TWO_WAY_STREAM_OUTPUT(strm), c, n);
 }
 
+static void
+two_way_write_byte(cl_object byte, cl_object stream)
+{
+	ecl_write_byte(byte, TWO_WAY_STREAM_OUTPUT(stream));
+}
+
+static cl_object
+two_way_read_byte(cl_object stream)
+{
+	return ecl_read_byte(TWO_WAY_STREAM_INPUT(stream));
+}
+
 static int
 two_way_read_char(cl_object strm)
 {
@@ -1540,9 +1611,6 @@ two_way_finish_output(cl_object strm)
 	return ecl_finish_output(TWO_WAY_STREAM_OUTPUT(strm));
 }
 
-#define two_way_input_p generic_always_true
-#define two_way_output_p generic_always_true
-
 static int
 two_way_interactive_p(cl_object strm)
 {
@@ -1555,21 +1623,18 @@ two_way_element_type(cl_object strm)
 	return ecl_stream_element_type(TWO_WAY_STREAM_INPUT(strm));
 }
 
-#define two_way_length not_a_file_stream
-#define two_way_get_position generic_always_nil
-#define two_way_set_position generic_set_position
-
 static int
 two_way_column(cl_object strm)
 {
 	return ecl_file_column(TWO_WAY_STREAM_OUTPUT(strm));
 }
 
-#define two_way_close generic_close
-
 const struct ecl_file_ops two_way_ops = {
 	two_way_write_byte8,
 	two_way_read_byte8,
+
+	two_way_write_byte,
+	two_way_read_byte,
 
 	two_way_read_char,
 	two_way_write_char,
@@ -1585,16 +1650,16 @@ const struct ecl_file_ops two_way_ops = {
 	two_way_finish_output,
 	two_way_force_output,
 
-	two_way_input_p,
-	two_way_output_p,
+	generic_always_true, /* input_p */
+	generic_always_true, /* output_p */
 	two_way_interactive_p,
 	two_way_element_type,
 
-	two_way_length,
-	two_way_get_position,
-	two_way_set_position,
+	not_a_file_stream, /* length */
+	generic_always_nil, /* get_position */
+	generic_set_position,
 	two_way_column,
-	two_way_close
+	generic_close
 };
 
 
@@ -1635,8 +1700,6 @@ cl_two_way_stream_output_stream(cl_object strm)
  * BROADCAST STREAM
  */
 
-#define broadcast_read_byte8 not_input_read_byte8
-
 static cl_index
 broadcast_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
@@ -1648,8 +1711,6 @@ broadcast_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 	return out;
 }
 
-#define broadcast_read_char not_input_read_char
-
 static int
 broadcast_write_char(cl_object strm, int c)
 {
@@ -1660,12 +1721,14 @@ broadcast_write_char(cl_object strm, int c)
 	return c;
 }
 
-#define broadcast_unread_char not_input_unread_char
-#define broadcast_peek_char not_input_read_char
-#define broadcast_listen not_input_listen
-
-/* FIXME! This is legacy behaviour */
-#define broadcast_clear_input broadcast_force_output
+static void
+broadcast_write_byte(cl_object c, cl_object strm)
+{
+	cl_object l;
+	for (l = BROADCAST_STREAM_LIST(strm); !ecl_endp(l); l = ECL_CONS_CDR(l)) {
+		ecl_write_byte(c, ECL_CONS_CAR(l));
+	}
+}
 
 static void
 broadcast_clear_output(cl_object strm)
@@ -1693,9 +1756,6 @@ broadcast_finish_output(cl_object strm)
 		ecl_finish_output(ECL_CONS_CAR(l));
 	}
 }
-
-#define broadcast_input_p generic_always_false
-#define broadcast_output_p generic_always_true
 
 static cl_object
 broadcast_element_type(cl_object strm)
@@ -1742,28 +1802,29 @@ broadcast_column(cl_object strm)
 	return ecl_file_column(ECL_CONS_CAR(l));
 }
 
-#define broadcast_close generic_close
-
 const struct ecl_file_ops broadcast_ops = {
 	broadcast_write_byte8,
-	broadcast_read_byte8,
+	not_input_read_byte8,
 
-	broadcast_read_char,
+	broadcast_write_byte,
+	not_input_read_byte,
+
+	not_input_read_char,
 	broadcast_write_char,
-	broadcast_unread_char,
-	broadcast_peek_char,
+	not_input_unread_char,
+	generic_peek_char,
 
 	generic_read_vector,
 	generic_write_vector,
 
-	broadcast_listen,
-	broadcast_clear_input,
+	not_input_listen,
+	broadcast_force_output, /* clear_input */ /* FIXME! This is legacy behaviour */
 	broadcast_clear_output,
 	broadcast_finish_output,
 	broadcast_force_output,
 
-	broadcast_input_p,
-	broadcast_output_p,
+	generic_always_false, /* input_p */
+	generic_always_true, /* output_p */
 	generic_always_false,
 	broadcast_element_type,
 
@@ -1771,7 +1832,7 @@ const struct ecl_file_ops broadcast_ops = {
 	broadcast_get_position,
 	broadcast_set_position,
 	broadcast_column,
-	broadcast_close
+	generic_close
 };
 
 @(defun make_broadcast_stream (&rest ap)
@@ -1820,6 +1881,20 @@ static cl_index
 echo_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	return ecl_write_byte8(ECHO_STREAM_OUTPUT(strm), c, n);
+}
+
+static void
+echo_write_byte(cl_object c, cl_object strm)
+{
+	return ecl_write_byte(c, ECHO_STREAM_OUTPUT(strm));
+}
+
+static cl_object
+echo_read_byte(cl_object strm)
+{
+	cl_object out = ecl_read_byte(ECHO_STREAM_INPUT(strm));
+	ecl_write_byte(out, ECHO_STREAM_OUTPUT(strm));
+	return out;
 }
 
 static int
@@ -1891,18 +1966,11 @@ echo_finish_output(cl_object strm)
 	return ecl_finish_output(ECHO_STREAM_OUTPUT(strm));
 }
 
-#define echo_input_p generic_always_true
-#define echo_output_p generic_always_true
-
 static cl_object
 echo_element_type(cl_object strm)
 {
 	return ecl_stream_element_type(ECHO_STREAM_INPUT(strm));
 }
-
-#define echo_length not_a_file_stream
-#define echo_get_position generic_always_nil
-#define echo_set_position generic_set_position
 
 static int
 echo_column(cl_object strm)
@@ -1910,11 +1978,12 @@ echo_column(cl_object strm)
 	return ecl_file_column(ECHO_STREAM_OUTPUT(strm));
 }
 
-#define echo_close generic_close
-
 const struct ecl_file_ops echo_ops = {
 	echo_write_byte8,
 	echo_read_byte8,
+
+	echo_write_byte,
+	echo_read_byte,
 
 	echo_read_char,
 	echo_write_char,
@@ -1930,16 +1999,16 @@ const struct ecl_file_ops echo_ops = {
 	echo_finish_output,
 	echo_force_output,
 
-	echo_input_p,
-	echo_output_p,
+	generic_always_true, /* input_p */
+	generic_always_true, /* output_p */
 	generic_always_false,
 	echo_element_type,
 
-	echo_length,
-	echo_get_position,
-	echo_set_position,
+	not_a_file_stream, /* length */
+	generic_always_nil, /* get_position */
+	generic_set_position,
 	echo_column,
-	echo_close
+	generic_close
 };
 
 cl_object
@@ -1994,7 +2063,18 @@ concatenated_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 	return out;
 }
 
-#define concatenated_write_byte8 not_output_write_byte8
+static cl_object
+concatenated_read_byte(cl_object strm)
+{
+	cl_object l = CONCATENATED_STREAM_LIST(strm);
+	cl_object c = Cnil;
+	while (!ecl_endp(l)) {
+		c = ecl_read_byte(ECL_CONS_CAR(l));
+		if (c != Cnil) break;
+		CONCATENATED_STREAM_LIST(strm) = l = ECL_CONS_CDR(l);
+	}
+	return c;
+}
 
 static int
 concatenated_read_char(cl_object strm)
@@ -2009,8 +2089,6 @@ concatenated_read_char(cl_object strm)
 	return c;
 }
 
-#define concatenated_write_char not_output_write_char
-
 static void
 concatenated_unread_char(cl_object strm, int c)
 {
@@ -2019,8 +2097,6 @@ concatenated_unread_char(cl_object strm, int c)
 		unread_error(strm);
 	return ecl_unread_char(c, ECL_CONS_CAR(l));
 }
-
-#define concatenated_peek_char generic_peek_char
 
 static int
 concatenated_listen(cl_object strm)
@@ -2038,50 +2114,37 @@ concatenated_listen(cl_object strm)
 	return ECL_LISTEN_EOF;
 }
 
-#define concatenated_clear_input generic_void
-#define concatenated_clear_output not_output_clear_output
-#define concatenated_force_output not_output_force_output
-#define concatenated_finish_output not_output_finish_output
-
-#define concatenated_input_p generic_always_true
-#define concatenated_output_p generic_always_false
-#define concatenated_element_type broadcast_element_type
-
-#define concatenated_length not_a_file_stream
-#define concatenated_get_position generic_always_nil
-#define concatenated_set_position generic_set_position
-#define concatenated_column generic_column
-
-#define concatenated_close generic_close
-
 const struct ecl_file_ops concatenated_ops = {
-	concatenated_write_byte8,
+	not_output_write_byte8,
 	concatenated_read_byte8,
 
+	not_output_write_byte,
+	concatenated_read_byte,
+
 	concatenated_read_char,
-	concatenated_write_char,
+	not_output_write_char,
 	concatenated_unread_char,
-	concatenated_peek_char,
+	generic_peek_char,
 
 	generic_read_vector,
 	generic_write_vector,
 
 	concatenated_listen,
-	concatenated_clear_input,
-	concatenated_clear_output,
-	concatenated_finish_output,
-	concatenated_force_output,
+	generic_void, /* clear_input */
+	not_output_clear_output,
+	not_output_finish_output,
+	not_output_force_output,
 
-	concatenated_input_p,
-	concatenated_output_p,
+	generic_always_true, /* input_p */
+	generic_always_false, /* output_p */
 	generic_always_false,
-	concatenated_element_type,
+	broadcast_element_type,
 
-	concatenated_length,
-	concatenated_get_position,
-	concatenated_set_position,
-	concatenated_column,
-	concatenated_close
+	not_a_file_stream, /* length */
+	generic_always_nil, /* get_position */
+	generic_set_position,
+	generic_column,
+	generic_close
 };
 
 @(defun make_concatenated_stream (&rest ap)
@@ -2129,6 +2192,18 @@ static cl_index
 synonym_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	return ecl_write_byte8(SYNONYM_STREAM_STREAM(strm), c, n);
+}
+
+static void
+synonym_write_byte(cl_object c, cl_object strm)
+{
+	return ecl_write_byte(c, SYNONYM_STREAM_STREAM(strm));
+}
+
+static cl_object
+synonym_read_byte(cl_object strm)
+{
+	return ecl_read_byte(SYNONYM_STREAM_STREAM(strm));
 }
 
 static int
@@ -2247,11 +2322,12 @@ synonym_column(cl_object strm)
 	return ecl_file_column(SYNONYM_STREAM_STREAM(strm));
 }
 
-#define synonym_close generic_close
-
 const struct ecl_file_ops synonym_ops = {
 	synonym_write_byte8,
 	synonym_read_byte8,
+
+	synonym_write_byte,
+	synonym_read_byte,
 
 	synonym_read_char,
 	synonym_write_char,
@@ -2276,7 +2352,7 @@ const struct ecl_file_ops synonym_ops = {
 	synonym_get_position,
 	synonym_set_position,
 	synonym_column,
-	synonym_close
+	generic_close
 };
 
 cl_object
@@ -2357,11 +2433,6 @@ io_file_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 	return output_file_write_byte8(strm, c, n);
 }
 
-#define io_file_read_char eformat_read_char
-#define io_file_write_char eformat_write_char
-#define io_file_unread_char eformat_unread_char
-#define io_file_peek_char generic_peek_char
-
 static int
 io_file_listen(cl_object strm)
 {
@@ -2409,8 +2480,6 @@ io_file_clear_input(cl_object strm)
 #define io_file_clear_output generic_void
 #define io_file_force_output generic_void
 #define io_file_finish_output io_file_force_output
-#define io_file_input_p generic_always_true
-#define io_file_output_p generic_always_true
 
 static int
 io_file_interactive_p(cl_object strm)
@@ -2565,10 +2634,13 @@ const struct ecl_file_ops io_file_ops = {
 	io_file_write_byte8,
 	io_file_read_byte8,
 
-	io_file_read_char,
-	io_file_write_char,
-	io_file_unread_char,
-	io_file_peek_char,
+	generic_write_byte,
+	generic_read_byte,
+
+	eformat_read_char,
+	eformat_write_char,
+	eformat_unread_char,
+	generic_peek_char,
 
 	io_file_read_vector,
 	io_file_write_vector,
@@ -2579,8 +2651,8 @@ const struct ecl_file_ops io_file_ops = {
 	io_file_finish_output,
 	io_file_force_output,
 
-	io_file_input_p,
-	io_file_output_p,
+	generic_always_true, /* input_p */
+	generic_always_true, /* output_p */
 	io_file_interactive_p,
 	io_file_element_type,
 
@@ -2595,8 +2667,11 @@ const struct ecl_file_ops output_file_ops = {
 	output_file_write_byte8,
 	not_input_read_byte8,
 
+	generic_write_byte,
+	not_input_read_byte,
+
 	not_input_read_char,
-	io_file_write_char,
+	eformat_write_char,
 	not_input_unread_char,
 	not_input_read_char,
 
@@ -2604,13 +2679,13 @@ const struct ecl_file_ops output_file_ops = {
 	io_file_write_vector,
 
 	not_input_listen,
-	generic_void,
+	not_input_clear_input,
 	io_file_clear_output,
 	io_file_finish_output,
 	io_file_force_output,
 
-	generic_always_false,
-	io_file_output_p,
+	generic_always_false, /* input_p */
+	generic_always_true, /* output_p */
 	generic_always_false,
 	io_file_element_type,
 
@@ -2625,22 +2700,25 @@ const struct ecl_file_ops input_file_ops = {
 	not_output_write_byte8,
 	io_file_read_byte8,
 
-	io_file_read_char,
+	not_output_write_byte,
+	generic_read_byte,
+
+	eformat_read_char,
 	not_output_write_char,
-	io_file_unread_char,
-	io_file_peek_char,
+	eformat_unread_char,
+	generic_peek_char,
 
 	io_file_read_vector,
 	generic_write_vector,
 
 	io_file_listen,
 	io_file_clear_input,
-	generic_void,
-	generic_void,
-	generic_void,
+	not_output_clear_output,
+	not_output_finish_output,
+	not_output_force_output,
 
-	io_file_input_p,
-	generic_always_false,
+	generic_always_true, /* input_p */
+	generic_always_false, /* output_p */
 	io_file_interactive_p,
 	io_file_element_type,
 
@@ -2653,74 +2731,73 @@ const struct ecl_file_ops input_file_ops = {
 
 
 static int
-parse_external_format(cl_object stream, cl_object format)
+parse_external_format(cl_object stream, cl_object format, int flags)
 {
+	int aux;
 	if (CONSP(format)) {
-		int flags = 0;
-		do {
-			flags |= parse_external_format(stream, ECL_CONS_CAR(format));
-			format = cl_cdr(format);
-		} while (CONSP(format));
-		return flags;
-	}
-	if (FIXNUMP(format)) {
-		return fix(format) & ECL_STREAM_FORMAT;
-	}
-	if (format == @':default' || format == Ct) {
-		return ECL_STREAM_DEFAULT_FORMAT;
-	}
-	if (format == @':CR') {
-		return ECL_STREAM_CR;
-	}
-	if (format == @':LF') {
-		return ECL_STREAM_LF;
-	}
-	if (format == @':CRLF') {
-		return ECL_STREAM_CR+ECL_STREAM_LF;
+		flags = parse_external_format(stream, ECL_CONS_CDR(format), flags);
+		format = ECL_CONS_CAR(format);
 	}
 	if (format == Cnil) {
-		/* Binary stream */
-		return 0;
+		return flags;
+	}
+	if (format == @':CR') {
+		return flags | ECL_STREAM_CR;
+	}
+	if (format == @':LF') {
+		return flags | ECL_STREAM_LF;
+	}
+	if (format == @':CRLF') {
+		return flags | (ECL_STREAM_CR+ECL_STREAM_LF);
+	}
+	if (format == @':LITTLE-ENDIAN') {
+		return flags | ECL_STREAM_LITTLE_ENDIAN;
+	}
+	if (format == @':BIG-ENDIAN') {
+		return flags & ~ECL_STREAM_LITTLE_ENDIAN;
+	}
+	if (format == @':default' || format == Ct) {
+		return flags | ECL_STREAM_DEFAULT_FORMAT;
 	}
 #ifdef ECL_UNICODE
 	if (format == @':UTF-8') {
-		return ECL_STREAM_UTF_8; 
+		return flags | ECL_STREAM_UTF_8; 
 	}
 	if (format == @':UCS-2') {
-		return ECL_STREAM_UCS_2;
+		return flags | ECL_STREAM_UCS_2;
 	}
 	if (format == @':UCS-2BE') {
-		return ECL_STREAM_UCS_2BE;
+		return flags | ECL_STREAM_UCS_2BE;
 	}
 	if (format == @':UCS-2LE') {
-		return ECL_STREAM_UCS_2LE;
+		return flags | ECL_STREAM_UCS_2LE;
 	}
 	if (format == @':UCS-4') {
-		return ECL_STREAM_UCS_4;
+		return flags | ECL_STREAM_UCS_4;
 	}
 	if (format == @':UCS-4BE') {
-		return ECL_STREAM_UCS_4BE;
+		return flas | ECL_STREAM_UCS_4BE;
 	}
 	if (format == @':UCS-4LE') {
-		return ECL_STREAM_UCS_4LE;
+		return flags | ECL_STREAM_UCS_4LE;
 	}
 	if (format == @':ISO-8859-1') {
-		return ECL_STREAM_ISO_8859_1;
+		return flags | ECL_STREAM_ISO_8859_1;
 	}
 	if (format == @':LATIN-1') {
-		return ECL_STREAM_LATIN_1;
+		return flags | ECL_STREAM_LATIN_1;
 	}
 	if (format == @':US-ASCII') {
-		return ECL_STREAM_US_ASCII; 
+		return flags | ECL_STREAM_US_ASCII; 
 	}
 	if (type_of(format) == t_hashtable) {
 		stream->stream.format_table = format;
-		return ECL_STREAM_USER_FORMAT;
+		return flags | ECL_STREAM_USER_FORMAT;
 	}
 	if (SYMBOLP(format)) {
 		stream->stream.format_table = cl_funcall(2, @'ext::make-encoding',
 							 format);
-		return ECL_STREAM_USER_FORMAT;
+		return flags | ECL_STREAM_USER_FORMAT;
 	}
 #endif
 	FEerror("Unknown or unsupported external format: ~A", 1, format);
@@ -2740,10 +2817,10 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags,
 		flags &= ~ECL_STREAM_SIGNED_BYTES;
 		t = @'unsigned-byte';
 	}
-	flags |= parse_external_format(stream, external_format);
+	flags = parse_external_format(stream, external_format, flags);
 	stream->stream.ops->read_char = eformat_read_char;
 	stream->stream.ops->write_char = eformat_write_char;
-	switch (flags & ~(ECL_STREAM_CR | ECL_STREAM_LF)) {
+	switch (flags & ECL_STREAM_FORMAT) {
 	case ECL_STREAM_BINARY:
 		IO_STREAM_ELT_TYPE(stream) = cl_list(2, t, MAKE_FIXNUM(byte_size));
 		stream->stream.format = Cnil;
@@ -2776,16 +2853,15 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags,
 	case ECL_STREAM_UCS_2BE:
 		IO_STREAM_ELT_TYPE(stream) = @'character';
 		byte_size = 8*2;
-		stream->stream.format = @':ucs-2be';
-		stream->stream.encoder = ucs_2be_encoder;
-		stream->stream.decoder = ucs_2be_decoder;
-		break;
-	case ECL_STREAM_UCS_2LE:
-		IO_STREAM_ELT_TYPE(stream) = @'character';
-		byte_size = 8*2;
-		stream->stream.format = @':ucs-2le';
-		stream->stream.encoder = ucs_2le_encoder;
-		stream->stream.decoder = ucs_2le_decoder;
+		if (flags & ECL_STREAM_LITTLE_ENDIAN) {
+			stream->stream.format = @':ucs-2le';
+			stream->stream.encoder = ucs_2le_encoder;
+			stream->stream.decoder = ucs_2le_decoder;
+		} else {
+			stream->stream.format = @':ucs-2be';
+			stream->stream.encoder = ucs_2be_encoder;
+			stream->stream.decoder = ucs_2be_decoder;
+		}
 		break;
 	case ECL_STREAM_UCS_4:
 		IO_STREAM_ELT_TYPE(stream) = @'character';
@@ -2797,16 +2873,15 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags,
 	case ECL_STREAM_UCS_4BE:
 		IO_STREAM_ELT_TYPE(stream) = @'character';
 		byte_size = 8*4;
-		stream->stream.format = @':ucs-4be';
-		stream->stream.encoder = ucs_4be_encoder;
-		stream->stream.decoder = ucs_4be_decoder;
-		break;
-	case ECL_STREAM_UCS_4LE:
-		IO_STREAM_ELT_TYPE(stream) = @'character';
-		byte_size = 8*4;
-		stream->stream.format = @':ucs-4le';
-		stream->stream.encoder = ucs_4le_encoder;
-		stream->stream.decoder = ucs_4le_decoder;
+		if (flags & ECL_STREAM_LITTLE_ENDIAN) {
+			stream->stream.format = @':ucs-4le';
+			stream->stream.encoder = ucs_4le_encoder;
+			stream->stream.decoder = ucs_4le_decoder;
+		} else {
+			stream->stream.format = @':ucs-4be';
+			stream->stream.encoder = ucs_4be_encoder;
+			stream->stream.decoder = ucs_4be_decoder;
+		}
 		break;
 	case ECL_STREAM_USER_FORMAT:
 		IO_STREAM_ELT_TYPE(stream) = @'character';
@@ -2970,11 +3045,6 @@ io_stream_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 	return output_stream_write_byte8(strm, c, n);
 }
 
-#define io_stream_read_char eformat_read_char
-#define io_stream_write_char eformat_write_char
-#define io_stream_unread_char eformat_unread_char
-#define io_stream_peek_char generic_peek_char
-
 static int
 io_stream_listen(cl_object strm)
 {
@@ -3015,8 +3085,6 @@ io_stream_force_output(cl_object strm)
 }
 
 #define io_stream_finish_output generic_void
-#define io_stream_input_p generic_always_true
-#define io_stream_output_p generic_always_true
 
 static int
 io_stream_interactive_p(cl_object strm)
@@ -3024,8 +3092,6 @@ io_stream_interactive_p(cl_object strm)
 	FILE *f = IO_STREAM_FILE(strm);
 	return isatty(fileno(f));
 }
-
-#define io_stream_element_type io_file_element_type
 
 static cl_object
 io_stream_length(cl_object strm)
@@ -3140,13 +3206,16 @@ const struct ecl_file_ops io_stream_ops = {
 	io_stream_write_byte8,
 	io_stream_read_byte8,
 
-	io_stream_read_char,
-	io_stream_write_char,
-	io_stream_unread_char,
-	io_stream_peek_char,
+	generic_write_byte,
+	generic_read_byte,
 
-	io_stream_read_vector,
-	io_stream_write_vector,
+	eformat_read_char,
+	eformat_write_char,
+	eformat_unread_char,
+	generic_peek_char,
+
+	io_file_read_vector,
+	io_file_write_vector,
 
 	io_stream_listen,
 	io_stream_clear_input,
@@ -3154,10 +3223,10 @@ const struct ecl_file_ops io_stream_ops = {
 	io_stream_finish_output,
 	io_stream_force_output,
 
-	io_stream_input_p,
-	io_stream_output_p,
+	generic_always_true, /* input_p */
+	generic_always_true, /* output_p */
 	io_stream_interactive_p,
-	io_stream_element_type,
+	io_file_element_type,
 
 	io_stream_length,
 	io_stream_get_position,
@@ -3170,13 +3239,16 @@ const struct ecl_file_ops output_stream_ops = {
 	output_stream_write_byte8,
 	not_input_read_byte8,
 
+	generic_write_byte,
+	not_input_read_byte,
+
 	not_input_read_char,
-	io_stream_write_char,
+	eformat_write_char,
 	not_input_unread_char,
 	not_input_read_char,
 
 	generic_read_vector,
-	io_stream_write_vector,
+	io_file_write_vector,
 
 	not_input_listen,
 	generic_void,
@@ -3184,10 +3256,10 @@ const struct ecl_file_ops output_stream_ops = {
 	io_stream_finish_output,
 	io_stream_force_output,
 
+	generic_always_false, /* input_p */
+	generic_always_true, /* output_p */
 	generic_always_false,
-	io_stream_output_p,
-	generic_always_false,
-	io_stream_element_type,
+	io_file_element_type,
 
 	io_stream_length,
 	io_stream_get_position,
@@ -3200,12 +3272,15 @@ const struct ecl_file_ops input_stream_ops = {
 	not_output_write_byte8,
 	input_stream_read_byte8,
 
-	io_stream_read_char,
-	not_output_write_char,
-	io_stream_unread_char,
-	io_stream_peek_char,
+	not_output_write_byte,
+	generic_read_byte,
 
-	io_stream_read_vector,
+	eformat_read_char,
+	not_output_write_char,
+	eformat_unread_char,
+	generic_peek_char,
+
+	io_file_read_vector,
 	generic_write_vector,
 
 	io_stream_listen,
@@ -3214,10 +3289,10 @@ const struct ecl_file_ops input_stream_ops = {
 	generic_void,
 	generic_void,
 
-	io_stream_input_p,
-	generic_always_false,
+	generic_always_true, /* input_p */
+	generic_always_false, /* output_p */
 	io_stream_interactive_p,
-	io_stream_element_type,
+	io_file_element_type,
 
 	io_stream_length,
 	io_stream_get_position,
@@ -3421,70 +3496,13 @@ ecl_read_char_noeof(cl_object strm)
 cl_object
 ecl_read_byte(cl_object strm)
 {
-	cl_index (*read_byte8)(cl_object, unsigned char *, cl_index);
-	cl_index bs;
-#ifdef ECL_CLOS_STREAMS
-	if (ECL_INSTANCEP(strm)) {
-		return funcall(2, @'gray::stream-read-byte', strm);
-	}
-#endif
-	read_byte8 = stream_dispatch_table(strm)->read_byte8;
-	bs = strm->stream.byte_size;
-	if (bs == 8) {
-		unsigned char c;
-		if (read_byte8(strm, &c, 1) < 1)
-			return Cnil;
-		if (strm->stream.flags & ECL_STREAM_SIGNED_BYTES) {
-			return MAKE_FIXNUM((signed char)c);
-		} else {
-			return MAKE_FIXNUM((unsigned char)c);
-		}
-	} else {
-		unsigned char c;
-		cl_index nb;
-		cl_object output = MAKE_FIXNUM(0);
-		for (nb = 0; bs >= 8; bs -= 8, nb += 8) {
-			cl_object aux;
-			if (read_byte8(strm, &c, 1) < 1)
-				return Cnil;
-			if (bs <= 8 && (strm->stream.flags & ECL_STREAM_SIGNED_BYTES))
-				aux = MAKE_FIXNUM((signed char)c);
-			else
-				aux = MAKE_FIXNUM((unsigned char)c);
-			output = cl_logior(2, output, cl_ash(aux, MAKE_FIXNUM(nb)));
-		}
-	}
+	return stream_dispatch_table(strm)->read_byte(strm);
 }
 
 void
 ecl_write_byte(cl_object c, cl_object strm)
 {
-	cl_index (*write_byte8)(cl_object strm, unsigned char *c, cl_index n);
-	cl_index bs;
-	/*
-	 * The first part is only for composite or complex streams.
-	 */
-BEGIN:
-#ifdef ECL_CLOS_STREAMS
-	if (ECL_INSTANCEP(strm)) {
-		funcall(3, @'gray::stream-write-byte', strm, c);
-		return;
-	}
-#endif
-	write_byte8 = stream_dispatch_table(strm)->write_byte8;
-	bs = strm->stream.byte_size;
-	if (bs == 8) {
-		cl_fixnum i = (strm->stream.flags & ECL_STREAM_SIGNED_BYTES)? fixint(c) : fixnnint(c);
-		unsigned char c = (unsigned char)i;
-		write_byte8(strm, &c, 1);
-	} else do {
-		cl_object b = cl_logand(2, c, MAKE_FIXNUM(0xFF));
-		unsigned char aux = (unsigned char)fix(b);
-		if (write_byte8(strm, &aux, 1) < 1)
-			break;
-		c = cl_ash(c, MAKE_FIXNUM(-8));
-		bs -= 8;
-	} while (bs);
+	return stream_dispatch_table(strm)->write_byte(c, strm);
 }
 
 int

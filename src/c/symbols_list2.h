@@ -1740,6 +1740,8 @@ cl_symbols[] = {
 {EXT_ "MAKE-ENCODING",NULL},
 
 {KEY_ "US-ASCII",NULL},
+{KEY_ "LITTLE-ENDIAN",NULL},
+{KEY_ "BIG-ENDIAN",NULL},
 
 /* Tag for end of list */
 {NULL,NULL}};

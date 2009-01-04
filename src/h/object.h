@@ -482,6 +482,9 @@ struct ecl_file_ops {
 	cl_index (*write_byte8)(cl_object strm, unsigned char *c, cl_index n);
 	cl_index (*read_byte8)(cl_object strm, unsigned char *c, cl_index n);
 
+	void (*write_byte)(cl_object c, cl_object strm);
+	cl_object (*read_byte)(cl_object strm);
+
 	int (*read_char)(cl_object strm);
 	int (*write_char)(cl_object strm, int c);
 	void (*unread_char)(cl_object strm, int c);
@@ -511,7 +514,7 @@ struct ecl_file_ops {
 
 enum {
 	ECL_STREAM_BINARY = 0,
-	ECL_STREAM_FORMAT = 0x2F,
+	ECL_STREAM_FORMAT = 0xFF,
 #ifndef ECL_UNICODE
 	ECL_STREAM_DEFAULT_FORMAT = 1,
 #else
@@ -520,19 +523,20 @@ enum {
 	ECL_STREAM_LATIN_1 = 1,
 	ECL_STREAM_UTF_8 = 2,
 	ECL_STREAM_UCS_2 = 3,
-	ECL_STREAM_UCS_2LE = 4,
+	ECL_STREAM_UCS_2LE = 5 + 128,
 	ECL_STREAM_UCS_2BE = 5,
 	ECL_STREAM_UCS_4 = 6,
-	ECL_STREAM_UCS_4LE = 7,
-	ECL_STREAM_UCS_4BE = 8,
-	ECL_STREAM_USER_FORMAT = 9,
+	ECL_STREAM_UCS_4LE = 7 + 128,
+	ECL_STREAM_UCS_4BE = 7,
+	ECL_STREAM_USER_FORMAT = 8,
 	ECL_STREAM_US_ASCII = 10,
 #endif
 	ECL_STREAM_CR = 16,
 	ECL_STREAM_LF = 32,
 	ECL_STREAM_SIGNED_BYTES = 64,
-	ECL_STREAM_C_STREAM = 128,
-	ECL_STREAM_MIGHT_SEEK = 256
+	ECL_STREAM_LITTLE_ENDIAN = 128,
+	ECL_STREAM_C_STREAM = 256,
+	ECL_STREAM_MIGHT_SEEK = 512
 };
 
 typedef int (*cl_eformat_encoder)(cl_object stream, unsigned char *buffer, int c);
