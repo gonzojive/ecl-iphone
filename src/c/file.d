@@ -27,6 +27,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
+#if defined(__DragonFly__) || defined(__FreeBSD__)
+#include <sys/stat.h>
+/* it isn't pulled in by fcntl.h */
+#endif
 #include <string.h>
 #include <stdio.h>
 #include <ecl/ecl-inl.h>
@@ -315,52 +319,99 @@ closed_stream_set_position(cl_object strm, cl_object position)
  * Byte operations based on octet operators.
  */
 static cl_object
+generic_read_byte_unsigned8(cl_object strm)
+{
+	unsigned char c;
+	if (strm->stream.ops->read_byte8(strm, &c, 1) < 1)
+		return Cnil;
+	return MAKE_FIXNUM(c);
+}
+
+static void
+generic_write_byte_unsigned8(cl_object byte, cl_object strm)
+{
+	unsigned char c = fixnnint(byte);
+	strm->stream.ops->write_byte8(strm, &c, 1);
+}
+
+static cl_object
+generic_read_byte_signed8(cl_object strm)
+{
+	signed char c;
+	if (strm->stream.ops->read_byte8(strm, (unsigned char *)&c, 1) < 1)
+		return Cnil;
+	return MAKE_FIXNUM(c);
+}
+
+static void
+generic_write_byte_signed8(cl_object byte, cl_object strm)
+{
+	signed char c = fixint(byte);
+	strm->stream.ops->write_byte8(strm, (unsigned char *)&c, 1);
+}
+
+static cl_object
+generic_read_byte_le(cl_object strm)
+{
+	cl_index (*read_byte8)(cl_object, unsigned char *, cl_index);
+	unsigned char c;
+	cl_index nb, bs;
+	cl_object output = MAKE_FIXNUM(0);
+	read_byte8 = strm->stream.ops->read_byte8;
+	bs = strm->stream.byte_size;
+	for (nb = 0; bs >= 8; bs -= 8, nb += 8) {
+		cl_object aux;
+		if (read_byte8(strm, &c, 1) < 1)
+			return Cnil;
+		if (bs <= 8 && (strm->stream.flags & ECL_STREAM_SIGNED_BYTES))
+			aux = MAKE_FIXNUM((signed char)c);
+		else
+			aux = MAKE_FIXNUM((unsigned char)c);
+		output = cl_logior(2, output, cl_ash(aux, MAKE_FIXNUM(nb)));
+	}
+	return output;
+}
+
+static void
+generic_write_byte_le(cl_object c, cl_object strm)
+{
+	cl_index (*write_byte8)(cl_object strm, unsigned char *c, cl_index n);
+	cl_index bs;
+	write_byte8 = strm->stream.ops->write_byte8;
+	bs = strm->stream.byte_size;
+	do {
+		cl_object b = cl_logand(2, c, MAKE_FIXNUM(0xFF));
+		unsigned char aux = (unsigned char)fix(b);
+		if (write_byte8(strm, &aux, 1) < 1)
+			break;
+		c = cl_ash(c, MAKE_FIXNUM(-8));
+		bs -= 8;
+	} while (bs);
+}
+
+static cl_object
 generic_read_byte(cl_object strm)
 {
 	cl_index (*read_byte8)(cl_object, unsigned char *, cl_index);
+	unsigned char c;
+	cl_object output = NULL;
 	cl_index bs;
-	read_byte8 = stream_dispatch_table(strm)->read_byte8;
+	read_byte8 = strm->stream.ops->read_byte8;
 	bs = strm->stream.byte_size;
-	if (bs == 8) {
-		unsigned char c;
+	for (; bs >= 8; bs -= 8) {
+		cl_object aux;
 		if (read_byte8(strm, &c, 1) < 1)
 			return Cnil;
-		if (strm->stream.flags & ECL_STREAM_SIGNED_BYTES) {
-			return MAKE_FIXNUM((signed char)c);
+		if (output) {
+			output = cl_logior(2, MAKE_FIXNUM(c),
+					   cl_ash(output, MAKE_FIXNUM(8)));
+		} else if (strm->stream.flags & ECL_STREAM_SIGNED_BYTES) {
+			output = MAKE_FIXNUM((signed char)c);
 		} else {
-			return MAKE_FIXNUM((unsigned char)c);
-		}
-	} else if (strm->stream.flags & ECL_STREAM_LITTLE_ENDIAN) {
-		unsigned char c;
-		cl_index nb;
-		cl_object output = MAKE_FIXNUM(0);
-		for (nb = 0; bs >= 8; bs -= 8, nb += 8) {
-			cl_object aux;
-			if (read_byte8(strm, &c, 1) < 1)
-				return Cnil;
-			if (bs <= 8 && (strm->stream.flags & ECL_STREAM_SIGNED_BYTES))
-				aux = MAKE_FIXNUM((signed char)c);
-			else
-				aux = MAKE_FIXNUM((unsigned char)c);
-			output = cl_logior(2, output, cl_ash(aux, MAKE_FIXNUM(nb)));
-		}
-	} else {
-		unsigned char c;
-		cl_object output = NULL;
-		for (; bs >= 8; bs -= 8) {
-			cl_object aux;
-			if (read_byte8(strm, &c, 1) < 1)
-				return Cnil;
-			if (output) {
-				output = cl_logior(2, MAKE_FIXNUM(c),
-						   cl_ash(output, MAKE_FIXNUM(8)));
-			} else if (strm->stream.flags & ECL_STREAM_SIGNED_BYTES) {
-				output = MAKE_FIXNUM((signed char)c);
-			} else {
-				output = MAKE_FIXNUM((unsigned char)c);
-			}
+			output = MAKE_FIXNUM((unsigned char)c);
 		}
 	}
+	return output;
 }
 
 static void
@@ -368,33 +419,17 @@ generic_write_byte(cl_object c, cl_object strm)
 {
 	cl_index (*write_byte8)(cl_object strm, unsigned char *c, cl_index n);
 	cl_index bs;
-	write_byte8 = stream_dispatch_table(strm)->write_byte8;
+	write_byte8 = strm->stream.ops->write_byte8;
 	bs = strm->stream.byte_size;
-	if (bs == 8) {
-		cl_fixnum i = (strm->stream.flags & ECL_STREAM_SIGNED_BYTES)? fixint(c) : fixnnint(c);
-		unsigned char c = (unsigned char)i;
-		write_byte8(strm, &c, 1);
-	} else if (strm->stream.flags & ECL_STREAM_LITTLE_ENDIAN) {
-		do {
-			cl_object b = cl_logand(2, c, MAKE_FIXNUM(0xFF));
-			unsigned char aux = (unsigned char)fix(b);
-			if (write_byte8(strm, &aux, 1) < 1)
-				break;
-			c = cl_ash(c, MAKE_FIXNUM(-8));
-			bs -= 8;
-		} while (bs);
-	} else {
-		do {
-			unsigned char aux;
-			cl_object b;
-			bs -= 8;
-			b = cl_logand(2, MAKE_FIXNUM(0xFF),
-				      bs? cl_ash(c, MAKE_FIXNUM(-bs)) : c);
-			aux = (unsigned char)fix(b);
-			if (write_byte8(strm, &aux, 1) < 1)
-				break;
-		} while (bs);
-	}
+	do {
+		unsigned char aux;
+		cl_object b;
+		bs -= 8;
+		b = cl_logand(2, MAKE_FIXNUM(0xFF), bs? cl_ash(c, MAKE_FIXNUM(-bs)) : c);
+		aux = (unsigned char)fix(b);
+		if (write_byte8(strm, &aux, 1) < 1)
+			break;
+	} while (bs);
 }
 
 static int
@@ -2938,8 +2973,34 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags,
 		}
 		stream->stream.format = cl_list(2, key, stream->stream.format);
 	}
+	{
+		cl_object (*read_byte)(cl_object);
+		void (*write_byte)(cl_object,cl_object);
+		byte_size = (byte_size+7)&(~(cl_fixnum)7);
+		if (byte_size == 8) {
+			if (flags & ECL_STREAM_SIGNED_BYTES) {
+				read_byte = generic_read_byte_signed8;
+				write_byte = generic_write_byte_signed8;
+			} else {
+				read_byte = generic_read_byte_unsigned8;
+				write_byte = generic_write_byte_unsigned8;
+			}
+		} else if (flags & ECL_STREAM_LITTLE_ENDIAN) {
+			read_byte = generic_read_byte_le;
+			write_byte = generic_write_byte_le;
+		} else {
+			read_byte = generic_read_byte;
+			write_byte = generic_write_byte;
+		}
+		if (ecl_input_stream_p(stream)) {
+			stream->stream.ops->read_byte = read_byte;
+		}
+		if (ecl_output_stream_p(stream)) {
+			stream->stream.ops->write_byte = write_byte;
+		}
+	}
 	stream->stream.flags = flags;
-	stream->stream.byte_size = (byte_size+7)&(~(cl_fixnum)7);
+	stream->stream.byte_size = byte_size;
 }
 
 cl_object
