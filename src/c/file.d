@@ -351,13 +351,13 @@ generic_read_byte(cl_object strm)
 			cl_object aux;
 			if (read_byte8(strm, &c, 1) < 1)
 				return Cnil;
-			if (!output) {
+			if (output) {
 				output = cl_logior(2, MAKE_FIXNUM(c),
 						   cl_ash(output, MAKE_FIXNUM(8)));
 			} else if (strm->stream.flags & ECL_STREAM_SIGNED_BYTES) {
-				aux = MAKE_FIXNUM((signed char)c);
+				output = MAKE_FIXNUM((signed char)c);
 			} else {
-				aux = MAKE_FIXNUM((unsigned char)c);
+				output = MAKE_FIXNUM((unsigned char)c);
 			}
 		}
 	}
@@ -1907,7 +1907,7 @@ static cl_object
 echo_read_byte(cl_object strm)
 {
 	cl_object out = ecl_read_byte(ECHO_STREAM_INPUT(strm));
-	ecl_write_byte(out, ECHO_STREAM_OUTPUT(strm));
+	if (!Null(out)) ecl_write_byte(out, ECHO_STREAM_OUTPUT(strm));
 	return out;
 }
 
@@ -2790,7 +2790,7 @@ parse_external_format(cl_object stream, cl_object format, int flags)
 		return flags | ECL_STREAM_UCS_4;
 	}
 	if (format == @':UCS-4BE') {
-		return flas | ECL_STREAM_UCS_4BE;
+		return flags | ECL_STREAM_UCS_4BE;
 	}
 	if (format == @':UCS-4LE') {
 		return flags | ECL_STREAM_UCS_4LE;
@@ -3642,10 +3642,14 @@ compute_char_size(cl_object stream, int c)
 	int l = 0;
 	if (c == ECL_CHAR_CODE_NEWLINE) {
 		int flags = stream->stream.flags;
-		if (flags & ECL_STREAM_CR)
+		if (flags & ECL_STREAM_CR) {
 			l += stream->stream.encoder(stream, buffer, ECL_CHAR_CODE_RETURN);
-		if (flags & ECL_STREAM_LF)
+			if (flags & ECL_STREAM_LF)
+				l += stream->stream.encoder(stream, buffer,
+							    ECL_CHAR_CODE_LINEFEED);
+		} else {
 			l += stream->stream.encoder(stream, buffer, ECL_CHAR_CODE_LINEFEED);
+		}
 	} else {
 		l += stream->stream.encoder(stream, buffer, c);
 	}
@@ -3660,11 +3664,23 @@ cl_file_string_length(cl_object stream, cl_object string)
 	 * Why not simply leaving the value unspecified, as with other
 	 * streams one cannot write to???
 	 */
+ BEGIN:
 #ifdef ECL_CLOS_STREAMS
 	if (ECL_INSTANCEP(stream)) {
 		@(return Cnil)
 	}
 #endif
+	if (type_of(stream) != t_stream) {
+		not_a_file_stream(stream);
+	}
+	if (stream->stream.mode == smm_broadcast) {
+		stream = BROADCAST_STREAM_LIST(stream);
+		if (ecl_endp(stream)) {
+			@(return MAKE_FIXNUM(1));
+		} else {
+			goto BEGIN;
+		}
+	}
 	if (!ECL_FILE_STREAMP(stream)) {
 		not_a_file_stream(stream);
 	}

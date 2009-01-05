@@ -514,7 +514,7 @@ struct ecl_file_ops {
 
 enum {
 	ECL_STREAM_BINARY = 0,
-	ECL_STREAM_FORMAT = 0xFF,
+	ECL_STREAM_FORMAT = 0xF,
 #ifndef ECL_UNICODE
 	ECL_STREAM_DEFAULT_FORMAT = 1,
 #else
