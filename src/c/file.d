@@ -504,19 +504,23 @@ generic_close(cl_object strm)
 static cl_index
 generic_write_vector(cl_object strm, cl_object data, cl_index start, cl_index end)
 {
+	const struct ecl_file_ops *ops;
 	if (start >= end)
 		return start;
+	ops = stream_dispatch_table(strm);
 	if (data->vector.elttype == aet_bc ||
 #ifdef ECL_UNICODE
 	    data->vector.elttype == aet_ch ||
 #endif
 	    (data->vector.elttype == aet_object && CHARACTERP(ecl_elt(data, 0)))) {
+		int (*write_char)(cl_object, int) = ops->write_char;			
 		for (; start < end; start++) {
-			ecl_write_char(ecl_char_code(ecl_elt(data, start)), strm);
+			write_char(strm, ecl_char_code(ecl_elt(data, start)));
 		}
 	} else {
+		void (*write_byte)(cl_object, cl_object) = ops->write_byte;
 		for (; start < end; start++) {
-			ecl_write_byte(ecl_elt(data, start), strm);
+			write_byte(ecl_elt(data, start), strm);
 		}
 	}
 	return start;
@@ -525,19 +529,23 @@ generic_write_vector(cl_object strm, cl_object data, cl_index start, cl_index en
 static cl_index
 generic_read_vector(cl_object strm, cl_object data, cl_index start, cl_index end)
 {
+	const struct ecl_file_ops *ops;
 	cl_object expected_type;
 	if (start >= end)
 		return start;
 	expected_type = ecl_stream_element_type(strm);
+	ops = stream_dispatch_table(strm);
 	if (expected_type == @'base-char' || expected_type == @'character') {
+		int (*read_char)(cl_object) = ops->read_char;			
 		for (; start < end; start++) {
-			cl_fixnum c = ecl_read_char(strm);
+			cl_fixnum c = read_char(strm);
 			if (c == EOF) break;
 			ecl_elt_set(data, start, CODE_CHAR(c));
 		}
 	} else {
+		cl_object (*read_byte)(cl_object) = ops->read_byte;
 		for (; start < end; start++) {
-			cl_object x = ecl_read_byte(strm);
+			cl_object x = read_byte(strm);
 			if (Null(x)) break;
 			ecl_elt_set(data, start, x);
 		}
@@ -3768,6 +3776,7 @@ cl_file_string_length(cl_object stream, cl_object string)
 cl_object
 si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 {
+	const struct ecl_file_ops *ops;
 	cl_fixnum start,limit,end;
 
 	/* Since we have called ecl_length(), we know that SEQ is a valid
@@ -3783,6 +3792,7 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	if (end <= start) {
 		goto OUTPUT;
 	}
+	ops = stream_dispatch_table(stream);
 	if (LISTP(seq)) {
 		cl_object elt_type = cl_stream_element_type(stream);
 		bool ischar = (elt_type == @'base-char') || (elt_type == @'character');
@@ -3791,17 +3801,16 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 			if (start < end) {
 				cl_object elt = CAR(s);
 				if (ischar)
-					ecl_write_char(ecl_char_code(elt), stream);
+					ops->write_char(stream, ecl_char_code(elt));
 				else
-					ecl_write_byte(elt, stream);
+					ops->write_byte(elt, stream);
 				start++;
 			} else {
 				goto OUTPUT;
 			}
 		} end_loop_for_in;
 	} else {
-		stream_dispatch_table(stream)->
-			write_vector(stream, seq, start, end);
+		ops->write_vector(stream, seq, start, end);
 	}
  OUTPUT:
 	@(return seq);
@@ -3810,6 +3819,7 @@ si_do_write_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 cl_object
 si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 {
+	const struct ecl_file_ops *ops;
 	cl_fixnum start,limit,end;
 
 	/* Since we have called ecl_length(), we know that SEQ is a valid
@@ -3825,6 +3835,7 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 	if (end <= start) {
 		goto OUTPUT;
 	}
+	ops = stream_dispatch_table(stream);
 	if (LISTP(seq)) {
 		cl_object elt_type = cl_stream_element_type(stream);
 		bool ischar = (elt_type == @'base-char') || (elt_type == @'character');
@@ -3835,11 +3846,11 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 			} else {
 				cl_object c;
 				if (ischar) {
-					int i = ecl_read_char(stream);
+					int i = ops->read_char(stream);
 					if (i < 0) goto OUTPUT;
 					c = CODE_CHAR(i);
 				} else {
-					c = ecl_read_byte(stream);
+					c = ops->read_byte(stream);
 					if (c == Cnil) goto OUTPUT;
 				}
 				ECL_RPLACA(seq, c);
@@ -3847,8 +3858,7 @@ si_do_read_sequence(cl_object seq, cl_object stream, cl_object s, cl_object e)
 			}
 		} end_loop_for_in;
 	} else {
-		start = stream_dispatch_table(stream)->
-			read_vector(stream, seq, start, end);
+		start = ops->read_vector(stream, seq, start, end);
 	}
  OUTPUT:
 	@(return MAKE_FIXNUM(start))
