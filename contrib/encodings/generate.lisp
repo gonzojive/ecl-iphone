@@ -12,7 +12,7 @@
 (defconstant +sequence-type+ '(unsigned-byte 16))
 
 (defun read-mapping (url)
-  (let ((command (format nil "curl \"~A\" | sed '/^#.*$/d;s,0x,#x,g;s,#UNDEFINED,NIL # UNDEFINED,g;/LEAD BYTE/d' | sed 's,# .*$,,g;/#x.*/!d' > tmp.txt" url)))
+  (let ((command (format nil "curl \"~A\" | sed '/^#.*$/d;s,0x,#x,g;s,U+\\([0-9A-Fa-f]*\\),#x\\1,g;s,#UNDEFINED,NIL # UNDEFINED,g;/LEAD BYTE/d' | grep -v '<reserverd>' | sed 's,# .*$,,g;/#x.*/!d' > tmp.txt" url)))
     (unless (zerop (si::system command))
       (error "Unable to retrieve file ~A" url)))
   (let ((mapping '()))
@@ -26,8 +26,8 @@
 			   (setf unicode (read aux nil nil)))
 		  (unless (and (typep byte +sequence-type+)
 			       (typep unicode +sequence-type+))
-		    (error "Sequence type ~A is unable to capture this encoding"
-			   +sequence-type+))
+		    (error "Sequence type ~A is unable to capture this encoding (codes ~X and ~X found)"
+			   +sequence-type+ byte unicode))
 		  (setf mapping (list* unicode byte mapping)))))))
     (unless mapping
       (error "Error reading file ~A" url))
@@ -108,6 +108,10 @@
     ;("JISX0201" "http://unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/JIS/JIS0201.TXT")
     ;("JISX0212" "http://unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/JIS/JIS0212.TXT")
     ;("SHIFT-JIS" "http://unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/JIS/SHIFTJIS.TXT")
+
+    ;Unable to parse because they output more than one Unicode character
+    ;("SJIS-0213" "http://x0213.org/codetable/sjis-0213-2004-std.txt")
+    ;("EUC-JISX0213" "http://x0213.org/codetable/euc-jis")
     ))
 
 (defun copy-file (in out)
