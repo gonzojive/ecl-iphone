@@ -90,7 +90,6 @@
     ; Redundant WINDOWS-CP874 DOS-CP874
     ;("WINDOWS-CP874" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP874.TXT")
 
-    ; Too large: not in default image.
     ("WINDOWS-CP932" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP932.TXT" "BIN")
     ("WINDOWS-CP936" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP936.TXT" "BIN")
     ("WINDOWS-CP949" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP949.TXT" "BIN")
@@ -105,6 +104,10 @@
     ("WINDOWS-CP1256" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1256.TXT")
     ("WINDOWS-CP1257" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1257.TXT")
     ("WINDOWS-CP1258" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1258.TXT")
+
+    ;("JISX0201" "http://unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/JIS/JIS0201.TXT")
+    ;("JISX0212" "http://unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/JIS/JIS0212.TXT")
+    ;("SHIFT-JIS" "http://unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/JIS/SHIFTJIS.TXT")
     ))
 
 (defun copy-file (in out)
