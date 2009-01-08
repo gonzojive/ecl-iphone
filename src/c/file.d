@@ -60,6 +60,12 @@
 #define ecl_ftello ftello
 #endif
 
+/* Maximum number of bytes required to encode a character.
+ * This currently corresponds to (4 + 2) for the ISO-2022-JP-* encodings
+ * with 4 being the charset prefix, 2 for the character.
+ */
+#define ENCODING_BUFFER_MAX_SIZE 6
+
 static cl_index ecl_read_byte8(cl_object stream, unsigned char *c, cl_index n);
 static cl_index ecl_write_byte8(cl_object stream, unsigned char *c, cl_index n);
 
@@ -565,7 +571,7 @@ eformat_unread_char(cl_object strm, int c)
 	}
 	{
 		cl_object l = Cnil;
-		unsigned char buffer[10];
+		unsigned char buffer[2*ENCODING_BUFFER_MAX_SIZE];
 		int ndx = 0;
 		cl_fixnum i = strm->stream.last_code[0];
 		if (i != EOF) {
@@ -598,7 +604,7 @@ eformat_read_char(cl_object strm)
 static int
 eformat_write_char(cl_object strm, int c)
 {
-	unsigned char buffer[4];
+	unsigned char buffer[ENCODING_BUFFER_MAX_SIZE];
 	int nbytes = strm->stream.encoder(strm, buffer, c);
 	if (nbytes == 0) {
 		character_size_overflow(strm, c);
@@ -926,7 +932,7 @@ ucs_2_encoder(cl_object stream, unsigned char *buffer, int c)
 }
 
 /*
- * USER DEFINED ENCODINGS
+ * USER DEFINED ENCODINGS. SIMPLE CASE.
  */
 
 static int
@@ -973,6 +979,84 @@ user_encoder(cl_object stream, unsigned char *buffer, int c)
 			return 1;
 		}
 	}
+}
+
+/*
+ * USER DEFINED ENCODINGS. SIMPLE CASE.
+ */
+
+static int
+user_multistate_decoder(cl_object stream, cl_eformat_read_byte8 read_byte8,
+			cl_object source)
+{
+	cl_object table_list = stream->stream.format_table;
+	cl_object table = ECL_CONS_CAR(table_list);
+	cl_object character;
+	cl_fixnum i, j;
+	unsigned char buffer[ENCODING_BUFFER_MAX_SIZE];
+	for (i = j = 0; i < ENCODING_BUFFER_MAX_SIZE; i++) {
+		if (read_byte8(source, buffer+i, 1) < 1) {
+			return EOF;
+		}
+		j = (j << 8) | buffer[i];
+		character = ecl_gethash_safe(MAKE_FIXNUM(j), table, Cnil);
+		if (CHARACTERP(character)) {
+			return CHAR_CODE(character);
+		}
+		if (Null(character)) {
+			invalid_codepoint(stream, buffer[0]);
+		}
+		if (character == Ct) {
+			/* Need more characters */
+			continue;
+		}
+		if (CONSP(character)) {
+			/* Changed the state. */
+			stream->stream.format_table = table_list = character;
+			table = ECL_CONS_CAR(table_list);
+			i = j = 0;
+			continue;
+		}
+		break;
+	}
+	FEerror("Internal error in decoder table.", 0);
+}
+
+static int
+user_multistate_encoder(cl_object stream, unsigned char *buffer, int c)
+{
+	cl_object table_list = stream->stream.format_table;
+	cl_object p = table_list;
+	do {
+		cl_object table = ECL_CONS_CAR(p);
+		cl_object byte = ecl_gethash_safe(CODE_CHAR(c), table, Cnil);
+		if (!Null(byte)) {
+			cl_fixnum code = fix(byte);
+			int n = 0;
+			if (p != table_list) {
+				/* Must output a escape sequence */
+				cl_object x = ecl_gethash_safe(Ct, table, Cnil);
+				while (!Null(x)) {
+					buffer[0] = fix(ECL_CONS_CAR(x));
+					buffer++;
+					x = ECL_CONS_CDR(x);
+					n++;
+				}
+				stream->stream.format_table = p;
+			}
+			if (code > 0xFF) {
+				buffer[1] = code & 0xFF; code >>= 8;
+				buffer[0] = code;
+				return n+2;
+			} else {
+				buffer[0] = code;
+				return n+1;
+			}
+		}
+		p = ECL_CONS_CDR(p);
+	} while (p != table_list);
+	/* Exhausted all lists */
+	return 0;
 }
 
 /*
@@ -2880,7 +2964,7 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags,
 	switch (flags & ECL_STREAM_FORMAT) {
 	case ECL_STREAM_BINARY:
 		IO_STREAM_ELT_TYPE(stream) = cl_list(2, t, MAKE_FIXNUM(byte_size));
-		stream->stream.format = Cnil;
+		stream->stream.format = t;
 		stream->stream.ops->read_char = not_character_read_char;
 		stream->stream.ops->write_char = not_character_write_char;
 		break;
@@ -2944,8 +3028,13 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags,
 		IO_STREAM_ELT_TYPE(stream) = @'character';
 		byte_size = 8;
 		stream->stream.format = stream->stream.format_table;
-		stream->stream.encoder = user_encoder;
-		stream->stream.decoder = user_decoder;
+		if (CONSP(stream->stream.format)) {
+			stream->stream.encoder = user_multistate_encoder;
+			stream->stream.decoder = user_multistate_decoder;
+		} else {
+			stream->stream.encoder = user_encoder;
+			stream->stream.decoder = user_decoder;
+		}
 		break;
 	case ECL_STREAM_US_ASCII:
 		IO_STREAM_ELT_TYPE(stream) = @'base-char';
@@ -2967,20 +3056,21 @@ set_stream_elt_type(cl_object stream, cl_fixnum byte_size, int flags,
 		FEerror("Invalid or unsupported external format ~A with code ~D",
 			2, external_format, MAKE_FIXNUM(flags));
  	}
+	t = @':LF';
 	if (stream->stream.ops->write_char == eformat_write_char &&
 	    (flags & ECL_STREAM_CR)) {
 		cl_object key;
 		if (flags & ECL_STREAM_LF) {
 			stream->stream.ops->read_char = eformat_read_char_crlf;
 			stream->stream.ops->write_char = eformat_write_char_crlf;
-			key = @':CRLF';
+			t = @':CRLF';
 		} else {
 			stream->stream.ops->read_char = eformat_read_char_cr;
 			stream->stream.ops->write_char = eformat_write_char_cr;
-			key = @':CR';
+			t = @':CR';
 		}
-		stream->stream.format = cl_list(2, key, stream->stream.format);
 	}
+	stream->stream.format = cl_list(2, stream->stream.format, t);
 	{
 		cl_object (*read_byte)(cl_object);
 		void (*write_byte)(cl_object,cl_object);

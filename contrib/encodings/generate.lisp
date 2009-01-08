@@ -1,6 +1,6 @@
 ;;;  -*- Mode: Lisp; Syntax: Common-Lisp; -*-
 ;;;
-;;;  Copyright (c) 2009, Giuseppe Attardi.
+;;;  Copyright (c) 2009, Juan Jose Garcia-Ripoll
 ;;;
 ;;;    This program is free software; you can redistribute it and/or
 ;;;    modify it under the terms of the GNU Library General Public
@@ -9,130 +9,18 @@
 ;;;
 ;;;    See file '../Copyright' for full details.
 
-(defconstant +sequence-type+ '(unsigned-byte 16))
-
-(defun read-mapping (url)
-  (let ((command (format nil "curl \"~A\" | sed '/^#.*$/d;s,0x,#x,g;s,U+\\([0-9A-Fa-f]*\\),#x\\1,g;s,#UNDEFINED,NIL # UNDEFINED,g;/LEAD BYTE/d' | grep -v '<reserverd>' | sed 's,# .*$,,g;/#x.*/!d' > tmp.txt" url)))
-    (unless (zerop (si::system command))
-      (error "Unable to retrieve file ~A" url)))
-  (let ((mapping '()))
-    (with-open-file (s "tmp.txt" :direction :input :external-format :utf-8)
-      (loop for line = (read-line s nil nil)
-	 while line
-	 do (with-input-from-string (aux line)
-	      (let ((byte 0)
-		    (unicode 0))
-		(when (and (setf byte (read aux nil nil))
-			   (setf unicode (read aux nil nil)))
-		  (unless (and (typep byte +sequence-type+)
-			       (typep unicode +sequence-type+))
-		    (error "Sequence type ~A is unable to capture this encoding (codes ~X and ~X found)"
-			   +sequence-type+ byte unicode))
-		  (setf mapping (list* unicode byte mapping)))))))
-    (unless mapping
-      (error "Error reading file ~A" url))
-    (si::system "rm -f tmp.txt")
-    (print (reduce #'max mapping :initial-value 0))
-    (make-array (length mapping) :element-type +sequence-type+ :initial-contents (nreverse mapping))))
-
-(defun generate-mapping (name url output-file)
-  (let* ((mapping (read-mapping url)))
-    (format t "~&;;; Generating ~A~%;;; ~Tfrom ~A" output-file url)
-    (force-output t)
-    (if (pathname-type output-file)
-	(with-open-file (s output-file :direction :output :if-exists :supersede
-			   :element-type +sequence-type+ :external-format :big-endian)
-	  (write-byte (length mapping) s)
-	  (write-sequence mapping s))
-	(with-open-file (s output-file :direction :output :if-exists :supersede)
-	  (print mapping s)))))
-
-(defconstant +all-mappings+
-  '(("ATARIST" "http://unicode.org/Public/MAPPINGS/VENDORS/MISC/ATARIST.TXT")
-
-    ("ISO-8859-1" "http://unicode.org/Public/MAPPINGS/ISO8859/8859-1.TXT")
-    ("ISO-8859-2" "http://unicode.org/Public/MAPPINGS/ISO8859/8859-2.TXT")
-    ("ISO-8859-3" "http://unicode.org/Public/MAPPINGS/ISO8859/8859-3.TXT")
-    ("ISO-8859-4" "http://unicode.org/Public/MAPPINGS/ISO8859/8859-4.TXT")
-    ("ISO-8859-5" "http://unicode.org/Public/MAPPINGS/ISO8859/8859-5.TXT")
-    ("ISO-8859-6" "http://unicode.org/Public/MAPPINGS/ISO8859/8859-6.TXT")
-    ("ISO-8859-7" "http://unicode.org/Public/MAPPINGS/ISO8859/8859-7.TXT")
-    ("ISO-8859-8" "http://unicode.org/Public/MAPPINGS/ISO8859/8859-8.TXT")
-    ("ISO-8859-9" "http://unicode.org/Public/MAPPINGS/ISO8859/8859-9.TXT")
-    ("ISO-8859-10" "http://unicode.org/Public/MAPPINGS/ISO8859/8859-10.TXT")
-    ("ISO-8859-11" "http://unicode.org/Public/MAPPINGS/ISO8859/8859-11.TXT")
-    ("ISO-8859-13" "http://unicode.org/Public/MAPPINGS/ISO8859/8859-13.TXT")
-    ("ISO-8859-14" "http://unicode.org/Public/MAPPINGS/ISO8859/8859-14.TXT")
-    ("ISO-8859-15" "http://unicode.org/Public/MAPPINGS/ISO8859/8859-15.TXT")
-    ("ISO-8859-16" "http://unicode.org/Public/MAPPINGS/ISO8859/8859-16.TXT")
-    ("KOI8-R" "http://unicode.org/Public/MAPPINGS/VENDORS/MISC/KOI8-R.TXT")
-    ("KOI8-U" "http://unicode.org/Public/MAPPINGS/VENDORS/MISC/KOI8-U.TXT")
-    ("CP-856" "http://unicode.org/Public/MAPPINGS/VENDORS/MISC/CP856.TXT")
-    ("CP-856" "http://unicode.org/Public/MAPPINGS/VENDORS/MISC/CP856.TXT")
-    
-    ("DOS-CP437" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP437.TXT")
-    ("DOS-CP737" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP737.TXT")
-    ("DOS-CP775" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP775.TXT")
-    ("DOS-CP850" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP850.TXT")
-    ("DOS-CP852" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP852.TXT")
-    ("DOS-CP855" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP855.TXT")
-    ("DOS-CP857" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP857.TXT")
-    ("DOS-CP860" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP860.TXT")
-    ("DOS-CP861" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP861.TXT")
-    ("DOS-CP862" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP862.TXT")
-    ("DOS-CP863" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP863.TXT")
-    ("DOS-CP864" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP864.TXT")
-    ("DOS-CP865" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP865.TXT")
-    ("DOS-CP866" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP866.TXT")
-    ("DOS-CP869" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP869.TXT")
-    ("DOS-CP874" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP874.TXT") 
-
-    ; Redundant WINDOWS-CP874 DOS-CP874
-    ;("WINDOWS-CP874" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP874.TXT")
-
-    ("WINDOWS-CP932" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP932.TXT" "BIN")
-    ("WINDOWS-CP936" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP936.TXT" "BIN")
-    ("WINDOWS-CP949" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP949.TXT" "BIN")
-    ("WINDOWS-CP950" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP950.TXT" "BIN")
-
-    ("WINDOWS-CP1250" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1250.TXT")
-    ("WINDOWS-CP1251" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1251.TXT")
-    ("WINDOWS-CP1252" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1252.TXT")
-    ("WINDOWS-CP1253" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1253.TXT")
-    ("WINDOWS-CP1254" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1254.TXT")
-    ("WINDOWS-CP1255" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1255.TXT")
-    ("WINDOWS-CP1256" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1256.TXT")
-    ("WINDOWS-CP1257" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1257.TXT")
-    ("WINDOWS-CP1258" "http://unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1258.TXT")
-
-    ;("JISX0201" "http://unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/JIS/JIS0201.TXT")
-    ;("JISX0212" "http://unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/JIS/JIS0212.TXT")
-    ;("SHIFT-JIS" "http://unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/JIS/SHIFTJIS.TXT")
-
-    ;Unable to parse because they output more than one Unicode character
-    ;("SJIS-0213" "http://x0213.org/codetable/sjis-0213-2004-std.txt")
-    ;("EUC-JISX0213" "http://x0213.org/codetable/euc-jis")
-    ))
-
-(defun copy-file (in out)
-  (let ((buffer (make-array 8192 :element-type '(unsigned-byte 8))))
-    (format t "~%;;; Copying ~A to ~A" in out)
-    (with-open-file (sin in :direction :input :element-type '(unsigned-byte 8))
-      (with-open-file (sout out :direction :output :element-type '(unsigned-byte 8)
-			    :if-exists :supersede :if-does-not-exist :create)
-	(loop for nbytes = (read-sequence buffer sin)
-	   until (zerop nbytes)
-	   do (write-sequence buffer sout :end nbytes))))))
+(load (merge-pathnames "tools" *load-pathname*))
 
 (loop for entry in +all-mappings+
    for name = (first entry)
-   for url = (second entry)
-   for type = (or (third entry) "BIN")
-   for orig = (make-pathname :name name :type type :defaults "ext:encodings;")
-   for copy = (ensure-directories-exist (make-pathname :name name :type type :defaults "build:encodings;"))
+   for orig = (make-pathname :name name :type "BIN" :defaults "ext:encodings;")
+   for copy = (merge-pathnames "build:encodings;" orig)
    do (progn
 	(unless (probe-file orig)
-	  (generate-mapping name url orig))
+	  (let ((mapping (if (equalp name "JISX0208")
+			     (mapcar #'rest (read-mapping name 3))
+			     (read-mapping name))))
+	    (dump-mapping-array mapping orig)))
 	(copy-file orig copy)))
 
 (defconstant +aliases+
@@ -197,4 +85,7 @@
 	 do (with-open-file (out filename :direction :output :if-exists :supersede
 				 :if-does-not-exist :create :element-type 'base-char)
 	      (format t "~%;;; Creating alias ~A -> ~A, ~A" alias name filename)
-	      (princ name out))))
+	      (format out "(defparameter ext::~A 'ext::~A)" alias name))))
+
+(copy-file "ext:encodings;ISO-2022-JP" "build:encodings;ISO-2022-JP")
+(copy-file "ext:encodings;ISO-2022-JP-1" "build:encodings;ISO-2022-JP-1")
