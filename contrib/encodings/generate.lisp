@@ -14,7 +14,7 @@
 (loop for entry in +all-mappings+
    for name = (first entry)
    for orig = (make-pathname :name name :type "BIN" :defaults "ext:encodings;")
-   for copy = (merge-pathnames "build:encodings;" orig)
+   for copy = (ensure-directories-exist (merge-pathnames "build:encodings;" orig))
    do (progn
 	(unless (probe-file orig)
 	  (let ((mapping (if (equalp name "JISX0208")
