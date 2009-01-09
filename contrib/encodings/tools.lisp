@@ -13,7 +13,10 @@
 
 (defconstant +source-pathname+
   (make-pathname :name nil :type nil
-		 :defaults (merge-pathnames "ext:;sources;" *load-pathname*)))
+		 :directory (append (pathname-directory *load-pathname*)
+				    (list "sources"))
+		 :host (pathname-host *load-pathname*)
+		 :device (pathname-device *load-pathname*)))
 
 (defconstant +all-mappings+
   '(("ATARIST" "http://unicode.org/Public/MAPPINGS/VENDORS/MISC/ATARIST.TXT")
@@ -172,14 +175,19 @@
 	   do (write-sequence buffer sout :end nbytes))))))
 
 (defun all-valid-unicode-chars (mapping)
-  (if (consp mapping)
-      (loop for sublist on mapping
-	 for i from 0 below 10
-	 until (and (eq sublist mapping) (plusp i))
-	 collect (all-valid-unicode-chars (first sublist)))
-      (concatenate 'string (loop for key being the hash-key in mapping
-			      when (characterp key)
-			      collect key))))
+  (cond ((consp mapping)
+	 (loop for sublist on mapping
+	    for i from 0 below 10
+	    until (and (eq sublist mapping) (plusp i))
+	    collect (all-valid-unicode-chars (first sublist))))
+	((hash-table-p mapping)
+	 (concatenate 'string (loop for key being the hash-key in mapping
+				 when (characterp key)
+				 collect key)))
+	((eq mapping :iso-8859-1)
+	 (coerce 'string (loop for i from 0 to 255 collect (code-char i))))
+	(t
+	 (error "Unknown encoding"))))
 
 (defun compare-hashes (h1 h2)
   (flet ((h1-in-h2 (h1 h2)
