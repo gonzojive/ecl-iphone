@@ -454,7 +454,9 @@ cl_char_name(cl_object c)
 {
 	cl_index code = ecl_char_code(c);
 	cl_object output;
-	if (code > 127) {
+	if (ecl_graphic_char_p(code)) {
+		output = cl_string(c);
+	} else if (code > 127) {
 		char name[20]; /* cleanup */
 		sprintf(name, "U%04x", code);
 		output = make_base_string_copy(name);
