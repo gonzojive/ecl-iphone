@@ -269,7 +269,6 @@ read_char_database()
 				output = Cnil;
 			} else {
 				unsigned char *p = output->base_string.self;
-				ECL_SET(@'si::*unicode-database*', output);
 				cl_core.unicode_database = output;
 				cl_core.ucd_misc = p + 2;
 				cl_core.ucd_pages = cl_core.ucd_misc + (p[0] + (p[1]<<8));
@@ -322,7 +321,6 @@ cl_boot(int argc, char **argv)
 #else
 	init_threads(env);
 #endif
-	read_char_database();
 
 	/*
 	 * 1) Initialize symbols and packages
@@ -407,6 +405,7 @@ cl_boot(int argc, char **argv)
 
 	/* These must come _after_ the packages and NIL/T have been created */
 	init_all_symbols();
+	read_char_database();
 
 	/*
 	 * 2) Initialize constants (strings, numbers and time).
