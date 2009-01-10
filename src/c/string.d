@@ -17,10 +17,6 @@
 
 
 #include <ecl/ecl.h>
-#include <ctype.h>
-#ifdef ECL_UNICODE
-#include <wctype.h>
-#endif
 #include <string.h>
 #include <ecl/ecl-inl.h>
 
@@ -436,8 +432,8 @@ compare_strings(cl_object string1, cl_index s1, cl_index e1,
 		c1 = ecl_char(string1, s1);
 		c2 = ecl_char(string2, s2);
 		if (!case_sensitive) {
-			c1 = towupper(c1);
-			c2 = towupper(c2);
+			c1 = ecl_char_upcase(c1);
+			c2 = ecl_char_upcase(c2);
 		}
 		if (c1 < c2) {
 			*m = s1;
@@ -469,8 +465,8 @@ compare_base(unsigned char *s1, cl_index l1, unsigned char *s2, cl_index l2,
 		c1 = *s1;
 		c2 = *s2;
 		if (!case_sensitive) {
-			c1 = toupper(c1);
-			c2 = toupper(c2);
+			c1 = ecl_char_upcase(c1);
+			c2 = ecl_char_upcase(c2);
 		}
 		if (c1 < c2) {
 			*m = l;
@@ -852,7 +848,7 @@ string_case(cl_narg narg, int (*casefun)(int c, bool *bp), cl_va_list ARGS)
 static int
 char_upcase(int c, bool *bp)
 {
-	return(toupper(c));
+	return ecl_char_upcase(c);
 }
 
 @(defun string-upcase (&rest args)
@@ -863,7 +859,7 @@ char_upcase(int c, bool *bp)
 static int
 char_downcase(int c, bool *bp)
 {
-	return tolower(c);
+	return ecl_char_downcase(c);
 }
 
 @(defun string-downcase (&rest args)
@@ -874,18 +870,18 @@ char_downcase(int c, bool *bp)
 static int
 char_capitalize(int c, bool *bp)
 {
-	if (islower(c)) {
+	if (ecl_lower_case_p(c)) {
 		if (*bp)
-			c = toupper(c);
+			c = ecl_char_upcase(c);
 		*bp = FALSE;
-	} else if (isupper(c)) {
+	} else if (ecl_upper_case_p(c)) {
 		if (!*bp)
-			c = tolower(c);
+			c = ecl_char_downcase(c);
 		*bp = FALSE;
 	} else {
-		*bp = !isdigit(c);
+		*bp = !ecl_alphanumericp(c);
 	}
-	return(c);
+	return c;
 }
 
 @(defun string-capitalize (&rest args)

@@ -48,6 +48,9 @@ ECL 9.1.0:
  - FILE-STRING-LENGTH only works with file streams, for which it returns
    the right value, and with Gray streams, which output NIL.
 
+ - When ECL is built with --enable-unicode, it uses its own database for
+   Unicode properties instead of tolower, toupper, etc.
+
 * AMOP:
 
  - In DEFCLASS, the :TYPE of slots was ignored.

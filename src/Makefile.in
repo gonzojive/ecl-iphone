@@ -64,10 +64,11 @@ ecl/external.h: c/ecl/external.h c/ecl/external.h
 	cp $(srcdir)/h/*.h ecl/
 
 bin/ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp ecl/external.h BUILD-STAMP
+	cp $(top_srcdir)/../contrib/unicode/ucd.dat .
 	if [ -f CROSS-COMPILER ]; then \
 		./CROSS-COMPILER compile; \
 	else \
-		./ecl_min compile; \
+		ECLDIR=`pwd`/ ./ecl_min compile; \
 	fi
 
 ecl_min$(EXE): $(LIBRARIES) .gdbinit @LIBPREFIX@eclmin.@LIBEXT@
@@ -130,6 +131,7 @@ install-base:
 	for i in $(TARGETS); do \
 	  $(INSTALL_PROGRAM) $$i $(DESTDIR)$(bindir); \
 	done
+	$(INSTALL_DATA) ucd.dat $(DESTDIR)$(ecldir)/
 	if [ -d encodings ]; then \
 	  $(mkinstalldirs) $(DESTDIR)$(ecldir)/encodings; \
 	  for i in ./encodings/*; do \

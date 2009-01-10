@@ -876,10 +876,13 @@ dir_recursive(cl_object pathname, cl_object directory)
 	@(return output)
 @)
 
-#if defined(_MSC_VER) || defined(mingw32)
 cl_object
 si_get_library_pathname(void)
 {
+	const char *v = getenv("ECLDIR");
+	if (v) return make_constant_base_string(v);
+#if defined(_MSC_VER) || defined(mingw32)
+	{
 	cl_object s = cl_alloc_adjustable_base_string(cl_core.path_max);
 	char *buffer = (char*)s->base_string.self;
 	HMODULE hnd;
@@ -894,8 +897,11 @@ si_get_library_pathname(void)
 	}
 	s->base_string.fillp = len;
 	return ecl_parse_namestring(s, 0, len, &ep, Cnil);
-}
+	}
+#else
+	return make_constant_base_string(ECLDIR "/");
 #endif
+}
 
 @(defun ext::chdir (directory &optional (change_d_p_d Ct))
 	cl_object previous = si_getcwd(0);

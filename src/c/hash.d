@@ -157,7 +157,7 @@ _hash_equalp(int depth, cl_hashkey h, cl_object x)
 	cl_index i, len;
 	switch (type_of(x)) {
 	case t_character:
-		return hash_word(h, toupper(CHAR_CODE(x)));
+		return hash_word(h, ecl_char_upcase(CHAR_CODE(x)));
 	case t_list:
 		if (Null(x)) {
 			return _hash_equalp(depth, h, Cnil_symbol->symbol.name);

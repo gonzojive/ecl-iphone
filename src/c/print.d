@@ -24,7 +24,6 @@
 #ifdef _MSC_VER
 # undef complex
 #endif
-#include <ctype.h>
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
@@ -266,7 +265,7 @@ call_structure_print_function(cl_object f, cl_object x, cl_object stream)
 #define	to_be_escaped(c) \
 	(cl_core.standard_readtable->readtable.table[(c)&0377].syntax_type \
 	 != cat_constituent || \
-	 islower((c)&0377) || (c) == ':')
+	 ecl_lower_case_p((c)&0377) || (c) == ':')
 
 static bool object_will_print_as_hash(cl_object x);
 static cl_fixnum search_print_circle(cl_object x);
@@ -761,9 +760,9 @@ needs_to_be_escaped(cl_object s, cl_object readtable, cl_object print_case)
 		int syntax = ecl_readtable_get(readtable, c, 0);
 		if (syntax != cat_constituent || ecl_invalid_character_p(c) || (c) == ':')
 			return 1;
-		if ((action == ecl_case_downcase) && isupper(c))
+		if ((action == ecl_case_downcase) && ecl_upper_case_p(c))
 			return 1;
-		if (islower(c))
+		if (ecl_lower_case_p(c))
 			return 1;
 	}
 	return 0;
@@ -791,26 +790,26 @@ write_symbol_string(cl_object s, int action, cl_object print_case,
 				write_ch('\\', stream);
 			}
 		} else if (action != ecl_case_preserve) {
-			if (isupper(c)) {
+			if (ecl_upper_case_p(c)) {
 				if ((action == ecl_case_invert) ||
 				    ((action == ecl_case_upcase) &&
 				     ((print_case == @':downcase') ||
 				      ((print_case == @':capitalize') && !capitalize))))
 				{
-					c = tolower(c);
+					c = ecl_char_downcase(c);
 				}
 				capitalize = 0;
-			} else if (islower(c)) {
+			} else if (ecl_lower_case_p(c)) {
 				if ((action == ecl_case_invert) ||
 				    ((action == ecl_case_downcase) &&
 				     ((print_case == @':upcase') ||
 				      ((print_case == @':capitalize') && capitalize))))
 				{
-					c = toupper(c);
+					c = ecl_char_upcase(c);
 				}
 				capitalize = 0;
 			} else {
-				capitalize = !isdigit(c);
+				capitalize = !ecl_alphanumericp(c);
 			}
 		}
 		write_ch(c, stream);
@@ -1797,7 +1796,7 @@ potential_number_p(cl_object strng, int base)
 		    c == '^' && c == '_') {
 			continue;
 		}
-		if (isalpha(c) && ((i+1) >= l) || !isalpha(s[i+1])) {
+		if (ecl_alpha_char_p(c) && ((i+1) >= l) || !ecl_alpha_char_p(s[i+1])) {
 			continue;
 		}
 		return FALSE;

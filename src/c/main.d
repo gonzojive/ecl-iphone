@@ -250,6 +250,43 @@ cl_shutdown(void)
 	return 1;
 }
 
+#ifdef ECL_UNICODE
+static cl_object
+read_char_database()
+{
+	cl_object s = si_base_string_concatenate(2,
+						 si_get_library_pathname(),
+						 make_constant_base_string("ucd.dat"));
+	cl_object output = Cnil;
+	FILE *f = fopen(s->base_string.self, "r");
+	if (f) {
+		cl_index size;
+		if (!fseek(f, 0, SEEK_END)) {
+			size = ftell(f);
+			fseek(f, 0, SEEK_SET);
+			output = cl_alloc_simple_base_string(size);
+			if (fread(output->base_string.self, 1, size, f) < size) {
+				output = Cnil;
+			} else {
+				unsigned char *p = output->base_string.self;
+				ECL_SET(@'si::*unicode-database*', output);
+				cl_core.unicode_database = output;
+				cl_core.ucd_misc = p + 2;
+				cl_core.ucd_pages = cl_core.ucd_misc + (p[0] + (p[1]<<8));
+				cl_core.ucd_data = cl_core.ucd_pages + (0x110000 / 256);
+			}
+		}
+		fclose(f);
+	}
+	if (output == Cnil) {
+		printf("Unable to read Unicode database: %s\n", s->base_string.self);
+		abort();
+	}
+}
+#else
+#define read_char_database() (void)0
+#endif
+
 int
 cl_boot(int argc, char **argv)
 {
@@ -285,6 +322,7 @@ cl_boot(int argc, char **argv)
 #else
 	init_threads(env);
 #endif
+	read_char_database();
 
 	/*
 	 * 1) Initialize symbols and packages

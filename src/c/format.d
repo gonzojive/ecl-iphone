@@ -16,7 +16,6 @@
 */
 
 #include <ecl/ecl.h>
-#include <ctype.h>
 #include <limits.h>
 #include <ecl/internal.h>
 
@@ -1447,41 +1446,41 @@ fmt_case(format_stack fmt, bool colon, bool atsign)
 	x = STRING_OUTPUT_STRING(x);
 	if (!colon && !atsign)
 		for (i = 0;  i < x->string.fillp;  i++) {
-			if (isupper(j = x->string.self[i]))
-				j = tolower(j);
+			if (ecl_upper_case_p(j = x->string.self[i]))
+				j = ecl_char_downcase(j);
 			ecl_write_char(j, fmt->stream);
 		}
 	else if (colon && !atsign)
 		for (b = TRUE, i = 0;  i < x->string.fillp;  i++) {
-			if (islower(j = x->string.self[i])) {
+			if (ecl_lower_case_p(j = x->string.self[i])) {
 				if (b)
-					j = toupper(j);
+					j = ecl_char_upcase(j);
 				b = FALSE;
-			} else if (isupper(j)) {
+			} else if (ecl_upper_case_p(j)) {
 				if (!b)
-					j = tolower(j);
+					j = ecl_char_downcase(j);
 				b = FALSE;
-			} else if (!isdigit(j))
+			} else if (!ecl_digitp(j,10))
 				b = TRUE;
 			ecl_write_char(j, fmt->stream);
 		}
 	else if (!colon && atsign)
 		for (b = TRUE, i = 0;  i < x->string.fillp;  i++) {
-			if (islower(j = x->string.self[i])) {
+			if (ecl_lower_case_p(j = x->string.self[i])) {
 				if (b)
-					j = toupper(j);
+					j = ecl_char_upcase(j);
 				b = FALSE;
-			} else if (isupper(j)) {
+			} else if (ecl_upper_case_p(j)) {
 				if (!b)
-					j = tolower(j);
+					j = ecl_char_downcase(j);
 				b = FALSE;
 			}
 			ecl_write_char(j, fmt->stream);
 		}
 	else
 		for (i = 0;  i < x->string.fillp;  i++) {
-			if (islower(j = x->string.self[i]))
-				j = toupper(j);
+			if (ecl_lower_case_p(j = x->string.self[i]))
+				j = ecl_char_upcase(j);
 			ecl_write_char(j, fmt->stream);
 		}
 	if (up_colon)
@@ -1914,7 +1913,7 @@ LOOP:
 			i = fmt->ctl_index - 1;
 			do {
 				c = ctl_advance(fmt);
-			} while (isdigit(c));
+			} while (ecl_digitp(c,10));
 			x = parse_integer(fmt->ctl_str + i, fmt->ctl_index, &i, 10);
 		INTEGER:
 			/* FIXME! A hack to solve the problem of bignums in arguments */

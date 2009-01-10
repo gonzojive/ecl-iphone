@@ -202,6 +202,13 @@ struct cl_core_struct {
 	cl_object gc_counter;
 	bool gc_stats;
 	int path_max;
+
+#ifdef ECL_UNICODE
+	cl_object unicode_database;
+	unsigned char *ucd_misc;
+	unsigned char *ucd_pages;
+	unsigned char *ucd_data;
+#endif
 };
 
 extern ECL_API struct cl_core_struct cl_core;
@@ -1560,9 +1567,7 @@ extern ECL_API cl_object ecl_cstring_to_pathname(char *s);
 extern ECL_API int ecl_backup_open(const char *filename, int option, int mode);
 extern ECL_API cl_object ecl_file_len(int f);
 extern ECL_API cl_object ecl_homedir_pathname(cl_object user);
-#if defined(_MSC_VER) || defined(mingw32)
 extern ECL_API cl_object si_get_library_pathname(void);
-#endif
 
 
 

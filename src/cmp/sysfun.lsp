@@ -301,10 +301,12 @@
 (def-inline code-char :always (fixnum) :char "#0")
 
 (proclaim-function char-upcase (character) character :no-side-effects t)
-(def-inline char-upcase :always (base-char) :char "toupper(#0)")
+(def-inline char-upcase :always (base-char) :char "ecl_char_upcase(#0)")
+(def-inline char-upcase :always (character) :wchar "ecl_char_upcase(#0)")
 
 (proclaim-function char-downcase (character) character :no-side-effects t)
-(def-inline char-downcase :always (base-char) :char "tolower(#0)")
+(def-inline char-downcase :always (base-char) :char "ecl_char_downcase(#0)")
+(def-inline char-downcase :always (character) :wchar "ecl_char_downcase(#0)")
 
 (proclaim-function digit-char (fixnum *) (or character null))
 (proclaim-function char-int (character) fixnum :no-side-effects t)

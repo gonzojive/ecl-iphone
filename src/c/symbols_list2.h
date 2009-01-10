@@ -1109,9 +1109,7 @@ cl_symbols[] = {
 {SYS_ "FRS-TOP","si_frs_top"},
 {SYS_ "FSET","si_fset"},
 {SYS_ "FUNCTION-BLOCK-NAME","si_function_block_name"},
-#if defined(_MSC_VER) || defined(mingw32)
 {SYS_ "GET-LIBRARY-PATHNAME","si_get_library_pathname"},
-#endif
 {SYS_ "GET-SYSPROP","si_get_sysprop"},
 {EXT_ "GETENV","si_getenv"},
 {EXT_ "GETCWD","si_getcwd"},
@@ -1742,6 +1740,8 @@ cl_symbols[] = {
 {KEY_ "US-ASCII",NULL},
 {KEY_ "LITTLE-ENDIAN",NULL},
 {KEY_ "BIG-ENDIAN",NULL},
+
+{SYS_ "*UNICODE-DATABASE*",NULL},
 
 /* Tag for end of list */
 {NULL,NULL}};

@@ -23,7 +23,6 @@
 #ifdef _MSC_VER
 # undef complex
 #endif
-#include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ecl/internal.h>
@@ -141,10 +140,10 @@ invert_buffer_case(cl_object x, cl_object escape_list, int sign)
 		for (; i > high_limit; i--) {
 			/* The character is not escaped */
 			int c = TOKEN_STRING_CHAR(x,i);
-			if (isupper(c) && (sign < 0)) {
-				c = tolower(c);
-			} else if (islower(c) && (sign > 0)) {
-				c = toupper(c);
+			if (ecl_upper_case_p(c) && (sign < 0)) {
+				c = ecl_char_downcase(c);
+			} else if (ecl_lower_case_p(c) && (sign > 0)) {
+				c = ecl_char_upcase(c);
 			}
 			TOKEN_STRING_CHAR_SET(x,i,c);
 		}
@@ -295,16 +294,16 @@ LOOP:
 			FEreader_error("Found invalid character ~:C", in, 1, CODE_CHAR(c));
 		}
 		if (read_case != ecl_case_preserve) {
-			if (isupper(c)) {
+			if (ecl_upper_case_p(c)) {
 				upcase++;
 				count++;
 				if (read_case == ecl_case_downcase)
-					c = tolower(c);
-			} else if (islower(c)) {
+					c = ecl_char_downcase(c);
+			} else if (ecl_lower_case_p(c)) {
 				upcase--;
 				count++;
 				if (read_case == ecl_case_upcase)
-					c = toupper(c);
+					c = ecl_char_upcase(c);
 			}
 		}
 		ecl_string_push_extend(token, c);
@@ -339,7 +338,7 @@ LOOP:
  MAYBE_NUMBER:
 	/* Here we try to parse a number from the content of the buffer */
 	base = ecl_current_read_base();
-	if ((base <= 10) && isalpha(TOKEN_STRING_CHAR(token,0)))
+	if ((base <= 10) && ecl_alpha_char_p(TOKEN_STRING_CHAR(token,0)))
 		goto SYMBOL;
 	x = ecl_parse_number(token, 0, TOKEN_STRING_FILLP(token), &i, base);
 	if (x == Cnil)
@@ -1065,8 +1064,8 @@ sharp_colon_reader(cl_object in, cl_object ch, cl_object d)
 				ecl_string_push_extend(token, c);
 			}
 			goto K;
-		} else if (islower(c))
-			c = toupper(c);
+		} else if (ecl_lower_case_p(c))
+			c = ecl_char_upcase(c);
 		if (a == cat_whitespace || a == cat_terminating)
 			break;
 	}
@@ -1978,10 +1977,10 @@ ecl_invalid_character_p(int c)
 	} else {
 		ecl_sethash(CODE_CHAR(subcode), table, fnc);
 	}
-	if (islower(subcode)) {
-		subcode = toupper(subcode);
-	} else if (isupper(subcode)) {
-		subcode = tolower(subcode);
+	if (ecl_lower_case_p(subcode)) {
+		subcode = ecl_char_upcase(subcode);
+	} else if (ecl_upper_case_p(subcode)) {
+		subcode = ecl_char_downcase(subcode);
 	}
 	if (Null(fnc)) {
 		ecl_remhash(CODE_CHAR(subcode), table);

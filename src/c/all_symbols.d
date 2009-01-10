@@ -46,11 +46,9 @@ mangle_name(cl_object output, unsigned char *source, int l)
 
 	while (l--) {
 		c = *(source++);
-		if (isalpha(c))
-			c = tolower(c);
-		else if (isdigit(c))
-			;
-		else if (c == '-' || c == '_') {
+		if (ecl_alphanumericp(c)) {
+			c = ecl_char_downcase(c);
+		} else if (c == '-' || c == '_') {
 			c = '_';
 		} else if (c == '&') {
 			c = 'A';
