@@ -103,7 +103,7 @@
   (with-open-file (*standard-input*
 		   (make-pathname :name "UnicodeData" :type "txt"
 				  :defaults *extension-directory*)
-                   :direction :input)
+                   :direction :input :external-format '(:utf-8 :crlf))
     (loop for line = (read-line nil nil)
           while line
           do (slurp-ucd-line line)))
