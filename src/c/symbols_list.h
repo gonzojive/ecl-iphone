@@ -1743,5 +1743,7 @@ cl_symbols[] = {
 
 {SYS_ "*UNICODE-DATABASE*", SI_SPECIAL, NULL, -1, Cnil},
 
+{SYS_ "COPY-FILE", SI_ORDINARY, si_copy_file, 2, OBJNULL},
+
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};

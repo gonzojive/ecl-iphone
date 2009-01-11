@@ -1027,3 +1027,28 @@ si_rmdir(cl_object directory)
              FElibc_error("Can't remove directory ~A.", 1, directory);
         @(return Cnil)
 }
+
+cl_object
+si_copy_file(cl_object orig, cl_object dest)
+{
+	FILE *in, *out;
+	int ok = 0;
+	orig = si_coerce_to_filename(orig);
+	dest = si_coerce_to_filename(dest);
+	in = fopen((char*)orig->base_string.self, "r");
+	if (in) {
+		out = fopen((char*)dest->base_string.self, "w");
+		if (out) {
+			unsigned char *buffer = ecl_alloc_atomic(1024);
+			cl_index size;
+			do {
+				size = fread(buffer, 1, 1024, in);
+				fwrite(buffer, 1, size, out);
+			} while (size == 1024);
+			ok = 1;
+			fclose(out);
+		}
+		fclose(in);
+	}
+	@(return (ok? Ct : Cnil))
+}

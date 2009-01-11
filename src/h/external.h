@@ -1568,7 +1568,7 @@ extern ECL_API int ecl_backup_open(const char *filename, int option, int mode);
 extern ECL_API cl_object ecl_file_len(int f);
 extern ECL_API cl_object ecl_homedir_pathname(cl_object user);
 extern ECL_API cl_object si_get_library_pathname(void);
-
+extern ECL_API cl_object si_copy_file(cl_object orig, cl_object end);
 
 
 /* unixint.c */

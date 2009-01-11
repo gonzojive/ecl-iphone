@@ -52,6 +52,8 @@ ECL 9.1.0:
    Unicode properties instead of tolower, toupper, etc (Based on code
    from SBCL)
 
+ - A bug in the binary file loaded prevented loading a recompiled file.
+
 * AMOP:
 
  - In DEFCLASS, the :TYPE of slots was ignored.

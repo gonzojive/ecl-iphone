@@ -64,16 +64,17 @@ copy_object_file(cl_object original)
 	ecl_disable_interrupts();
 #ifdef HAVE_LSTAT
 	err = unlink(copy->base_string.self) ||
-	      symlink(original->base_string.self, copy->base_string.self);
+		symlink(original->base_string.self, copy->base_string.self);
 #else
 #if defined(mingw32) || defined(_MSC_VER)
 	err = !CopyFile(original->base_string.self, copy->base_string.self, 0);
 #else
-	err = 1;
+	err = Null(si_copy_file(original, copy));
 #endif
 #endif
 	ecl_enable_interrupts();
 	if (err) {
+		cl_delete_file(copy);
 		FEerror("Unable to copy file ~A to ~A", 2, original, copy);
 	}
 	return copy;
@@ -116,7 +117,6 @@ ecl_library_open(cl_object filename, bool force_reload) {
 
 	/* Coerces to a file name but does not merge with cwd */
 	filename = si_coerce_to_filename(filename);
-	filename_string = (char*)filename->base_string.self;
 
 	if (!force_reload) {
 		/* When loading a foreign library, such as a dll or a
@@ -163,6 +163,7 @@ ecl_library_open(cl_object filename, bool force_reload) {
 	block->cblock.links = Cnil;
 	block->cblock.cfuns_size = 0;
 	block->cblock.cfuns = NULL;
+	filename_string = (char*)filename->base_string.self;
 
 	ecl_disable_interrupts();
 #ifdef HAVE_DLFCN_H
