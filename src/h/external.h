@@ -205,9 +205,9 @@ struct cl_core_struct {
 
 #ifdef ECL_UNICODE
 	cl_object unicode_database;
-	unsigned char *ucd_misc;
-	unsigned char *ucd_pages;
-	unsigned char *ucd_data;
+	uint8_t *ucd_misc;
+	uint8_t *ucd_pages;
+	uint8_t *ucd_data;
 #endif
 };
 

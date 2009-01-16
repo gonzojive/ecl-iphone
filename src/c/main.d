@@ -264,11 +264,12 @@ read_char_database()
 		if (!fseek(f, 0, SEEK_END)) {
 			size = ftell(f);
 			fseek(f, 0, SEEK_SET);
-			output = cl_alloc_simple_base_string(size);
-			if (fread(output->base_string.self, 1, size, f) < size) {
+			output = si_make_vector(@'ext::byte8', MAKE_FIXNUM(size),
+						Cnil, Cnil, Cnil, Cnil);
+			if (fread(output->vector.self.b8, 1, size, f) < size) {
 				output = Cnil;
 			} else {
-				unsigned char *p = output->base_string.self;
+				uint8_t *p = output->vector.self.b8;
 				cl_core.unicode_database = output;
 				cl_core.ucd_misc = p + 2;
 				cl_core.ucd_pages = cl_core.ucd_misc + (p[0] + (p[1]<<8));
@@ -281,6 +282,7 @@ read_char_database()
 		printf("Unable to read Unicode database: %s\n", s->base_string.self);
 		abort();
 	}
+	ECL_SET(@'si::+unicode-database+', output);
 }
 #else
 #define read_char_database() (void)0

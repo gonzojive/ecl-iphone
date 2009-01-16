@@ -67,7 +67,7 @@ ecl_char_downcase(cl_index code)
 
 #else /* ECL_UNICODE */
 
-static unsigned char *
+static uint8_t *
 ucd_char_data(cl_index code)
 {
 	unsigned char page = cl_core.ucd_pages[code >> 8];
@@ -85,7 +85,7 @@ ucd_value_0(cl_index code)
 static cl_index
 ucd_value_1(cl_index code)
 {
-	unsigned char *c = ucd_char_data(code);
+	uint8_t *c = ucd_char_data(code);
 	return read_3bytes(c);
 }
 
@@ -142,7 +142,7 @@ ecl_alphanumericp(cl_index i)
 cl_index
 ecl_char_upcase(cl_index code)
 {
-	volatile unsigned char *c = ucd_char_data(code);
+	uint8_t *c = ucd_char_data(code);
 	if (c[0] == 1) {
 		c++;
 		return read_3bytes(c);
@@ -154,7 +154,7 @@ ecl_char_upcase(cl_index code)
 cl_index
 ecl_char_downcase(cl_index code)
 {
-	volatile unsigned char *c = ucd_char_data(code);
+	uint8_t *c = ucd_char_data(code);
 	if (c[0] == 0) {
 		c++;
 		return read_3bytes(c);
@@ -162,6 +162,4 @@ ecl_char_downcase(cl_index code)
 		return code;
 	}
 }
-
-
 #endif

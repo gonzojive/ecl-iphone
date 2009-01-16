@@ -1741,7 +1741,7 @@ cl_symbols[] = {
 {KEY_ "LITTLE-ENDIAN",NULL},
 {KEY_ "BIG-ENDIAN",NULL},
 
-{SYS_ "*UNICODE-DATABASE*",NULL},
+{SYS_ "+UNICODE-DATABASE+",NULL},
 
 {SYS_ "COPY-FILE","si_copy_file"},
 
