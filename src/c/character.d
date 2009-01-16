@@ -454,7 +454,7 @@ cl_char_name(cl_object c)
 {
 	cl_index code = ecl_char_code(c);
 	cl_object output;
-	if (ecl_graphic_char_p(code)) {
+	if (ecl_graphic_char_p(code) && c != ' ') {
 		output = cl_string(c);
 	} else if (code > 127) {
 		char name[20]; /* cleanup */
