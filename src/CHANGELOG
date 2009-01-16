@@ -36,6 +36,8 @@ ECL 9.1.0:
  - The interpretation of newline characters defaults to CRLF in Windows and
    LF elsewhere.
 
+ - ECL accepts :UNSPECIFIC as a valid pathname type component.
+
 * Bugs fixed:
 
  - (FLOOR X X), (CEILING X X), etc, might return a second value which is a

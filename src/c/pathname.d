@@ -144,7 +144,7 @@ ecl_make_pathname(cl_object host, cl_object device, cl_object directory,
 		component = @':name';
 		goto ERROR;
 	}
-	if (type != Cnil && type != @':wild' && !ecl_stringp(type)) {
+	if (type != Cnil && type != @':unspecific' && type != @':wild' && !ecl_stringp(type)) {
 		x = type;
 		component = @':type';
 		goto ERROR;
@@ -950,7 +950,7 @@ NO_DIRECTORY:
 		}
 	}
 	y = x->pathname.type;
-	if (y != Cnil) {
+	if (y != Cnil && y != @':unspecific') {
 		if (y == @':wild') {
 			writestr_stream(".*", buffer);
 		} else {
