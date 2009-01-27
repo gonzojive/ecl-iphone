@@ -34,6 +34,9 @@
 #endif
 #ifdef ECL_USE_MPROTECT
 # include <sys/mman.h>
+# ifndef MAP_FAIL
+#  define MAP_FAIL -1
+# endif
 #endif
 #include <stdio.h>
 #include <stdlib.h>
@@ -212,8 +215,8 @@ _ecl_alloc_env()
 	cl_env_ptr output;
 #if defined(ECL_USE_MPROTECT)
 	output = mmap(0, sizeof(*output), PROT_READ | PROT_WRITE,
-			MAP_ANON | MAP_PRIVATE, 0, 0);
-	if (output < 0)
+			MAP_ANON | MAP_PRIVATE, -1, 0);
+	if (output == MAP_FAIL)
 		ecl_internal_error("Unable to allocate environment structure.");
 #else
 	output = ecl_alloc(sizeof(*output));
