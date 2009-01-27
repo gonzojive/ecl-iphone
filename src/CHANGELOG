@@ -56,6 +56,8 @@ ECL 9.1.0:
 
  - A bug in the binary file loaded prevented loading a recompiled file.
 
+ - READ-DELIMITED-LIST interpreted the value of :RECURSIVEP the wrong way.
+
 * AMOP:
 
  - In DEFCLASS, the :TYPE of slots was ignored.

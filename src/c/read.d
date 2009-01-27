@@ -1561,7 +1561,7 @@ do_read_delimited_list(int d, cl_object in, bool proper_list)
 @
 	delimiter = ecl_char_code(d);
 	strm = stream_or_default_input(strm);
-	if (Null(recursivep)) {
+	if (!Null(recursivep)) {
 		l = do_read_delimited_list(delimiter, strm, 1);
 	} else {
 		ecl_bds_bind(the_env, @'si::*sharp-eq-context*', Cnil);
