@@ -281,9 +281,14 @@ ecl_log1(cl_object x)
 		return ecl_log1_complex(x, MAKE_FIXNUM(0));
 	} else switch (tx) {
 	case t_fixnum:
-	case t_bignum:
 	case t_ratio:
 		return ecl_make_singlefloat(logf(number_to_float(x)));
+        case t_bignum: {
+                cl_fixnum l = fix(cl_integer_length(x)) - 1;
+                cl_object r = ecl_make_ratio(x, ecl_ash(MAKE_FIXNUM(1), l));
+                float output = logf(number_to_float(r)) + l * logf(2.0);
+                return ecl_make_singlefloat(output);
+        }
 #ifdef ECL_SHORT_FLOAT
 	case t_shortfloat:
 		return make_shortfloat(logf(ecl_short_float(x)));

@@ -73,6 +73,8 @@ ECL 9.1.0:
  - New function (EXT:HEAP-SIZE &optional NEW-MAX-HEAP-SIZE) can change the      
    memory limits.
 
+ - LOG does not overflow on bignums (LOG (ASH 1 128) 2) => 128
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
