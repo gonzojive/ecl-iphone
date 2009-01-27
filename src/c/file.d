@@ -27,7 +27,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
-#if defined(__DragonFly__) || defined(__FreeBSD__)
+#if !defined(mingw32) && !defined(_MSC_VER)
 #include <sys/stat.h>
 /* it isn't pulled in by fcntl.h */
 #endif
