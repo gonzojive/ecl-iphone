@@ -68,6 +68,9 @@ ECL 9.1.0:
  - The canonicalized default arguments list now contains functions instead
    of the forms to be evaluated.
 
+ - With null safety settings, the slot accessors for structures with
+   specialized vector types were not properly compiled.
+
 * Visible changes:
 
  - New function (EXT:HEAP-SIZE &optional NEW-MAX-HEAP-SIZE) can change the      

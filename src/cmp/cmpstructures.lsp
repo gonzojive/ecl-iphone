@@ -51,9 +51,10 @@
 	  (return-from maybe-optimize-structure-access nil))
 	(setf args (first args))
 	(case structure-type
-	  (vector  (c1expr `(svref ,args ,slot-index))) ; Beppe3
+          ((nil) (c1structure-ref `(,args ',structure-type ,slot-index)))
 	  (list (c1expr `(elt ,args ,slot-index)))
-	  (t (c1structure-ref `(,args ',structure-type ,slot-index))))))))
+	  (vector (c1expr `(svref ,args ,slot-index)))
+          (t (c1expr `(aref (the ,structure-type ,args) ,slot-index)))))))) ; Beppe3
 
 (defun c1structure-ref (args)
   (check-args-number 'sys:structure-ref args 3)
