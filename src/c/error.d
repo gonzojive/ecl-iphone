@@ -29,7 +29,11 @@
 void
 ecl_internal_error(const char *s)
 {
+        int saved_errno = errno;
 	printf("\nInternal or unrecoverable error in:\n%s\n", s);
+        if (saved_errno) {
+                printf("  [%d: %s]\n", saved_errno, strerror(saved_errno));
+        }
 	fflush(stdout);
 #ifdef SIGIOT
 	signal(SIGIOT, SIG_DFL); /* avoid getting into a loop with abort */
