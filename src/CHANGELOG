@@ -66,6 +66,11 @@ ECL 9.1.0:
  - The canonicalized default arguments list now contains functions instead
    of the forms to be evaluated.
 
+* Visible changes:
+
+ - New function (EXT:HEAP-SIZE &optional NEW-MAX-HEAP-SIZE) can change the      
+   memory limits.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

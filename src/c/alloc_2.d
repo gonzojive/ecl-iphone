@@ -55,6 +55,23 @@ out_of_memory(cl_env_ptr the_env)
 	cl_error(1, @'ext::storage-exhausted');
 }
 
+@(defun ext::heap-size (&optional (new_max_heap_size Cnil))
+	cl_index size;
+	cl_object output;
+@
+	ecl_disable_interrupts_env(the_env);
+	size = GC_get_heap_size();
+	ecl_enable_interrupts_env(the_env);
+	output = ecl_make_unsigned_integer(size);
+	if (!Null(new_max_heap_size)) {
+                cl_index new_size = fixnnint(new_max_heap_size);
+                if (new_size > size) {
+                        _ecl_set_max_heap_size(new_size);
+                }
+        }
+	@(return output);
+@)
+
 #ifdef alloc_object
 #undef alloc_object
 #endif

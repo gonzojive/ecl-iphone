@@ -1745,5 +1745,9 @@ cl_symbols[] = {
 
 {SYS_ "COPY-FILE", SI_ORDINARY, si_copy_file, 2, OBJNULL},
 
+#ifdef GBC_BOEHM
+{EXT_ "HEAP-SIZE", EXT_ORDINARY, si_heap_size, -1, OBJNULL},
+#endif
+
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};
