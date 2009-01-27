@@ -312,8 +312,6 @@
   #+clos
   (when *keep-documentation*
     (set-documentation name 'STRUCTURE documentation))
-  (and (consp type) (eq (car type) 'VECTOR)
-       (setq type 'VECTOR))
   (dolist (x slot-descriptions)
     (and x
 	 (not (eql (car x) 'TYPED-STRUCTURE-NAME))
