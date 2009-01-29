@@ -50,11 +50,15 @@
 	  (cmpwarn "Too many arguments for structure slot accessor ~A" fname)
 	  (return-from maybe-optimize-structure-access nil))
 	(setf args (first args))
-	(case structure-type
-          ((nil) (c1structure-ref `(,args ',structure-type ,slot-index)))
-	  (list (c1expr `(elt ,args ,slot-index)))
-	  (vector (c1expr `(svref ,args ,slot-index)))
-          (t (c1expr `(aref (the ,structure-type ,args) ,slot-index)))))))) ; Beppe3
+	(cond
+	  ((eq structure-type 'list)
+	   (c1expr `(elt ,args ,slot-index)))
+	  ((eq structure-type 'vector)
+	   (c1expr `(svref ,args ,slot-index)))
+	  ((consp structure-type)
+	   (c1expr `(aref (the ,structure-type ,args) ,slot-index)))
+	  (t
+           (c1structure-ref `(,args ',structure-type ,slot-index))))))))
 
 (defun c1structure-ref (args)
   (check-args-number 'sys:structure-ref args 3)
