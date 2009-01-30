@@ -94,7 +94,7 @@ static void character_size_overflow(cl_object strm, int c);
 static void unsupported_character(cl_object strm);
 static void malformed_character(cl_object strm);
 static void too_long_utf8_sequence(cl_object strm);
-static void invalid_codepoint(cl_object strm, int c);
+static void invalid_codepoint(cl_object strm, cl_fixnum c);
 static void wrong_file_handler(cl_object strm);
 
 /**********************************************************************
