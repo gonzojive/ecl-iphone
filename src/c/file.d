@@ -510,15 +510,17 @@ generic_close(cl_object strm)
 static cl_index
 generic_write_vector(cl_object strm, cl_object data, cl_index start, cl_index end)
 {
+        cl_elttype elttype;
 	const struct ecl_file_ops *ops;
 	if (start >= end)
 		return start;
 	ops = stream_dispatch_table(strm);
-	if (data->vector.elttype == aet_bc ||
+        elttype = ecl_array_elttype(data);
+	if (elttype == aet_bc ||
 #ifdef ECL_UNICODE
-	    data->vector.elttype == aet_ch ||
+	    elttype == aet_ch ||
 #endif
-	    (data->vector.elttype == aet_object && CHARACTERP(ecl_elt(data, 0)))) {
+	    (elttype == aet_object && CHARACTERP(ecl_elt(data, 0)))) {
 		int (*write_char)(cl_object, int) = ops->write_char;			
 		for (; start < end; start++) {
 			write_char(strm, ecl_char_code(ecl_elt(data, start)));
@@ -2730,7 +2732,7 @@ io_file_close(cl_object strm)
 static cl_index
 io_file_read_vector(cl_object strm, cl_object data, cl_index start, cl_index end)
 {
-	cl_elttype t = data->vector.elttype;
+	cl_elttype t = ecl_array_elttype(data);
 	if (start >= end)
 		return start;
 	if (t == aet_b8 || t == aet_i8 || t == aet_bc) {
@@ -2752,7 +2754,7 @@ io_file_read_vector(cl_object strm, cl_object data, cl_index start, cl_index end
 static cl_index
 io_file_write_vector(cl_object strm, cl_object data, cl_index start, cl_index end)
 {
-	cl_elttype t = data->vector.elttype;
+	cl_elttype t = ecl_array_elttype(data);
 	if (start >= end)
 		return start;
 	if (t == aet_b8 || t == aet_i8 || t == aet_bc) {
