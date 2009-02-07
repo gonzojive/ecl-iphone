@@ -78,6 +78,10 @@ ECL 9.1.0:
 
  - LOG does not overflow on bignums (LOG (ASH 1 128) 2) => 128
 
+ - Instead of internally using the format (ARRAY T), Unicode strings are
+   now stored using an (ARRAY (SIGNED-BYTE 32)). This saves memory on
+   systems with 64-bit pointers.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

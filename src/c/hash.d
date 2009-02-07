@@ -92,13 +92,13 @@ _hash_equal(int depth, cl_hashkey h, cl_object x)
 		x = x->symbol.name;
 #ifdef ECL_UNICODE
 	case t_base_string:
-		return hash_base_string((unsigned char *)x->base_string.self,
+		return hash_base_string((ecl_base_char *)x->base_string.self,
 					x->base_string.fillp, h);
 	case t_string:
 		return hash_full_string(x->string.self, x->string.fillp, h);
 #else
 	case t_base_string:
-		return hash_string(h, (unsigned char *)x->base_string.self,
+		return hash_string(h, (ecl_base_char *)x->base_string.self,
 				   x->base_string.fillp);
 #endif
 	case t_pathname:
@@ -114,7 +114,7 @@ _hash_equal(int depth, cl_hashkey h, cl_object x)
 		 * If so, the extra bits _must_ _not_ take part in the hash,
 		 * because otherwise two bit arrays which are EQUAL might
 		 * have different hash keys. */
-		return hash_string(h, x->vector.self.ch, x->vector.fillp / 8);
+		return hash_string(h, x->vector.self.bc, x->vector.fillp / 8);
 	case t_random:
 		return _hash_equal(0, h, x->random.value);
 #ifdef ECL_SIGNED_ZERO

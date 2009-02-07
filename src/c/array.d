@@ -120,8 +120,8 @@ si_row_major_aset(cl_object x, cl_object indx, cl_object val)
 	@(return ecl_aref(x, j));
 } @)
 
-cl_object
-ecl_aref(cl_object x, cl_index index)
+static cl_object
+do_ecl_aref(cl_object x, cl_index index, cl_elttype type)
 {
  AGAIN:
 	if (index >= x->array.dim) {
@@ -132,14 +132,15 @@ ecl_aref(cl_object x, cl_index index)
 		index = fix(i);
 		goto AGAIN;
 	}
-	switch ((cl_elttype)ecl_array_elttype(x)) {
+	switch (type) {
 	case aet_object:
+		return x->array.self.t[index];
+	case aet_bc:
+		return CODE_CHAR(x->base_string.self[index]);
 #ifdef ECL_UNICODE
 	case aet_ch:
+                return CODE_CHAR(x->string.self[index]);
 #endif
-		return(x->array.self.t[index]);
-	case aet_bc:
-		return(CODE_CHAR(x->base_string.self[index]));
 	case aet_bit:
 		index += x->vector.offset;
 		if (x->vector.self.bit[index/CHAR_BIT] & (0200>>index%CHAR_BIT))
@@ -164,27 +165,26 @@ ecl_aref(cl_object x, cl_index index)
 }
 
 cl_object
+ecl_aref(cl_object x, cl_index index)
+{
+        return do_ecl_aref(x, index, (cl_elttype)ecl_array_elttype(x));
+}
+
+cl_object
 ecl_aref1(cl_object v, cl_index index)
 {
  AGAIN:
 	switch (type_of(v)) {
+	case t_vector:
+                return do_ecl_aref(v, index, v->vector.elttype);
+	case t_bitvector:
+		return do_ecl_aref(v, index, aet_bit);
+	case t_base_string:
+		return do_ecl_aref(v, index, aet_bc);
 #ifdef ECL_UNICODE
 	case t_string:
+		return do_ecl_aref(v, index, aet_ch);
 #endif
-	case t_vector:
-	case t_bitvector:
-		return ecl_aref(v, index);
-	case t_base_string:
-		if (index >= v->base_string.dim) {
-			cl_object i;
-			i = ecl_out_of_bounds_error(@'row-major-aref',"index",
-						    MAKE_FIXNUM(index),
-						    MAKE_FIXNUM(0),
-						    MAKE_FIXNUM(v->base_string.dim));
-			index = fix(i);
-			goto AGAIN;
-		}
-		return CODE_CHAR(v->base_string.self[index]);
 	default:
 		v = ecl_type_error(@'row-major-aref',"argument",v,@'vector');
 		goto AGAIN;
@@ -237,15 +237,17 @@ ecl_aset(cl_object x, cl_index index, cl_object value)
 		FEerror("The index, ~D, too large.", 1, MAKE_FIXNUM(index));
 	switch (ecl_array_elttype(x)) {
 	case aet_object:
-#ifdef ECL_UNICODE
-	case aet_ch:
-#endif
 		x->array.self.t[index] = value;
 		break;
 	case aet_bc:
 		/* INV: ecl_char_code() checks the type of `value' */
 		x->base_string.self[index] = ecl_char_code(value);
 		break;
+#ifdef ECL_UNICODE
+	case aet_ch:
+		x->string.self[index] = ecl_char_code(value);
+		break;
+#endif
 	case aet_bit: {
 		cl_fixnum i = ecl_fixnum_in_range(@'si::aset',"bit",value,0,1);
 		index += x->vector.offset;
@@ -431,22 +433,23 @@ ecl_array_allocself(cl_object x)
 	      }
 #ifdef ECL_UNICODE
 	case aet_ch: {
-		cl_object *elts;
-		elts = (cl_object *)ecl_alloc_align(sizeof(cl_object)*d, sizeof(cl_object));
+		ecl_character *elts;
+		elts = (ecl_character *)ecl_alloc_align(sizeof(ecl_character)*d,
+                                                        sizeof(ecl_character));
 		for (i = 0;  i < d;  i++)
-			elts[i] = CODE_CHAR(' ');
+			elts[i] = ' ';
 		x->string.self = elts;
 		break;
-	      }
+        }
 #endif
 	case aet_bc: {
-		unsigned char *elts = (unsigned char *)ecl_alloc_atomic(d+1);
+		ecl_base_char *elts = (ecl_base_char *)ecl_alloc_atomic(d+1);
 		for (i = 0;  i < d;  i++)
 			elts[i] = ' ';
 		elts[d] = '\0';
 		x->base_string.self = elts;
 		break;
-	      }
+        }
 	case aet_bit: {
 		byte *elts;
 		d = (d+(CHAR_BIT-1))/CHAR_BIT;
@@ -574,9 +577,6 @@ address_inc(void *address, cl_fixnum inc, cl_elttype elt_type)
 	union ecl_array_data aux;
 	aux.t = address;
 	switch (elt_type) {
-#ifdef ECL_UNICODE
-	case aet_ch:
-#endif
 	case aet_object:
 		return aux.t + inc;
 	case aet_fix:
@@ -586,7 +586,11 @@ address_inc(void *address, cl_fixnum inc, cl_elttype elt_type)
 	case aet_sf:
 		return aux.sf + inc;
 	case aet_bc:
-		return aux.ch + inc;
+		return aux.bc + inc;
+#ifdef ECL_UNICODE
+	case aet_ch:
+                return aux.c + inc;
+#endif
 	case aet_df:
 		return aux.df + inc;
 	case aet_b8:
@@ -747,15 +751,17 @@ cl_array_displacement(cl_object a)
 		offset = 0;
 	} else {
 		switch (ecl_array_elttype(a)) {
-#ifdef ECL_UNICODE
-		case aet_ch:
-#endif
 		case aet_object:
 			offset = a->array.self.t - to_array->array.self.t;
 			break;
 		case aet_bc:
-			offset = a->array.self.ch - to_array->array.self.ch;
+			offset = a->array.self.bc - to_array->array.self.bc;
 			break;
+#ifdef ECL_UNICODE
+		case aet_ch:
+			offset = a->array.self.c - to_array->array.self.c;
+			break;
+#endif
 		case aet_bit:
 			offset = a->array.self.bit - to_array->array.self.bit;
 			offset = offset * CHAR_BIT + a->array.offset
@@ -941,8 +947,8 @@ ecl_copy_subarray(cl_object dest, cl_index i0, cl_object orig,
 		}
 	} else if (t >= 0 && t <= aet_last_type) {
 		cl_index elt_size = ecl_aet_size[t];
-		memcpy(dest->array.self.ch + i0 * elt_size,
-		       orig->array.self.ch + i1 * elt_size,
+		memcpy(dest->array.self.bc + i0 * elt_size,
+		       orig->array.self.bc + i1 * elt_size,
 		       l * elt_size);
 	} else {
 		FEbad_aet();
@@ -961,9 +967,6 @@ ecl_reverse_subarray(cl_object x, cl_index i0, cl_index i1)
 		i1 = x->array.dim;
 	}
 	switch (t) {
-#ifdef ECL_UNICODE
-	case aet_ch:
-#endif
 	case aet_object:
 	case aet_fix:
 	case aet_index:
@@ -998,16 +1001,25 @@ ecl_reverse_subarray(cl_object x, cl_index i0, cl_index i1)
 		for (i = i0, j = i1-1;  i < j;  i++, --j) {
 			int8_t y = x->array.self.i8[i];
 			x->array.self.i8[i] = x->array.self.i8[j];
-				x->array.self.i8[j] = y;
+                        x->array.self.i8[j] = y;
 		}
 		break;
 	case aet_bc:
 		for (i = i0, j = i1-1;  i < j;  i++, --j) {
-			unsigned char y = x->array.self.ch[i];
-			x->array.self.ch[i] = x->array.self.ch[j];
-				x->array.self.ch[j] = y;
+			ecl_base_char y = x->array.self.bc[i];
+			x->array.self.bc[i] = x->array.self.bc[j];
+                        x->array.self.bc[j] = y;
 		}
 		break;
+#ifdef ECL_UNICODE
+	case aet_ch:
+		for (i = i0, j = i1-1;  i < j;  i++, --j) {
+			ecl_character y = x->array.self.c[i];
+			x->array.self.c[i] = x->array.self.c[j];
+                        x->array.self.c[j] = y;
+		}
+		break;
+#endif
 	case aet_bit:
 		for (i = i0 + x->vector.offset,
 		     j = i1 + x->vector.offset - 1;

@@ -366,9 +366,19 @@ typedef enum {			/*  array element type  */
 	aet_last_type = aet_bc
 } cl_elttype;
 
+typedef unsigned char ecl_base_char;
+#ifdef ECL_UNICODE
+typedef int32_t ecl_character;
+#else
+typedef int ecl_character;
+#endif
+
 union ecl_array_data {
 	cl_object     *t;
-        unsigned char *ch;
+        ecl_base_char *bc;
+#ifdef ECL_UNICODE
+        ecl_character *c;
+#endif
 	uint8_t       *b8;
 	int8_t        *i8;
 	float         *sf;
@@ -378,7 +388,7 @@ union ecl_array_data {
 	byte          *bit;
 };
 
-struct ecl_array {			/*  array header  */
+struct ecl_array {		/*  array header  */
 				/*  adjustable flag  */
 				/*  has-fill-pointer flag  */
 	HEADER2(adjustable,rank);
@@ -390,7 +400,7 @@ struct ecl_array {			/*  array header  */
 	byte	offset;		/*  bitvector offset  */
 };
 
-struct ecl_vector {			/*  vector header  */
+struct ecl_vector {		/*  vector header  */
 				/*  adjustable flag  */
 				/*  has-fill-pointer flag  */
 	HEADER2(adjustable,hasfillp);
@@ -414,7 +424,7 @@ struct ecl_base_string {	/*  string header  */
 	cl_index fillp;		/*  fill pointer  */
 				/*  For simple strings,  */
 				/*  st_fillp is equal to st_dim-1.  */
-	unsigned char *self;	/*  pointer to the string  */
+	ecl_base_char *self;	/*  pointer to the string  */
 };
 
 #ifdef ECL_UNICODE
@@ -428,7 +438,7 @@ struct ecl_string {		/*  string header  */
 	cl_index fillp;		/*  fill pointer  */
 				/*  For simple strings,  */
 				/*  st_fillp is equal to st_dim-1.  */
-	cl_object *self;	/*  pointer to the string  */
+	ecl_character *self;	/*  pointer to the string  */
 };
 #endif
 

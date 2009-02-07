@@ -462,7 +462,7 @@ safe_buffer_pointer(cl_object x, cl_index size)
 	if (!ok) {
 		FEerror(\"Lisp object is not a valid socket buffer: ~A\", 1, x);
 	}
-	return (void *)x->vector.self.ch;
+	return (void *)x->vector.self.t;
 }
 ")
 

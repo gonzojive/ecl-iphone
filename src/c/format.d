@@ -125,10 +125,10 @@ fmt_error(format_stack fmt, const char *s)
 					 (char *)fmt->string->string.self));
 }
 
-static int
+static ecl_character
 tempstr(format_stack fmt, int s)
 {
-	return(fmt->aux_string->string.self[s]);
+	return fmt->aux_string->string.self[s];
 }
 
 static int

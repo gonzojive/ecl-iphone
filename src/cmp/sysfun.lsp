@@ -131,19 +131,22 @@
 (def-inline aref :unsafe ((array base-char) fixnum) t
  "CODE_CHAR((#0)->base_string.self[#1])")
 #+unicode
-(def-inline aref :unsafe ((array character) fixnum fixnum) t
- "@0;(#0)->string.self[#1*(#0)->array.dims[1]+#2]")
+(def-inline aref :unsafe ((array character) fixnum) t
+ "@0;CODE_CHAR((#0)->string.self[#1*(#0)->array.dims[1]+#2])")
 (def-inline aref :unsafe ((array double-float) fixnum) t
  "ecl_make_doublefloat((#0)->array.self.df[#1])")
 (def-inline aref :unsafe ((array single-float) fixnum) t
  "ecl_make_singlefloat((#0)->array.self.sf[#1])")
 (def-inline aref :unsafe ((array fixnum) fixnum) t
  "MAKE_FIXNUM((#0)->array.self.fix[#1])")
+#+unicode
+(def-inline aref :unsafe ((array character) fixnum) :fixnum
+ "(#0)->string.self[#1]")
 (def-inline aref :unsafe ((array base-char) fixnum) :fixnum
  "(#0)->base_string.self[#1]")
 #+unicode
-(def-inline aref :unsafe ((array character) fixnum) :fixnum
- "CHAR_CODE((#0)->base_string.self[#1])")
+(def-inline aref :unsafe ((array character) fixnum) :wchar
+ "(#0)->string.self[#1]")
 (def-inline aref :unsafe ((array base-char) fixnum) :char
  "(#0)->base_string.self[#1]")
 (def-inline aref :unsafe ((array double-float) fixnum) :double
@@ -164,6 +167,9 @@
  "@0;ecl_aset_bv(#1,(#2)*(#1)->array.dims[1]+(#3),fix(#0))")
 (def-inline si:aset :unsafe (base-char (array base-char) fixnum fixnum) :char
  "@1;(#1)->base_string.self[#2*(#1)->array.dims[1]+#3]= #0")
+#+unicode
+(def-inline si:aset :unsafe (character (array character) fixnum fixnum) :wchar
+ "@1;(#1)->string.self[#2*(#1)->array.dims[1]+#3]= #0")
 (def-inline si:aset :unsafe (double-float (array double-float) fixnum fixnum)
  :double "@1;(#1)->array.self.df[#2*(#1)->array.dims[1]+#3]= #0")
 (def-inline si:aset :unsafe (single-float (array single-float) fixnum fixnum)
@@ -182,7 +188,7 @@
 (def-inline si:aset :unsafe (base-char (array base-char) fixnum) :char
  "(#1)->base_string.self[#2]= #0")
 #+unicode
-(def-inline si:aset :unsafe (character (array character) fixnum) t
+(def-inline si:aset :unsafe (character (array character) fixnum) :wchar
  "(#1)->string.self[#2]= #0")
 (def-inline si:aset :unsafe (double-float (array double-float) fixnum) :double
  "(#1)->array.self.df[#2]= #0")
@@ -1146,6 +1152,7 @@ type_of(#0)==t_bitvector")
 (proclaim-function char (string fixnum) character :no-side-effects t)
 (def-inline char :always (t t) t "cl_char(#0,#1)")
 (def-inline char :always (t fixnum) t "ecl_aref1(#0,#1)")
+(def-inline char :always (t fixnum) :wchar "ecl_char(#0,#1)")
 #-unicode
 (def-inline char :unsafe (t t) t "CODE_CHAR((#0)->base_string.self[fix(#1)])")
 #-unicode
@@ -1154,12 +1161,15 @@ type_of(#0)==t_bitvector")
 (def-inline char :unsafe (t fixnum) :char "(#0)->base_string.self[#1]")
 (def-inline char :unsafe (base-string fixnum) :fixnum "(#0)->base_string.self[#1]")
 (def-inline char :unsafe (base-string fixnum) :unsigned-char "(#0)->base_string.self[#1]")
+#+unicode
 (def-inline char :unsafe (ext:extended-string fixnum) :fixnum "(#0)->string.self[#1]")
+#+unicode
 (def-inline char :unsafe (ext:extended-string fixnum) :wchar "(#0)->string.self[#1]")
 
 (proclaim-function si:char-set (string fixnum character) character)
 (def-inline si:char-set :always (t t t) t "si_char_set(#0,#1,#2)")
 (def-inline si:char-set :always (t fixnum t) t "ecl_aset1(#0,#1,#2)")
+(def-inline si:char-set :always (t fixnum character) :wchar "ecl_char_set(#0,#1,#2)")
 #-unicode
 (def-inline si:char-set :unsafe (t t t) t
  "@2;((#0)->base_string.self[fix(#1)]=ecl_char_code(#2),(#2))")
@@ -1178,20 +1188,23 @@ type_of(#0)==t_bitvector")
 (proclaim-function schar (simple-string fixnum) character :no-side-effects t)
 (def-inline schar :always (t t) t "ecl_elt(#0,fixint(#1))")
 (def-inline schar :always (t fixnum) t "ecl_elt(#0,#1)")
+(def-inline schar :always (t fixnum) :wchar "ecl_char(#0,#1)")
 (def-inline schar :unsafe (base-string t) t "CODE_CHAR((#0)->base_string.self[fix(#1)])")
 #-unicode
 (def-inline schar :unsafe (t t) :fixnum "(#0)->base_string.self[fix(#1)]")
 #-unicode
 (def-inline schar :unsafe (t fixnum) :fixnum "(#0)->base_string.self[#1]")
-(def-inline schar :unsafe (base-string t) :fixnum "(#0)->base_string.self[fix(#1)]")
 (def-inline schar :unsafe (base-string fixnum) :fixnum "(#0)->base_string.self[#1]")
 (def-inline schar :unsafe (base-string fixnum) :char "(#0)->base_string.self[#1]")
 #+unicode
-(def-inline schar :unsafe (ext:extended-string t) t "(#0)->string.self[fix(#1)]")
+(def-inline schar :unsafe (ext:extended-string fixnum) :fixnum "(#0)->string.self[#1]")
+#+unicode
+(def-inline schar :unsafe (ext:extended-string fixnum) :wchar "(#0)->string.self[#1]")
 
 (proclaim-function si:schar-set (string fixnum character) character)
 (def-inline si:schar-set :always (t t t) t "ecl_elt_set(#0,fixint(#1),#2)")
 (def-inline si:schar-set :always (t fixnum t) t "ecl_elt_set(#0,#1,#2)")
+(def-inline si:schar-set :always (t fixnum character) :wchar "ecl_char_set(#0,#1,#2)")
 #-unicode
 (def-inline si:schar-set :unsafe (t t t) t
  "@2;((#0)->base_string.self[fix(#1)]=ecl_char_code(#2),(#2))")
@@ -1203,7 +1216,10 @@ type_of(#0)==t_bitvector")
 (def-inline si:schar-set :unsafe (base-string fixnum base-char) :char
  "(#0)->base_string.self[#1]= #2")
 #+unicode
-(def-inline si:schar-set :unsafe (ext:extended-string fixnum t) :char
+(def-inline si:schar-set :unsafe (ext:extended-string fixnum t) :wchar
+ "@2;((#0)->string.self[#1]= ecl_char_code(#2),(#2))")
+#+unicode
+(def-inline si:schar-set :unsafe (ext:extended-string fixnum character) :wchar
  "(#0)->string.self[#1]= #2")
 
 (proclaim-function string= (string-designator string-designator *) t :predicate t :no-side-effects t)

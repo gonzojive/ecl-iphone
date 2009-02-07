@@ -156,7 +156,7 @@ si_make_foreign_data_from_array(cl_object array)
 		FEerror("Cannot make foreign object from array with element type ~S.", 1, ecl_elttype_to_symbol(array->array.elttype));
 		break;
 	}
-	@(return ecl_make_foreign_data(tag, 0, array->array.self.ch));
+	@(return ecl_make_foreign_data(tag, 0, array->array.self.bc));
 }
 
 cl_object

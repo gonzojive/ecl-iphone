@@ -33,7 +33,7 @@
     #+:long-float :long-double #+:long-float (long-float "long double")
     :unsigned-char (base-char "char")
     :char (base-char "char")
-    :wchar (character "cl_index")
+    :wchar (character "ecl_character")
     :object (t "cl_object")
     :bool (t "bool")
     ;; These types are never selected to unbox data.

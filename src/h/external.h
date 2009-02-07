@@ -396,21 +396,21 @@ extern ECL_API cl_object cl_name_char(cl_object s);
 extern ECL_API cl_object cl_standard_char_p(cl_object c);
 extern ECL_API cl_object cl_upper_case_p(cl_object c);
 
-extern ECL_API bool ecl_alpha_char_p(cl_index c);
-extern ECL_API bool ecl_alphanumericp(cl_index c);
-extern ECL_API bool ecl_both_case_p(cl_index c);
-extern ECL_API cl_index ecl_char_downcase(cl_index c);
-extern ECL_API cl_index ecl_char_upcase(cl_index c);
-extern ECL_API bool ecl_graphic_char_p(cl_index c);
-extern ECL_API bool ecl_lower_case_p(cl_index c);
-extern ECL_API bool ecl_standard_char_p(cl_index c);
-extern ECL_API bool ecl_base_char_p(cl_index c);
-extern ECL_API bool ecl_upper_case_p(cl_index c);
+extern ECL_API bool ecl_alpha_char_p(ecl_character c);
+extern ECL_API bool ecl_alphanumericp(ecl_character c);
+extern ECL_API bool ecl_both_case_p(ecl_character c);
+extern ECL_API ecl_character ecl_char_downcase(ecl_character c);
+extern ECL_API ecl_character ecl_char_upcase(ecl_character c);
+extern ECL_API bool ecl_graphic_char_p(ecl_character c);
+extern ECL_API bool ecl_lower_case_p(ecl_character c);
+extern ECL_API bool ecl_standard_char_p(ecl_character c);
+extern ECL_API bool ecl_base_char_p(ecl_character c);
+extern ECL_API bool ecl_upper_case_p(ecl_character c);
 
 extern ECL_API int ecl_base_string_case(cl_object s);
-extern ECL_API cl_fixnum ecl_char_code(cl_object c);
-extern ECL_API int ecl_base_char_code(cl_object c);
-extern ECL_API int ecl_digitp(int i, int r);
+extern ECL_API ecl_character ecl_char_code(cl_object c);
+extern ECL_API ecl_base_char ecl_base_char_code(cl_object c);
+extern ECL_API int ecl_digitp(ecl_character i, int r);
 extern ECL_API bool ecl_char_eq(cl_object x, cl_object y);
 extern ECL_API int ecl_char_cmp(cl_object x, cl_object y);
 extern ECL_API bool ecl_char_equal(cl_object x, cl_object y);
@@ -617,11 +617,11 @@ extern ECL_API cl_object ecl_make_string_input_stream(cl_object strng, cl_index 
 extern ECL_API cl_object ecl_make_string_output_stream(cl_index line_length, int extended);
 extern ECL_API cl_object ecl_read_byte(cl_object strm);
 extern ECL_API void ecl_write_byte(cl_object byte, cl_object strm);
-extern ECL_API int ecl_read_char_noeof(cl_object strm);
-extern ECL_API int ecl_read_char(cl_object strm);
-extern ECL_API void ecl_unread_char(int c, cl_object strm);
-extern ECL_API int ecl_peek_char(cl_object strm);
-extern ECL_API int ecl_write_char(int c, cl_object strm);
+extern ECL_API ecl_character ecl_read_char_noeof(cl_object strm);
+extern ECL_API ecl_character ecl_read_char(cl_object strm);
+extern ECL_API void ecl_unread_char(ecl_character c, cl_object strm);
+extern ECL_API ecl_character ecl_peek_char(cl_object strm);
+extern ECL_API ecl_character ecl_write_char(ecl_character c, cl_object strm);
 extern ECL_API void writestr_stream(const char *s, cl_object strm);
 extern ECL_API void ecl_force_output(cl_object strm);
 extern ECL_API void ecl_finish_output(cl_object strm);
@@ -1398,12 +1398,12 @@ extern ECL_API cl_object make_simple_base_string(char *s);
 extern ECL_API cl_object make_base_string_copy(const char *s);
 extern ECL_API cl_object ecl_cstring_to_base_string_or_nil(const char *s);
 extern ECL_API bool ecl_string_eq(cl_object x, cl_object y);
-extern ECL_API bool ecl_member_char(int c, cl_object char_bag);
-extern ECL_API int ecl_string_push_extend(cl_object s, int c);
+extern ECL_API bool ecl_member_char(ecl_character c, cl_object char_bag);
+extern ECL_API ecl_character ecl_string_push_extend(cl_object s, ecl_character c);
 extern ECL_API void get_string_start_end(cl_object s, cl_object start, cl_object end, cl_index *ps, cl_index *pe);
 extern ECL_API bool ecl_fits_in_base_string(cl_object s);
-extern ECL_API cl_index ecl_char(cl_object s, cl_index i);
-extern ECL_API void ecl_char_set(cl_object s, cl_index i, cl_index c);
+extern ECL_API ecl_character ecl_char(cl_object s, cl_index i);
+extern ECL_API ecl_character ecl_char_set(cl_object s, cl_index i, ecl_character c);
 
 /* structure.c */
 

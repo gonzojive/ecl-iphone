@@ -20,8 +20,10 @@
 #include <string.h>
 #include <ecl/ecl-inl.h>
 
+typedef ecl_character (*ecl_casefun)(ecl_character, bool *);
+
 static cl_object
-do_make_base_string(cl_index s, int code)
+do_make_base_string(cl_index s, ecl_base_char code)
 {
 	cl_object x = cl_alloc_simple_base_string(s);
 	cl_index i;
@@ -32,13 +34,12 @@ do_make_base_string(cl_index s, int code)
 
 #ifdef ECL_UNICODE
 static cl_object
-do_make_string(cl_index s, cl_index code)
+do_make_string(cl_index s, ecl_character code)
 {
 	cl_object x = cl_alloc_simple_extended_string(s);
-	cl_object c = CODE_CHAR(code);
 	cl_index i;
 	for (i = 0;  i < s;  i++)
-		x->string.self[i] = c;
+		x->string.self[i] = code;
 	return x;
 }
 #else
@@ -81,9 +82,9 @@ cl_alloc_simple_base_string(cl_index length)
 	x->base_string.adjustable   = FALSE;
 	x->base_string.displaced    = Cnil;
 	x->base_string.dim          = (x->base_string.fillp = length);
-	x->base_string.self         = (unsigned char*)ecl_alloc_atomic(length+1);
+	x->base_string.self         = (ecl_base_char *)ecl_alloc_atomic(length+1);
 	x->base_string.self[length] = x->base_string.self[0] = 0;
-	return(x);
+	return x;
 }
 
 #ifdef ECL_UNICODE
@@ -98,7 +99,9 @@ cl_alloc_simple_extended_string(cl_index length)
 	x->string.adjustable = FALSE;
 	x->string.displaced  = Cnil;
 	x->string.dim        = x->string.fillp = length;
-	x->string.self       = (cl_object *)ecl_alloc_align(sizeof (cl_object)*length, sizeof (cl_object));
+	x->string.self       = (ecl_character *)
+                ecl_alloc_align(sizeof(ecl_character)*length,
+                                sizeof(ecl_character));
 	return(x);
 }
 #endif
@@ -144,9 +147,9 @@ make_simple_base_string(char *s)
 	x->base_string.adjustable = FALSE;
 	x->base_string.displaced = Cnil;
 	x->base_string.dim = (x->base_string.fillp = l);
-	x->base_string.self = (unsigned char *)s;
+	x->base_string.self = (ecl_base_char *)s;
 	
-	return(x);
+	return x;
 }
 
 cl_object
@@ -157,7 +160,7 @@ make_base_string_copy(const char *s)
 
 	x = cl_alloc_simple_base_string(l);
 	memcpy(x->base_string.self, s, l);
-	return(x);
+	return x;
 }
 
 cl_object
@@ -178,7 +181,7 @@ ecl_fits_in_base_string(cl_object s)
 	case t_string: {
 		cl_index i;
 		for (i = 0; i < s->string.fillp; i++) {
-			if (!BASE_CHAR_P(s->string.self[i]))
+			if (!BASE_CHAR_CODE_P(s->string.self[i]))
 				return 0;
 		}
 		return 1;
@@ -209,10 +212,10 @@ si_copy_to_simple_base_string(cl_object x)
 		cl_index index, length = x->string.fillp;
 		y = cl_alloc_simple_base_string(length);
 		for (index=0; index < length; index++) {
-			cl_object c = x->string.self[index];
-			if (!BASE_CHAR_P(c))
+			ecl_character c = x->string.self[index];
+			if (!BASE_CHAR_CODE_P(c))
 				FEerror("Cannot coerce string ~A to a base-string", 1, x);
-			y->base_string.self[index] = CHAR_CODE(c);
+			y->base_string.self[index] = c;
 		}
 		break;
 	}
@@ -245,19 +248,20 @@ cl_string(cl_object x)
 		break;
 	case t_character: {
 		cl_object y;
+                ecl_character c = CHAR_CODE(x);
 #ifdef ECL_UNICODE
-		if (BASE_CHAR_P(x)) {
+		if (BASE_CHAR_CODE_P(c)) {
 			y = cl_alloc_simple_base_string(1);
-			y->base_string.self[0] = CHAR_CODE(x);
+			y->base_string.self[0] = c;
 			x = y;
 		} else {
 			y = cl_alloc_simple_extended_string(1);
-			y->string.self[0] = x;
+			y->string.self[0] = c;
 			x = y;
 		}
 #else
 		y = cl_alloc_simple_base_string(1);
-		y->base_string.self[0] = CHAR_CODE(x);
+		y->base_string.self[0] = c;
 		x = y;
 		break;
 #endif
@@ -300,13 +304,13 @@ AGAIN:
 		goto AGAIN;
 	case t_character:
 		y = cl_alloc_simple_extended_string(1);
-		y->string.self[0] = x;
+		y->string.self[0] = CHAR_CODE(x);
 		break;
 	case t_base_string: {
 		cl_index index, len = x->base_string.dim;
 		y = cl_alloc_simple_extended_string(x->base_string.fillp);
 		for(index=0; index < len; index++) {
-			y->string.self[index] = CODE_CHAR(x->base_string.self[index]);
+			y->string.self[index] = x->base_string.self[index];
 		}
 		y->string.fillp = x->base_string.fillp;
 	}
@@ -333,7 +337,7 @@ cl_char(cl_object object, cl_object index)
 	@(return CODE_CHAR(ecl_char(object, position)))
 }
 
-cl_index
+ecl_character
 ecl_char(cl_object object, cl_index index)
 {
 	/* CHAR bypasses fill pointers when accessing strings */
@@ -343,7 +347,7 @@ ecl_char(cl_object object, cl_index index)
 	case t_string:
 		if (index >= object->string.dim)
 			FEillegal_index(object, MAKE_FIXNUM(index));
-		return CHAR_CODE(object->string.self[index]);
+		return object->string.self[index];
 #endif
 	case t_base_string:
 		if (index >= object->base_string.dim)
@@ -364,8 +368,8 @@ si_char_set(cl_object object, cl_object index, cl_object value)
 	@(return value)
 }
 
-void
-ecl_char_set(cl_object object, cl_index index, cl_index value)
+ecl_character
+ecl_char_set(cl_object object, cl_index index, ecl_character value)
 {
  AGAIN:
 	/* CHAR bypasses fill pointers when accessing strings */
@@ -374,15 +378,12 @@ ecl_char_set(cl_object object, cl_index index, cl_index value)
 	case t_string:
 		if (index >= object->string.dim)
 			FEillegal_index(object, MAKE_FIXNUM(index));
-		object->string.self[index] = CODE_CHAR(value);
-		break;
+		return object->string.self[index] = value;
 #endif
 	case t_base_string:
 		if (index >= object->base_string.dim)
 			FEillegal_index(object, MAKE_FIXNUM(index));
-		/* INV: ecl_char_code() checks type of value */
-		object->base_string.self[index] = value;
-		break;
+		return object->base_string.self[index] = value;
 	default:
 		object = ecl_type_error(@'si::char-set', "", object, @'string');
 		goto AGAIN;
@@ -506,7 +507,7 @@ compare_base(unsigned char *s1, cl_index l1, unsigned char *s2, cl_index l2,
 			@(return Ct)
 		case t_base_string:
 			while (s1 < e1)
-				if (CHAR_CODE(string1->string.self[s1++]) != string2->base_string.self[s2++])
+				if (string1->string.self[s1++] != string2->base_string.self[s2++])
 					@(return Cnil)
 			@(return Ct)
 		}
@@ -515,7 +516,7 @@ compare_base(unsigned char *s1, cl_index l1, unsigned char *s2, cl_index l2,
 		switch(type_of(string2)) {
 		case t_string:
 			while (s1 < e1)
-				if (string1->base_string.self[s1++] != CHAR_CODE(string2->string.self[s2++]))
+				if (string1->base_string.self[s1++] != string2->string.self[s2++])
 					@(return Cnil)
 			@(return Ct)
 		case t_base_string:
@@ -528,8 +529,7 @@ compare_base(unsigned char *s1, cl_index l1, unsigned char *s2, cl_index l2,
  	}
 #else
 	while (s1 < e1)
-		if (string1->base_string.self[s1++] !=
-		    string2->base_string.self[s2++])
+		if (string1->base_string.self[s1++] != string2->base_string.self[s2++])
 			@(return Cnil)
 #endif
 	@(return Ct)
@@ -555,7 +555,7 @@ ecl_string_eq(cl_object x, cl_object y)
 		case t_base_string: {
 			cl_index index;
 			for(index=0; index<i; index++)
-				if (x->string.self[index] != CODE_CHAR(y->base_string.self[index]))
+				if (x->string.self[index] != y->base_string.self[index])
 					return 0;
 			return 1;
 			}
@@ -715,7 +715,7 @@ string_compare(cl_narg narg, int sign1, int sign2, int case_sensitive, cl_va_lis
 @)
 
 bool
-ecl_member_char(int c, cl_object char_bag)
+ecl_member_char(ecl_character c, cl_object char_bag)
 {
 	cl_index i, f;
  AGAIN:
@@ -737,7 +737,7 @@ ecl_member_char(int c, cl_object char_bag)
 #ifdef ECL_UNICODE
 	case t_string:
 		for (i = 0, f = char_bag->string.fillp;  i < f;  i++) {
-			if (c == CHAR_CODE(char_bag->string.self[i]))
+			if (c == char_bag->string.self[i])
 				return(TRUE);
 		}
 		return(FALSE);
@@ -801,7 +801,7 @@ cl_string_right_trim(cl_object char_bag, cl_object strng)
 }
 
 static cl_object
-string_case(cl_narg narg, int (*casefun)(int c, bool *bp), cl_va_list ARGS)
+string_case(cl_narg narg, ecl_casefun casefun, cl_va_list ARGS)
 {
 	cl_object strng = cl_va_arg(ARGS);
 	cl_index s, e, i;
@@ -828,7 +828,7 @@ string_case(cl_narg narg, int (*casefun)(int c, bool *bp), cl_va_list ARGS)
 	switch(type_of(conv)) {
 	case t_string:
 		for (i = s;  i < e;  i++)
-			conv->string.self[i] = CODE_CHAR((*casefun)(CHAR_CODE(conv->string.self[i]), &b));
+			conv->string.self[i] = (*casefun)(conv->string.self[i], &b);
 		break;
 	case t_base_string:
 		for (i = s;  i < e;  i++)
@@ -845,8 +845,8 @@ string_case(cl_narg narg, int (*casefun)(int c, bool *bp), cl_va_list ARGS)
 #undef end
 }
 
-static int
-char_upcase(int c, bool *bp)
+static ecl_character
+char_upcase(ecl_character c, bool *bp)
 {
 	return ecl_char_upcase(c);
 }
@@ -856,8 +856,8 @@ char_upcase(int c, bool *bp)
 	return string_case(narg, char_upcase, args);
 @)
 
-static int
-char_downcase(int c, bool *bp)
+static ecl_character
+char_downcase(ecl_character c, bool *bp)
 {
 	return ecl_char_downcase(c);
 }
@@ -867,8 +867,8 @@ char_downcase(int c, bool *bp)
 	return string_case(narg, char_downcase, args);
 @)
 
-static int
-char_capitalize(int c, bool *bp)
+static ecl_character
+char_capitalize(ecl_character c, bool *bp)
 {
 	if (ecl_lower_case_p(c)) {
 		if (*bp)
@@ -891,7 +891,7 @@ char_capitalize(int c, bool *bp)
 
 
 static cl_object
-nstring_case(cl_narg narg, cl_object fun, int (*casefun)(int, bool *), cl_va_list ARGS)
+nstring_case(cl_narg narg, cl_object fun, ecl_casefun casefun, cl_va_list ARGS)
 {
 	cl_object strng = cl_va_arg(ARGS);
 	cl_index s, e, i;
@@ -914,7 +914,7 @@ nstring_case(cl_narg narg, cl_object fun, int (*casefun)(int, bool *), cl_va_lis
 #ifdef ECL_UNICODE
 	if (type_of(strng) == t_string) {
 		for (i = s;  i < e;  i++)
-			strng->string.self[i] = CODE_CHAR((*casefun)(CHAR_CODE(strng->string.self[i]), &b));
+			strng->string.self[i] = (*casefun)(strng->string.self[i], &b);
 	} else {
 		for (i = s;  i < e;  i++)
 			strng->base_string.self[i] = (*casefun)(strng->base_string.self[i], &b);
@@ -968,8 +968,8 @@ nstring_case(cl_narg narg, cl_object fun, int (*casefun)(int, bool *), cl_va_lis
 	@(return output);
 @)
 
-int
-ecl_string_push_extend(cl_object s, int c)
+ecl_character
+ecl_string_push_extend(cl_object s, ecl_character c)
 {
  AGAIN:
 	switch(type_of(s)) {

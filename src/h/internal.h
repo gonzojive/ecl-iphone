@@ -152,7 +152,7 @@ extern void* ecl_dynamic_callback_make(cl_object data, enum ecl_ffi_calling_conv
 #define ECHO_STREAM_INPUT(strm) (strm)->stream.object0
 #define ECHO_STREAM_OUTPUT(strm) (strm)->stream.object1
 #define CONCATENATED_STREAM_LIST(strm) (strm)->stream.object0
-#define IO_STREAM_FILE(strm) (FILE*)((strm)->stream.file.stream)
+#define IO_STREAM_FILE(strm) ((strm)->stream.file.stream)
 #define IO_STREAM_COLUMN(strm) (strm)->stream.int1
 #define IO_STREAM_ELT_TYPE(strm) (strm)->stream.object0
 #define IO_STREAM_FILENAME(strm) (strm)->stream.object1

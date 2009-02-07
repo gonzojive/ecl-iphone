@@ -19,7 +19,7 @@
 
 #include "char_ctype.d"
 
-cl_fixnum
+ecl_character
 ecl_char_code(cl_object c)
 {
 	if (CHARACTERP(c))
@@ -27,7 +27,7 @@ ecl_char_code(cl_object c)
 	FEtype_error_character(c);
 }
 
-int
+ecl_base_char
 ecl_base_char_code(cl_object c)
 {
 #ifdef ECL_UNICODE
@@ -52,13 +52,13 @@ cl_standard_char_p(cl_object c)
 }
 
 bool
-ecl_standard_char_p(cl_index code)
+ecl_standard_char_p(ecl_character code)
 {
 	return ((' ' <= code) && (code < '\177')) || (code == '\n');
 }
 
 bool
-ecl_base_char_p(cl_index c)
+ecl_base_char_p(ecl_character c)
 {
 	return c <= 255;
 }
@@ -131,7 +131,7 @@ ecl_string_case(cl_object s)
 	If i is not a digit, -1 is returned.
 */
 int
-ecl_digitp(int i, int r)
+ecl_digitp(ecl_character i, int r)
 {
 	if (('0' <= i) && (i <= '9') && (i < '0' + r))
 		return i - '0';
@@ -339,7 +339,7 @@ cl_character(cl_object x)
 #ifdef ECL_UNICODE
 	case t_string:
 		if (x->string.fillp == 1) {
-			x = x->string.self[0];
+			x = CODE_CHAR(x->string.self[0]);
 			break;
 		}
 		goto ERROR;
@@ -452,9 +452,9 @@ cl_char_int(cl_object c)
 cl_object
 cl_char_name(cl_object c)
 {
-	cl_index code = ecl_char_code(c);
+	ecl_character code = ecl_char_code(c);
 	cl_object output;
-	if (ecl_graphic_char_p(code) && c != ' ') {
+	if (ecl_graphic_char_p(code) && code != ' ') {
 		output = cl_string(c);
 	} else if (code > 127) {
 		char name[20]; /* cleanup */

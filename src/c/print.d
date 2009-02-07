@@ -1146,12 +1146,12 @@ si_write_ugly_object(cl_object x, cl_object stream)
 	case t_string:
 		if (!ecl_print_escape() && !ecl_print_readably()) {
 			for (ndx = 0;  ndx < x->string.fillp;  ndx++)
-				write_ch(CHAR_CODE(x->string.self[ndx]), stream);
+				write_ch(x->string.self[ndx], stream);
 			break;
 		}
 		write_ch('"', stream);
 		for (ndx = 0;  ndx < x->string.fillp;  ndx++) {
-			int c = CHAR_CODE(x->string.self[ndx]);
+			ecl_character c = x->string.self[ndx];
 			if (c == '"' || c == '\\')
 				write_ch('\\', stream);
 			write_ch(c, stream);
@@ -2034,7 +2034,7 @@ ecl_write_string(cl_object strng, cl_object strm)
 #ifdef ECL_UNICODE
 	case t_string:
 		for (i = 0;  i < strng->string.fillp;  i++)
-			ecl_write_char(CHAR_CODE(strng->string.self[i]), strm);
+			ecl_write_char(strng->string.self[i], strm);
 		break;
 #endif
 	case t_base_string:

@@ -38,9 +38,9 @@ static cl_object dispatch_macro_character(cl_object table, cl_object strm, int c
 #ifdef ECL_UNICODE
 # define TOKEN_STRING_DIM(s) ((s)->string.dim)
 # define TOKEN_STRING_FILLP(s) ((s)->string.fillp)
-# define TOKEN_STRING_CHAR(s,n) CHAR_CODE((s)->string.self[n])
-# define TOKEN_STRING_CHAR_SET(s,n,c) (s)->string.self[n]=CODE_CHAR(c)
-# define TOKEN_STRING_CHAR_CMP(s,n,c) ((s)->string.self[n]==CODE_CHAR(c))
+# define TOKEN_STRING_CHAR(s,n) ((s)->string.self[n])
+# define TOKEN_STRING_CHAR_SET(s,n,c) (s)->string.self[n]=(c)
+# define TOKEN_STRING_CHAR_CMP(s,n,c) ((s)->string.self[n]==(c))
 #else
 # define TOKEN_STRING_DIM(s) ((s)->base_string.dim)
 # define TOKEN_STRING_FILLP(s) ((s)->base_string.fillp)
