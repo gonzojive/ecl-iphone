@@ -2725,7 +2725,7 @@ io_file_close(cl_object strm)
 	ecl_enable_interrupts();
 	if (failed < 0)
 		FElibc_error("Cannot close stream ~S.", 1, strm);
-	strm->stream.file = (void*)-1;
+	IO_FILE_DESCRIPTOR(strm) = -1;
 	return generic_close(strm);
 }
 
@@ -3137,7 +3137,7 @@ ecl_make_file_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm,
 	set_stream_elt_type(stream, byte_size, flags, external_format);
 	IO_FILE_FILENAME(stream) = fname; /* not really used */
 	IO_FILE_COLUMN(stream) = 0;
-	stream->stream.file = (void*)fd;
+	IO_FILE_DESCRIPTOR(stream) = fd;
 	stream->stream.last_op = 0;
 	si_set_finalizer(stream, Ct);
 	return stream;
@@ -3199,7 +3199,7 @@ io_stream_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 		if (!Null(aux))
 			ecl_file_position_set(strm, aux);
 	} else if (strm->stream.last_op > 0) {
-		ecl_fseeko((FILE*)strm->stream.file, 0, SEEK_CUR);
+		ecl_fseeko(IO_STREAM_FILE(strm), 0, SEEK_CUR);
 	}
 	strm->stream.last_op = -1;
 	return input_stream_read_byte8(strm, c, n);
@@ -3365,7 +3365,7 @@ io_stream_close(cl_object strm)
 		FElibc_error("Cannot close stream ~S.", 1, strm);
 #if !defined(GBC_BOEHM)
 	ecl_dealloc(strm->stream.buffer);
-	strm->stream.file = NULL;
+	IO_STREAM_FILE(strm) = NULL;
 #endif
 	return generic_close(strm);
 }
@@ -3495,7 +3495,7 @@ si_set_buffering_mode(cl_object stream, cl_object buffer_mode_symbol)
 		FEerror("Not a valid buffering mode: ~A", 1, buffer_mode_symbol);
 	}
 	if (mode == smm_output || mode == smm_io || mode == smm_input) {
-		FILE *fp = (FILE*)stream->stream.file;
+		FILE *fp = IO_STREAM_FILE(stream);
 		setvbuf(fp, 0, _IONBF, 0);
 		if (buffer_mode != _IONBF) {
 			cl_index buffer_size = BUFSIZ;
@@ -3536,7 +3536,7 @@ ecl_make_stream_from_FILE(cl_object fname, void *f, enum ecl_smmode smm,
 	set_stream_elt_type(stream, byte_size, flags, external_format);
 	IO_STREAM_FILENAME(stream) = fname; /* not really used */
 	IO_STREAM_COLUMN(stream) = 0;
-	stream->stream.file = f;
+        IO_STREAM_FILE(stream) = f;
 	stream->stream.last_op = 0;
 	si_set_finalizer(stream, Ct);
 	return stream;
@@ -3591,20 +3591,20 @@ ecl_stream_to_handle(cl_object s, bool output)
 	switch ((enum ecl_smmode)s->stream.mode) {
 	case smm_input:
 		if (output) return -1;
-		return fileno((FILE*)s->stream.file);
+		return fileno(IO_STREAM_FILE(s));
 	case smm_input_file:
 		if (output) return -1;
-		return (int)s->stream.file;
+		return IO_FILE_DESCRIPTOR(s);
 	case smm_output:
 		if (!output) return -1;
-		return fileno((FILE*)s->stream.file);
+		return fileno(IO_STREAM_FILE(s));
 	case smm_output_file:
 		if (!output) return -1;
-		return (int)s->stream.file;
+		return IO_FILE_DESCRIPTOR(s);
 	case smm_io:
-		return fileno((FILE*)s->stream.file);
+		return fileno(IO_STREAM_FILE(s));
 	case smm_io_file:
-		return (int)s->stream.file;
+		return IO_FILE_DESCRIPTOR(s);
 	case smm_synonym:
 		s = SYNONYM_STREAM_STREAM(s);
 		goto BEGIN;
@@ -4483,7 +4483,7 @@ alloc_stream()
 {
 	cl_object x = ecl_alloc_object(t_stream);
 	x->stream.closed = 0;
-	x->stream.file = NULL;
+	x->stream.file.descriptor = -1;
 	x->stream.object0 =
 	x->stream.object1 = OBJNULL;
 	x->stream.int0 = x->stream.int1 = 0;

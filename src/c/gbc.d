@@ -655,16 +655,9 @@ sweep_phase(void)
 				break;
 #endif
 			case t_stream:
-#if defined(ECL_WSOCK)
-				if (x->stream.mode == smm_input_wsock
-				    || x->stream.mode == smm_output_wsock
-				    || x->stream.mode == smm_io_wsock) {
-					closesocket((int)x->stream.file);
-				} else
-#endif
-				if (x->stream.file != NULL)
-					fclose(x->stream.file);
-				x->stream.file = NULL;
+                                if (!x->stream.closed)
+					cl_close(1, x);
+                                break;
 #ifdef ECL_THREADS
 			case t_lock:
 #if defined(_MSC_VER) || defined(mingw32)

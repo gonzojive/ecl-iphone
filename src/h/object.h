@@ -547,7 +547,10 @@ struct ecl_stream {
 	HEADER2(mode,closed);	/*  stream mode of enum smmode  */
 				/*  closed stream?  */
 	struct ecl_file_ops *ops; /*  dispatch table  */
-	void *file;		/*  file pointer  */
+        union {
+                void *stream;		/* ANSI C streams */
+                cl_fixnum descriptor;	/* POSIX files */
+        } file;
 	cl_object object0;	/*  some object  */
 	cl_object object1;	/*  some object */
 	cl_object byte_stack;	/*  buffer for unread bytes  */
