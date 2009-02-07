@@ -316,8 +316,11 @@ Does not check if the third gang is a single-element list."
 
 (defun setf-structure-access (struct type index newvalue)
   (declare (si::c-local))
-  (case type
-    ((LIST VECTOR) `(sys:elt-set ,struct ,index ,newvalue))
+  (cond
+    ((or (eq type 'list) (eq type 'vector))
+     `(sys:elt-set ,struct ,index ,newvalue))
+    ((consp type)
+     `(si::aset ,newvalue (the ,type ,struct) ,index))
     (t `(sys::structure-set ,struct ',type ,index ,newvalue))))
 
 (defun setf-expand (l env)
