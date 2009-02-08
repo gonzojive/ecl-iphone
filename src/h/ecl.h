@@ -21,6 +21,7 @@
 #include <stddef.h>		/* NULL, ptrdiff_t */
 #include <stdarg.h> 		/* va_list */
 #include <setjmp.h> 		/* setjmp and buffers */
+#include <stdio.h>		/* FILE */
 #if !defined(_MSC_VER) && !defined(__sun)
 #include <stdint.h> 		/* int8_t and friends */
 #else

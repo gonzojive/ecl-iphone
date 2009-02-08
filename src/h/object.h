@@ -558,7 +558,7 @@ struct ecl_stream {
 				/*  closed stream?  */
 	struct ecl_file_ops *ops; /*  dispatch table  */
         union {
-                void *stream;		/* ANSI C streams */
+                FILE *stream;		/* ANSI C streams */
                 cl_fixnum descriptor;	/* POSIX files */
         } file;
 	cl_object object0;	/*  some object  */
