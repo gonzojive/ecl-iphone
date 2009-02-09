@@ -2735,7 +2735,7 @@ io_file_read_vector(cl_object strm, cl_object data, cl_index start, cl_index end
 	cl_elttype t = ecl_array_elttype(data);
 	if (start >= end)
 		return start;
-	if (t == aet_b8 || t == aet_i8 || t == aet_bc) {
+	if (t == aet_b8 || t == aet_i8) {
 		if (strm->stream.byte_size == 8) {
 			void *aux = data->vector.self.bc + start;
 			return strm->stream.ops->read_byte8(strm, aux, end-start);
@@ -2757,7 +2757,7 @@ io_file_write_vector(cl_object strm, cl_object data, cl_index start, cl_index en
 	cl_elttype t = ecl_array_elttype(data);
 	if (start >= end)
 		return start;
-	if (t == aet_b8 || t == aet_i8 || t == aet_bc) {
+	if (t == aet_b8 || t == aet_i8) {
 		if (strm->stream.byte_size == 8) {
 			void *aux = data->vector.self.fix + start;
 			return strm->stream.ops->write_byte8(strm, aux, end-start);
