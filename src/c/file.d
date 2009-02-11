@@ -4119,7 +4119,11 @@ ecl_open_stream(cl_object fn, enum ecl_smmode smm, cl_object if_exists,
 	cl_env_ptr the_env = &cl_env;
 	cl_object x;
 	int f;
+#if defined(mingw32) || defined(_MSC_VER)
+        int mode = _S_IREAD | _S_IWRITE;
+#else
 	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+#endif
 	cl_object filename = si_coerce_to_filename(fn);
 	char *fname = (char*)filename->base_string.self;
 	bool appending = 0;
