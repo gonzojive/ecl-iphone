@@ -45,6 +45,10 @@
 # include <unistd.h>
 #elif defined(mingw32) || defined(_MSC_VER)
 # include <winsock.h>
+# include <sys/stat.h>
+# define STDIN_FILENO 0
+# define STDOUT_FILENO 1
+# define STDERR_FILENO 2
 # define HAVE_SELECT
 #elif defined(HAVE_SYS_IOCTL_H) && !defined(MSDOS) && !defined(cygwin)
 # include <sys/ioctl.h>
