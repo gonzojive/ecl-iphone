@@ -25,7 +25,9 @@
 #include <ecl/ecl.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <unistd.h>
+#ifndef _MSC_VER
+# include <unistd.h>
+#endif
 #include <fcntl.h>
 #if !defined(mingw32) && !defined(_MSC_VER)
 #include <sys/stat.h>
