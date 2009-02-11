@@ -203,8 +203,12 @@
   `(let* ((si::*break-enable* *compiler-break-enable*)
           (throw-flag t))
      (unwind-protect
-	 (multiple-value-prog1 ,main-form
-			       (setf throw-flag nil))
+	 (multiple-value-prog1
+             (if *compiler-break-enable*
+                 (handler-bind ((error #'invoke-debugger))
+                   ,main-form)
+                 ,main-form)
+           (setf throw-flag nil))
        (when throw-flag ,error-form))))
 
 (defun cmp-eval (form)
@@ -212,7 +216,7 @@
     (cmperr "The form ~s was not evaluated successfully.~
 ~&You are recommended to compile again."
 	    form)))
-  
+
 (defun cmp-macroexpand (form &optional (env *cmp-env*))
   (with-cmp-protection (macroexpand form env)
     (cmperr "The macro form ~S was not expanded successfully.~
