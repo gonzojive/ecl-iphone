@@ -3114,10 +3114,6 @@ ecl_make_file_stream_from_fd(cl_object fname, int fd, enum ecl_smmode smm,
 	cl_object stream = alloc_stream();
 	stream->stream.mode = (short)smm;
 	stream->stream.closed = 0;
-#if defined (ECL_WSOCK)
-	if (smm == smm_input_wsock || smm == smm_io_wsock)
-		character_p = 1;
-#endif
 	switch(smm) {
 	case smm_probe:
 	case smm_input:
@@ -3520,10 +3516,6 @@ ecl_make_stream_from_FILE(cl_object fname, void *f, enum ecl_smmode smm,
 	stream = alloc_stream();
 	stream->stream.mode = (short)smm;
 	stream->stream.closed = 0;
-#if defined (ECL_WSOCK)
-	if (smm == smm_input_wsock || smm == smm_io_wsock)
-		character_p = 1;
-#endif
 	switch (smm) {
 	case smm_io:
 		stream->stream.ops = duplicate_dispatch_table(&io_stream_ops);
