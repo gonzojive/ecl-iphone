@@ -407,7 +407,7 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
 
     (when fname-in-ihs-p
       (push 'IHS *unwind-exit*)
-      (wt-nl "ihs_push(&ihs," (add-symbol fname) ",Cnil);"))
+      (wt-nl "ecl_ihs_push(cl_env_copy,&ihs," (add-symbol fname) ",Cnil);"))
 
     ;; Bind required parameters.
     (do ((reqs requireds (cdr reqs))
