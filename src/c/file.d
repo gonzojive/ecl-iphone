@@ -2614,7 +2614,7 @@ io_file_clear_input(cl_object strm)
 #if defined(mingw32) || defined(_MSC_VER)
 	if (isatty(f)) {
 		/* Flushes Win32 console */
-		if (!FlushConsoleInputBuffer((HANDLE)_get_osfhandle(fileno(fp))))
+		if (!FlushConsoleInputBuffer((HANDLE)_get_osfhandle(f)))
 			FEwin32_error("FlushConsoleInputBuffer() failed", 0);
 		/* Do not stop here: the FILE structure needs also to be flushed */
 	}
@@ -3235,18 +3235,19 @@ io_stream_listen(cl_object strm)
 static void
 io_stream_clear_input(cl_object strm)
 {
-	FILE *f = IO_STREAM_FILE(strm);
+	FILE *fp = IO_STREAM_FILE(strm);
 #if defined(mingw32) || defined(_MSC_VER)
-	if (isatty(fileno(fp))) {
+        int f = fileno(fp);
+	if (isatty(f)) {
 		/* Flushes Win32 console */
-		if (!FlushConsoleInputBuffer((HANDLE)_get_osfhandle(fileno(fp))))
+		if (!FlushConsoleInputBuffer((HANDLE)_get_osfhandle(f)))
 			FEwin32_error("FlushConsoleInputBuffer() failed", 0);
 		/* Do not stop here: the FILE structure needs also to be flushed */
 	}
 #endif
-	while (flisten(f) == ECL_LISTEN_AVAILABLE) {
+	while (flisten(fp) == ECL_LISTEN_AVAILABLE) {
 		ecl_disable_interrupts();
-		getc(f);
+		getc(fp);
 		ecl_enable_interrupts();
 	}
 }
