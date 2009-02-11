@@ -293,10 +293,13 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
  3. binding is performed for:
 	special or unboxed requireds
 	optionals, rest, keywords
+ 4. the function name is optionally pushed onto the IHS when
+    the caller asks for it.
 |#
 
 (defun c2lambda-expr
-    (lambda-list body cfun fname use-narg &optional closure-type local-entry-p
+    (lambda-list body cfun fname use-narg fname-in-ihs-p
+                 &optional closure-type local-entry-p
 		 &aux (requireds (first lambda-list))
 		 (optionals (second lambda-list))
 		 (rest (third lambda-list)) rest-loc
@@ -401,6 +404,10 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
 		 "va_list args; va_start(args,~a);"
 		 "cl_va_list args; cl_va_start(args,~a,narg,~d);")
 	     first-arg nreq))))
+
+    (when fname-in-ihs-p
+      (push 'IHS *unwind-exit*)
+      (wt-nl "ihs_push(&ihs," (add-symbol fname) ",Cnil);"))
 
     ;; Bind required parameters.
     (do ((reqs requireds (cdr reqs))
