@@ -112,7 +112,6 @@
     (wt-nl-h "#include <string.h>"))
   ;;; Initialization function.
   (let* ((*lcl* 0) (*lex* 0) (*max-lex* 0) (*max-env* 0) (*max-temp* 0)
-	 (*max-stack* 0)
 	 (*reservation-cmacro* (next-cmacro))
 	 (c-output-file *compiler-output1*)
 	 (*compiler-output1* (make-string-output-stream))
@@ -374,10 +373,6 @@
     (wt-h " volatile cl_object lex" *level* "[" *max-lex* "];"))
   (wt-nl-h "#define CLSR" *reservation-cmacro*)
   (wt-nl-h "#define STCK" *reservation-cmacro*)
-  (unless (zerop *max-stack*)
-    (wt-h " cl_object " +ecl-local-stack-variable+ "[" *max-stack* "]; "
-	  "struct ecl_stack_frame " +ecl-local-stack-frame-variable+
-	  " = { t_frame, 0, 0, 0, " +ecl-local-stack-variable+ ", 0, 0 };"))
   (when (plusp *max-env*)
     (unless (eq closure-type 'CLOSURE)
       (wt-h " cl_object " *volatile* "env0;"))

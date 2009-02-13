@@ -157,10 +157,7 @@
   (cond
     ;; Check whether it is a global function that we cannot call directly.
      ((and (or (null loc) (fun-global loc)) (not (inline-possible fname)))
-      (if (and *compile-to-linking-call*
-	       (<= (cmp-env-optimization 'debug) 1))
-	  (call-linking-loc fname narg args)
-	  (call-unknown-global-loc fname nil narg args)))
+      (call-unknown-global-loc fname nil narg args))
 
      ;; Open-codable function call.
      ((and (or (null loc) (fun-global loc))
@@ -193,29 +190,10 @@
      ((multiple-value-setq (found fd minarg maxarg) (si::mangle-name fname t))
       (call-exported-function-loc fname narg args fd minarg maxarg t))
 
-     ;; Linking calls can only be made to symbols
-     ((and *compile-to-linking-call* (<= (cmp-env-optimization 'debug) 1))
-      (call-linking-loc fname narg args))
-
      (t (call-unknown-global-loc fname loc narg args))))
 
 (defun call-loc (fname loc narg args)
   `(CALL-NORMAL ,loc ,(coerce-locs args)))
-
-(defun call-linking-loc (fname narg args &aux i)
-  (let ((fun (second (assoc fname *linking-calls*))))
-    (unless fun
-      (let* ((i (length *linking-calls*))
-             (c-id (lisp-to-c-name fname))
-	     (var-name (format nil "LK~d~A" i c-id))
-	     (c-name (format nil "LKF~d~A" i c-id)))
-	(cmpnote "Emitting linking call for ~a" fname)
-	(setf fun (make-fun :name fname :global t :lambda 'NIL
-			    :cfun (format nil "(*~A)" var-name)
-			    :minarg 0 :maxarg call-arguments-limit))
-	(setf *linking-calls* (cons (list fname fun (add-symbol fname) c-name var-name)
-				    *linking-calls*))))
-    (call-loc fname fun narg args)))
 
 (defun call-exported-function-loc (fname narg args fun-c-name minarg maxarg in-core)
   (unless in-core
@@ -248,30 +226,15 @@
 ;;;   NARG is a location containing the number of ARGS-PUSHED
 ;;;
 (defun call-unknown-global-loc (fname loc narg args)
-  (unless loc
-    (setq loc
-	  (if (and (symbolp fname)
-		   (not (eql (symbol-package fname) (find-package "CL"))))
-	      (progn
-		(cmpnote "Emitting FUNCALL for ~S" fname)
-		(add-symbol fname))
-	      (progn
-		(cmpnote "Emitting FDEFINITION for ~S" fname)
-		(setq loc (list 'FDEFINITION fname))))))
-  (do ((i 0 (1+ i))
-       (l args (cdr l)))
-      ((endp l)
-       (progn
-	 (cond ((> i *max-stack*)
-		(setf *max-stack* i))
-	       ((zerop *max-stack*)
-		(setf *max-stack* 1)))
-	 (wt-nl +ecl-local-stack-frame-variable+ ".top = "
-		+ecl-local-stack-variable+ "+" i ";")
-	 `(CALL "ecl_apply_from_stack_frame" ((LOCAL-FRAME NIL) ,loc) ,fname)))
-    (wt-nl +ecl-local-stack-variable+ "[" i "]=")
-    (wt-coerce-loc :object (second (first l)))
-    (wt ";")))
+  `(CALL-INDIRECT ,(cond (loc loc)
+                         ((and (symbolp fname)
+                               (not (eql (symbol-package fname) (find-package "CL"))))
+                          (cmpnote "Emitting FUNCALL for ~S" fname)
+                          (add-symbol fname))
+                         (t
+                          (cmpnote "Emitting FDEFINITION for ~S" fname)
+                          (list 'FDEFINITION fname)))
+                  ,(or narg (length args)) ,(coerce-locs args)))
 
 ;;; Functions that use MAYBE-SAVE-VALUE should rebind *temp*.
 (defun maybe-save-value (value &optional (other-forms nil other-forms-flag))
@@ -303,17 +266,24 @@
 
 (defun wt-call (fun args &optional fname env)
   (if env
-    (progn
-     (wt "(cl_env_copy->function=" env ",")
-     (wt-call fun args)
-     (wt ")"))
-    (progn
-     (wt fun "(")
-     (let ((comma ""))
-       (dolist (arg args)
-	 (wt comma arg)
-	 (setf comma ",")))
-     (wt ")")))
+      (progn
+        (wt "(cl_env_copy->function=" env ",")
+        (wt-call fun args)
+        (wt ")"))
+      (progn
+        (wt fun "(")
+        (let ((comma ""))
+          (dolist (arg args)
+            (wt comma arg)
+            (setf comma ",")))
+        (wt ")")))
+  (when fname (wt-comment fname)))
+
+(defun wt-call-indirect (fun-loc narg args &optional fname)
+  (wt "ecl_function_dispatch(cl_env_copy," fun-loc ")(" narg)
+  (dolist (arg args)
+    (wt "," arg))
+  (wt ")")
   (when fname (wt-comment fname)))
 
 (defun wt-call-normal (fun args)
@@ -352,3 +322,4 @@
 
 (put-sysprop 'CALL 'WT-LOC #'wt-call)
 (put-sysprop 'CALL-NORMAL 'WT-LOC #'wt-call-normal)
+(put-sysprop 'CALL-INDIRECT 'WT-LOC #'wt-call-indirect)

@@ -283,7 +283,7 @@ progress. The default value is T.")
 (defvar *suppress-compiler-notes* nil) ; Deprecated
 (defvar *suppress-compiler-warnings* nil) ; Deprecated
 
-(defvar *compiler-break-enable* nil)
+(defvar *compiler-break-enable* t)
 
 (defvar *compiler-in-use* nil)
 (defvar *compiler-input*)
@@ -338,8 +338,6 @@ progress. The default value is T.")
 
 (defvar *next-cmacro* 0)	; holds the last cmacro number used.
 (defvar *next-cfun* 0)		; holds the last cfun used.
-
-(defvar *max-stack* 0)		; maximum space used in lisp stack
 
 ;;;
 ;;; *tail-recursion-info* holds NIL, if tail recursion is impossible.

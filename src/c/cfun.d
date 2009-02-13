@@ -26,14 +26,14 @@ cl_make_cfun(void *c_function, cl_object name, cl_object cblock, int narg)
 	cl_object cf;
 
 	cf = ecl_alloc_object(t_cfunfixed);
-	cf->cfun.entry = dispatch_table[narg];
-	cf->cfun.orig = c_function;
-	cf->cfun.name = name;
-	cf->cfun.block = cblock;
-	cf->cfun.narg = narg;
+	cf->cfunfixed.entry = dispatch_table[narg];
+	cf->cfunfixed.orig = c_function;
+	cf->cfunfixed.name = name;
+	cf->cfunfixed.block = cblock;
+	cf->cfunfixed.narg = narg;
 	if (narg < 0 || narg > C_ARGUMENTS_LIMIT)
 	    FEprogram_error("cl_make_cfun: function requires too many arguments.",0);
-	return(cf);
+	return cf;
 }
 
 cl_object

@@ -29,6 +29,7 @@ struct cl_test {
 	cl_object frame_test;
 	struct ecl_stack_frame frame_test_aux;
 	cl_object frame_args[3];
+        cl_env_ptr env;
 };
 
 static cl_object subst(struct cl_test *t, cl_object new_obj, cl_object tree);
@@ -45,7 +46,7 @@ test_compare(struct cl_test *t, cl_object x)
 	ecl_stack_frame_elt_set(t->frame_test, 0, t->item_compared);
 	x = (t->key_c_function)(t, x);
 	ecl_stack_frame_elt_set(t->frame_test, 1, x);
-	return ecl_apply_from_stack_frame(t->frame_test, t->test_function) != Cnil;
+	return ecl_apply_from_stack_frame(t->env, t->frame_test, t->test_function) != Cnil;
 }
 
 static bool
@@ -54,7 +55,7 @@ test_compare_not(struct cl_test *t, cl_object x)
 	ecl_stack_frame_elt_set(t->frame_test, 0, t->item_compared);
 	x = (t->key_c_function)(t, x);
 	ecl_stack_frame_elt_set(t->frame_test, 1, x);
-	return ecl_apply_from_stack_frame(t->frame_test, t->test_function) == Cnil;
+	return ecl_apply_from_stack_frame(t->env, t->frame_test, t->test_function) == Cnil;
 }
 
 static bool
@@ -85,7 +86,7 @@ static cl_object
 key_function(struct cl_test *t, cl_object x)
 {
 	ecl_stack_frame_elt_set(t->frame_key, 0, x);
-	return ecl_apply_from_stack_frame(t->frame_key, t->key_function);
+	return ecl_apply_from_stack_frame(t->env, t->frame_key, t->key_function);
 }
 
 static cl_object
@@ -141,6 +142,7 @@ setup_test(struct cl_test *t, cl_object item, cl_object test,
 		t->frame_key_aux.top = t->frame_args + 3;
 		t->frame_key_aux.stack = 0;
 	}
+        t->env = ecl_process_env();
 }
 
 static void close_test(struct cl_test *t)

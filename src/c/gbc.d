@@ -648,9 +648,6 @@ sweep_phase(void)
 			switch (x->d.t) {
 #ifdef ENABLE_DLOPEN
 			case t_codeblock:
-				if (x->cblock.links) {
-					cl_mapc(2, @'si::unlink-symbol', x->cblock.links);
-				}
 				ecl_library_close(x);
 				break;
 #endif

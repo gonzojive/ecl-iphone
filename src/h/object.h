@@ -830,6 +830,7 @@ union cl_lispunion {
 	struct ecl_bytecodes	bytecodes; 	/*  bytecompiled function / code */
 	struct ecl_bclosure	bclosure; 	/*  bytecompiled closure */
 	struct ecl_cfun		cfun;		/*  compiled function  */
+	struct ecl_cfunfixed	cfunfixed;	/*  compiled function  */
 	struct ecl_cclosure	cclosure; 	/*  compiled closure  */
 
 	struct ecl_dummy	d;		/*  dummy  */

@@ -22,7 +22,6 @@
   '((*compiler-in-use* t)
     (*compiler-phase* 't1)
     (*callbacks* nil)
-    (*max-stack* 0)
     (*max-temp* 0)
     (*temp* 0)
     (*next-cmacro* 0)

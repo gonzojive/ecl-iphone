@@ -351,7 +351,6 @@
 (proclaim-function evalhook (t t t *) t)
 (proclaim-function applyhook (t t t t *) t)
 (proclaim-function constantp (t) t :predicate t)
-(proclaim-function si:unlink-symbol (*) t)
 (proclaim-function si::link-enable (*) t)
 
 ;; file file.d

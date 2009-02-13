@@ -1194,7 +1194,6 @@ cl_symbols[] = {
 {SYS_ "TERMINAL-INTERRUPT",NULL},
 {SYS_ "TOP-LEVEL",NULL},
 {SYS_ "UNIVERSAL-ERROR-HANDLER",NULL},
-{SYS_ "UNLINK-SYMBOL","si_unlink_symbol"},
 {SYS_ "VALID-FUNCTION-NAME-P","si_valid_function_name_p"},
 {SYS_ "WRITE-OBJECT","si_write_object"},
 {SYS_ "WRITE-UGLY-OBJECT","si_write_ugly_object"},

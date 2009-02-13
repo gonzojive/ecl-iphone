@@ -74,7 +74,7 @@ ecl_apply_from_stack_frame(cl_env_ptr env, cl_object frame, cl_object x)
 		env->function = fun;
 		if (narg != (cl_index)fun->cfun.narg)
 			FEwrong_num_arguments(fun);
-		return APPLY_fixed(narg, fun->cfun.orig, sp);
+		return APPLY_fixed(narg, fun->cfunfixed.orig, sp);
 	case t_cfun:
 		env->function = fun;
 		return APPLY(narg, fun->cfun.entry, sp);
@@ -112,29 +112,53 @@ ecl_apply_from_stack_frame(cl_env_ptr env, cl_object frame, cl_object x)
 static cl_object
 _ecl_clos_dispatch(cl_narg narg, ...)
 {
+        int i;
+        cl_object output;
 	cl_env_ptr env = ecl_process_env();
 	struct ecl_stack_frame frame_aux;
 	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
-	return _ecl_standard_dispatch(env, frame, env->function);
+        cl_va_list args; cl_va_start(args, narg, narg, 0);
+        for (i = 0; i < narg; i++) {
+                ecl_stack_frame_elt_set(frame, i, cl_va_arg(args));
+        }
+	output = _ecl_standard_dispatch(env, frame, env->function);
+        ecl_stack_frame_close(frame);
+        return output;
 }
 
 static cl_object
 _ecl_bytecodes_dispatch(cl_narg narg, ...)
 {
+        int i;
+        cl_object output;
 	cl_env_ptr env = ecl_process_env();
 	struct ecl_stack_frame frame_aux;
 	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
-	return _ecl_interpret(frame, Cnil, env->function, 0);
+        cl_va_list args; cl_va_start(args, narg, narg, 0);
+        for (i = 0; i < narg; i++) {
+                ecl_stack_frame_elt_set(frame, i, cl_va_arg(args));
+        }
+	output = ecl_interpret(frame, Cnil, env->function, 0);
+        ecl_stack_frame_close(frame);
+        return output;
 }
 
 static cl_object
 _ecl_bclosure_dispatch(cl_narg narg, ...)
 {
+        int i;
+        cl_object output;
 	cl_env_ptr env = ecl_process_env();
 	cl_object fun = env->function;
 	struct ecl_stack_frame frame_aux;
 	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
-	return _ecl_interpret(frame, fun->bclosure.lex, fun, 0);
+        cl_va_list args; cl_va_start(args, narg, narg, 0);
+        for (i = 0; i < narg; i++) {
+                ecl_stack_frame_elt_set(frame, i, cl_va_arg(args));
+        }
+	output = ecl_interpret(frame, fun->bclosure.lex, fun->bclosure.code, 0);
+        ecl_stack_frame_close(frame);
+        return output;
 }
 
 cl_objectfn
@@ -174,10 +198,10 @@ ecl_function_dispatch(cl_env_ptr env, cl_object x)
 		goto AGAIN;
 	case t_bytecodes:
 		env->function = fun;
-		return _ecl_interpret_dispatch;
+		return _ecl_bytecodes_dispatch;
 	case t_bclosure:
 		env->function = fun;
-		return _ecl_closure_dispatch;
+		return _ecl_bclosure_dispatch;
 	default:
 	ERROR:
 		FEinvalid_function(x);
@@ -187,18 +211,18 @@ ecl_function_dispatch(cl_env_ptr env, cl_object x)
 @(defun funcall (function &rest funargs)
 	struct ecl_stack_frame frame_aux;
 @
-	return ecl_apply_from_stack_frame(build_funcall_frame((cl_object)&frame_aux, funargs), function);
+	return ecl_apply_from_stack_frame(the_env, build_funcall_frame((cl_object)&frame_aux, funargs), function);
 @)
 
 @(defun apply (fun lastarg &rest args)
 @
 	if (narg == 2 && type_of(lastarg) == t_frame) {
-		return ecl_apply_from_stack_frame(lastarg, fun);
+		return ecl_apply_from_stack_frame(the_env, lastarg, fun);
 	} else {
 		cl_object out;
 		cl_index i;
 		struct ecl_stack_frame frame_aux;
-		const cl_object frame = ecl_stack_frame_open(ecl_process_env(),
+		const cl_object frame = ecl_stack_frame_open(the_env,
 							     (cl_object)&frame_aux,
 							     narg -= 2);
 		for (i = 0; i < narg; i++) {
@@ -219,7 +243,7 @@ ecl_function_dispatch(cl_env_ptr env, cl_object x)
 			ecl_stack_frame_push(frame, CAR(lastarg));
 			i++;
 		} end_loop_for_in;
-		out = ecl_apply_from_stack_frame(frame, fun);
+		out = ecl_apply_from_stack_frame(the_env, frame, fun);
 		ecl_stack_frame_close(frame);
 		return out;
 	}

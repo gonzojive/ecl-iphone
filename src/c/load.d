@@ -319,9 +319,6 @@ ecl_library_close(cl_object block) {
 		filename = "<anonymous>";
 	else
 		filename = (char*)block->cblock.name->base_string.self;
-	if (!Null(block->cblock.links)) {
-		cl_mapc(2, @'si::unlink-symbol', block->cblock.links);
-	}
         if (block->cblock.handle != NULL) {
 		if (verbose) {
 			fprintf(stderr, ";;; Freeing library %s\n", filename);

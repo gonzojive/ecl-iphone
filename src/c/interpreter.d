@@ -483,7 +483,7 @@ close_around(cl_object fun, cl_object lex) {
 	frame.stack = the_env->stack; \
 	frame.top = the_env->stack_top; \
 	frame.bottom = frame.top - __n; \
-	reg0 = ecl_apply_from_stack_frame((cl_object)&frame, fun); \
+	reg0 = ecl_apply_from_stack_frame(the_env, (cl_object)&frame, fun); \
 	the_env->stack_top -= __n; }
 
 /* -------------------- THE INTERPRETER -------------------- */
@@ -641,7 +641,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		cl_object s;
 		cl_objectfn_fixed f;
 		GET_DATA(s, vector, data);
-		f = (cl_objectfn_fixed)SYM_FUN(s)->cfun.entry;
+		f = SYM_FUN(s)->cfunfixed.orig;
 		SETUP_ENV(the_env);
 		reg0 = f(reg0);
 		THREAD_NEXT;
@@ -651,7 +651,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		cl_object s;
 		cl_objectfn_fixed f;
 		GET_DATA(s, vector, data);
-		f = (cl_objectfn_fixed)SYM_FUN(s)->cfun.entry;
+		f = SYM_FUN(s)->cfunfixed.orig;
 		SETUP_ENV(the_env);
 		reg0 = f(STACK_POP(the_env), reg0);
 		THREAD_NEXT;
@@ -711,16 +711,16 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		}
 		switch (type_of(reg0)) {
 		case t_cfunfixed:
-			if (narg != (cl_index)reg0->cfun.narg)
+			if (narg != (cl_index)reg0->cfunfixed.narg)
 				FEwrong_num_arguments(reg0);
-			reg0 = APPLY_fixed(narg, reg0->cfun.orig, frame_aux.bottom);
+			reg0 = APPLY_fixed(narg, reg0->cfunfixed.orig, frame_aux.bottom);
 			break;
 		case t_cfun:
 			reg0 = APPLY(narg, reg0->cfun.entry, frame_aux.bottom);
 			break;
 		case t_cclosure:
 			the_env->function = reg0->cclosure.env;
-			reg0 = APPLY_closure(narg, reg0->cclosure.entry, frame_aux.bottom);
+			reg0 = APPLY(narg, reg0->cclosure.entry, frame_aux.bottom);
 			break;
 #ifdef CLOS
 		case t_instance:

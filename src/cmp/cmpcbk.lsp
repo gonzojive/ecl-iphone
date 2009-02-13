@@ -109,7 +109,7 @@
                      n "," ct "));")
 	      (wt-nl "ecl_stack_frame_push(frame,ecl_make_foreign_data(&var"
                      n "," ct "," (ffi:size-of-foreign-type type) "));")))
-    (wt-nl "aux = ecl_apply_from_stack_frame(frame,"
+    (wt-nl "aux = ecl_apply_from_stack_frame(cl_env_copy,frame,"
            "ecl_fdefinition(" c-name-constant "));")
     (wt-nl "ecl_stack_frame_close(frame);")
     (when return-p

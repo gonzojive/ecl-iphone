@@ -29,6 +29,7 @@
 ;;;	( FRAME ndx )			variable in local frame stack
 ;;;	( CALL c-fun-name args fname )	locs are locations containing the arguments
 ;;;	( CALL-NORMAL fun locs)		similar as CALL, but number of arguments is fixed
+;;;	( CALL-INDIRECT fun narg args)	similar as CALL, but unknown function
 ;;;	( C-INLINE output-type fun/string locs side-effects output-var )
 ;;;	( COERCE-LOC representation-type location)
 ;;;	( CAR lcl )
@@ -68,7 +69,8 @@
 
 (defun set-loc (loc &aux fd
 		    (is-call (and (consp loc)
-				  (member (car loc) '(CALL CALL-NORMAL)  :test #'eq))))
+				  (member (car loc) '(CALL CALL-NORMAL CALL-INDIRECT)
+                                          :test #'eq))))
   (when (eql *destination* loc)
     (return-from set-loc))
   (case *destination*
@@ -186,14 +188,8 @@
 (defun values-loc (n)
   (list 'VALUE n))
 
-(defun wt-local-frame (n)
-  (if n
-      (wt +ecl-local-stack-variable+ "[" n "]")
-      (wt "((cl_object)&" +ecl-local-stack-frame-variable+ ")")))
-
 ;;; -----------------------------------------------------------------
 
-(put-sysprop 'LOCAL-FRAME 'WT-LOC #'wt-local-frame)
 (put-sysprop 'TEMP 'WT-LOC #'wt-temp)
 (put-sysprop 'LCL 'WT-LOC #'wt-lcl-loc)
 (put-sysprop 'VV 'WT-LOC #'wt-vv)
