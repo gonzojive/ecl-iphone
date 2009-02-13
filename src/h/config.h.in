@@ -382,7 +382,7 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #endif
 
 #if defined(ECL_THREADS)
-# if defined(darwin) || defined(freebsd) || defined(gnu)
+# if defined(darwin) || defined(freebsd) || defined(gnu) || defined(openbsd)
 #  define PTHREAD_MUTEX_ERRORCHECK_NP PTHREAD_MUTEX_ERRORCHECK
 #  define PTHREAD_MUTEX_RECURSIVE_NP PTHREAD_MUTEX_RECURSIVE
 #  define PTHREAD_MUTEX_NORMAL_NP PTHREAD_MUTEX_NORMAL

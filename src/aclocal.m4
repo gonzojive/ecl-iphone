@@ -239,6 +239,8 @@ case "${host_os}" in
 		;;
 	openbsd*)
 		thehost='openbsd'
+		THREAD_CFLAGS=''
+		THREAD_LIBS='-lpthread'
 		SHARED_LDFLAGS="-shared ${LDFLAGS}"
 		BUNDLE_LDFLAGS="-shared ${LDFLAGS}"
 		LDRPATH="-Wl,--rpath,~A"

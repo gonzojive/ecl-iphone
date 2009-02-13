@@ -18,6 +18,9 @@
 #define ECL_H
 
 #include <sys/types.h>		/* size_t, pthread_t, pthread_mutex_t */
+#ifdef __OpenBSD__		/* same, but for OpenBSD (bug in OpenBSD!) */
+# include <pthread.h>
+#endif
 #include <stddef.h>		/* NULL, ptrdiff_t */
 #include <stdarg.h> 		/* va_list */
 #include <setjmp.h> 		/* setjmp and buffers */
