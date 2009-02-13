@@ -330,9 +330,8 @@ compute_applicable_method(cl_object frame, cl_object gf)
 }
 
 cl_object
-_ecl_standard_dispatch(cl_object frame, cl_object gf)
+_ecl_standard_dispatch(cl_env_ptr env, cl_object frame, cl_object gf)
 {
-	const cl_env_ptr env = ecl_process_env();
 	cl_object func, vector;
 	/*
 	 * We have to copy the frame because it might be stored in cl_env.values

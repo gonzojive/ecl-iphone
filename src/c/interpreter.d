@@ -713,21 +713,20 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		case t_cfunfixed:
 			if (narg != (cl_index)reg0->cfun.narg)
 				FEwrong_num_arguments(reg0);
-			reg0 = APPLY_fixed(narg, (cl_objectfn_fixed)reg0->cfun.entry,
-					   frame_aux.bottom);
+			reg0 = APPLY_fixed(narg, reg0->cfun.orig, frame_aux.bottom);
 			break;
 		case t_cfun:
 			reg0 = APPLY(narg, reg0->cfun.entry, frame_aux.bottom);
 			break;
 		case t_cclosure:
-			reg0 = APPLY_closure(narg, reg0->cclosure.entry,
-					     reg0->cclosure.env, frame_aux.bottom);
+			the_env->function = reg0->cclosure.env;
+			reg0 = APPLY_closure(narg, reg0->cclosure.entry, frame_aux.bottom);
 			break;
 #ifdef CLOS
 		case t_instance:
 			switch (reg0->instance.isgf) {
 			case ECL_STANDARD_DISPATCH:
-				reg0 = _ecl_standard_dispatch(frame, reg0);
+				reg0 = _ecl_standard_dispatch(the_env, frame, reg0);
 				break;
 			case ECL_USER_DISPATCH:
 				reg0 = reg0->instance.slots[reg0->instance.length - 1];

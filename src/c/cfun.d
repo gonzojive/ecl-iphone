@@ -18,13 +18,16 @@
 #include <ecl/ecl.h>
 #include <string.h>	/* for memmove() */
 
+#include "cfun_dispatch.d"
+
 cl_object
 cl_make_cfun(void *c_function, cl_object name, cl_object cblock, int narg)
 {
 	cl_object cf;
 
 	cf = ecl_alloc_object(t_cfunfixed);
-	cf->cfun.entry = c_function;
+	cf->cfun.entry = dispatch_table[narg];
+	cf->cfun.orig = c_function;
 	cf->cfun.name = name;
 	cf->cfun.block = cblock;
 	cf->cfun.narg = narg;

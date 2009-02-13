@@ -667,6 +667,14 @@ struct ecl_cfun {		/*  compiled function header  */
 	cl_object block;	/*  descriptor of C code block for GC  */
 };
 
+struct ecl_cfunfixed {		/*  compiled function header  */
+	HEADER1(narg);
+	cl_object name;		/*  compiled function name  */
+	cl_objectfn entry;	/*  entry address  */
+	cl_object block;	/*  descriptor of C code block for GC  */
+	cl_objectfn_fixed orig;	/*  entry address  */
+};
+
 struct ecl_cclosure {		/*  compiled closure header  */
 	HEADER;
 	cl_object env;		/*  environment  */

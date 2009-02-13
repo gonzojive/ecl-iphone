@@ -338,7 +338,7 @@ init_alloc(void)
 	init_tm(t_random, "RANDOM-STATE", sizeof(struct ecl_random));
 	init_tm(t_readtable, "READTABLE", sizeof(struct ecl_readtable));
 	init_tm(t_cfun, "CFUN", sizeof(struct ecl_cfun));
-	init_tm(t_cfunfixed, "CFUN", sizeof(struct ecl_cfun));
+	init_tm(t_cfunfixed, "CFUN", sizeof(struct ecl_cfunfixed));
 	init_tm(t_cclosure, "CCLOSURE", sizeof(struct ecl_cclosure));
 #ifndef CLOS
 	init_tm(t_structure, "STRUCTURE", sizeof(struct ecl_structure));

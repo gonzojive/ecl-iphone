@@ -301,13 +301,19 @@
 (defun wt-stack-pointer (narg)
   (wt "cl_env_copy->stack_top-" narg))
 
-(defun wt-call (fun args &optional fname)
-  (wt fun "(")
-  (let ((comma ""))
-    (dolist (arg args)
-      (wt comma arg)
-      (setf comma ",")))
-  (wt ")")
+(defun wt-call (fun args &optional fname env)
+  (if env
+    (progn
+     (wt "(cl_env_copy->function=" env ",")
+     (wt-call fun args)
+     (wt ")"))
+    (progn
+     (wt fun "(")
+     (let ((comma ""))
+       (dolist (arg args)
+	 (wt comma arg)
+	 (setf comma ",")))
+     (wt ")")))
   (when fname (wt-comment fname)))
 
 (defun wt-call-normal (fun args)
@@ -317,10 +323,11 @@
 	 (maxarg (fun-maxarg fun))
 	 (fun-c-name (fun-cfun fun))
 	 (fun-lisp-name (fun-name fun))
-	 (narg (length args)))
+	 (narg (length args))
+	 (env nil))
     (case (fun-closure fun)
       (CLOSURE
-       (push (environment-accessor fun) args))
+       (setf env (environment-accessor fun)))
       (LEXICAL
        (let ((lex-lvl (fun-level fun)))
 	 (dotimes (n lex-lvl)
@@ -335,7 +342,7 @@
 	      (or fun-lisp-name 'ANONYMOUS)))
     (when (fun-needs-narg fun)
       (push narg args))
-    (wt-call fun-c-name args fun-lisp-name)))
+    (wt-call fun-c-name args fun-lisp-name env)))
 
 ;;; ----------------------------------------------------------------------
 

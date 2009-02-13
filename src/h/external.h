@@ -468,7 +468,6 @@ extern ECL_API cl_object ecl_stack_frame_elt(cl_object f, cl_index n);
 extern ECL_API void ecl_stack_frame_elt_set(cl_object f, cl_index n, cl_object o);
 extern ECL_API cl_object ecl_stack_frame_copy(cl_object f, cl_object size);
 extern ECL_API void ecl_stack_frame_close(cl_object f);
-extern ECL_API cl_object ecl_apply_from_stack_frame(cl_object f, cl_object o);
 #define ECL_STACK_FRAME_SIZE(f) ((f)->frame.top - (f)->frame.bottom)
 #define si_apply_from_stack_frame ecl_apply_from_stack_frame
 
@@ -537,6 +536,8 @@ extern ECL_API cl_object cl_constantp(cl_narg narg, cl_object arg, ...);
 
 #define funcall cl_funcall
 extern ECL_API cl_object cl_apply_from_stack(cl_index narg, cl_object fun);
+extern ECL_API cl_object ecl_apply_from_stack_frame(cl_env_ptr env, cl_object f, cl_object o);
+extern ECL_API cl_objectfn ecl_function_dispatch(cl_env_ptr env, cl_object f);
 extern ECL_API cl_object _ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_list args);
 
 /* ffi.c */
@@ -678,7 +679,7 @@ extern ECL_API cl_object si_clear_gfun_hash(cl_object what);
 extern ECL_API cl_object clos_set_funcallable_instance_function(cl_object x, cl_object function_or_t);
 extern ECL_API cl_object si_generic_function_p(cl_object instance);
 
-extern ECL_API cl_object _ecl_standard_dispatch(cl_object frame, cl_object fun);
+extern ECL_API cl_object _ecl_standard_dispatch(cl_env_ptr env, cl_object frame, cl_object fun);
 #endif /* CLOS */
 
 

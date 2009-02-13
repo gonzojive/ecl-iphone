@@ -61,7 +61,7 @@ build_funcall_frame(cl_object f, cl_va_list args)
  */
 
 cl_object
-ecl_apply_from_stack_frame(cl_object frame, cl_object x)
+ecl_apply_from_stack_frame(cl_env_ptr env, cl_object frame, cl_object x)
 {
 	cl_object *sp = frame->frame.bottom;
 	cl_index narg = frame->frame.top - sp;
@@ -71,19 +71,22 @@ ecl_apply_from_stack_frame(cl_object frame, cl_object x)
 		FEundefined_function(x);
 	switch (type_of(fun)) {
 	case t_cfunfixed:
+		env->function = fun;
 		if (narg != (cl_index)fun->cfun.narg)
 			FEwrong_num_arguments(fun);
-		return APPLY_fixed(narg, (cl_objectfn_fixed)fun->cfun.entry, sp);
+		return APPLY_fixed(narg, fun->cfun.orig, sp);
 	case t_cfun:
+		env->function = fun;
 		return APPLY(narg, fun->cfun.entry, sp);
 	case t_cclosure:
-		return APPLY_closure(narg, fun->cclosure.entry,
-				     fun->cclosure.env, sp);
+		env->function = fun->cclosure.env;
+		return APPLY(narg, fun->cclosure.entry, sp);
 #ifdef CLOS
 	case t_instance:
 		switch (fun->instance.isgf) {
 		case ECL_STANDARD_DISPATCH:
-			return _ecl_standard_dispatch(frame, fun);
+			env->function = fun;
+			return _ecl_standard_dispatch(env, frame, fun);
 		case ECL_USER_DISPATCH:
 			fun = fun->instance.slots[fun->instance.length - 1];
 		default:
@@ -106,96 +109,79 @@ ecl_apply_from_stack_frame(cl_object frame, cl_object x)
 	}
 }
 
-/*----------------------------------------------------------------------*
- *	Linking mechanism						*
- *----------------------------------------------------------------------*/
-
-cl_object
-_ecl_link_call(cl_object sym, cl_objectfn *pLK, cl_object cblock, int narg, cl_va_list args)
+static cl_object
+_ecl_clos_dispatch(cl_narg narg, ...)
 {
-	cl_object out, fun = ecl_fdefinition(sym);
+	cl_env_ptr env = ecl_process_env();
 	struct ecl_stack_frame frame_aux;
-	cl_object frame;
+	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
+	return _ecl_standard_dispatch(env, frame, env->function);
+}
 
-	if (fun == OBJNULL)
-		FEerror("Undefined function.", 0);
- AGAIN:
-	if (fun == OBJNULL)
-		goto ERROR;
+static cl_object
+_ecl_bytecodes_dispatch(cl_narg narg, ...)
+{
+	cl_env_ptr env = ecl_process_env();
+	struct ecl_stack_frame frame_aux;
+	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
+	return _ecl_interpret(frame, Cnil, env->function, 0);
+}
+
+static cl_object
+_ecl_bclosure_dispatch(cl_narg narg, ...)
+{
+	cl_env_ptr env = ecl_process_env();
+	cl_object fun = env->function;
+	struct ecl_stack_frame frame_aux;
+	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
+	return _ecl_interpret(frame, fun->bclosure.lex, fun, 0);
+}
+
+cl_objectfn
+ecl_function_dispatch(cl_env_ptr env, cl_object x)
+{
+	cl_object fun = x;
+      AGAIN:
+	if (fun == OBJNULL || fun == Cnil)
+		FEundefined_function(x);
 	switch (type_of(fun)) {
 	case t_cfunfixed:
-		if (narg != fun->cfun.narg)
-			FEwrong_num_arguments(fun);
-		frame = build_funcall_frame((cl_object)&frame_aux, args);
-		out = APPLY_fixed(narg, (cl_objectfn_fixed)fun->cfun.entry,
-				  frame->frame.bottom);
-		break;
+		env->function = fun;
+		return fun->cfunfixed.entry;
 	case t_cfun:
-		if (pLK) {
-			si_put_sysprop(sym, @'si::link-from',
-				       CONS(CONS(ecl_make_unsigned_integer((cl_index)pLK),
-						 ecl_make_unsigned_integer((cl_index)*pLK)),
-					    si_get_sysprop(sym, @'si::link-from')));
-			*pLK = fun->cfun.entry;
-			cblock->cblock.links =
-				CONS(sym, cblock->cblock.links);
-		}
-		frame = build_funcall_frame((cl_object)&frame_aux, args);
-		out = APPLY(narg, fun->cfun.entry, frame->frame.bottom);
-		break;
+		env->function = fun;
+		return fun->cfun.entry;
+	case t_cclosure:
+		env->function = fun->cclosure.env;
+		return fun->cclosure.entry;
 #ifdef CLOS
 	case t_instance:
 		switch (fun->instance.isgf) {
 		case ECL_STANDARD_DISPATCH:
-			frame = build_funcall_frame((cl_object)&frame_aux, args);
-			out = _ecl_standard_dispatch(frame, fun);
-			break;
+			env->function = fun;
+			return _ecl_clos_dispatch;
 		case ECL_USER_DISPATCH:
 			fun = fun->instance.slots[fun->instance.length - 1];
-			goto AGAIN;
 		default:
 			FEinvalid_function(fun);
 		}
-		break;
-#endif /* CLOS */
-	case t_cclosure:
-		frame = build_funcall_frame((cl_object)&frame_aux, args);
-		out = APPLY_closure(narg, fun->cclosure.entry,
-				    fun->cclosure.env, frame->frame.bottom);
-		break;
+		goto AGAIN;
+#endif
+	case t_symbol:
+		if (fun->symbol.stype & stp_macro)
+			FEundefined_function(x);
+		fun = SYM_FUN(fun);
+		goto AGAIN;
 	case t_bytecodes:
-		frame = build_funcall_frame((cl_object)&frame_aux, args);
-		out = ecl_interpret(frame, Cnil, fun, 0);
-		break;
+		env->function = fun;
+		return _ecl_interpret_dispatch;
 	case t_bclosure:
-		frame = build_funcall_frame((cl_object)&frame_aux, args);
-		out = ecl_interpret(frame, fun->bclosure.lex, fun->bclosure.code, 0);
-		break;
+		env->function = fun;
+		return _ecl_closure_dispatch;
 	default:
 	ERROR:
-		FEinvalid_function(fun);
+		FEinvalid_function(x);
 	}
-	return out;
-}
-
-cl_object
-si_unlink_symbol(cl_object s)
-{
-	cl_object pl;
-
-	if (!SYMBOLP(s))
-		FEtype_error_symbol(s);
-	pl = si_get_sysprop(s, @'si::link-from');
-	if (!ecl_endp(pl)) {
-		for (; !ecl_endp(pl); pl = CDR(pl)) {
-			cl_object record = CAR(pl);
-			void **location = (void **)fixnnint(CAR(record));
-			void *original = (void *)fixnnint(CDR(record));
-			*location = original;
-		}
-		si_rem_sysprop(s, @'si::link-from');
-	}
-	@(return)
 }
 
 @(defun funcall (function &rest funargs)
