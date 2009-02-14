@@ -355,6 +355,7 @@ extern ECL_API cl_object si_compiled_function_name(cl_object fun);
 extern ECL_API cl_object si_compiled_function_block(cl_object fun);
 extern ECL_API cl_object cl_function_lambda_expression(cl_object fun);
 
+extern ECL_API cl_object FEnot_a_fixed_no_arguments();
 extern ECL_API cl_object cl_make_cfun(void *c_function, cl_object name, cl_object block, int narg);
 extern ECL_API cl_object cl_make_cfun_va(void *c_function, cl_object name, cl_object block);
 extern ECL_API cl_object cl_make_cclosure_va(void *c_function, cl_object env, cl_object block);
@@ -485,6 +486,8 @@ extern ECL_API void ecl_stack_push_n(cl_env_ptr env, cl_index n, cl_object *args
 extern ECL_API cl_index ecl_stack_push_values(cl_env_ptr env);
 extern ECL_API void ecl_stack_pop_values(cl_env_ptr env, cl_index n);
 extern ECL_API cl_object ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offset);
+extern ECL_API cl_object _ecl_bytecodes_dispatch(cl_narg narg, ...);
+extern ECL_API cl_object _ecl_bclosure_dispatch(cl_narg narg, ...);
 
 /* disassembler.c */
 

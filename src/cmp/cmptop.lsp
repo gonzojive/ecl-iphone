@@ -697,14 +697,15 @@
 (defun output-cfuns (stream)
   (format stream "~%#ifndef compiler_cfuns~
 ~%static const struct ecl_cfun compiler_cfuns[] = {~
-~%~t/*t,m,narg,padding,name,entry,block*/");
+~%~t/*t,m,narg,padding,name,block,entry,entry_fixed*/");
   (loop for (loc fname-loc fun) in (nreverse *global-cfuns-array*)
      do (let* ((cfun (fun-cfun fun))
 	       (minarg (fun-minarg fun))
 	       (maxarg (fun-maxarg fun))
 	       (narg (if (= minarg maxarg) maxarg nil)))
-	  (format stream "~%{0,0,~D,0,MAKE_FIXNUM(~D),(cl_objectfn)~A,MAKE_FIXNUM(~D)},"
-		  (or narg -1) (second loc) cfun (second fname-loc))))
+	  (format stream "~%{0,0,~D,0,MAKE_FIXNUM(~D),MAKE_FIXNUM(~D),(cl_objectfn)~A,(cl_objectfn_fixed)~A},"
+		  (or narg -1) (second loc) (second fname-loc)
+                  cfun cfun)))
   (format stream "~%};~%#endif"))
 
 ;;; ----------------------------------------------------------------------

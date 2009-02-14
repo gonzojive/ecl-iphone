@@ -432,11 +432,48 @@ lambda_bind(cl_object env, cl_narg narg, cl_object lambda, cl_object *sp)
 
 /* -------------------- AIDS TO THE INTERPRETER -------------------- */
 
+cl_object
+_ecl_bytecodes_dispatch_vararg(cl_narg narg, ...)
+{
+        int i;
+        cl_object output;
+	cl_env_ptr env = ecl_process_env();
+	struct ecl_stack_frame frame_aux;
+	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
+        cl_va_list args; cl_va_start(args, narg, narg, 0);
+        for (i = 0; i < narg; i++) {
+                ecl_stack_frame_elt_set(frame, i, cl_va_arg(args));
+        }
+	output = ecl_interpret(frame, Cnil, env->function, 0);
+        ecl_stack_frame_close(frame);
+        return output;
+}
+
+cl_object
+_ecl_bclosure_dispatch_vararg(cl_narg narg, ...)
+{
+        int i;
+        cl_object output;
+	cl_env_ptr env = ecl_process_env();
+	cl_object fun = env->function;
+	struct ecl_stack_frame frame_aux;
+	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
+        cl_va_list args; cl_va_start(args, narg, narg, 0);
+        for (i = 0; i < narg; i++) {
+                ecl_stack_frame_elt_set(frame, i, cl_va_arg(args));
+        }
+	output = ecl_interpret(frame, fun->bclosure.lex, fun->bclosure.code, 0);
+        ecl_stack_frame_close(frame);
+        return output;
+}
+
 static cl_object
 close_around(cl_object fun, cl_object lex) {
 	cl_object v = ecl_alloc_object(t_bclosure);
 	v->bclosure.code = fun;
 	v->bclosure.lex = lex;
+        v->bclosure.entry = _ecl_bclosure_dispatch_vararg;
+        v->bclosure.entry_fixed = FEnot_a_fixed_no_arguments;
 	return v;
 }
 
@@ -641,7 +678,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		cl_object s;
 		cl_objectfn_fixed f;
 		GET_DATA(s, vector, data);
-		f = SYM_FUN(s)->cfunfixed.orig;
+		f = SYM_FUN(s)->cfunfixed.entry_fixed;
 		SETUP_ENV(the_env);
 		reg0 = f(reg0);
 		THREAD_NEXT;
@@ -651,7 +688,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		cl_object s;
 		cl_objectfn_fixed f;
 		GET_DATA(s, vector, data);
-		f = SYM_FUN(s)->cfunfixed.orig;
+		f = SYM_FUN(s)->cfunfixed.entry_fixed;
 		SETUP_ENV(the_env);
 		reg0 = f(STACK_POP(the_env), reg0);
 		THREAD_NEXT;
@@ -713,7 +750,8 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		case t_cfunfixed:
 			if (narg != (cl_index)reg0->cfunfixed.narg)
 				FEwrong_num_arguments(reg0);
-			reg0 = APPLY_fixed(narg, reg0->cfunfixed.orig, frame_aux.bottom);
+			reg0 = APPLY_fixed(narg, reg0->cfunfixed.entry_fixed,
+                                           frame_aux.bottom);
 			break;
 		case t_cfun:
 			reg0 = APPLY(narg, reg0->cfun.entry, frame_aux.bottom);

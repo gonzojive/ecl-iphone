@@ -2263,7 +2263,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 			int narg = prototype->narg;
 			VV[location] = narg<0?
 				cl_make_cfun_va(prototype->entry, fname, block) :
-				cl_make_cfun(prototype->entry, fname, block, narg);
+				cl_make_cfun(prototype->entry_fixed, fname, block, narg);
 		}
 		/* Execute top-level code */
 		(*entry_point)(MAKE_FIXNUM(0));

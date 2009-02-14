@@ -19,6 +19,42 @@
 #include <ecl/internal.h>
 #include "newhash.h"
 
+static cl_object generic_function_dispatch_vararg(cl_narg, ...);
+
+static cl_object
+not_funcallable_fixed()
+{
+        cl_env_ptr env = ecl_process_env();
+        cl_object fun = env->function;
+        FEerror("Not a funcallable instance ~A.", 1, fun);
+        @(return);
+}
+
+static cl_object
+not_funcallable_vararg(cl_narg narg, ...)
+{
+        return not_funcallable_fixed();
+}
+
+static cl_object
+user_function_dispatch(cl_narg narg, ...)
+{
+        int i;
+        cl_object output;
+	cl_env_ptr env = ecl_process_env();
+	cl_object fun = env->function;
+	struct ecl_stack_frame frame_aux;
+	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
+        cl_va_list args; cl_va_start(args, narg, narg, 0);
+        for (i = 0; i < narg; i++) {
+                ecl_stack_frame_elt_set(frame, i, cl_va_arg(args));
+        }
+        fun = fun->instance.slots[fun->instance.length - 1];
+        output = ecl_apply_from_stack_frame(env, frame, fun);
+        ecl_stack_frame_close(frame);
+        return output;
+}
+
 static void
 reshape_instance(cl_object x, int delta)
 {
@@ -47,8 +83,10 @@ si_set_raw_funcallable(cl_object instance, cl_object function)
 			instance->instance.slots   = slots;
 			instance->instance.length  = length;
 		        instance->instance.isgf = 0;
+                        instance->instance.entry = not_funcallable_vararg;
+                        instance->instance.entry_fixed = not_funcallable_fixed;
 		}
-	} else	{
+	} else {
 		if (instance->instance.isgf == 0) {
                         int        length          = instance->instance.length+1;
                         cl_object *slots           = (cl_object*)ecl_alloc(sizeof(cl_object)*length);
@@ -56,6 +94,8 @@ si_set_raw_funcallable(cl_object instance, cl_object function)
 			instance->instance.slots   = slots;
 			instance->instance.length  = length;
 			instance->instance.isgf    = 2;
+                        instance->instance.entry = user_function_dispatch;
+                        instance->instance.entry_fixed = FEnot_a_fixed_no_arguments;
 		}
 		instance->instance.slots[instance->instance.length-1] = function;
 	}
@@ -71,17 +111,22 @@ clos_set_funcallable_instance_function(cl_object x, cl_object function_or_t)
 		reshape_instance(x, -1);
 		x->instance.isgf = ECL_NOT_FUNCALLABLE;
 	}
-	if (function_or_t == Ct)
-	{
+	if (function_or_t == Ct) {
 		x->instance.isgf = ECL_STANDARD_DISPATCH;
+                x->instance.entry = generic_function_dispatch_vararg;
+                x->instance.entry_fixed = FEnot_a_fixed_no_arguments;
 	} else if (function_or_t == Cnil) {
 		x->instance.isgf = ECL_NOT_FUNCALLABLE;
+                x->instance.entry = not_funcallable_vararg;
+                x->instance.entry_fixed = not_funcallable_fixed;
 	} else if (Null(cl_functionp(function_or_t))) {
 		FEwrong_type_argument(@'function', function_or_t);
 	} else {
 		reshape_instance(x, +1);
 		x->instance.slots[x->instance.length - 1] = function_or_t;
 		x->instance.isgf = ECL_USER_DISPATCH;
+                x->instance.entry = user_function_dispatch;
+                x->instance.entry_fixed = FEnot_a_fixed_no_arguments;
 	}
 	@(return x)
 }
@@ -384,4 +429,21 @@ _ecl_standard_dispatch(cl_env_ptr env, cl_object frame, cl_object gf)
 		ecl_stack_frame_close(frame);
 #endif
 	return func;
+}
+
+static cl_object
+generic_function_dispatch_vararg(cl_narg narg, ...)
+{
+        int i;
+        cl_object output;
+	cl_env_ptr env = ecl_process_env();
+	struct ecl_stack_frame frame_aux;
+	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
+        cl_va_list args; cl_va_start(args, narg, narg, 0);
+        for (i = 0; i < narg; i++) {
+                ecl_stack_frame_elt_set(frame, i, cl_va_arg(args));
+        }
+	output = _ecl_standard_dispatch(env, frame, env->function);
+        ecl_stack_frame_close(frame);
+        return output;
 }

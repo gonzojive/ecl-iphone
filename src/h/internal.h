@@ -98,6 +98,9 @@ typedef struct cl_compiler_env *cl_compiler_env_ptr;
 	struct ecl_stack_frame frame;\
 	cl_object name = ecl_stack_frame_open(env, (cl_object)&frame, 0);
 
+extern cl_object _ecl_bytecodes_dispatch_vararg(cl_narg narg, ...);
+extern cl_object _ecl_bclosure_dispatch_vararg(cl_narg narg, ...);
+
 /* ffi.d */
 
 struct ecl_fficall {

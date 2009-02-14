@@ -74,7 +74,7 @@ ecl_apply_from_stack_frame(cl_env_ptr env, cl_object frame, cl_object x)
 		env->function = fun;
 		if (narg != (cl_index)fun->cfun.narg)
 			FEwrong_num_arguments(fun);
-		return APPLY_fixed(narg, fun->cfunfixed.orig, sp);
+		return APPLY_fixed(narg, fun->cfunfixed.entry_fixed, sp);
 	case t_cfun:
 		env->function = fun;
 		return APPLY(narg, fun->cfun.entry, sp);
@@ -109,58 +109,6 @@ ecl_apply_from_stack_frame(cl_env_ptr env, cl_object frame, cl_object x)
 	}
 }
 
-static cl_object
-_ecl_clos_dispatch(cl_narg narg, ...)
-{
-        int i;
-        cl_object output;
-	cl_env_ptr env = ecl_process_env();
-	struct ecl_stack_frame frame_aux;
-	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
-        cl_va_list args; cl_va_start(args, narg, narg, 0);
-        for (i = 0; i < narg; i++) {
-                ecl_stack_frame_elt_set(frame, i, cl_va_arg(args));
-        }
-	output = _ecl_standard_dispatch(env, frame, env->function);
-        ecl_stack_frame_close(frame);
-        return output;
-}
-
-static cl_object
-_ecl_bytecodes_dispatch(cl_narg narg, ...)
-{
-        int i;
-        cl_object output;
-	cl_env_ptr env = ecl_process_env();
-	struct ecl_stack_frame frame_aux;
-	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
-        cl_va_list args; cl_va_start(args, narg, narg, 0);
-        for (i = 0; i < narg; i++) {
-                ecl_stack_frame_elt_set(frame, i, cl_va_arg(args));
-        }
-	output = ecl_interpret(frame, Cnil, env->function, 0);
-        ecl_stack_frame_close(frame);
-        return output;
-}
-
-static cl_object
-_ecl_bclosure_dispatch(cl_narg narg, ...)
-{
-        int i;
-        cl_object output;
-	cl_env_ptr env = ecl_process_env();
-	cl_object fun = env->function;
-	struct ecl_stack_frame frame_aux;
-	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
-        cl_va_list args; cl_va_start(args, narg, narg, 0);
-        for (i = 0; i < narg; i++) {
-                ecl_stack_frame_elt_set(frame, i, cl_va_arg(args));
-        }
-	output = ecl_interpret(frame, fun->bclosure.lex, fun->bclosure.code, 0);
-        ecl_stack_frame_close(frame);
-        return output;
-}
-
 cl_objectfn
 ecl_function_dispatch(cl_env_ptr env, cl_object x)
 {
@@ -180,16 +128,8 @@ ecl_function_dispatch(cl_env_ptr env, cl_object x)
 		return fun->cclosure.entry;
 #ifdef CLOS
 	case t_instance:
-		switch (fun->instance.isgf) {
-		case ECL_STANDARD_DISPATCH:
-			env->function = fun;
-			return _ecl_clos_dispatch;
-		case ECL_USER_DISPATCH:
-			fun = fun->instance.slots[fun->instance.length - 1];
-		default:
-			FEinvalid_function(fun);
-		}
-		goto AGAIN;
+                env->function = fun;
+                return fun->instance.entry;
 #endif
 	case t_symbol:
 		if (fun->symbol.stype & stp_macro)
@@ -198,10 +138,10 @@ ecl_function_dispatch(cl_env_ptr env, cl_object x)
 		goto AGAIN;
 	case t_bytecodes:
 		env->function = fun;
-		return _ecl_bytecodes_dispatch;
+                return fun->bytecodes.entry;
 	case t_bclosure:
 		env->function = fun;
-		return _ecl_bclosure_dispatch;
+                return fun->bclosure.entry;
 	default:
 	ERROR:
 		FEinvalid_function(x);
