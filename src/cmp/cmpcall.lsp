@@ -226,15 +226,18 @@
 ;;;   NARG is a location containing the number of ARGS-PUSHED
 ;;;
 (defun call-unknown-global-loc (fname loc narg args)
-  `(CALL-INDIRECT ,(cond (loc loc)
-                         ((and (symbolp fname)
-                               (not (eql (symbol-package fname) (find-package "CL"))))
-                          (cmpnote "Emitting FUNCALL for ~S" fname)
-                          (add-symbol fname))
-                         (t
-                          (cmpnote "Emitting FDEFINITION for ~S" fname)
-                          (list 'FDEFINITION fname)))
-                  ,(or narg (length args)) ,(coerce-locs args)))
+  (unless loc
+    (setf loc (if (and (symbolp fname)
+                       (not (eql (symbol-package fname) 
+                                 (find-package "CL"))))
+                  (add-symbol fname)
+                  (list 'FDEFINITION fname))))
+  `(CALL-INDIRECT ,loc ,(or narg (length args)) ,(coerce-locs args) ,fname nil)
+  #+(or)
+  (let* ((type (loc-type loc))
+         (unsafe (or (subtypep type 'function)
+                     (and (subtypep 'function type) (policy-assume-right-type)))))
+    `(CALL-INDIRECT ,loc ,(or narg (length args)) ,(coerce-locs args) ,fname ,unsafe)))
 
 ;;; Functions that use MAYBE-SAVE-VALUE should rebind *temp*.
 (defun maybe-save-value (value &optional (other-forms nil other-forms-flag))
@@ -279,8 +282,10 @@
         (wt ")")))
   (when fname (wt-comment fname)))
 
-(defun wt-call-indirect (fun-loc narg args &optional fname)
-  (wt "ecl_function_dispatch(cl_env_copy," fun-loc ")(" narg)
+(defun wt-call-indirect (fun-loc narg args fname unsafe)
+  (if unsafe
+      (wt "(value0=" fun-loc ",cl_env_copy->function=value0,value0->cfun.entry)(" narg)
+      (wt "ecl_function_dispatch(cl_env_copy," fun-loc ")(" narg))
   (dolist (arg args)
     (wt "," arg))
   (wt ")")
