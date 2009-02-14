@@ -613,6 +613,9 @@
       (space (third x))
       (speed (fourth x)))))
 
+(defun policy-assume-right-type (&optional (env *cmp-env*))
+  (< (cmp-env-optimization 'safety env) 2))
+
 (defun policy-check-stack-overflow (&optional (env *cmp-env*))
   "Do we add a stack check to every function?"
   (>= (cmp-env-optimization 'safety env) 2))
