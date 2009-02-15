@@ -83,6 +83,7 @@
 		      (list 'ARRAY element-type))))))
 	(INTEGER (if (subtypep type 'FIXNUM) 'FIXNUM t))
 	((STREAM CONS) type-name) ; Juanjo
+        (FUNCTION type-name)
 	(t (cond ((eq type-name 'VALUES)
 		  (unless values-allowed
 		    (error "VALUES type found in a place where it is not allowed."))
