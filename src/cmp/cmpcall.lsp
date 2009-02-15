@@ -85,11 +85,13 @@
     ;; VALUES, then LOC cannot be NIL.  Callers of C2FUNCALL must be
     ;; responsible for maintaining this condition.
     (otherwise
-     (let ((*inline-blocks* 0)
-	   (*temp* *temp*))
+     (let* ((*inline-blocks* 0)
+            (*temp* *temp*)
+            (function-p (and (subtypep (c1form-type form) 'function)
+                             (policy-assume-right-type))))
        (unless loc
 	 (setf loc (maybe-save-value form args)))
-       (unwind-exit (call-unknown-global-loc nil loc narg (inline-args args)))
+       (unwind-exit (call-unknown-global-loc nil loc narg (inline-args args) function-p))
        (close-inline-blocks)))))
 
 ;;;
@@ -227,19 +229,16 @@
 ;;;   ARGS is the list of typed locations for arguments
 ;;;   NARG is a location containing the number of ARGS-PUSHED
 ;;;
-(defun call-unknown-global-loc (fname loc narg args)
+(defun call-unknown-global-loc (fname loc narg args &optional function-p)
   (unless loc
-    (setf loc (if (and (symbolp fname)
+    (if (and (symbolp fname)
                        (not (eql (symbol-package fname) 
                                  (find-package "CL"))))
-                  (add-symbol fname)
-                  (list 'FDEFINITION fname))))
-  `(CALL-INDIRECT ,loc ,(or narg (length args)) ,(coerce-locs args) ,fname nil)
-  #+(or)
-  (let* ((type (loc-type loc))
-         (unsafe (or (subtypep type 'function)
-                     (and (subtypep 'function type) (policy-assume-right-type)))))
-    `(CALL-INDIRECT ,loc ,(or narg (length args)) ,(coerce-locs args) ,fname ,unsafe)))
+        (setf loc (add-symbol fname)
+              function-p nil)
+        (setf loc (list 'FDEFINITION fname)
+              function-p t)))
+  `(CALL-INDIRECT ,loc ,(or narg (length args)) ,(coerce-locs args) ,fname ,function-p))
 
 ;;; Functions that use MAYBE-SAVE-VALUE should rebind *temp*.
 (defun maybe-save-value (value &optional (other-forms nil other-forms-flag))
@@ -285,8 +284,8 @@
         (wt ")")))
   (when fname (wt-comment fname)))
 
-(defun wt-call-indirect (fun-loc narg args fname unsafe)
-  (if unsafe
+(defun wt-call-indirect (fun-loc narg args fname function-p)
+  (if function-p
       (wt "(value0=" fun-loc ",cl_env_copy->function=value0,value0->cfun.entry)(" narg)
       (wt "ecl_function_dispatch(cl_env_copy," fun-loc ")(" narg))
   (dolist (arg args)
@@ -324,9 +323,9 @@
 
 ;;; ----------------------------------------------------------------------
 
-(put-sysprop 'funcall 'C1 #'c1funcall)
-(put-sysprop 'funcall 'c2 #'c2funcall)
-(put-sysprop 'call-global 'c2 #'c2call-global)
+(put-sysprop 'funcall 'C1 'c1funcall)
+(put-sysprop 'funcall 'c2 'c2funcall)
+(put-sysprop 'call-global 'c2 'c2call-global)
 
 (put-sysprop 'CALL 'WT-LOC #'wt-call)
 (put-sysprop 'CALL-NORMAL 'WT-LOC #'wt-call-normal)
