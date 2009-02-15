@@ -89,9 +89,8 @@
 		 (incf *inline-blocks*)
 		 (setq loc var)
 		 (push (list (loc-type loc) loc) locs))
-	       ;; FIXME! Why is (make-temp-var) before rebinding of *temp*???
-	       (let* ((temp (make-temp-var))
-		      ;; bindings like c1expr*
+	       (let* ((temp (make-temp-var)) ;; output value
+		      ;; bindings like c2expr*
 		      (*exit* (next-label))
 		      (*unwind-exit* (cons *exit* *unwind-exit*))
 		      (*lcl* *lcl*)
