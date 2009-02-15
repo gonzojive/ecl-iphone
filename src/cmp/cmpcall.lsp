@@ -81,17 +81,15 @@
          (function-p (and (subtypep form-type 'function)
                           (policy-assume-right-type)))
          (loc (maybe-save-value form args)))
-    (unwind-exit (call-unknown-global-loc nil loc nil (inline-args args)
-                                          function-p))
+    (unwind-exit (call-unknown-global-loc nil loc (inline-args args) function-p))
     (close-inline-blocks)))
 
 ;;;
 ;;; c2call-global:
 ;;;   ARGS is the list of arguments
-;;;   NARG is a location containing the number of ARGS-PUSHED
 ;;;   LOC is either NIL or the location of the function object
 ;;;
-(defun c2call-global (fname args loc return-type &optional narg)
+(defun c2call-global (fname args loc return-type)
   (case fname
     (AREF
      (let (etype (elttype (c1form-primary-type (car args))))
@@ -129,7 +127,7 @@
 	  (return-from c2call-global))
 	(setf loc fun))))
   (let ((*inline-blocks* 0))
-    (call-global fname loc narg (inline-args args) return-type)
+    (call-global fname loc (inline-args args) return-type)
     (close-inline-blocks)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -144,15 +142,14 @@
 ;;; call-global:
 ;;;   FNAME: the name of the function
 ;;;   LOC: either a function object or NIL
-;;;   NARG: a location containing the number of ARGS-PUSHED
 ;;;   ARGS: a list of typed locs with arguments
 ;;;   RETURN-TYPE: the type to which the output is coerced
 ;;;
-(defun call-global-loc (fname loc narg args return-type &aux found fd minarg maxarg)
+(defun call-global-loc (fname loc args return-type &aux found fd minarg maxarg)
   (cond
     ;; Check whether it is a global function that we cannot call directly.
      ((and (or (null loc) (fun-global loc)) (not (inline-possible fname)))
-      (call-unknown-global-loc fname nil narg args))
+      (call-unknown-global-loc fname nil args))
 
      ;; Open-codable function call.
      ((and (or (null loc) (fun-global loc))
@@ -166,11 +163,11 @@
 	       (and (null loc)
 		    (setf loc (find fname *global-funs* :test #'same-fname-p
 				      :key #'fun-name)))))
-      (call-loc fname loc narg args))
+      (call-loc fname loc args))
 
      ;; Call to a global (SETF ...) function
      ((not (symbolp fname))
-      (call-unknown-global-loc fname loc narg args))
+      (call-unknown-global-loc fname loc args))
 
      ;; Call to a function whose C language function name is known,
      ;; either because it has been proclaimed so, or because it belongs
@@ -178,19 +175,19 @@
      ((and (<= (cmp-env-optimization 'debug) 1)
 	   (setf fd (get-sysprop fname 'Lfun))
 	   (multiple-value-setq (minarg maxarg) (get-proclaimed-narg fname)))
-      (call-exported-function-loc fname narg args fd minarg maxarg
+      (call-exported-function-loc fname args fd minarg maxarg
 				  #-ecl-min nil
 				  #+ecl-min (member fname *in-all-symbols-functions*)))
 
      ((multiple-value-setq (found fd minarg maxarg) (si::mangle-name fname t))
-      (call-exported-function-loc fname narg args fd minarg maxarg t))
+      (call-exported-function-loc fname args fd minarg maxarg t))
 
-     (t (call-unknown-global-loc fname loc narg args))))
+     (t (call-unknown-global-loc fname loc args))))
 
-(defun call-loc (fname loc narg args)
-  `(CALL-NORMAL ,loc ,(coerce-locs args)))
+(defun call-loc (fname fun args)
+  `(CALL-NORMAL ,fun ,(coerce-locs args)))
 
-(defun call-exported-function-loc (fname narg args fun-c-name minarg maxarg in-core)
+(defun call-exported-function-loc (fname args fun-c-name minarg maxarg in-core)
   (unless in-core
     ;; We only write declarations for functions which are not in lisp_external.h
     (multiple-value-bind (val declared)
@@ -212,15 +209,14 @@
 	(setf (gethash fun-c-name *compiler-declared-globals*) 1))))
   (let ((fun (make-fun :name fname :global t :cfun fun-c-name :lambda 'NIL
 		       :minarg minarg :maxarg maxarg)))
-    (call-loc fname fun narg args)))
+    (call-loc fname fun args)))
 
 ;;;
 ;;; call-unknown-global-loc
 ;;;   LOC is NIL or location containing function
 ;;;   ARGS is the list of typed locations for arguments
-;;;   NARG is a location containing the number of ARGS-PUSHED
 ;;;
-(defun call-unknown-global-loc (fname loc narg args &optional function-p)
+(defun call-unknown-global-loc (fname loc args &optional function-p)
   (unless loc
     (if (and (symbolp fname)
                        (not (eql (symbol-package fname) 
@@ -229,7 +225,7 @@
               function-p nil)
         (setf loc (list 'FDEFINITION fname)
               function-p t)))
-  `(CALL-INDIRECT ,loc ,(or narg (length args)) ,(coerce-locs args) ,fname ,function-p))
+  `(CALL-INDIRECT ,loc ,(coerce-locs args) ,fname ,function-p))
 
 ;;; Functions that use MAYBE-SAVE-VALUE should rebind *temp*.
 (defun maybe-save-value (value &optional (other-forms nil other-forms-flag))
@@ -275,14 +271,15 @@
         (wt ")")))
   (when fname (wt-comment fname)))
 
-(defun wt-call-indirect (fun-loc narg args fname function-p)
-  (if function-p
-      (wt "(value0=" fun-loc ",cl_env_copy->function=value0,value0->cfun.entry)(" narg)
-      (wt "ecl_function_dispatch(cl_env_copy," fun-loc ")(" narg))
-  (dolist (arg args)
-    (wt "," arg))
-  (wt ")")
-  (when fname (wt-comment fname)))
+(defun wt-call-indirect (fun-loc args fname function-p)
+  (let ((narg (length args)))
+    (if function-p
+        (wt "(value0=" fun-loc ",cl_env_copy->function=value0,value0->cfun.entry)(" narg)
+        (wt "ecl_function_dispatch(cl_env_copy," fun-loc ")(" narg))
+    (dolist (arg args)
+      (wt "," arg))
+    (wt ")")
+    (when fname (wt-comment fname))))
 
 (defun wt-call-normal (fun args)
   (unless (fun-cfun fun)
