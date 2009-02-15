@@ -179,6 +179,9 @@ extern void ecl_extend_hashtable(cl_object hashtable);
 #define GFUN_SPEC(x) ((x)->instance.slots[1])
 #define GFUN_COMB(x) ((x)->instance.slots[2])
 
+extern cl_object FEnot_funcallable_fixed();
+extern cl_object FEnot_funcallable_vararg();
+
 /* package.d */
 
 extern cl_object ecl_find_symbol_nolock(cl_object name, cl_object p, int *intern_flag);

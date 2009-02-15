@@ -212,6 +212,8 @@ ecl_alloc_instance(cl_index slots)
 	i = ecl_alloc_object(t_instance);
 	i->instance.slots = (cl_object *)ecl_alloc(sizeof(cl_object) * slots);
 	i->instance.length = slots;
+        i->instance.entry = FEnot_funcallable_vararg;
+        i->instance.entry_fixed = FEnot_funcallable_fixed;
 	return i;
 }
 

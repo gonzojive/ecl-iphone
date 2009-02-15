@@ -25,7 +25,7 @@ ecl_allocate_instance(cl_object clas, cl_index size)
 	CLASS_OF(x) = clas;
 	for (i = 0;  i < size;  i++)
 		x->instance.slots[i] = ECL_UNBOUND;
-	return(x);
+	return x;
 }
 
 cl_object

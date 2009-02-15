@@ -21,8 +21,8 @@
 
 static cl_object generic_function_dispatch_vararg(cl_narg, ...);
 
-static cl_object
-not_funcallable_fixed()
+cl_object
+FEnot_funcallable_fixed()
 {
         cl_env_ptr env = ecl_process_env();
         cl_object fun = env->function;
@@ -30,10 +30,10 @@ not_funcallable_fixed()
         @(return);
 }
 
-static cl_object
-not_funcallable_vararg(cl_narg narg, ...)
+cl_object
+FEnot_funcallable_vararg(cl_narg narg, ...)
 {
-        return not_funcallable_fixed();
+        return FEnot_funcallable_fixed();
 }
 
 static cl_object
@@ -83,8 +83,8 @@ si_set_raw_funcallable(cl_object instance, cl_object function)
 			instance->instance.slots   = slots;
 			instance->instance.length  = length;
 		        instance->instance.isgf = 0;
-                        instance->instance.entry = not_funcallable_vararg;
-                        instance->instance.entry_fixed = not_funcallable_fixed;
+                        instance->instance.entry = FEnot_funcallable_vararg;
+                        instance->instance.entry_fixed = FEnot_funcallable_fixed;
 		}
 	} else {
 		if (instance->instance.isgf == 0) {
@@ -117,8 +117,8 @@ clos_set_funcallable_instance_function(cl_object x, cl_object function_or_t)
                 x->instance.entry_fixed = FEnot_a_fixed_no_arguments;
 	} else if (function_or_t == Cnil) {
 		x->instance.isgf = ECL_NOT_FUNCALLABLE;
-                x->instance.entry = not_funcallable_vararg;
-                x->instance.entry_fixed = not_funcallable_fixed;
+                x->instance.entry = FEnot_funcallable_vararg;
+                x->instance.entry_fixed = FEnot_funcallable_fixed;
 	} else if (Null(cl_functionp(function_or_t))) {
 		FEwrong_type_argument(@'function', function_or_t);
 	} else {

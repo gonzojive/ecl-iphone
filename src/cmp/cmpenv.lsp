@@ -19,7 +19,8 @@
 ;;; included in the compiled code.  The default value is OFF.
 
 (defconstant +init-env-form+
-  '((*compiler-in-use* t)
+  '((*gensym-counter* 0)
+    (*compiler-in-use* t)
     (*compiler-phase* 't1)
     (*callbacks* nil)
     (*max-temp* 0)

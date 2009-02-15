@@ -176,6 +176,8 @@ asm_end(cl_index beginning) {
 		bytecodes->bytecodes.data[i] = CAR(ENV->constants);
 		ENV->constants = CDR(ENV->constants);
 	}
+        bytecodes->bytecodes.entry =  _ecl_bytecodes_dispatch_vararg;
+        bytecodes->bytecodes.entry_fixed = FEnot_a_fixed_no_arguments;
 	asm_clear(beginning);
 	return bytecodes;
 }
