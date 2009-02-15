@@ -53,7 +53,7 @@
 	  ;; (FUNCALL macro-expression ...)
 	  ((let ((name (first fun)))
 	     (setq fd (and (symbolp name)
-                           ;; We do not want to macroexpad 'THE
+                           ;; We do not want to macroexpand 'THE
                            (not (eq name 'THE))
 			   (cmp-macro-function name))))
 	   (c1funcall (list* (cmp-expand-macro fd fun) arguments)))
