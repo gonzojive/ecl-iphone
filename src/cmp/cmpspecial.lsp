@@ -67,6 +67,7 @@
 		   (incf (var-ref var))
 		   (add-to-read-nodes var (make-c1form* 'VAR :args var)))
 		 (make-c1form* 'FUNCTION
+                               :type 'FUNCTION
 			       :sp-change (not (and (symbolp fun)
 						    (get-sysprop fun 'NO-SP-CHANGE)))
 			       :args 'GLOBAL nil fun))))
