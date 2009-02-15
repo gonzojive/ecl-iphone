@@ -433,7 +433,7 @@
 
 (defmacro def-type-propagator (fname lambda-list &body body)
   `(put-sysprop ',fname 'C1TYPE-PROPAGATOR
-    #'(ext:lambda-block ,fname ,lambda-list ,body)))
+    #'(ext:lambda-block ,fname ,lambda-list ,@body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -687,8 +687,7 @@
   (unless (and (not (fun-closure fun))
 	       (eq *destination* 'TRASH))
     (return-from c2fset
-      (c2call-global 'SI:FSET c1forms 'NIL
-		     (c1form-primary-type (second c1forms)))))
+      (c2call-global 'SI:FSET c1forms 'NIL (c1form-primary-type (second c1forms)))))
   (let ((*inline-blocks* 0)
 	(loc (data-empty-loc)))
     (push (list loc fname fun) *global-cfuns-array*)

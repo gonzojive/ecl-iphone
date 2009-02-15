@@ -89,55 +89,18 @@
 ;;;   ARGS is the list of arguments
 ;;;   LOC is either NIL or the location of the function object
 ;;;
-(defun c2call-global (fname args loc return-type)
-  (case fname
-    (AREF
-     (let (etype (elttype (c1form-primary-type (car args))))
-       (when (or (and (eq elttype 'STRING)
-		      (setq elttype 'CHARACTER))
-		 (and (consp elttype)
-		      (or (eq (car elttype) 'ARRAY)
-			  (eq (car elttype) 'VECTOR))
-		      (setq elttype (second elttype))))
-	 (setq etype (type-and return-type elttype))
-	 (unless etype
-	   (cmpwarn "Type mismatch found in AREF. Expected output type ~s, array element type ~s." return-type elttype)
-	   (setq etype T))		; assume no information
-	 (setf return-type etype))))
-    (SYS:ASET				; (sys:aset value array i0 ... in)
-     (let (etype
-	   (valtype (c1form-primary-type (first args)))
-	   (elttype (c1form-primary-type (second args))))
-       (when (or (and (eq elttype 'STRING)
-		      (setq elttype 'CHARACTER))
-		 (and (consp elttype)
-		      (or (eq (car elttype) 'ARRAY)
-			  (eq (car elttype) 'VECTOR))
-		      (setq elttype (second elttype))))
-	 (setq etype (type-and return-type (type-and valtype elttype)))
-	 (unless etype
-	   (cmpwarn "Type mismatch found in (SETF AREF). Expected output type ~s, array element type ~s, value type ~s." return-type elttype valtype)
-	   (setq etype T))
-	 (setf return-type etype)
-	 (setf (c1form-type (first args)) etype)))))
-  (when (null loc)
-    (let ((fun (find fname *global-funs* :key #'fun-name :test #'same-fname-p)))
-      (when fun
-	(when (c2try-tail-recursive-call fun args)
-	  (return-from c2call-global))
-	(setf loc fun))))
-  (let ((*inline-blocks* 0))
-    (call-global fname loc (inline-args args) return-type)
-    (close-inline-blocks)))
+(defun c2call-global (fname args &optional (return-type (destination-type)))
+  (let ((fun (find fname *global-funs* :key #'fun-name :test #'same-fname-p)))
+    (when (and fun (c2try-tail-recursive-call fun args))
+      (return-from c2call-global))
+    (let ((*inline-blocks* 0))
+      (unwind-exit (call-global-loc fname fun (inline-args args) return-type))
+      (close-inline-blocks))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;; CALL LOCATIONS
 ;;;
-
-(defun call-global (&rest args)
-  (unwind-exit (apply #'call-global-loc args)))
-
 ;;;
 ;;; call-global:
 ;;;   FNAME: the name of the function
@@ -145,29 +108,29 @@
 ;;;   ARGS: a list of typed locs with arguments
 ;;;   RETURN-TYPE: the type to which the output is coerced
 ;;;
-(defun call-global-loc (fname loc args return-type &aux found fd minarg maxarg)
+(defun call-global-loc (fname fun args return-type &aux loc found fd minarg maxarg)
   (cond
     ;; Check whether it is a global function that we cannot call directly.
-     ((and (or (null loc) (fun-global loc)) (not (inline-possible fname)))
+     ((and (or (null fun) (fun-global fun)) (not (inline-possible fname)))
       (call-unknown-global-loc fname nil args))
 
      ;; Open-codable function call.
-     ((and (or (null loc) (fun-global loc))
+     ((and (or (null fun) (fun-global fun))
 	   (setq loc (inline-function fname args return-type)))
       loc)
 
      ;; Call to a function defined in the same file. Direct calls are
      ;; only emitted for low or neutral values of DEBUG is >= 2.
      ((and (<= (cmp-env-optimization 'debug) 1)
-	   (or (fun-p loc)
-	       (and (null loc)
-		    (setf loc (find fname *global-funs* :test #'same-fname-p
+	   (or (fun-p fun)
+	       (and (null fun)
+		    (setf fun (find fname *global-funs* :test #'same-fname-p
 				      :key #'fun-name)))))
-      (call-loc fname loc args))
+      (call-loc fname fun args))
 
      ;; Call to a global (SETF ...) function
      ((not (symbolp fname))
-      (call-unknown-global-loc fname loc args))
+      (call-unknown-global-loc fname fun args))
 
      ;; Call to a function whose C language function name is known,
      ;; either because it has been proclaimed so, or because it belongs
@@ -182,7 +145,7 @@
      ((multiple-value-setq (found fd minarg maxarg) (si::mangle-name fname t))
       (call-exported-function-loc fname args fd minarg maxarg t))
 
-     (t (call-unknown-global-loc fname loc args))))
+     (t (call-unknown-global-loc fname fun args))))
 
 (defun call-loc (fname fun args)
   `(CALL-NORMAL ,fun ,(coerce-locs args)))

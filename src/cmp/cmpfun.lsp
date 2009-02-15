@@ -49,11 +49,11 @@
 			     (t (wt char)))))
 		(wt "\"," stream-var ");")))
 	 (unwind-exit nil))
-	((eql string #\Newline) (c2call-global 'TERPRI (list stream) nil t))
-	(t (c2call-global
-	    'PRINC
-	    (list (make-c1form 'LOCATION *info* (add-object string))
-		  stream) nil t))))
+	((eql string #\Newline) (c2call-global 'TERPRI (list stream) t))
+	(t (c2call-global 'PRINC
+                          (list (make-c1form 'LOCATION *info* (add-object string))
+                                stream)
+                          t))))
 
 (defun c1terpri (args &aux stream)
   (check-args-number 'TERPRI args 0 1)
