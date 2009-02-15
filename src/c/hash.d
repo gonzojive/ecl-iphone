@@ -611,7 +611,7 @@ static cl_object
 si_hash_table_iterate(cl_narg narg)
 {
 	const cl_env_ptr the_env = ecl_process_env();
-        cl_object env = the_env->function;
+        cl_object env = the_env->function->cclosure.env;
 	cl_object index = CAR(env);
 	cl_object ht = CADR(env);
 	cl_fixnum i;

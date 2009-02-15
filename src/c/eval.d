@@ -79,7 +79,7 @@ ecl_apply_from_stack_frame(cl_env_ptr env, cl_object frame, cl_object x)
 		env->function = fun;
 		return APPLY(narg, fun->cfun.entry, sp);
 	case t_cclosure:
-		env->function = fun->cclosure.env;
+		env->function = fun;
 		return APPLY(narg, fun->cclosure.entry, sp);
 #ifdef CLOS
 	case t_instance:
@@ -124,7 +124,7 @@ ecl_function_dispatch(cl_env_ptr env, cl_object x)
 		env->function = fun;
 		return fun->cfun.entry;
 	case t_cclosure:
-		env->function = fun->cclosure.env;
+		env->function = fun;
 		return fun->cclosure.entry;
 #ifdef CLOS
 	case t_instance:

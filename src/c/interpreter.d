@@ -757,7 +757,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 			reg0 = APPLY(narg, reg0->cfun.entry, frame_aux.bottom);
 			break;
 		case t_cclosure:
-			the_env->function = reg0->cclosure.env;
+			the_env->function = reg0;
 			reg0 = APPLY(narg, reg0->cclosure.entry, frame_aux.bottom);
 			break;
 #ifdef CLOS

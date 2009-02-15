@@ -53,6 +53,8 @@
 	  ;; (FUNCALL macro-expression ...)
 	  ((let ((name (first fun)))
 	     (setq fd (and (symbolp name)
+                           ;; We do not want to macroexpad 'THE
+                           (not (eq name 'THE))
 			   (cmp-macro-function name))))
 	   (c1funcall (list* (cmp-expand-macro fd fun) arguments)))
 	  ;; (FUNCALL lisp-expression ...)
@@ -270,7 +272,8 @@
 (defun wt-call (fun args &optional fname env)
   (if env
       (progn
-        (wt "(cl_env_copy->function=" env ",")
+        (setf *aux-closure* t)
+        (wt "(aux_closure.env="env",cl_env_copy->function=(void*)&aux_closure,")
         (wt-call fun args)
         (wt ")"))
       (progn

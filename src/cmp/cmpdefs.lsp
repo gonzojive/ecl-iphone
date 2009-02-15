@@ -335,6 +335,7 @@ progress. The default value is T.")
 (defvar *env* 0)		; number of variables in current form
 (defvar *max-env* 0)		; maximum *env* in whole function
 (defvar *env-lvl* 0)		; number of levels of environments
+(defvar *aux-closure* nil)	; stack allocated closure needed for indirect calls
 
 (defvar *next-cmacro* 0)	; holds the last cmacro number used.
 (defvar *next-cfun* 0)		; holds the last cfun used.

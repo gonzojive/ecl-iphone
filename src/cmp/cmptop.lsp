@@ -112,6 +112,7 @@
     (wt-nl-h "#include <string.h>"))
   ;;; Initialization function.
   (let* ((*lcl* 0) (*lex* 0) (*max-lex* 0) (*max-env* 0) (*max-temp* 0)
+         (*aux-closure* nil)
 	 (*reservation-cmacro* (next-cmacro))
 	 (c-output-file *compiler-output1*)
 	 (*compiler-output1* (make-string-output-stream))
@@ -376,6 +377,8 @@
   (when (plusp *max-env*)
     (unless (eq closure-type 'CLOSURE)
       (wt-h " cl_object " *volatile* "env0;"))
+    (when *aux-closure*
+      (wt-h " struct ecl_cclosure aux_closure;"))
     (wt-h " cl_object " *volatile*)
     (dotimes (i *max-env*)
       (wt-h "CLV" i)
@@ -569,6 +572,7 @@
 	 (*lex* 0) (*max-lex* 0)
 	 (*env* (fun-env fun))		; continue growing env
 	 (*max-env* *env*) (*env-lvl* 0)
+         (*aux-closure* nil)
 	 (*level* level)
 	 (*exit* 'RETURN) (*unwind-exit* '(RETURN))
 	 (*destination* 'RETURN)
@@ -581,7 +585,7 @@
 	" STCK" *reservation-cmacro*)
     (wt-nl "const cl_env_ptr cl_env_copy = ecl_process_env();")
     (when (eq (fun-closure fun) 'CLOSURE)
-      (wt "cl_object " *volatile* "env0 = cl_env_copy->function;"))
+      (wt "cl_object " *volatile* "env0 = cl_env_copy->function->cclosure.env;"))
     (wt-nl *volatile* "cl_object value0;")
     (when (>= (fun-debug fun) 2)
       (wt-nl "struct ihs_frame ihs;"))
