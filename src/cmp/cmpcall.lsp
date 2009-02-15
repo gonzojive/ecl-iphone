@@ -87,7 +87,7 @@
     (otherwise
      (let* ((*inline-blocks* 0)
             (*temp* *temp*)
-            (function-p (and (subtypep (c1form-type form) 'function)
+            (function-p (and (subtypep (c1form-primary-type form) 'function)
                              (policy-assume-right-type))))
        (unless loc
 	 (setf loc (maybe-save-value form args)))
