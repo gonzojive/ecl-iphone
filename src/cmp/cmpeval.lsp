@@ -105,7 +105,9 @@
 	     (make-c1form* 'CALL-GLOBAL
 			   :sp-change (function-may-change-sp fname)
 			   :type return-type
-			   :args fname forms))))))
+			   :args fname forms
+                           ;; loc and type are filled by c2expr
+                           ))))))
 
 (defun c2expr (form &aux (name (c1form-name form)) (args (c1form-args form)))
   (if (eq name 'CALL-GLOBAL)
