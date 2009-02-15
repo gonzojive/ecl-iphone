@@ -74,25 +74,16 @@
 	  (t
 	   (cmperr "Malformed function name: ~A" fun)))))
 
-(defun c2funcall (form args &optional loc narg)
-  ;; Usually, ARGS holds a list of forms, which are arguments to the
-  ;; function. LOC is the location of the function object (created by
-  ;; save-funob).
-  (case (c1form-name form)
-    (GLOBAL (c2call-global (c1form-arg 0 form) args loc t narg))
-    (LOCAL (c2call-local (c1form-arg 0 form) args narg))
-    ;; An ordinary expression.  In this case, if arguments are already on
-    ;; VALUES, then LOC cannot be NIL.  Callers of C2FUNCALL must be
-    ;; responsible for maintaining this condition.
-    (otherwise
-     (let* ((*inline-blocks* 0)
-            (*temp* *temp*)
-            (function-p (and (subtypep (c1form-primary-type form) 'function)
-                             (policy-assume-right-type))))
-       (unless loc
-	 (setf loc (maybe-save-value form args)))
-       (unwind-exit (call-unknown-global-loc nil loc narg (inline-args args) function-p))
-       (close-inline-blocks)))))
+(defun c2funcall (form args)
+  (let* ((*inline-blocks* 0)
+         (*temp* *temp*)
+         (form-type (c1form-primary-type form))
+         (function-p (and (subtypep form-type 'function)
+                          (policy-assume-right-type)))
+         (loc (maybe-save-value form args)))
+    (unwind-exit (call-unknown-global-loc nil loc nil (inline-args args)
+                                          function-p))
+    (close-inline-blocks)))
 
 ;;;
 ;;; c2call-global:
