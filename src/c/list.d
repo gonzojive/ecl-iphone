@@ -21,15 +21,12 @@
 struct cl_test {
 	bool (*test_c_function)(struct cl_test *, cl_object);
 	cl_object (*key_c_function)(struct cl_test *, cl_object);
-	cl_object test_function;
-	cl_object item_compared;
+	cl_env_ptr env;
 	cl_object key_function;
-	cl_object frame_key;
-	struct ecl_stack_frame frame_key_aux;
-	cl_object frame_test;
-	struct ecl_stack_frame frame_test_aux;
-	cl_object frame_args[3];
-        cl_env_ptr env;
+	cl_objectfn key_fn;
+	cl_object test_function;
+	cl_objectfn test_fn;
+	cl_object item_compared;
 };
 
 static cl_object subst(struct cl_test *t, cl_object new_obj, cl_object tree);
@@ -39,54 +36,54 @@ static cl_object nsublis(struct cl_test *t, cl_object alist, cl_object tree);
 static cl_object do_assoc(struct cl_test *t, cl_object alist);
 
 #define TEST(t,k) ((t)->test_c_function)((t),(k))
+#define KEY(t,x) ((t)->key_c_function)((t),(x))
+#define close_test(t) (void)0
 
 static bool
 test_compare(struct cl_test *t, cl_object x)
 {
-	ecl_stack_frame_elt_set(t->frame_test, 0, t->item_compared);
-	x = (t->key_c_function)(t, x);
-	ecl_stack_frame_elt_set(t->frame_test, 1, x);
-	return ecl_apply_from_stack_frame(t->env, t->frame_test, t->test_function) != Cnil;
+	x = KEY(t,x);
+	t->env->function = t->test_function;
+	return t->test_fn(2, t->item_compared, x) != Cnil;
 }
 
 static bool
 test_compare_not(struct cl_test *t, cl_object x)
 {
-	ecl_stack_frame_elt_set(t->frame_test, 0, t->item_compared);
-	x = (t->key_c_function)(t, x);
-	ecl_stack_frame_elt_set(t->frame_test, 1, x);
-	return ecl_apply_from_stack_frame(t->env, t->frame_test, t->test_function) == Cnil;
+	x = KEY(t,x);
+	t->env->function = t->test_function;
+	return t->test_fn(2, t->item_compared, x) == Cnil;
 }
 
 static bool
 test_eq(struct cl_test *t, cl_object x)
 {
-	return (t->item_compared == (t->key_c_function)(t, x));
+	return (t->item_compared == KEY(t,x));
 }
 
 static bool
 test_eql(struct cl_test *t, cl_object x)
 {
-	return ecl_eql(t->item_compared, (t->key_c_function)(t, x));
+	return ecl_eql(t->item_compared, KEY(t,x));
 }
 
 static bool
 test_equal(struct cl_test *t, cl_object x)
 {
-	return ecl_equal(t->item_compared, (t->key_c_function)(t, x));
+	return ecl_equal(t->item_compared, KEY(t,x));
 }
 
 static bool
 test_equalp(struct cl_test *t, cl_object x)
 {
-	return ecl_equalp(t->item_compared, (t->key_c_function)(t, x));
+	return ecl_equalp(t->item_compared, KEY(t,x));
 }
 
 static cl_object
 key_function(struct cl_test *t, cl_object x)
 {
-	ecl_stack_frame_elt_set(t->frame_key, 0, x);
-	return ecl_apply_from_stack_frame(t->env, t->frame_key, t->key_function);
+	t->env->function = t->key_function;
+	return t->key_fn(1,x);
 }
 
 static cl_object
@@ -99,64 +96,41 @@ static void
 setup_test(struct cl_test *t, cl_object item, cl_object test,
 	   cl_object test_not, cl_object key)
 {
+	cl_env_ptr env = t->env = ecl_process_env();
 	t->item_compared = item;
-	t->test_function = t->key_function =Cnil;
 	if (test != Cnil) {
 		if (test_not != Cnil)
 		    FEerror("Both :TEST and :TEST-NOT are specified.", 0);
-		t->test_function = si_coerce_to_function(test);
-		if (t->test_function == SYM_FUN(@'eq')) {
+		t->test_function = test = si_coerce_to_function(test);
+		if (test == SYM_FUN(@'eq')) {
 			t->test_c_function = test_eq;
-		} else if (t->test_function == SYM_FUN(@'eql')) {
+		} else if (test == SYM_FUN(@'eql')) {
 			t->test_c_function = test_eql;
-		} else if (t->test_function == SYM_FUN(@'equal')) {
+		} else if (test == SYM_FUN(@'equal')) {
 			t->test_c_function = test_equal;
-		} else if (t->test_function == SYM_FUN(@'equalp')) {
+		} else if (test == SYM_FUN(@'equalp')) {
 			t->test_c_function = test_equalp;
 		} else {
 			t->test_c_function = test_compare;
+			t->test_fn = ecl_function_dispatch(env, test);
+			t->test_function = env->function;
 		}
 	} else if (test_not != Cnil) {
-		t->test_function = si_coerce_to_function(test_not);
 		t->test_c_function = test_compare_not;
+		test_not = si_coerce_to_function(test_not);
+		t->test_fn = ecl_function_dispatch(env, test_not);
+		t->test_function = env->function;
 	} else {
 		t->test_c_function = test_eql;
 	}
 	if (key != Cnil) {
-		t->key_function = key;
+		key = si_coerce_to_function(key);
+		t->key_fn = ecl_function_dispatch(env, key);
+		t->key_function = env->function;
 		t->key_c_function = key_function;
 	} else {
 		t->key_c_function = key_identity;
 	}
-	if (t->test_function != Cnil) {
-		t->frame_test = (cl_object)&(t->frame_test_aux);
-		t->frame_test_aux.t = t_frame;
-		t->frame_test_aux.bottom = t->frame_args;
-		t->frame_test_aux.top = t->frame_args + 2;
-		t->frame_test_aux.stack = 0;
-	}
-	if (t->key_function != Cnil) {
-		t->frame_key = (cl_object)&(t->frame_key_aux);
-		t->frame_key_aux.t = t_frame;
-		t->frame_key_aux.bottom = t->frame_args + 2;
-		t->frame_key_aux.top = t->frame_args + 3;
-		t->frame_key_aux.stack = 0;
-	}
-        t->env = ecl_process_env();
-}
-
-static void close_test(struct cl_test *t)
-{
-	/* No need to call ecl_stack_frame_close since this frame is not allocated
-	 * in the lisp stack. */
-	/*
-	if (t->key_function != Cnil) {
-		ecl_stack_frame_close(t->frame_key);
-	}
-	if (t->test_function != Cnil) {
-		ecl_stack_frame_close(t->frame_test);
-	}
-	*/
 }
 
 cl_object
@@ -833,7 +807,7 @@ static cl_object
 sublis(struct cl_test *t, cl_object alist, cl_object tree)
 {
 	cl_object node;
-	t[1].item_compared = (t[0].key_c_function)(t, tree);
+	t[1].item_compared = KEY(t, tree);
 	node = do_assoc(t+1, alist);
 	if (!Null(node)) {
 		return ECL_CONS_CDR(node);
@@ -869,7 +843,7 @@ static cl_object
 nsublis(struct cl_test *t, cl_object alist, cl_object tree)
 {
 	cl_object node;
-	t[1].item_compared = (t[0].key_c_function)(t, tree);
+	t[1].item_compared = KEY(t, tree);
 	node = do_assoc(t+1, alist);
 	if (!Null(node)) {
 		return ECL_CONS_CDR(node);
