@@ -1480,7 +1480,8 @@ type_of(#0)==t_bitvector")
   `(si::c-export-fname #+ecl-min ,@c::*in-all-symbols-functions*
     si::ecase-error si::etypecase-error si::do-check-type
     ccase-error typecase-error-string find-documentation find-declarations
-    si::check-keyword si::check-arg-length si::dm-too-few-arguments si::dm-bad-key
+    si::search-keyword si::check-keyword si::check-arg-length
+    si::dm-too-few-arguments si::dm-bad-key
     remove-documentation si::get-documentation
     si::set-documentation si::expand-set-documentation
     si::packages-iterator
