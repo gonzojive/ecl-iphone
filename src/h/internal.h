@@ -180,7 +180,7 @@ extern void ecl_extend_hashtable(cl_object hashtable);
 #define GFUN_COMB(x) ((x)->instance.slots[2])
 
 extern cl_object FEnot_funcallable_fixed();
-extern cl_object FEnot_funcallable_vararg();
+extern cl_object FEnot_funcallable_vararg(cl_narg narg, ...);
 
 /* package.d */
 
