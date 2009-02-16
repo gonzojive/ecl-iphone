@@ -237,7 +237,7 @@
 (defun wt-call-indirect (fun-loc args fname function-p)
   (let ((narg (length args)))
     (if function-p
-        (wt "(value0=" fun-loc ",cl_env_copy->function=value0,value0->cfun.entry)(" narg)
+        (wt "(cl_env_copy->function=" fun-loc ")->cfun.entry(" narg)
         (wt "ecl_function_dispatch(cl_env_copy," fun-loc ")(" narg))
     (dolist (arg args)
       (wt "," arg))
