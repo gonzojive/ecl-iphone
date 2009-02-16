@@ -725,7 +725,8 @@ if not possible."
 ;; T3) = T implies either (SUBTYPEP T2 T3) = T or (SUBTYPEP T3 T2) = T.
 ;;
 (defun find-type-bounds (type in-our-family-p type-<= minimize-super)
-  (declare (si::c-local))
+  (declare (si::c-local)
+	   (function in-our-family-p type-<=)) 
   (let* ((subtype-tag 0)
 	 (disjoint-tag 0)
 	 (supertype-tag (if minimize-super -1 0)))
@@ -756,7 +757,8 @@ if not possible."
 ;; procedure, TYPE-<=; the second possibility is detected by means of tags.
 ;;
 (defun register-type (type in-our-family-p type-<=)
-  (declare (si::c-local))
+  (declare (si::c-local)
+	   (function in-our-family-p type-<=))
   (or (find-registered-tag type)
       (multiple-value-bind (tag-super tag-sub)
 	  (find-type-bounds type in-our-family-p type-<= nil)
