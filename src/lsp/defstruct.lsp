@@ -254,8 +254,8 @@
            (new-slot (first (member slot-name new-slots :key #'car))))
       (if (null new-slot)
           (setf new-slot old-slot)
-          (let* ((old-read-only (fifth old-slot))
-                 (new-read-only (fifth new-slot)))
+          (let* ((old-read-only (fourth old-slot))
+                 (new-read-only (fourth new-slot)))
             (cond ((and (null new-read-only)
                         old-read-only)
                    (error "Tried to turn a read only slot ~A into writtable."
@@ -457,7 +457,7 @@ as a STRUCTURE doc and can be retrieved by (documentation 'NAME 'structure)."
            (setq slot-descriptions
                  (append (overwrite-slot-descriptions
                           (mapcar #'(lambda (sd)
-                                      (parse-slot-description sd 0))
+                                      (parse-slot-description sd 0 :unknown))
                                   (cdr include))
                           (get-sysprop (car include) 'STRUCTURE-SLOT-DESCRIPTIONS))
                          slot-descriptions))))
