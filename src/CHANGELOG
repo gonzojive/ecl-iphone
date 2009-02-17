@@ -71,6 +71,8 @@ ECL 9.1.0:
  - With null safety settings, the slot accessors for structures with
    specialized vector types were not properly compiled.
 
+ - DEFSTRUCT :INCLUDE did not work with read only slots.
+
 * Visible changes:
 
  - New function (EXT:HEAP-SIZE &optional NEW-MAX-HEAP-SIZE) can change the      

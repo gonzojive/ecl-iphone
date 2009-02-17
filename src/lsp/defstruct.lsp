@@ -212,10 +212,10 @@
 ;;;  and returns a list of the form:
 ;;;        (slot-name default-init slot-type read-only offset accessor-name)
 
-(defun parse-slot-description (slot-description offset)
+(defun parse-slot-description (slot-description offset &optional read-only)
   (declare (si::c-local))
   (let* ((slot-type 'T)
-	 slot-name default-init read-only)
+	 slot-name default-init)
     (cond ((atom slot-description)
            (setq slot-name slot-description))
           ((endp (cdr slot-description))
@@ -243,29 +243,30 @@
 ;;;  with the new descriptions which are specified in the
 ;;;  :include defstruct option.
 
-(defun overwrite-slot-descriptions (news olds)
+(defun overwrite-slot-descriptions (new-slots old-slots)
   (declare (si::c-local))
-  (when olds
-      (let ((sds (member (caar olds) news :key #'car)))
-        (cond (sds
-               (when (and (null (cadddr (car sds)))
-                          (cadddr (car olds)))
-                     ;; If read-only is true in the old
-                     ;;  and false in the new, signal an error.
-                     (error "~S is an illegal include slot-description."
-                            sds))
-               (cons (list (caar sds)
-                           (cadar sds)
-                           (caddar sds)
-                           (cadddr (car sds))
-                           ;; The offset if from the old.
-                           (car (cddddr (car olds)))
-			   (cadr (cddddr (car olds))))
-                     (overwrite-slot-descriptions news (cdr olds))))
-              (t
-               (cons (car olds)
-                     (overwrite-slot-descriptions news (cdr olds))))))))
-
+  (do* ((output '())
+        (old-slots old-slots (rest old-slots)))
+       ((null old-slots)
+        (nreverse output))
+    (let* ((old-slot (first old-slots))
+           (slot-name (first old-slot))
+           (new-slot (first (member slot-name new-slots :key #'car))))
+      (if (null new-slot)
+          (setf new-slot old-slot)
+          (let* ((old-read-only (fifth old-slot))
+                 (new-read-only (fifth new-slot)))
+            (cond ((and (null new-read-only)
+                        old-read-only)
+                   (error "Tried to turn a read only slot ~A into writtable."
+                          slot-name))
+                  ((eq new-read-only :unknown)
+                   (setf new-read-only old-read-only)))
+            (setf new-slot (copy-list new-slot)
+                  (fourth new-slot) new-read-only
+                  (fifth new-slot) (fifth old-slot) ; preserve offset
+                  (sixth new-slot) (sixth old-slot))))
+      (push new-slot output))))
 
 (defun define-structure (name conc-name type named slots slot-descriptions
 			 copier include print-function print-object constructors
