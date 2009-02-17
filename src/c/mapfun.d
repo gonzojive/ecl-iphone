@@ -49,7 +49,7 @@
 			ecl_stack_frame_elt_set(cars_frame, i, CAR(cdr));
 			ecl_stack_frame_elt_set(cdrs_frame, i, CDR(cdr));
 		}
-		*val = ecl_list1(ecl_apply_from_stack_frame(the_env, cars_frame, fun));
+		*val = ecl_list1(ecl_apply_from_stack_frame(cars_frame, fun));
 		val = &ECL_CONS_CDR(*val);
 	}
 } @)
@@ -71,7 +71,7 @@
 			ecl_stack_frame_elt_set(cars_frame, i, cdr);
 			ecl_stack_frame_elt_set(cdrs_frame, i, CDR(cdr));
 		}
-		*val = ecl_list1(ecl_apply_from_stack_frame(the_env, cars_frame, fun));
+		*val = ecl_list1(ecl_apply_from_stack_frame(cars_frame, fun));
 		val = &ECL_CONS_CDR(*val);
 	}
 } @)
@@ -93,7 +93,7 @@
 			ecl_stack_frame_elt_set(cars_frame, i, CAR(cdr));
 			ecl_stack_frame_elt_set(cdrs_frame, i, CDR(cdr));
 		}
-		ecl_apply_from_stack_frame(the_env, cars_frame, fun);
+		ecl_apply_from_stack_frame(cars_frame, fun);
 	}
 } @)
 
@@ -114,7 +114,7 @@
 			ecl_stack_frame_elt_set(cars_frame, i, cdr);
 			ecl_stack_frame_elt_set(cdrs_frame, i, CDR(cdr));
 		}
-		ecl_apply_from_stack_frame(the_env, cars_frame, fun);
+		ecl_apply_from_stack_frame(cars_frame, fun);
 	}
 } @)
 
@@ -135,7 +135,7 @@
 			ecl_stack_frame_elt_set(cars_frame, i, CAR(cdr));
 			ecl_stack_frame_elt_set(cdrs_frame, i, CDR(cdr));
 		}
-		*val = ecl_apply_from_stack_frame(the_env, cars_frame, fun);
+		*val = ecl_apply_from_stack_frame(cars_frame, fun);
 		while (CONSP(*val))
 			val = &ECL_CONS_CDR(*val);
 	}
@@ -158,7 +158,7 @@
 			ecl_stack_frame_elt_set(cars_frame, i, cdr);
 			ecl_stack_frame_elt_set(cdrs_frame, i, CDR(cdr));
 		}
-		*val = ecl_apply_from_stack_frame(the_env, cars_frame, fun);
+		*val = ecl_apply_from_stack_frame(cars_frame, fun);
 		while (CONSP(*val))
 			val = &ECL_CONS_CDR(*val);
 	}

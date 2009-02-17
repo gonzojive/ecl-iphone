@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <ecl/ecl-inl.h>
 #include <ecl/bytecodes.h>
+#include <ecl/internal.h>
 
 /* -------------------- INTERPRETER STACK -------------------- */
 
@@ -72,6 +73,8 @@ ecl_stack_pop(cl_env_ptr env) {
 		FEerror("Internal error: stack underflow.",0);
 	return *(--env->stack_top);
 }
+
+#undef ecl_stack_index
 
 cl_index
 ecl_stack_index(cl_env_ptr env) {
@@ -435,35 +438,21 @@ lambda_bind(cl_object env, cl_narg narg, cl_object lambda, cl_object *sp)
 cl_object
 _ecl_bytecodes_dispatch_vararg(cl_narg narg, ...)
 {
-        int i;
         cl_object output;
-	cl_env_ptr env = ecl_process_env();
-	struct ecl_stack_frame frame_aux;
-	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
-        cl_va_list args; cl_va_start(args, narg, narg, 0);
-        for (i = 0; i < narg; i++) {
-                ecl_stack_frame_elt_set(frame, i, cl_va_arg(args));
-        }
-	output = ecl_interpret(frame, Cnil, env->function, 0);
-        ecl_stack_frame_close(frame);
+        ECL_STACK_FRAME_VARARGS_BEGIN(narg, narg, frame);
+        output = ecl_interpret(frame, Cnil, frame->frame.env->function, 0);
+        ECL_STACK_FRAME_VARARGS_END(frame);
         return output;
 }
 
 cl_object
 _ecl_bclosure_dispatch_vararg(cl_narg narg, ...)
 {
-        int i;
         cl_object output;
-	cl_env_ptr env = ecl_process_env();
-	cl_object fun = env->function;
-	struct ecl_stack_frame frame_aux;
-	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
-        cl_va_list args; cl_va_start(args, narg, narg, 0);
-        for (i = 0; i < narg; i++) {
-                ecl_stack_frame_elt_set(frame, i, cl_va_arg(args));
-        }
-	output = ecl_interpret(frame, fun->bclosure.lex, fun->bclosure.code, 0);
-        ecl_stack_frame_close(frame);
+        ECL_STACK_FRAME_VARARGS_BEGIN(narg, narg, frame) {
+                cl_object fun = frame->frame.env->function;
+                output = ecl_interpret(frame, fun->bclosure.lex, fun->bclosure.code, 0);
+        } ECL_STACK_FRAME_VARARGS_END(frame);
         return output;
 }
 
@@ -520,7 +509,7 @@ close_around(cl_object fun, cl_object lex) {
 	frame.stack = the_env->stack; \
 	frame.top = the_env->stack_top; \
 	frame.bottom = frame.top - __n; \
-	reg0 = ecl_apply_from_stack_frame(the_env, (cl_object)&frame, fun); \
+	reg0 = ecl_apply_from_stack_frame((cl_object)&frame, fun); \
 	the_env->stack_top -= __n; }
 
 /* -------------------- THE INTERPRETER -------------------- */
@@ -546,6 +535,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	ecl_ihs_push(the_env, &ihs, bytecodes, lex_env);
 	frame_aux.t = t_frame;
 	frame_aux.stack = frame_aux.top = frame_aux.bottom = 0;
+        frame_aux.env = the_env;
 	reg0 = Cnil;
 	the_env->nvalues = 0;
  BEGIN:
@@ -763,7 +753,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		case t_instance:
 			switch (reg0->instance.isgf) {
 			case ECL_STANDARD_DISPATCH:
-				reg0 = _ecl_standard_dispatch(the_env, frame, reg0);
+				reg0 = _ecl_standard_dispatch(frame, reg0);
 				break;
 			case ECL_USER_DISPATCH:
 				reg0 = reg0->instance.slots[reg0->instance.length - 1];

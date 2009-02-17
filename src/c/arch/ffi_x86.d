@@ -137,7 +137,7 @@ ecl_dynamic_callback_execute(cl_object cbk_info, char *arg_buffer)
 		}
 	}
 
-	result = ecl_apply_from_stack_frame(env, frame, fun);
+	result = ecl_apply_from_stack_frame(frame, fun);
 	ecl_stack_frame_close(frame);
 
 	tag = ecl_foreign_type_code(rtype);

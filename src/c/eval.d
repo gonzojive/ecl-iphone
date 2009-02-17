@@ -18,37 +18,12 @@
 
 #include <ecl/ecl.h>
 #include <ecl/ecl-inl.h>
+#include <ecl/internal.h>
 
 cl_object *
 _ecl_va_sp(cl_narg narg)
 {
 	return ecl_process_env()->stack_top - narg;
-}
-
-static cl_object
-build_funcall_frame(cl_object f, cl_va_list args)
-{
-	cl_env_ptr env = ecl_process_env();
-	cl_index n = args[0].narg;
-	cl_object *p = args[0].sp;
-	f->frame.stack = 0;
-	if (!p) {
-#ifdef ECL_USE_VARARG_AS_POINTER
-		p = (cl_object*)(args[0].args);
-#else
-		cl_index i;
-		p = env->values;
-		for (i = 0; i < n; i++) {
-			p[i] = va_arg(args[0].args, cl_object);
-		}
-		f->frame.stack = (void*)0x1;
-#endif
-	}
-	f->frame.bottom = p;
-	f->frame.top = p + n;
-	f->frame.t = t_frame;
-	f->frame.env = env;
-	return f;
 }
 
 /* Calling conventions:
@@ -61,32 +36,29 @@ build_funcall_frame(cl_object f, cl_va_list args)
  */
 
 cl_object
-ecl_apply_from_stack_frame(cl_env_ptr env, cl_object frame, cl_object x)
+ecl_apply_from_stack_frame(cl_object frame, cl_object x)
 {
 	cl_object *sp = frame->frame.bottom;
 	cl_index narg = frame->frame.top - sp;
 	cl_object fun = x;
       AGAIN:
+        frame->frame.env->function = fun;
 	if (fun == OBJNULL || fun == Cnil)
 		FEundefined_function(x);
 	switch (type_of(fun)) {
 	case t_cfunfixed:
-		env->function = fun;
 		if (narg != (cl_index)fun->cfun.narg)
 			FEwrong_num_arguments(fun);
 		return APPLY_fixed(narg, fun->cfunfixed.entry_fixed, sp);
 	case t_cfun:
-		env->function = fun;
 		return APPLY(narg, fun->cfun.entry, sp);
 	case t_cclosure:
-		env->function = fun;
 		return APPLY(narg, fun->cclosure.entry, sp);
 #ifdef CLOS
 	case t_instance:
 		switch (fun->instance.isgf) {
 		case ECL_STANDARD_DISPATCH:
-			env->function = fun;
-			return _ecl_standard_dispatch(env, frame, fun);
+			return _ecl_standard_dispatch(frame, fun);
 		case ECL_USER_DISPATCH:
 			fun = fun->instance.slots[fun->instance.length - 1];
 		default:
@@ -148,16 +120,23 @@ ecl_function_dispatch(cl_env_ptr env, cl_object x)
 	}
 }
 
-@(defun funcall (function &rest funargs)
-	struct ecl_stack_frame frame_aux;
-@
-	return ecl_apply_from_stack_frame(the_env, build_funcall_frame((cl_object)&frame_aux, funargs), function);
-@)
+cl_object
+cl_funcall(cl_narg narg, cl_object function, ...)
+{
+        cl_object output;
+        --narg;
+        {
+                ECL_STACK_FRAME_VARARGS_BEGIN(narg, function, frame);
+                output = ecl_apply_from_stack_frame(frame, function);
+                ECL_STACK_FRAME_VARARGS_END(frame);
+        }
+        return output;
+}
 
 @(defun apply (fun lastarg &rest args)
 @
 	if (narg == 2 && type_of(lastarg) == t_frame) {
-		return ecl_apply_from_stack_frame(the_env, lastarg, fun);
+		return ecl_apply_from_stack_frame(lastarg, fun);
 	} else {
 		cl_object out;
 		cl_index i;
@@ -183,7 +162,7 @@ ecl_function_dispatch(cl_env_ptr env, cl_object x)
 			ecl_stack_frame_push(frame, CAR(lastarg));
 			i++;
 		} end_loop_for_in;
-		out = ecl_apply_from_stack_frame(the_env, frame, fun);
+		out = ecl_apply_from_stack_frame(frame, fun);
 		ecl_stack_frame_close(frame);
 		return out;
 	}

@@ -77,7 +77,7 @@
 
 (defun c1apply-from-stack-frame (args)
   (c1expr `(c-inline ,args (t t) (values &rest t)
-		     "cl_env_copy->values[0]=ecl_apply_from_stack_frame(cl_env_copy,#0,#1);"
+		     "cl_env_copy->values[0]=ecl_apply_from_stack_frame(#0,#1);"
 		     :one-liner nil :side-effects t)))
 
 (put-sysprop 'with-stack 'C1 #'c1with-stack)

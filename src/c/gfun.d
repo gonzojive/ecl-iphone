@@ -50,7 +50,7 @@ user_function_dispatch(cl_narg narg, ...)
                 ecl_stack_frame_elt_set(frame, i, cl_va_arg(args));
         }
         fun = fun->instance.slots[fun->instance.length - 1];
-        output = ecl_apply_from_stack_frame(env, frame, fun);
+        output = ecl_apply_from_stack_frame(frame, fun);
         ecl_stack_frame_close(frame);
         return output;
 }
@@ -375,9 +375,10 @@ compute_applicable_method(cl_object frame, cl_object gf)
 }
 
 cl_object
-_ecl_standard_dispatch(cl_env_ptr env, cl_object frame, cl_object gf)
+_ecl_standard_dispatch(cl_object frame, cl_object gf)
 {
 	cl_object func, vector;
+        const cl_env_ptr env = frame->frame.env;
 	/*
 	 * We have to copy the frame because it might be stored in cl_env.values
 	 * which will be wiped out by the next function call. However this only
@@ -434,16 +435,9 @@ _ecl_standard_dispatch(cl_env_ptr env, cl_object frame, cl_object gf)
 static cl_object
 generic_function_dispatch_vararg(cl_narg narg, ...)
 {
-        int i;
         cl_object output;
-	cl_env_ptr env = ecl_process_env();
-	struct ecl_stack_frame frame_aux;
-	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
-        cl_va_list args; cl_va_start(args, narg, narg, 0);
-        for (i = 0; i < narg; i++) {
-                ecl_stack_frame_elt_set(frame, i, cl_va_arg(args));
-        }
-	output = _ecl_standard_dispatch(env, frame, env->function);
-        ecl_stack_frame_close(frame);
+        ECL_STACK_FRAME_VARARGS_BEGIN(narg, narg, frame);
+	output = _ecl_standard_dispatch(frame, frame->frame.env->function);
+        ECL_STACK_FRAME_VARARGS_END(frame);
         return output;
 }
