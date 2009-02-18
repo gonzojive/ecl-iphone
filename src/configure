@@ -8323,6 +8323,10 @@ case "${host_cpu}" in
 _ACEOF
 
 	fi
+	cat >>confdefs.h <<\_ACEOF
+#define ECL_USE_VARARG_AS_POINTER 1
+_ACEOF
+
 	dynamic_ffi=yes
 	;;
    x86_64 )

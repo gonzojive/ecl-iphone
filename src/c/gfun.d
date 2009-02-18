@@ -329,8 +329,8 @@ search_method_hash(cl_env_ptr env, cl_object keys)
 static cl_object
 get_spec_vector(cl_env_ptr env, cl_object frame, cl_object gf)
 {
-	cl_object *args = frame->frame.bottom;
-	cl_index narg = frame->frame.top - args;
+	cl_object *args = frame->frame.base;
+	cl_index narg = frame->frame.size;
 	cl_object spec_how_list = GFUN_SPEC(gf);
 	cl_object vector = env->method_spec_vector;
 	cl_object *argtype = vector->vector.self.t;
@@ -360,13 +360,14 @@ compute_applicable_method(cl_object frame, cl_object gf)
 	/* method not cached */
 	cl_object methods, arglist, func;
 	cl_object *p;
-	for (p = frame->frame.top, arglist = Cnil; p != frame->frame.bottom; ) {
+	for (p = frame->frame.base + frame->frame.size, arglist = Cnil;
+             p != frame->frame.base; ) {
 		arglist = CONS(*(--p), arglist);
 	}
 	methods = funcall(3, @'compute-applicable-methods', gf, arglist);
 	if (methods == Cnil) {
 		func = funcall(3, @'no-applicable-method', gf, arglist);
-		frame->frame.bottom[0] = OBJNULL;
+		frame->frame.base[0] = OBJNULL;
 		return func;
 	} else {
 		return funcall(4, @'clos::compute-effective-method', gf,

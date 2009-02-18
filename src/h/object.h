@@ -741,9 +741,9 @@ struct ecl_foreign {		/*  user defined datatype  */
 
 struct ecl_stack_frame {
 	HEADER;
-	cl_object *bottom;	/*  Bottom part  */
-	cl_object *top;		/*  Top part  */
 	cl_object *stack;	/*  Is this relative to the lisp stack?  */
+	cl_object *base;	/*  Start of frame  */
+        cl_index size;		/*  Number of arguments  */
 	struct cl_env_struct *env;
 };
 

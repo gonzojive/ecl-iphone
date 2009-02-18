@@ -138,19 +138,20 @@ ecl_stack_push_list(cl_env_ptr env, cl_object list)
 cl_object
 ecl_stack_frame_open(cl_env_ptr env, cl_object f, cl_index size)
 {
-	cl_object *top = env->stack_top;
+	cl_object *base = env->stack_top;
 	if (size) {
-		if (env->stack_limit - top < size) {
+		if (env->stack_limit - base < size) {
 			cl_index delta = (size + (LISP_PAGESIZE-1))/LISP_PAGESIZE;
 			ecl_stack_set_size(env, env->stack_size + delta * LISP_PAGESIZE);
-			top = env->stack_top;
+			base = env->stack_top;
 		}
 	}
 	f->frame.t = t_frame;
 	f->frame.stack = env->stack;
-	f->frame.bottom = top;
+	f->frame.base = base;
+        f->frame.size = size;
 	f->frame.env = env;
-	env->stack_top = f->frame.top = (top + size);
+	env->stack_top = (base + size);
 	return f;
 }
 
@@ -159,22 +160,17 @@ ecl_stack_frame_enlarge(cl_object f, cl_index size)
 {
 	cl_object *top;
 	cl_env_ptr env = f->frame.env;
-	if (f->frame.stack == 0) {
-		ecl_internal_error("Inconsistency in interpreter stack frame");
-	}
 	top = env->stack_top;
 	if ((env->stack_limit - top) < size) {
 		cl_index delta = (size + (LISP_PAGESIZE-1))/LISP_PAGESIZE;
 		ecl_stack_set_size(env, env->stack_size + delta * LISP_PAGESIZE);
-		f->frame.bottom = (f->frame.bottom - f->frame.stack) + env->stack;
-		f->frame.stack = env->stack;
-		top = env->stack_top;
-	} else if (top != f->frame.top) {
-		f->frame.bottom = (f->frame.bottom - f->frame.stack) + env->stack;
+		f->frame.base = (f->frame.base - f->frame.stack) + env->stack;
 		f->frame.stack = env->stack;
 		top = env->stack_top;
 	}
-	env->stack_top = f->frame.top = (top + size);
+        env->stack_top = (top += size);
+        f->frame.base = top - (f->frame.size += size);
+        f->frame.stack = env->stack;
 }
 
 void
@@ -182,75 +178,67 @@ ecl_stack_frame_push(cl_object f, cl_object o)
 {
 	cl_object *top;
 	cl_env_ptr env = f->frame.env;
-	if (f->frame.stack == 0) {
-		ecl_internal_error("Inconsistency in interpreter stack frame");
-	}
 	top = env->stack_top;
 	if (top >= env->stack_limit) {
 		ecl_stack_grow(env);
-		f->frame.bottom = (f->frame.bottom - f->frame.stack) + env->stack;
-		f->frame.stack = env->stack;
-		top = env->stack_top;
-	} else if (top != f->frame.top) {
-		f->frame.bottom = (f->frame.bottom - f->frame.stack) + env->stack;
+		f->frame.base = (f->frame.base - f->frame.stack) + env->stack;
 		f->frame.stack = env->stack;
 		top = env->stack_top;
 	}
-	*(top++) = o;
-	env->stack_top = f->frame.top = top;
+	*top = o;
+	env->stack_top = ++top;
+        f->frame.base = top - (++(f->frame.size));
+        f->frame.stack = env->stack;
 }
 
 void
 ecl_stack_frame_push_values(cl_object f)
 {
 	cl_env_ptr env = f->frame.env;
-	if (f->frame.stack == 0) {
-		ecl_internal_error("Inconsistency in interpreter stack frame");
-	}
 	ecl_stack_push_values(env);
-	f->frame.bottom = (f->frame.bottom - f->frame.stack) + env->stack;
+        f->frame.base = env->stack_top - (f->frame.size += env->nvalues); 
 	f->frame.stack = env->stack;
-	f->frame.top = env->stack_top;
 }
 
 cl_object
 ecl_stack_frame_pop_values(cl_object f)
 {
-	cl_index n = f->frame.top - f->frame.bottom;
-	NVALUES = n;
-	VALUES(0) = Cnil;
+        cl_env_ptr env = f->frame.env;
+	cl_index n = f->frame.size % ECL_MULTIPLE_VALUES_LIMIT;
+        cl_object o;
+        env->nvalues = n;
+        env->values[0] = o = Cnil;
 	while (n--) {
-		VALUES(n) = f->frame.bottom[n];
+                env->values[n] = o = f->frame.base[n];
 	}
-	return VALUES(0);
+	return o;
 }
 
 cl_object
 ecl_stack_frame_elt(cl_object f, cl_index ndx)
 {
-	if (ndx >= (f->frame.top - f->frame.bottom)) {
+	if (ndx >= f->frame.size) {
 		FEtype_error_index(f, ecl_make_unsigned_integer(ndx));
 	}
-	return f->frame.bottom[ndx];
+	return f->frame.base[ndx];
 }
 
 void
 ecl_stack_frame_elt_set(cl_object f, cl_index ndx, cl_object o)
 {
-	if (ndx >= (f->frame.top - f->frame.bottom)) {
+	if (ndx >= f->frame.size) {
 		FEtype_error_index(f, ecl_make_unsigned_integer(ndx));
 	}
-	f->frame.bottom[ndx] = o;
+	f->frame.base[ndx] = o;
 }
 
 cl_object
 ecl_stack_frame_from_va_list(cl_env_ptr env, cl_object frame, cl_va_list args)
 {
-	cl_index nargs = args[0].narg;
+	cl_index i, nargs = args[0].narg;
 	ecl_stack_frame_open(env, frame, nargs);
-	while (nargs) {
-		*(frame->frame.top-nargs) = cl_va_arg(args);
-		nargs--;
+        for (i = 0; i < nargs; i++) {
+                frame->frame.base[i] = cl_va_arg(args);
 	}
 	return frame;
 }
@@ -259,16 +247,16 @@ void
 ecl_stack_frame_close(cl_object f)
 {
 	if (f->frame.stack) {
-		ecl_stack_set_index(f->frame.env, f->frame.bottom - f->frame.stack);
+		ecl_stack_set_index(f->frame.env, f->frame.base - f->frame.stack);
 	}
 }
 
 cl_object
 ecl_stack_frame_copy(cl_object dest, cl_object orig)
 {
-	cl_index size = orig->frame.top - orig->frame.bottom;
+	cl_index size = orig->frame.size;
 	dest = ecl_stack_frame_open(orig->frame.env, dest, size);
-	memcpy(dest->frame.bottom, orig->frame.bottom, size * sizeof(cl_object));
+	memcpy(dest->frame.base, orig->frame.base, size * sizeof(cl_object));
 	return dest;
 }
 
@@ -295,48 +283,50 @@ ecl_lex_env_get_record(register cl_object env, register int s)
 
 /* -------------------- LAMBDA FUNCTIONS -------------------- */
 
-static cl_object
-lambda_bind_var(cl_object env, cl_object var, cl_object val, cl_object specials)
-{
-	const cl_env_ptr the_env = ecl_process_env();
-	if (!ecl_member_eq(var, specials))
-		env = bind_var(env, var, val);
-	else
-		ecl_bds_bind(the_env, var, val);
-	return env;
-}
+#define LAMBDA_BIND_VAR(env,lex_env,_var,_val,specials)           \
+        {                                                       \
+                cl_object var = _var, val = _val;               \
+                if (!ecl_member_eq(var, specials))              \
+                        lex_env = bind_var(lex_env, var, val);  \
+                else                                            \
+                        ecl_bds_bind(env, var, val);            \
+        }
 
 static cl_object
-lambda_bind(cl_object env, cl_narg narg, cl_object lambda, cl_object *sp)
+lambda_bind(cl_object frame, cl_object lex_env, cl_object lambda)
 {
 	cl_object *data = lambda->bytecodes.data;
 	cl_object specials = lambda->bytecodes.specials;
 	int i, n;
+        cl_narg narg = frame->frame.size;
+        const cl_object *sp = frame->frame.base;
+        const cl_env_ptr the_env = frame->frame.env;
 	bool check_remaining = TRUE;
 
 	/* 1) REQUIRED ARGUMENTS:  N var1 ... varN */
 	n = fix(*(data++));
 	if (narg < n)
 		FEwrong_num_arguments(lambda->bytecodes.name);
-	for (; n; n--, narg--)
-		env = lambda_bind_var(env, *(data++), *(sp++), specials);
-
+	for (; n; n--, narg--) {
+		LAMBDA_BIND_VAR(the_env, lex_env, *(data++), *(sp++), specials);
+        }
 	/* 2) OPTIONAL ARGUMENTS:  N var1 value1 flag1 ... varN valueN flagN */
 	for (n = fix(*(data++)); n; n--, data+=3) {
 		if (narg) {
-			env = lambda_bind_var(env, data[0], *sp, specials);
+			LAMBDA_BIND_VAR(the_env, lex_env, data[0], *sp, specials);
 			sp++; narg--;
 			if (!Null(data[2])) {
-				env = lambda_bind_var(env, data[2], Ct, specials);
+				LAMBDA_BIND_VAR(the_env, lex_env, data[2], Ct, specials);
 			}
 		} else {
 			cl_object defaults = data[1];
 			if (FIXNUMP(defaults)) {
-				defaults = ecl_interpret(Cnil, env, lambda, fix(defaults));
+                                /* Here FRAME is not used */
+				defaults = ecl_interpret(frame, lex_env, lambda, fix(defaults));
 			}
-			env = lambda_bind_var(env, data[0], defaults, specials);
+			LAMBDA_BIND_VAR(the_env, lex_env, data[0], defaults, specials);
 			if (!Null(data[2])) {
-				env = lambda_bind_var(env, data[2], Cnil, specials);
+				LAMBDA_BIND_VAR(the_env, lex_env, data[2], Cnil, specials);
 			}
 		}
 	}
@@ -348,7 +338,7 @@ lambda_bind(cl_object env, cl_narg narg, cl_object lambda, cl_object *sp)
 		for (i=narg; i; ) {
 			rest = CONS(sp[--i], rest);
 		}
-		env = lambda_bind_var(env, data[0], rest, specials);
+		LAMBDA_BIND_VAR(the_env, lex_env, data[0], rest, specials);
 	}
 	data++;
 
@@ -417,20 +407,21 @@ lambda_bind(cl_object env, cl_narg narg, cl_object lambda, cl_object *sp)
 		}
 		for (i=0; i<n; i++, data+=4) {
 			if (spp[i] != unbound) {
-				env = lambda_bind_var(env, data[1],spp[i],specials);
+				LAMBDA_BIND_VAR(the_env, lex_env, data[1], spp[i], specials);
 			} else {
 				cl_object defaults = data[2];
 				if (FIXNUMP(defaults)) {
-					defaults = ecl_interpret(Cnil, env, lambda, fix(defaults));
+                                        /* Here FRAME is not used */
+					defaults = ecl_interpret(frame, lex_env, lambda, fix(defaults));
 				}
-				env = lambda_bind_var(env, data[1],defaults,specials);
+				LAMBDA_BIND_VAR(the_env, lex_env, data[1],defaults,specials);
 			}
 			if (!Null(data[3])) {
-				env = lambda_bind_var(env, data[3],(spp[i] != unbound)? Ct : Cnil,specials);
+				LAMBDA_BIND_VAR(the_env, lex_env, data[3], (spp[i] != unbound)? Ct : Cnil, specials);
 			}
 		}
 	}
-	return env;
+	return lex_env;
 }
 
 /* -------------------- AIDS TO THE INTERPRETER -------------------- */
@@ -503,22 +494,21 @@ close_around(cl_object fun, cl_object lex) {
  * lexical environment needs to be saved.
  */
 
-#define INTERPRET_FUNCALL(reg0, the_env, frame, narg, fun) {	\
-	cl_index __n = narg; \
-	SETUP_ENV(the_env); \
-	frame.stack = the_env->stack; \
-	frame.top = the_env->stack_top; \
-	frame.bottom = frame.top - __n; \
-	reg0 = ecl_apply_from_stack_frame((cl_object)&frame, fun); \
-	the_env->stack_top -= __n; }
+#define INTERPRET_FUNCALL(reg0, the_env, frame, narg, fun) {            \
+        cl_index __n = narg;                                            \
+        SETUP_ENV(the_env);                                             \
+        frame.stack = the_env->stack;                                   \
+        frame.base = the_env->stack_top - (frame.size = __n);           \
+        reg0 = ecl_apply_from_stack_frame((cl_object)&frame, fun);      \
+        the_env->stack_top -= __n; }
 
 /* -------------------- THE INTERPRETER -------------------- */
 
 cl_object
 ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offset)
 {
-	ECL_OFFSET_TABLE
-	const cl_env_ptr the_env = ecl_process_env();
+	ECL_OFFSET_TABLE;
+        const cl_env_ptr the_env = frame->frame.env;
 	volatile cl_index old_bds_top_index = the_env->bds_top - the_env->bds_org;
 	cl_opcode *vector = (cl_opcode*)bytecodes->bytecodes.code + offset;
 	cl_object *data = bytecodes->bytecodes.data;
@@ -534,7 +524,8 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 
 	ecl_ihs_push(the_env, &ihs, bytecodes, lex_env);
 	frame_aux.t = t_frame;
-	frame_aux.stack = frame_aux.top = frame_aux.bottom = 0;
+	frame_aux.stack = frame_aux.base = 0;
+        frame_aux.size = 0;
         frame_aux.env = the_env;
 	reg0 = Cnil;
 	the_env->nvalues = 0;
@@ -729,8 +720,8 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	DO_CALL: {
 		cl_object x = reg0;
 		cl_object frame = (cl_object)&frame_aux;
-		frame_aux.top = the_env->stack_top;
-		frame_aux.bottom = the_env->stack_top - narg;
+		frame_aux.size = narg;
+		frame_aux.base = the_env->stack_top - narg;
 	AGAIN:
 		if (reg0 == OBJNULL || reg0 == Cnil) {
 			FEundefined_function(x);
@@ -740,14 +731,14 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 			if (narg != (cl_index)reg0->cfunfixed.narg)
 				FEwrong_num_arguments(reg0);
 			reg0 = APPLY_fixed(narg, reg0->cfunfixed.entry_fixed,
-                                           frame_aux.bottom);
+                                           frame_aux.base);
 			break;
 		case t_cfun:
-			reg0 = APPLY(narg, reg0->cfun.entry, frame_aux.bottom);
+			reg0 = APPLY(narg, reg0->cfun.entry, frame_aux.base);
 			break;
 		case t_cclosure:
 			the_env->function = reg0;
-			reg0 = APPLY(narg, reg0->cclosure.entry, frame_aux.bottom);
+			reg0 = APPLY(narg, reg0->cclosure.entry, frame_aux.base);
 			break;
 #ifdef CLOS
 		case t_instance:
@@ -801,8 +792,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	CASE(OP_ENTRY); {
 		if (frame == Cnil)
 			ecl_internal_error("Not enough arguments to bytecodes.");
-		lex_env = lambda_bind(lex_env, frame->frame.top - frame->frame.bottom,
-				      bytecodes, frame->frame.bottom);
+		lex_env = lambda_bind(frame, lex_env, bytecodes);
 		THREAD_NEXT;
 	}
 	/* OP_EXIT

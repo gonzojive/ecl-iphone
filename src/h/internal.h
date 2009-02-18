@@ -106,12 +106,13 @@ typedef struct cl_compiler_env *cl_compiler_env_ptr;
         frame->frame.t = t_frame;                                       \
         frame->frame.stack = 0;                                         \
         frame->frame.env = env;                                         \
+        frame->frame.size = narg;                                       \
         if (narg < C_ARGUMENTS_LIMIT) {                                 \
                 va_list args;                                           \
                 va_start(args, lastarg);                                \
-                frame->frame.top = (frame->frame.bottom = (void*)args) + narg;  \
+                frame->frame.base = (void*)args;                        \
         } else {                                                        \
-                frame->frame.bottom = (frame->frame.top = env->stack_top) - narg; \
+                frame->frame.base = env->stack_top - narg;              \
         }
 #define ECL_STACK_FRAME_VARARGS_END(frame)      \
         /* No stack consumed, no need to close frame */
@@ -122,19 +123,19 @@ typedef struct cl_compiler_env *cl_compiler_env_ptr;
         const cl_env_ptr env = ecl_process_env();                       \
         frame->frame.t = t_frame;                                       \
         frame->frame.env = env;                                         \
+        frame->frame.size = narg;                                       \
         if (narg < C_ARGUMENTS_LIMIT) {                                 \
                 cl_index i;                                             \
-                cl_object *p = frame->frame.bottom = env->values;       \
+                cl_object *p = frame->frame.base = env->values;         \
                 va_list args;                                           \
                 va_start(args, lastarg);                                \
                 while (narg--) {                                        \
                         *p = va_arg(args, cl_object);                   \
                         ++p;                                            \
                 }                                                       \
-                frame->frame.top = p;                                   \
                 frame->frame.stack = (void*)0x1;                        \
         } else {                                                        \
-                frame->frame.bottom = (frame->frame.top = env->stack_top) - narg; \
+                frame->frame.base = env->stack_top - narg;              \
                 frame->frame.stack = 0;                                 \
         }
 #define ECL_STACK_FRAME_VARARGS_END(frame)      \

@@ -25,7 +25,7 @@
 	cdrs_frame = ecl_stack_frame_from_va_list(ecl_process_env(),\
 						  (cl_object)&cdrs_frame_aux, list); \
 	cars_frame = ecl_stack_frame_copy((cl_object)&cars_frame_aux, cdrs_frame); \
-	nargs = ECL_STACK_FRAME_SIZE(cars_frame); \
+	nargs = cars_frame->frame.size; \
 	if (nargs == 0) { \
 		FEprogram_error("MAP*: Too few arguments", 0); \
 	}

@@ -2103,6 +2103,11 @@ for special form ~S.", 1, function);
 static int
 compile_body(cl_object body, int flags) {
 	if (ENV->lexical_level == 0 && !ecl_endp(body)) {
+                struct ecl_stack_frame frame;
+                frame.t = t_frame;
+                frame.stack = frame.base = 0;
+                frame.size = 0;
+                frame.env = ecl_process_env();
 		while (!ecl_endp(CDR(body))) {
 			struct cl_compiler_env *old_c_env = ENV;
 			struct cl_compiler_env new_c_env = *old_c_env;
@@ -2115,7 +2120,7 @@ compile_body(cl_object body, int flags) {
 			VALUES(0) = Cnil;
 			NVALUES = 0;
 			bytecodes = asm_end(handle);
-			ecl_interpret(Cnil, ENV->lex_env, bytecodes, 0);
+			ecl_interpret((cl_object)&frame, ENV->lex_env, bytecodes, 0);
 			asm_clear(handle);
 			ENV = old_c_env;
 #ifdef GBC_BOEHM
@@ -2764,13 +2769,19 @@ si_make_lambda(cl_object name, cl_object rest)
 	VALUES(0) = Cnil;
 	NVALUES = 0;
 	{
-	cl_object output = ecl_interpret(Cnil, interpreter_env, bytecodes, 0);
+                struct ecl_stack_frame frame;
+                cl_object output;
+                frame.t = t_frame;
+                frame.stack = frame.base = 0;
+                frame.size = 0;
+                frame.env = the_env;
+                output = ecl_interpret((cl_object)&frame, interpreter_env, bytecodes, 0);
 #ifdef GBC_BOEHM
-	GC_free(bytecodes->bytecodes.code);
-	GC_free(bytecodes->bytecodes.data);
-	GC_free(bytecodes);
+                GC_free(bytecodes->bytecodes.code);
+                GC_free(bytecodes->bytecodes.data);
+                GC_free(bytecodes);
 #endif
-	ecl_ihs_pop(the_env);
-	return output;
+                ecl_ihs_pop(the_env);
+                return output;
 	}
 @)

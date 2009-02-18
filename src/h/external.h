@@ -471,7 +471,6 @@ extern ECL_API cl_object ecl_stack_frame_elt(cl_object f, cl_index n);
 extern ECL_API void ecl_stack_frame_elt_set(cl_object f, cl_index n, cl_object o);
 extern ECL_API cl_object ecl_stack_frame_copy(cl_object f, cl_object size);
 extern ECL_API void ecl_stack_frame_close(cl_object f);
-#define ECL_STACK_FRAME_SIZE(f) ((f)->frame.top - (f)->frame.bottom)
 #define si_apply_from_stack_frame ecl_apply_from_stack_frame
 
 extern ECL_API void ecl_stack_push(cl_env_ptr env, cl_object o);

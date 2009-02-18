@@ -38,8 +38,8 @@ _ecl_va_sp(cl_narg narg)
 cl_object
 ecl_apply_from_stack_frame(cl_object frame, cl_object x)
 {
-	cl_object *sp = frame->frame.bottom;
-	cl_index narg = frame->frame.top - sp;
+	cl_object *sp = frame->frame.base;
+	cl_index narg = frame->frame.size;
 	cl_object fun = x;
       AGAIN:
         frame->frame.env->function = fun;
@@ -150,9 +150,10 @@ cl_funcall(cl_narg narg, cl_object function, ...)
 		}
 		if (type_of(lastarg) == t_frame) {
 			/* This could be replaced with a memcpy() */
-			cl_object *p = lastarg->frame.bottom;
-			while (p != lastarg->frame.top) {
-				ecl_stack_frame_push(frame, *(p++));
+			cl_object *p = lastarg->frame.base;
+                        cl_index i;
+                        for (i = 0; i < lastarg->frame.size; i++) {
+				ecl_stack_frame_push(frame, lastarg->frame.base[i]);
 			}
 		} else loop_for_in (lastarg) {
 			if (i >= CALL_ARGUMENTS_LIMIT) {

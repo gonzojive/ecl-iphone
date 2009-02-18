@@ -1570,9 +1570,9 @@ si_write_ugly_object(cl_object x, cl_object stream)
 	case t_frame:
 		if (ecl_print_readably()) FEprint_not_readable(x);
 		write_str("#<frame ", stream);
-		write_decimal(x->frame.top - x->frame.bottom, stream);
+		write_decimal(x->frame.size, stream);
 		write_ch(' ', stream);
-		write_addr((void*)x->frame.bottom, stream);
+		write_addr((void*)x->frame.base, stream);
 		write_ch('>', stream);
 		break;
 #ifdef ECL_THREADS

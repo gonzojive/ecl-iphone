@@ -573,6 +573,7 @@ case "${host_cpu}" in
 		EXTRA_OBJS="${EXTRA_OBJS} apply_x86.o"
 		AC_DEFINE(ECL_ASM_APPLY)
 	fi
+	AC_DEFINE(ECL_USE_VARARG_AS_POINTER)
 	dynamic_ffi=yes
 	;;
    x86_64 )
