@@ -55,6 +55,8 @@ OBJS	= main.o symbol.o package.o list.o\
 
 all:	$(DPP) ../libeclmin.a ../cinit.o
 
+.c.S: $(HFILES)
+	$(CC) -DECLDIR="\"@ecldir@\"" $(CFLAGS) -S -o $@ $<
 .c.o: $(HFILES)
 	$(CC) -DECLDIR="\"@ecldir@\"" $(CFLAGS) -o $@ $<
 .d.c: $(DPP)
