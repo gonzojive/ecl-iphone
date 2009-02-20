@@ -82,6 +82,12 @@ ECL 9.1.0:
    now stored using an (ARRAY (SIGNED-BYTE 32)). This saves memory on
    systems with 64-bit pointers.
 
+ - Faster calling conventions for function objects, generic functions, symbols
+   and interpreted bytecodes, reduce time by 50% in best cases.
+
+ - New, more efficient bytecodes for parsing the function lambda list, instead
+   of using a common function.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

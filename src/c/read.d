@@ -875,7 +875,6 @@ sharp_Y_reader(cl_object in, cl_object c, cl_object d)
 
         rv->bytecodes.name = CAR(x); x = CDR(x);
         lex = CAR(x); x = CDR(x);
-        rv->bytecodes.specials = CAR(x); x = CDR(x);
         rv->bytecodes.definition = CAR(x); x = CDR(x);
 
         rv->bytecodes.code_size = fixint(cl_list_length(CAR(x)));

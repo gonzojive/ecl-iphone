@@ -1495,7 +1495,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
                         write_str("#Y", stream);
                         si_write_ugly_object(
 			    cl_list(6, x->bytecodes.name, lex,
-				    x->bytecodes.specials, Cnil /* x->bytecodes.definition */,
+                                    Cnil /* x->bytecodes.definition */,
 				    code_l, data_l),
 			    stream);
 			break;
@@ -1513,7 +1513,7 @@ si_write_ugly_object(cl_object x, cl_object stream)
                         write_str("#Y", stream);
                         si_write_ugly_object(
 			    cl_list(6, x->bytecodes.name, lex,
-				    x->bytecodes.specials, Cnil /* x->bytecodes.definition */,
+				    Cnil /* x->bytecodes.definition */,
 				    code_l, data_l),
 			    stream);
 			break;

@@ -281,149 +281,6 @@ ecl_lex_env_get_record(register cl_object env, register int s)
 #define ecl_lex_env_get_fun(env,x) ecl_lex_env_get_record(env,x)
 #define ecl_lex_env_get_tag(env,x) ECL_CONS_CAR(ecl_lex_env_get_record(env,x))
 
-/* -------------------- LAMBDA FUNCTIONS -------------------- */
-
-#define LAMBDA_BIND_VAR(env,lex_env,_var,_val,specials)           \
-        {                                                       \
-                cl_object var = _var, val = _val;               \
-                if (!ecl_member_eq(var, specials))              \
-                        lex_env = bind_var(lex_env, var, val);  \
-                else                                            \
-                        ecl_bds_bind(env, var, val);            \
-        }
-
-static cl_object
-lambda_bind(cl_object frame, cl_object lex_env, cl_object lambda)
-{
-	cl_object *data = lambda->bytecodes.data;
-	cl_object specials = lambda->bytecodes.specials;
-	int i, n;
-        cl_narg narg = frame->frame.size;
-        const cl_object *sp = frame->frame.base;
-        const cl_env_ptr the_env = frame->frame.env;
-	bool check_remaining = TRUE;
-
-	/* 1) REQUIRED ARGUMENTS:  N var1 ... varN */
-	n = fix(*(data++));
-	if (narg < n)
-		FEwrong_num_arguments(lambda->bytecodes.name);
-	for (; n; n--, narg--) {
-		LAMBDA_BIND_VAR(the_env, lex_env, *(data++), *(sp++), specials);
-        }
-	/* 2) OPTIONAL ARGUMENTS:  N var1 value1 flag1 ... varN valueN flagN */
-	for (n = fix(*(data++)); n; n--, data+=3) {
-		if (narg) {
-			LAMBDA_BIND_VAR(the_env, lex_env, data[0], *sp, specials);
-			sp++; narg--;
-			if (!Null(data[2])) {
-				LAMBDA_BIND_VAR(the_env, lex_env, data[2], Ct, specials);
-			}
-		} else {
-			cl_object defaults = data[1];
-			if (FIXNUMP(defaults)) {
-                                /* Here FRAME is not used */
-				defaults = ecl_interpret(frame, lex_env, lambda, fix(defaults));
-			}
-			LAMBDA_BIND_VAR(the_env, lex_env, data[0], defaults, specials);
-			if (!Null(data[2])) {
-				LAMBDA_BIND_VAR(the_env, lex_env, data[2], Cnil, specials);
-			}
-		}
-	}
-	
-	/* 3) REST ARGUMENT: {rest-var | NIL} */
-	if (!Null(data[0])) {
-		cl_object rest = Cnil;
-		check_remaining = FALSE;
-		for (i=narg; i; ) {
-			rest = CONS(sp[--i], rest);
-		}
-		LAMBDA_BIND_VAR(the_env, lex_env, data[0], rest, specials);
-	}
-	data++;
-
-	/* 4) ALLOW-OTHER-KEYS: { T | NIL | 0} */
-	if (data[0] == MAKE_FIXNUM(0)) {
-		data++;
-		if (narg && check_remaining) {
-			FEprogram_error("LAMBDA: Too many arguments to function ~S.", 1,
-					lambda->bytecodes.name);
-		}
-	} else {
-		/*
-		 * Only when ALLOW-OTHER-KEYS /= 0, we process this:
-		 * 5) KEYWORDS: N key1 var1 value1 flag1 ... keyN varN valueN flagN
-		 */
-		bool allow_other_keys = !Null(*(data++));
-		bool allow_other_keys_found = allow_other_keys;
-		int n = fix(*(data++));
-		cl_object *keys;
-#ifdef __GNUC__
-		cl_object spp[n];
-#else
-#define SPP_MAX 64
-		cl_object spp[SPP_MAX];
-#endif
-		bool other_found = FALSE;
-		void *unbound = spp; /* not a valid lisp object */
-		if ((narg & 1) != 0)
-			FEprogram_error("Function called with odd number of keyword arguments.", 0);
-		for (i=0; i<n; i++)
-#ifdef __GNUC__
-			spp[i] = unbound;
-#else
-		if (i >= SPP_MAX)
-			FEerror("lambda_bind: Too many keyword arguments, limited to ~A.", 1, MAKE_FIXNUM(SPP_MAX));
-		else
-			spp[i] = unbound;
-#endif
-		for (; narg; narg-=2) {
-			cl_object key = *(sp++);
-			cl_object value = *(sp++);
-			if (!SYMBOLP(key))
-				FEprogram_error("LAMBDA: Keyword expected, got ~S.", 1, key);
-			keys = data;
-			if (key == @':allow-other-keys') {
-				if (!allow_other_keys_found) {
-					allow_other_keys_found = TRUE;
-					allow_other_keys = !Null(value);
-				}
-			}
-			for (i = 0; i < n; i++, keys += 4) {
-				if (key == keys[0]) {
-					if (spp[i] == unbound)
-						spp[i] = value;
-					goto FOUND;
-				}
-			}
-			if (key != @':allow-other-keys')
-				other_found = TRUE;
-		FOUND:
-			(void)0;
-		}
-		if (other_found && !allow_other_keys) {
-			FEprogram_error("LAMBDA: Unknown keys found in function ~S.",
-					1, lambda->bytecodes.name);
-		}
-		for (i=0; i<n; i++, data+=4) {
-			if (spp[i] != unbound) {
-				LAMBDA_BIND_VAR(the_env, lex_env, data[1], spp[i], specials);
-			} else {
-				cl_object defaults = data[2];
-				if (FIXNUMP(defaults)) {
-                                        /* Here FRAME is not used */
-					defaults = ecl_interpret(frame, lex_env, lambda, fix(defaults));
-				}
-				LAMBDA_BIND_VAR(the_env, lex_env, data[1],defaults,specials);
-			}
-			if (!Null(data[3])) {
-				LAMBDA_BIND_VAR(the_env, lex_env, data[3], (spp[i] != unbound)? Ct : Cnil, specials);
-			}
-		}
-	}
-	return lex_env;
-}
-
 /* -------------------- AIDS TO THE INTERPRETER -------------------- */
 
 cl_object
@@ -510,6 +367,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	ECL_OFFSET_TABLE;
         const cl_env_ptr the_env = frame->frame.env;
 	volatile cl_index old_bds_top_index = the_env->bds_top - the_env->bds_org;
+        volatile cl_index frame_index = 0;
 	cl_opcode *vector = (cl_opcode*)bytecodes->bytecodes.code + offset;
 	cl_object *data = bytecodes->bytecodes.data;
 	cl_object reg0, reg1, lex_env = env;
@@ -786,15 +644,109 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		STACK_POP(the_env);
 		THREAD_NEXT;
 	}
-	/* OP_ENTRY
-		Binds all the arguments of a function using the given frame.
+	/* OP_POPREQ
+		Checks the arguments list. If there are remaining arguments,
+                REG0 = T and the value is on the stack, otherwise REG0 = NIL.
 	*/
-	CASE(OP_ENTRY); {
-		if (frame == Cnil)
-			ecl_internal_error("Not enough arguments to bytecodes.");
-		lex_env = lambda_bind(frame, lex_env, bytecodes);
-		THREAD_NEXT;
+	CASE(OP_POPREQ); {
+		if (frame_index >= frame->frame.size) {
+                        FEwrong_num_arguments(bytecodes->bytecodes.name);
+                }
+                reg0 = frame->frame.base[frame_index++];
+                THREAD_NEXT;
 	}
+	/* OP_POPOPT
+		Checks the arguments list. If there are remaining arguments,
+                REG0 = T and the value is on the stack, otherwise REG0 = NIL.
+	*/
+	CASE(OP_POPOPT); {
+		if (frame_index >= frame->frame.size) {
+                        reg0 = Cnil;
+                } else {
+                        STACK_PUSH(the_env,frame->frame.base[frame_index++]);
+                        reg0 = Ct;
+                }
+                THREAD_NEXT;
+	}
+        /* OP_NOMORE
+		No more arguments.
+        */
+        CASE(OP_NOMORE); {
+                if (frame_index < frame->frame.size)
+                        FEprogram_error("Too many arguments passed to "
+                                        "function ~A~&Argument list: ~S",
+                                        2, bytecodes, cl_apply(2, @'list', frame));
+                THREAD_NEXT;
+        }
+	/* OP_POPREST
+		Makes a list out of the remaining arguments.
+	*/
+        CASE(OP_POPREST); {
+                cl_object l = Cnil;
+                cl_index i;
+                for (i = frame_index; i < frame->frame.size; i++) {
+                        l = CONS(frame->frame.base[i],l);
+                }
+                reg0 = cl_nreconc(l, Cnil);
+                THREAD_NEXT;
+        }
+	/* OP_PUSHKEYS {names-list}
+		Checks the stack frame for keyword arguments.
+	*/
+	CASE(OP_PUSHKEYS); {
+                cl_object keys_list, aok;
+                cl_index count;
+                GET_DATA(aok, vector, data);
+                keys_list = aok;
+                count = frame->frame.size - frame_index;
+                if (count & 1) {
+                        FEprogram_error("Function ~A called with odd number "
+                                        "of keyword arguments.",
+                                        1, bytecodes);
+                }
+                for (; (keys_list = ECL_CONS_CDR(keys_list), !Null(keys_list)); ) {
+                        cl_object name = ECL_CONS_CAR(keys_list);
+                        cl_object flag = Cnil;
+                        cl_object value = Cnil;
+                        cl_index i = frame_index;
+                        for (; i < frame->frame.size; i+=2) {
+                                cl_object v = frame->frame.base[i];
+                                if (frame->frame.base[i] == name) {
+                                        count -= 2;
+                                        if (flag == Ct) continue;
+                                        flag = Ct;
+                                        value = frame->frame.base[i+1];
+                                }
+                        }
+                        if (flag != Cnil) STACK_PUSH(the_env, value);
+                        STACK_PUSH(the_env, flag);
+                }
+                if (count) {
+                        aok = ECL_CONS_CAR(aok);
+                        if (Null(aok)) {
+                                cl_index i = frame_index;
+                                int aok_found = 0;
+                                for (; i < frame->frame.size && count; i++) {
+                                        cl_object v = frame->frame.base[i++];
+                                        if (v == @':allow-other-keys') {
+                                                if (!aok_found) {
+                                                        aok = frame->frame.base[i];
+                                                        aok_found = 1;
+                                                }
+                                                count -= 2;
+                                        }
+                                }
+                                if (count && Null(aok)) {
+                                        FEprogram_error("Unknown keyword argument "
+                                                        "passed to function ~S.~&"
+                                                        "Argument list: ~S",
+                                                        2, bytecodes,
+                                                        cl_apply(2, @'list', frame));
+                                }
+                        }
+                }
+                THREAD_NEXT;
+        }
 	/* OP_EXIT
 		Marks the end of a high level construct (BLOCK, CATCH...)
 		or a function.

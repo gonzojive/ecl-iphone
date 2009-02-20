@@ -1456,6 +1456,27 @@ c_macrolet(cl_object args, int flags)
 	return flags;
 }
 
+static void
+c_vbind(cl_object var, int n, cl_object specials)
+{
+        if (c_declared_special(var, specials)) {
+                c_register_var(var, FLAG_PUSH, TRUE);
+                if (n) {
+                        asm_op2(OP_VBINDS, n);
+                } else {
+                        asm_op(OP_BINDS);
+                }
+        } else {
+                c_register_var(var, FALSE, TRUE);
+                if (n) {
+                        asm_op2(OP_VBIND, n);
+                } else {
+                        asm_op(OP_BIND);
+                }
+        }
+        asm_c(var);
+}
+
 static int
 c_multiple_value_bind(cl_object args, int flags)
 {
@@ -1480,22 +1501,7 @@ c_multiple_value_bind(cl_object args, int flags)
 			cl_object var = pop(&vars);
 			if (!SYMBOLP(var))
 				FEillegal_variable_name(var);
-			if (c_declared_special(var, specials)) {
-				c_register_var(var, FLAG_PUSH, TRUE);
-				if (n) {
-					asm_op2(OP_VBINDS, n);
-				} else {
-					asm_op(OP_BINDS);
-				}
-			} else {
-				c_register_var(var, FALSE, TRUE);
-				if (n) {
-					asm_op2(OP_VBIND, n);
-				} else {
-					asm_op(OP_BIND);
-				}
-			}
-			asm_c(var);
+                        c_vbind(var, n, specials);
 		}
 		c_declare_specials(specials);
 		flags = compile_body(body, flags);
@@ -2520,26 +2526,21 @@ ILLEGAL_LAMBDA:
 	FEprogram_error("LAMBDA: Illegal lambda list ~S.", 1, org_lambda_list);
 }
 
-static cl_object
-c_default(cl_index base_pc, cl_object deflt) {
-	cl_type t = type_of(deflt);
-	if ((t == t_symbol) && (ecl_symbol_type(deflt) & stp_constant)) {
-		cl_object value = ecl_symbol_value(deflt);
-		if (!FIXNUMP(value)) {
-			/* FIXME! Shouldn't this happen only in unsafe mode */
-			return value;
-		}
-	}
-	if (CONSP(deflt) && (CAR(deflt) == @'quote') && !FIXNUMP(CADR(deflt))) {
-		return CADR(deflt);
-	}
-	if ((t == t_symbol) || (t == t_list) || (t == t_fixnum)) {
-		cl_index pc = current_pc()-base_pc;
-		compile_form(deflt, FLAG_VALUES);
-		asm_op(OP_EXIT);
-		return MAKE_FIXNUM(pc);
-	}
-	return deflt;
+static void
+c_default(cl_object var, cl_object stmt, cl_object flag, cl_object specials)
+{
+        /* Flag is in REG0, value, if it exists, in stack */
+        cl_index label;
+        label = asm_jmp(OP_JT);
+        compile_form(stmt, FLAG_PUSH);
+        if (Null(flag)) {
+                asm_complete(OP_JT, label);
+        } else {
+                compile_form(Cnil, FLAG_REG0);
+                asm_complete(OP_JT, label);
+                c_bind(flag, specials);
+        }
+        c_pbind(var, specials);
 }
 
 static void
@@ -2569,7 +2570,6 @@ cl_object
 ecl_make_lambda(cl_object name, cl_object lambda) {
 	cl_object reqs, opts, rest, key, keys, auxs, allow_other_keys;
 	cl_object specials, doc, decl, body, output;
-	cl_index label;
 	int nopts, nkeys;
 	cl_index handle;
 	struct cl_compiler_env *old_c_env, new_c_env;
@@ -2598,9 +2598,6 @@ ecl_make_lambda(cl_object name, cl_object lambda) {
 
 	handle = asm_begin();
 
-	/* Mark that we need to parse arguments */
-	asm_op(OP_ENTRY);
-
 	/* Transform (SETF fname) => fname */
 	if (Null(si_valid_function_name_p(name)))
 		FEprogram_error("LAMBDA: Not a valid function name ~S",1,name);
@@ -2611,55 +2608,51 @@ ecl_make_lambda(cl_object name, cl_object lambda) {
 	c_register_var(cl_make_symbol(make_constant_base_string("FUNCTION")),
 		       TRUE, TRUE);
 
-	ENV->constants = reqs;			/* Required arguments */
-	reqs = CDR(reqs);
+	ENV->constants = Cnil;
+
+	reqs = CDR(reqs);			/* Required arguments */
 	while (!ecl_endp(reqs)) {
-		cl_object v = pop(&reqs);
-		c_register_var2(v, &specials);
+		cl_object var = pop(&reqs);
+                asm_op(OP_POPREQ);
+                c_bind(var, specials);
 	}
+        opts = CDR(opts);
+        while (!ecl_endp(opts)) {		/* Optional arguments */
+                cl_object var = pop(&opts);
+                cl_object stmt = pop(&opts);
+                cl_object flag = pop(&opts);
+                asm_op(OP_POPOPT);
+                c_default(var, stmt, flag, specials);
+        }
+        if (Null(rest) && Null(key)) {		/* Check no excess arguments */
+                asm_op(OP_NOMORE);
+        }
+        if (!Null(rest)) {			/* &rest argument */
+                asm_op(OP_POPREST);
+                c_bind(rest, specials);
+        }
+        if (!Null(key)) {
+                cl_object aux = CONS(allow_other_keys,Cnil);
+                cl_object names = Cnil;
+                asm_op2c(OP_PUSHKEYS, aux);
+                keys = CDR(keys);
+                while (!ecl_endp(keys)) {
+                        cl_object name = pop(&keys);
+                        cl_object var = pop(&keys);
+                        cl_object stmt = pop(&keys);
+                        cl_object flag = pop(&keys);
+                        names = CONS(name, names);
+                        asm_op(OP_POP);
+                        c_default(var, stmt, flag, specials);
+                }
+                ECL_RPLACD(aux, names);
+        }
 
-	nopts = fix(CAR(opts));			/* Optional arguments */
-	ENV->constants = ecl_nconc(ENV->constants, opts);
-
-	asm_constant(rest);			/* Name of &rest argument */
-
-	if (Null(key)) {
-		asm_constant(MAKE_FIXNUM(0));	/* &key was not supplied */
-		nkeys = 0;
-	} else {
-		asm_constant(allow_other_keys);	/* Value of &allow-other-keys */
-		nkeys = fix(CAR(keys));		/* Keyword arguments */
-		ENV->constants = ecl_nconc(ENV->constants, keys);
-	}
 	asm_constant(doc);
 	asm_constant(decl);
 
-	label = asm_jmp(OP_JMP);
-
-	opts = CDR(opts);
-	while (nopts--) {
-		ECL_RPLACA(CDR(opts), c_default(handle, CADR(opts)));
-		c_register_var2(CAR(opts), &specials);
-		c_register_var2(CADDR(opts), &specials);
-		opts = CDDDR(opts);
-	}
-	c_register_var2(rest, &specials);
-	keys = CDR(keys);
-	while (nkeys--) {
-		ECL_RPLACA(CDDR(keys), c_default(handle, CADDR(keys)));
-		c_register_var2(CADR(keys), &specials);
-		c_register_var2(CADDDR(keys), &specials);
-		keys = CDDDDR(keys);
-	}
-
 	ENV->coalesce = TRUE;
 
-	if ((current_pc() - label) == OPARG_SIZE) {
-		set_pc(handle);
-		asm_op(OP_ENTRY);
-	} else {
-		asm_complete(OP_JMP, label);
-	}
 	while (!ecl_endp(auxs)) {		/* Local bindings */
 		cl_object var = pop(&auxs);
 		cl_object value = pop(&auxs);
@@ -2677,7 +2670,6 @@ ecl_make_lambda(cl_object name, cl_object lambda) {
 
 	output = asm_end(handle);
 	output->bytecodes.name = name;
-	output->bytecodes.specials = specials;
 	output->bytecodes.definition = Null(ecl_symbol_value(@'si::*keep-definitions*'))?
 		Cnil : lambda;
 

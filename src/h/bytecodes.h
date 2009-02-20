@@ -34,7 +34,11 @@ enum {
   OP_MCALL,
   OP_POP,
   OP_POP1,
-  OP_ENTRY,
+  OP_POPREQ,
+  OP_POPOPT,
+  OP_NOMORE,
+  OP_POPREST,
+  OP_PUSHKEYS,
   OP_EXIT,
   OP_FLET,
   OP_LABELS,
@@ -187,7 +191,11 @@ typedef int16_t cl_oparg;
   &&LBL_OP_MCALL - &&LBL_OP_NOP,\
   &&LBL_OP_POP - &&LBL_OP_NOP,\
   &&LBL_OP_POP1 - &&LBL_OP_NOP,\
-  &&LBL_OP_ENTRY - &&LBL_OP_NOP,\
+  &&LBL_OP_POPREQ - &&LBL_OP_NOP,\
+  &&LBL_OP_POPOPT - &&LBL_OP_NOP,\
+  &&LBL_OP_NOMORE - &&LBL_OP_NOP,\
+  &&LBL_OP_POPREST - &&LBL_OP_NOP,\
+  &&LBL_OP_PUSHKEYS - &&LBL_OP_NOP,\
   &&LBL_OP_EXIT - &&LBL_OP_NOP,\
   &&LBL_OP_FLET - &&LBL_OP_NOP,\
   &&LBL_OP_LABELS - &&LBL_OP_NOP,\

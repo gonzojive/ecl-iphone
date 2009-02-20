@@ -644,7 +644,6 @@ struct ecl_codeblock {
 struct ecl_bytecodes {
 	HEADER;
 	cl_object name;		/*  function name  */
-	cl_object specials;	/*  list of special variables  */
 	cl_objectfn entry;	/*  entry address  */
 	cl_objectfn_fixed entry_fixed;	/*  entry address  */
 	cl_object definition;	/*  function definition in list form  */
