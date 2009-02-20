@@ -682,61 +682,57 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		Makes a list out of the remaining arguments.
 	*/
         CASE(OP_POPREST); {
-                cl_object l = Cnil;
-                cl_index i;
-                for (i = frame_index; i < frame->frame.size; i++) {
-                        l = CONS(frame->frame.base[i],l);
+                cl_object *first = frame->frame.base + frame_index;
+                cl_object *last = frame->frame.base + frame->frame.size;
+                for (reg0 = Cnil; last > first; ) {
+                        reg0 = CONS(*(--last), reg0);
                 }
-                reg0 = cl_nreconc(l, Cnil);
                 THREAD_NEXT;
         }
 	/* OP_PUSHKEYS {names-list}
 		Checks the stack frame for keyword arguments.
 	*/
 	CASE(OP_PUSHKEYS); {
-                cl_object keys_list, aok;
+                cl_object keys_list, aok, *first, *last;
                 cl_index count;
-                GET_DATA(aok, vector, data);
-                keys_list = aok;
+                GET_DATA(keys_list, vector, data);
+                first = frame->frame.base + frame_index;
                 count = frame->frame.size - frame_index;
+                last = first + count;
                 if (count & 1) {
                         FEprogram_error("Function ~A called with odd number "
                                         "of keyword arguments.",
                                         1, bytecodes);
                 }
+                aok = ECL_CONS_CAR(keys_list);
                 for (; (keys_list = ECL_CONS_CDR(keys_list), !Null(keys_list)); ) {
                         cl_object name = ECL_CONS_CAR(keys_list);
                         cl_object flag = Cnil;
                         cl_object value = Cnil;
-                        cl_index i = frame_index;
-                        for (; i < frame->frame.size; i+=2) {
-                                cl_object v = frame->frame.base[i];
-                                if (frame->frame.base[i] == name) {
+                        cl_object *p = first;
+                        for (; p != last; ++p) {
+                                if (*(p++) == name) {
                                         count -= 2;
-                                        if (flag == Ct) continue;
-                                        flag = Ct;
-                                        value = frame->frame.base[i+1];
+                                        if (flag == Cnil) {
+                                                flag = Ct;
+                                                value = *p;
+                                        }
                                 }
                         }
                         if (flag != Cnil) STACK_PUSH(the_env, value);
                         STACK_PUSH(the_env, flag);
                 }
                 if (count) {
-                        aok = ECL_CONS_CAR(aok);
                         if (Null(aok)) {
-                                cl_index i = frame_index;
-                                int aok_found = 0;
-                                for (; i < frame->frame.size && count; i++) {
-                                        cl_object v = frame->frame.base[i++];
-                                        if (v == @':allow-other-keys') {
-                                                if (!aok_found) {
-                                                        aok = frame->frame.base[i];
-                                                        aok_found = 1;
-                                                }
+                                int aok = 3;
+                                cl_object *p = first;
+                                for (; p != last; ++p) {
+                                        if (*(p++) == @':allow-other-keys') {
                                                 count -= 2;
+                                                aok = (aok >> 1) & Null(*p);
                                         }
                                 }
-                                if (count && Null(aok)) {
+                                if (count && (aok & 1)) {
                                         FEprogram_error("Unknown keyword argument "
                                                         "passed to function ~S.~&"
                                                         "Argument list: ~S",
