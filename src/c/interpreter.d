@@ -112,29 +112,6 @@ ecl_stack_pop_values(cl_env_ptr env, cl_index n) {
 		env->values[--n] = ecl_stack_pop(env);
 }
 
-cl_index
-ecl_stack_push_list(cl_env_ptr env, cl_object list)
-{
-	cl_index n;
-	cl_object fast, slow;
-
-	/* INV: A list's length always fits in a fixnum */
-	fast = slow = list;
-	for (n = 0; CONSP(fast); n++, fast = CDR(fast)) {
-		*env->stack_top = CAR(fast);
-		if (++env->stack_top >= env->stack_limit)
-			ecl_stack_grow(env);
-		if (n & 1) {
-			/* Circular list? */
-			if (slow == fast) break;
-			slow = CDR(slow);
-		}
-	}
-	if (fast != Cnil)
-		FEtype_error_proper_list(list);
-	return n;
-}
-
 cl_object
 ecl_stack_frame_open(cl_env_ptr env, cl_object f, cl_index size)
 {
