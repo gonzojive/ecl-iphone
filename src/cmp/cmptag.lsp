@@ -149,7 +149,7 @@
 	  (setf (var-loc tag-loc) (next-lcl))
 	  (wt-nl "{ cl_object " tag-loc ";")
 	  (setq env-grows t))		; just to ensure closing the block
-	(bind "new_frame_id()" tag-loc)
+	(bind "ECL_NEW_FRAME_ID(cl_env_copy)" tag-loc)
 	(wt-nl "if (ecl_frs_push(cl_env_copy," tag-loc ")) {")
 	;; Allocate labels.
 	(dolist (tag body)

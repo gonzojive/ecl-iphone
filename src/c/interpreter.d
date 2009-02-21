@@ -625,7 +625,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		default:
 			FEinvalid_function(reg0);
 		}
-		the_env->stack_top -= narg;
+		STACK_POP_N(the_env, narg);
 		THREAD_NEXT;
 	}
 
@@ -1073,13 +1073,13 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 
 	CASE(OP_BLOCK); {
 		GET_DATA(reg0, vector, data);
-		reg1 = new_frame_id();
+		reg1 = MAKE_FIXNUM(the_env->frame_id++);
 		lex_env = bind_frame(lex_env, reg1, reg0);
 		THREAD_NEXT;
 	}
 	CASE(OP_DO); {
 		reg0 = Cnil;
-		reg1 = new_frame_id();
+		reg1 = MAKE_FIXNUM(the_env->frame_id++);
 		lex_env = bind_frame(lex_env, reg1, reg0);
 		THREAD_NEXT;
 	}

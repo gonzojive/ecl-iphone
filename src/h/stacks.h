@@ -238,9 +238,11 @@ extern ECL_API ecl_frame_ptr _ecl_frs_push(register cl_env_ptr, register cl_obje
 	ecl_stack_pop_values(__the_env,__nr);	\
 	if (__unwinding) ecl_unwind(__the_env,__next_fr); } while(0)
 
-#define CL_BLOCK_BEGIN(the_env,id) do {   	\
-	const cl_object __id = new_frame_id();	\
-	const cl_env_ptr __the_env = (the_env);	\
+#define ECL_NEW_FRAME_ID(env) MAKE_FIXNUM(env->frame_id++)
+
+#define CL_BLOCK_BEGIN(the_env,id) do {   			\
+	const cl_object __id = ECL_NEW_FRAME_ID(the_env);	\
+	const cl_env_ptr __the_env = (the_env);			\
 	if (ecl_frs_push(__the_env,__id) == 0)
 
 #define CL_BLOCK_END \

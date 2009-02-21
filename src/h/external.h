@@ -13,6 +13,10 @@ struct cl_env_struct {
 	/* Flag for disabling interrupts while we call C library functions. */
 	volatile int disable_interrupts;
 
+	/* Array where values are returned by functions. */
+	cl_index nvalues;
+	cl_object values[ECL_MULTIPLE_VALUES_LIMIT];
+
         /* Environment for calling closures, CLOS generic functions, etc */
         cl_object function;
 
@@ -54,6 +58,7 @@ struct cl_env_struct {
 	struct ecl_frame *frs_top;
 	struct ecl_frame *frs_limit;
 	struct ecl_frame *nlj_fr;
+        cl_index frame_id;
 
 	/*
 	 * The following pointers to the C Stack are used to ensure that a
@@ -65,10 +70,6 @@ struct cl_env_struct {
 	cl_fixnum *cs_limit;
 	cl_fixnum *cs_barrier;
 	cl_index cs_size;
-
-	/* Array where values are returned by functions. */
-	cl_index nvalues;
-	cl_object values[ECL_MULTIPLE_VALUES_LIMIT];
 
 	/* Private variables used by different parts of ECL: */
 	/* ... the reader ... */
@@ -1362,7 +1363,6 @@ extern ECL_API void ecl_bds_unwind(cl_env_ptr env, cl_index new_bds_top_index);
 extern ECL_API void ecl_unwind(cl_env_ptr env, ecl_frame_ptr fr) /*__attribute__((noreturn))*/;
 extern ECL_API ecl_frame_ptr frs_sch(cl_object frame_id);
 extern ECL_API ecl_frame_ptr frs_sch_catch(cl_object frame_id);
-extern ECL_API cl_object new_frame_id(void);
 
 /* string.c */
 

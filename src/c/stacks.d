@@ -339,14 +339,6 @@ si_ihs_env(cl_object arg)
 
 /********************** FRAME STACK *************************/
 
-static int frame_id = 0;
-
-cl_object
-new_frame_id(void)
-{
-	return MAKE_FIXNUM(frame_id++);
-}
-
 static void
 frs_set_size(cl_env_ptr env, cl_index size)
 {
