@@ -536,13 +536,14 @@ static cl_object
 c_tag_ref(cl_object the_tag, cl_object the_type)
 {
 	cl_fixnum n = 0;
-	cl_object l, record, type, name;
-	for (l = ENV->variables; CONSP(l); l = CDR(l)) {
-		record = CAR(l);
+	cl_object l, type, name;
+	for (l = ENV->variables; CONSP(l); l = ECL_CONS_CDR(l)) {
+		cl_object type, name, record = ECL_CONS_CAR(l);
 		if (ATOM(record))
 			continue;
-		type = CAR(record);
-		name = CADR(record);
+		type = ECL_CONS_CAR(record);
+                record = ECL_CONS_CDR(record);
+		name = ECL_CONS_CAR(record);
 		if (type == @':tag') {
 			if (type == the_type) {
 				cl_object label = ecl_assql(the_tag, name);
@@ -555,7 +556,8 @@ c_tag_ref(cl_object the_tag, cl_object the_type)
 			/* We compare with EQUAL, because of (SETF fname) */
 			if (type == the_type && ecl_equal(name, the_tag)) {
 				/* Mark as used */
-				ECL_RPLACA(CDDR(record), Ct);
+                                record = ECL_CONS_CDR(record);
+				ECL_RPLACA(record, Ct);
 				return MAKE_FIXNUM(n);
 			}
 			n++;
@@ -574,12 +576,13 @@ c_var_ref(cl_object var, int allow_symbol_macro, bool ensure_defined)
 {
 	cl_fixnum n = 0;
 	cl_object l, record, special, name;
-	for (l = ENV->variables; CONSP(l); l = CDR(l)) {
-		record = CAR(l);
+	for (l = ENV->variables; CONSP(l); l = ECL_CONS_CDR(l)) {
+		record = ECL_CONS_CAR(l);
 		if (ATOM(record))
 			continue;
-		name = CAR(record);
-		special = CADR(record);
+		name = ECL_CONS_CAR(record);
+                record = ECL_CONS_CDR(record);
+		special = ECL_CONS_CAR(record);
 		if (name == @':block' || name == @':tag' || name == @':function') {
 			n++;
 		} else if (name == @':declare') {
@@ -893,13 +896,14 @@ c_funcall(cl_object args, int flags) {
 
 	name = pop(&args);
 	if (CONSP(name)) {
-		if (CAR(name) == @'function') {
+                cl_object kind = ECL_CONS_CAR(name);
+		if (kind == @'function') {
 			if (cl_list_length(name) != MAKE_FIXNUM(2))
 				FEprogram_error("FUNCALL: Invalid function name ~S",
 						1, name);
 			return c_call(CONS(CADR(name), args), flags);
 		}
-		if (CAR(name) == @'quote') {
+		if (kind == @'quote') {
 			if (cl_list_length(name) != MAKE_FIXNUM(2))
 				FEprogram_error("FUNCALL: Invalid function name ~S",
 						1, name);
@@ -945,7 +949,7 @@ perform_c_case(cl_object args, int flags) {
 				asm_arg(n * (OPCODE_SIZE + OPARG_SIZE * 2)
 					+ OPARG_SIZE);
 			}
-			test = CAR(test);
+			test = ECL_CONS_CAR(test);
 		}
 		asm_op(OP_JNEQL);
 		asm_c(test);
@@ -1262,19 +1266,27 @@ asm_function(cl_object function, int flags) {
 		if (Null(ndx)) {
 			/* Globally defined function */
 			asm_op2c(OP_FUNCTION, function);
+                        return FLAG_REG0;
 		} else {
 			/* Function from a FLET/LABELS form */
 			asm_op2(OP_LFUNCTION, fix(ndx));
+                        return FLAG_REG0;
 		}
-	} else if (CONSP(function) && CAR(function) == @'lambda') {
-		asm_op2c(OP_CLOSE, ecl_make_lambda(Cnil, CDR(function)));
-	} else if (CONSP(function) && CAR(function) == @'ext::lambda-block') {
-		cl_object name = CADR(function);
-		cl_object body = CDDR(function);
-		asm_op2c(OP_CLOSE, ecl_make_lambda(name, body));
-	} else {
-		FEprogram_error("FUNCTION: Not a valid argument ~S.", 1, function);
 	}
+        if (CONSP(function)) {
+                cl_object kind = ECL_CONS_CAR(function);
+                cl_object form = ECL_CONS_CDR(function);
+                if (kind == @'lambda') {
+                        asm_op2c(OP_CLOSE, ecl_make_lambda(Cnil, form));
+                        return FLAG_REG0;
+                } else if (kind == @'ext::lambda-block') {
+                        cl_object name = ECL_CONS_CAR(form);
+                        cl_object body = ECL_CONS_CDR(form);
+                        asm_op2c(OP_CLOSE, ecl_make_lambda(name, body));
+                        return FLAG_REG0;
+                }
+        }
+        FEprogram_error("FUNCTION: Not a valid argument ~S.", 1, function);
 	return FLAG_REG0;
 }
 
@@ -2599,7 +2611,7 @@ ecl_make_lambda(cl_object name, cl_object lambda) {
 	handle = asm_begin();
 
 	/* Transform (SETF fname) => fname */
-	if (Null(si_valid_function_name_p(name)))
+	if (!Null(name) && Null(si_valid_function_name_p(name)))
 		FEprogram_error("LAMBDA: Not a valid function name ~S",1,name);
 
 	/* We register as special variable a symbol which is not
@@ -2609,14 +2621,17 @@ ecl_make_lambda(cl_object name, cl_object lambda) {
 		       TRUE, TRUE);
 
 	ENV->constants = Cnil;
+        ENV->coalesce = TRUE;
+	asm_constant(doc);
+	asm_constant(decl);
 
-	reqs = CDR(reqs);			/* Required arguments */
+	reqs = ECL_CONS_CDR(reqs);		/* Required arguments */
 	while (!ecl_endp(reqs)) {
 		cl_object var = pop(&reqs);
                 asm_op(OP_POPREQ);
                 c_bind(var, specials);
 	}
-        opts = CDR(opts);
+        opts = ECL_CONS_CDR(opts);
         while (!ecl_endp(opts)) {		/* Optional arguments */
                 cl_object var = pop(&opts);
                 cl_object stmt = pop(&opts);
@@ -2635,7 +2650,7 @@ ecl_make_lambda(cl_object name, cl_object lambda) {
                 cl_object aux = CONS(allow_other_keys,Cnil);
                 cl_object names = Cnil;
                 asm_op2c(OP_PUSHKEYS, aux);
-                keys = CDR(keys);
+                keys = ECL_CONS_CDR(keys);
                 while (!ecl_endp(keys)) {
                         cl_object name = pop(&keys);
                         cl_object var = pop(&keys);
@@ -2647,11 +2662,6 @@ ecl_make_lambda(cl_object name, cl_object lambda) {
                 }
                 ECL_RPLACD(aux, names);
         }
-
-	asm_constant(doc);
-	asm_constant(decl);
-
-	ENV->coalesce = TRUE;
 
 	while (!ecl_endp(auxs)) {		/* Local bindings */
 		cl_object var = pop(&auxs);
@@ -2680,29 +2690,36 @@ ecl_make_lambda(cl_object name, cl_object lambda) {
 	return output;
 }
 
+static cl_object
+ecl_function_block_name(cl_object name)
+{
+	if (SYMBOLP(name)) {
+		return name;
+	} else if (CONSP(name) && ECL_CONS_CAR(name) == @'setf') {
+		name = ECL_CONS_CDR(name);
+		if (CONSP(name)) {
+                        cl_object output = ECL_CONS_CAR(name);
+                        if (SYMBOLP(output) && Null(ECL_CONS_CDR(name)))
+                                return output;
+                }
+        }
+        return NULL;
+}
+
 cl_object
 si_function_block_name(cl_object name)
 {
-	if (SYMBOLP(name))
-		@(return name)
-	if (CONSP(name) && CAR(name) == @'setf' && CONSP(CDR(name)) &&
-	    SYMBOLP(CADR(name)) && Null(CDDR(name)))
-		@(return CADR(name))
-	FEinvalid_function_name(name);
+        cl_object output = ecl_function_block_name(name);
+        if (!output)
+                FEinvalid_function_name(name);
+        @(return output)
 }
 
 cl_object
 si_valid_function_name_p(cl_object name)
 {
-	cl_object output = Cnil;
-	if (SYMBOLP(name))
-		output = Ct;
-	else if (CONSP(name) && CAR(name) == @'setf') {
-		name = CDR(name);
-		if (CONSP(name) && SYMBOLP(CAR(name)) && CDR(name) == Cnil)
-			output = Ct;
-	}
-	@(return output);
+        name = ecl_function_block_name(name);
+        @(return (name? Ct : Cnil))
 }
 
 cl_object
