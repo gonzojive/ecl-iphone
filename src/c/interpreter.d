@@ -310,7 +310,6 @@ close_around(cl_object fun, cl_object lex) {
 	v->bclosure.code = fun;
 	v->bclosure.lex = lex;
         v->bclosure.entry = _ecl_bclosure_dispatch_vararg;
-        v->bclosure.entry_fixed = FEnot_a_fixed_no_arguments;
 	return v;
 }
 

@@ -355,7 +355,6 @@ extern ECL_API cl_object si_compiled_function_name(cl_object fun);
 extern ECL_API cl_object si_compiled_function_block(cl_object fun);
 extern ECL_API cl_object cl_function_lambda_expression(cl_object fun);
 
-extern ECL_API cl_object FEnot_a_fixed_no_arguments();
 extern ECL_API cl_object cl_make_cfun(void *c_function, cl_object name, cl_object block, int narg);
 extern ECL_API cl_object cl_make_cfun_va(void *c_function, cl_object name, cl_object block);
 extern ECL_API cl_object cl_make_cclosure_va(void *c_function, cl_object env, cl_object block);

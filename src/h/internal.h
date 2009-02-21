@@ -223,7 +223,6 @@ extern void ecl_extend_hashtable(cl_object hashtable);
 #define GFUN_SPEC(x) ((x)->instance.slots[1])
 #define GFUN_COMB(x) ((x)->instance.slots[2])
 
-extern cl_object FEnot_funcallable_fixed();
 extern cl_object FEnot_funcallable_vararg(cl_narg narg, ...);
 
 /* package.d */

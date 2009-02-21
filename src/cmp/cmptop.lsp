@@ -202,7 +202,7 @@
     (wt-nl-h "#define compiler_cfuns_size " n-cfuns)
     (if (zerop n-cfuns)
 	(wt-nl-h "#define compiler_cfuns NULL")
-	(wt-nl-h "static const struct ecl_cfun compiler_cfuns[" n-cfuns "];")))
+	(wt-nl-h "static const struct ecl_cfun compiler_cfuns[];")))
 
   (dolist (l *linking-calls*)
     (let* ((c-name (fourth l))
@@ -700,15 +700,15 @@
 (defun output-cfuns (stream)
   (format stream "~%#ifndef compiler_cfuns~
 ~%static const struct ecl_cfun compiler_cfuns[] = {~
-~%~t/*t,m,narg,padding,name,block,entry,entry_fixed*/");
+~%~t/*t,m,narg,padding,name,block,entry*/");
   (loop for (loc fname-loc fun) in (nreverse *global-cfuns-array*)
      do (let* ((cfun (fun-cfun fun))
 	       (minarg (fun-minarg fun))
 	       (maxarg (fun-maxarg fun))
 	       (narg (if (= minarg maxarg) maxarg nil)))
-	  (format stream "~%{0,0,~D,0,MAKE_FIXNUM(~D),MAKE_FIXNUM(~D),(cl_objectfn)~A,(cl_objectfn_fixed)~A},"
+	  (format stream "~%{0,0,~D,0,MAKE_FIXNUM(~D),MAKE_FIXNUM(~D),(cl_objectfn)~A},"
 		  (or narg -1) (second loc) (second fname-loc)
-                  cfun cfun)))
+                  cfun)))
   (format stream "~%};~%#endif"))
 
 ;;; ----------------------------------------------------------------------

@@ -84,7 +84,6 @@ si_set_raw_funcallable(cl_object instance, cl_object function)
 			instance->instance.length  = length;
 		        instance->instance.isgf = 0;
                         instance->instance.entry = FEnot_funcallable_vararg;
-                        instance->instance.entry_fixed = FEnot_funcallable_fixed;
 		}
 	} else {
 		if (instance->instance.isgf == 0) {
@@ -95,7 +94,6 @@ si_set_raw_funcallable(cl_object instance, cl_object function)
 			instance->instance.length  = length;
 			instance->instance.isgf    = 2;
                         instance->instance.entry = user_function_dispatch;
-                        instance->instance.entry_fixed = FEnot_a_fixed_no_arguments;
 		}
 		instance->instance.slots[instance->instance.length-1] = function;
 	}
@@ -114,11 +112,9 @@ clos_set_funcallable_instance_function(cl_object x, cl_object function_or_t)
 	if (function_or_t == Ct) {
 		x->instance.isgf = ECL_STANDARD_DISPATCH;
                 x->instance.entry = generic_function_dispatch_vararg;
-                x->instance.entry_fixed = FEnot_a_fixed_no_arguments;
 	} else if (function_or_t == Cnil) {
 		x->instance.isgf = ECL_NOT_FUNCALLABLE;
                 x->instance.entry = FEnot_funcallable_vararg;
-                x->instance.entry_fixed = FEnot_funcallable_fixed;
 	} else if (Null(cl_functionp(function_or_t))) {
 		FEwrong_type_argument(@'function', function_or_t);
 	} else {
@@ -126,7 +122,6 @@ clos_set_funcallable_instance_function(cl_object x, cl_object function_or_t)
 		x->instance.slots[x->instance.length - 1] = function_or_t;
 		x->instance.isgf = ECL_USER_DISPATCH;
                 x->instance.entry = user_function_dispatch;
-                x->instance.entry_fixed = FEnot_a_fixed_no_arguments;
 	}
 	@(return x)
 }

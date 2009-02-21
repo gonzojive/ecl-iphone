@@ -21,16 +21,6 @@
 #include "cfun_dispatch.d"
 
 cl_object
-FEnot_a_fixed_no_arguments()
-{
-        cl_env_ptr env = ecl_process_env();
-        cl_object fun = env->function;
-        FEerror("Internal error. Function ~S invoked as if it had a fixed number\n"
-                "of arguments.", 0, fun);
-        @(return)
-}
-
-cl_object
 cl_make_cfun(void *c_function, cl_object name, cl_object cblock, int narg)
 {
 	cl_object cf;
@@ -53,7 +43,6 @@ cl_make_cfun_va(void *c_function, cl_object name, cl_object cblock)
 
 	cf = ecl_alloc_object(t_cfun);
 	cf->cfun.entry = c_function;
-        cf->cfun.entry_fixed = FEnot_a_fixed_no_arguments;
 	cf->cfun.name = name;
 	cf->cfun.block = cblock;
 	cf->cfun.narg = -1;
@@ -67,7 +56,6 @@ cl_make_cclosure_va(void *c_function, cl_object env, cl_object block)
 
 	cc = ecl_alloc_object(t_cclosure);
 	cc->cclosure.entry = c_function;
-        cc->cclosure.entry_fixed = FEnot_a_fixed_no_arguments;
 	cc->cclosure.env = env;
 	cc->cclosure.block = block;
 	return(cc);

@@ -645,7 +645,6 @@ struct ecl_bytecodes {
 	HEADER;
 	cl_object name;		/*  function name  */
 	cl_objectfn entry;	/*  entry address  */
-	cl_objectfn_fixed entry_fixed;	/*  entry address  */
 	cl_object definition;	/*  function definition in list form  */
 	cl_index code_size;	/*  number of bytecodes  */
 	cl_index data_size;	/*  number of constants  */
@@ -660,7 +659,6 @@ struct ecl_bclosure {
 	cl_object code;
 	cl_object lex;
 	cl_objectfn entry;	/*  entry address  */
-	cl_objectfn_fixed entry_fixed;	/*  entry address  */
 };
 
 struct ecl_cfun {		/*  compiled function header  */
@@ -668,7 +666,6 @@ struct ecl_cfun {		/*  compiled function header  */
 	cl_object name;		/*  compiled function name  */
 	cl_object block;	/*  descriptor of C code block for GC  */
 	cl_objectfn entry;	/*  entry address  */
-	cl_objectfn_fixed entry_fixed;	/*  entry address  */
 };
 
 struct ecl_cfunfixed {		/*  compiled function header  */
@@ -684,7 +681,6 @@ struct ecl_cclosure {		/*  compiled closure header  */
 	cl_object env;		/*  environment  */
 	cl_object block;	/*  descriptor of C code block for GC  */
 	cl_objectfn entry;	/*  entry address  */
-	cl_objectfn_fixed entry_fixed;	/*  entry address  */
 };
 
 #define ECL_FFICALL_LIMIT 256
@@ -800,7 +796,6 @@ struct ecl_instance {		/*  instance header  */
 	cl_index length;	/*  instance length  */
 	cl_object clas;		/*  instance class  */
 	cl_objectfn entry;	/*  entry address  */
-	cl_objectfn_fixed entry_fixed;	/*  entry address  */
 	cl_object sig;		/*  generation signature  */
 	cl_object *slots;	/*  instance slots  */
 };

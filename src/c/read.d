@@ -889,14 +889,12 @@ sharp_Y_reader(cl_object in, cl_object c, cl_object d)
              ((cl_object*)(rv->bytecodes.data))[i] = CAR(nth);
 
         rv->bytecodes.entry = _ecl_bytecodes_dispatch_vararg;
-        rv->bytecodes.entry_fixed = FEnot_a_fixed_no_arguments;
 
 	if (lex != Cnil) {
 		cl_object x = ecl_alloc_object(t_bclosure);
 		x->bclosure.code = rv;
 		x->bclosure.lex = lex;
                 x->bclosure.entry = _ecl_bclosure_dispatch_vararg;
-                x->bclosure.entry_fixed = FEnot_a_fixed_no_arguments;
 		rv = x;
 	}
         @(return rv);
@@ -2267,7 +2265,7 @@ read_VV(cl_object block, void (*entry_point)(cl_object))
 			int narg = prototype->narg;
 			VV[location] = narg<0?
 				cl_make_cfun_va(prototype->entry, fname, block) :
-				cl_make_cfun(prototype->entry_fixed, fname, block, narg);
+				cl_make_cfun(prototype->entry, fname, block, narg);
 		}
 		/* Execute top-level code */
 		(*entry_point)(MAKE_FIXNUM(0));
