@@ -55,6 +55,12 @@ ecl_stack_set_size(cl_env_ptr env, cl_index tentative_new_size)
 }
 
 static void
+FEstack_underflow(void)
+{
+        FEerror("Internal error: stack underflow.",0);
+}
+
+static void
 ecl_stack_grow(cl_env_ptr env)
 {
 	ecl_stack_set_size(env, env->stack_size + env->stack_size / 2);
@@ -70,7 +76,7 @@ ecl_stack_push(cl_env_ptr env, cl_object x) {
 cl_object
 ecl_stack_pop(cl_env_ptr env) {
 	if (env->stack_top == env->stack)
-		FEerror("Internal error: stack underflow.",0);
+		FEstack_underflow();
 	return *(--env->stack_top);
 }
 
@@ -93,23 +99,33 @@ void
 ecl_stack_pop_n(cl_env_ptr env, cl_index index) {
 	cl_object *new_top = env->stack_top - index;
 	if (new_top < env->stack)
-		FEerror("Internal error: stack underflow.",0);
+		FEstack_underflow();
 	env->stack_top = new_top;
 }
 
 cl_index
 ecl_stack_push_values(cl_env_ptr env) {
-	cl_index i;
-	for (i=0; i < env->nvalues; i++)
-		ecl_stack_push(env, env->values[i]);
+        cl_index i = env->nvalues;
+        cl_object *b = env->stack_top;
+        cl_object *p = b + i;
+        if (p >= env->stack_limit) {
+                ecl_stack_grow(env);
+                b = env->stack_top;
+                p = b + i;
+        }
+        env->stack_top = p;
+        memcpy(b, env->values, i * sizeof(cl_object));
 	return i;
 }
 
 void
 ecl_stack_pop_values(cl_env_ptr env, cl_index n) {
-	env->nvalues = n;
-	while (n > 0)
-		env->values[--n] = ecl_stack_pop(env);
+        cl_object *p = env->stack_top - n;
+        if (p < env->stack)
+                FEstack_underflow();
+        env->nvalues = n;
+        env->stack_top = p;
+        memcpy(env->values, p, n * sizeof(cl_object));
 }
 
 cl_object
