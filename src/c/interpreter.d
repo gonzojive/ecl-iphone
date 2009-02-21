@@ -724,15 +724,16 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
                 }
                 if (count) {
                         if (Null(aok)) {
-                                int aok = 3;
+                                int aok = 0, mask = 1;
                                 cl_object *p = first;
                                 for (; p != last; ++p) {
                                         if (*(p++) == @':allow-other-keys') {
+                                                if (!Null(*p)) aok |= mask;
+                                                mask <<= 1;
                                                 count -= 2;
-                                                aok = (aok >> 1) & Null(*p);
                                         }
                                 }
-                                if (count && (aok & 1)) {
+                                if (count && (aok & 1) == 0) {
                                         FEprogram_error("Unknown keyword argument "
                                                         "passed to function ~S.~&"
                                                         "Argument list: ~S",
