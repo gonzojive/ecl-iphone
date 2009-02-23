@@ -219,7 +219,15 @@ _ecl_alloc_env()
 	if (output == MAP_FAILED)
 		ecl_internal_error("Unable to allocate environment structure.");
 #else
-	output = ecl_alloc(sizeof(*output));
+	static struct cl_env_struct first_env;
+	if (!ecl_get_option(ECL_OPT_BOOTED)) {
+		/* We have not set up any environment. Hence, we cannot call ecl_alloc()
+		 * because it will need to stop interrupts and currently we rely on
+		 * the environment for that */
+		output = &first_env;
+	} else {
+		output = ecl_alloc(sizeof(*output));
+	}
 #endif
 	/*
 	 * An uninitialized environment _always_ disables interrupts. They
