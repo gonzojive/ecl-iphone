@@ -58,6 +58,9 @@ ECL 9.1.0:
 
  - READ-DELIMITED-LIST interpreted the value of :RECURSIVEP the wrong way.
 
+ - Fixed problems with C/C++ forward declarations of static arrays in compiled
+   code that prevented ECL from building with a C++ compiler.
+
 * AMOP:
 
  - In DEFCLASS, the :TYPE of slots was ignored.

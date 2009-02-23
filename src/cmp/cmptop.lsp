@@ -198,12 +198,6 @@
 	  (wt-nl-h "static cl_object VV[VM];")
 	  (wt-nl-h "#endif"))))
 
-  (let ((n-cfuns (length *global-cfuns-array*)))
-    (wt-nl-h "#define compiler_cfuns_size " n-cfuns)
-    (if (zerop n-cfuns)
-	(wt-nl-h "#define compiler_cfuns NULL")
-	(wt-nl-h "static const struct ecl_cfun compiler_cfuns[" n-cfuns "];")))
-
   (dolist (l *linking-calls*)
     (let* ((c-name (fourth l))
 	   (var-name (fifth l)))
@@ -222,7 +216,11 @@
       (wt-nl1 "static cl_object " c-name "(cl_narg narg, ...)"
 	      "{TRAMPOLINK(narg," lisp-name ",&" var-name ",Cblock);}")))
 
-  (output-cfuns *compiler-output1*)
+  (wt-nl-h "#ifdef __cplusplus")
+  (wt-nl-h "}")
+  (wt-nl-h "#endif")
+
+  (output-cfuns *compiler-output2*)
 
   (setq *compiler-phase* 't3)
 
@@ -231,10 +229,6 @@
     (wt-nl-h "#include <ecl/internal.h>")
     (dolist (x *callbacks*)
       (apply #'t3-defcallback x)))
-
-  (wt-nl-h "#ifdef __cplusplus")
-  (wt-nl-h "}")
-  (wt-nl-h "#endif")
 
   (wt-nl top-output-string))
 
@@ -702,17 +696,22 @@
     (close-inline-blocks)))
 
 (defun output-cfuns (stream)
-  (format stream "~%#ifndef compiler_cfuns~
-~%static const struct ecl_cfun compiler_cfuns[] = {~
-~%~t/*t,m,narg,padding,name,entry,block*/");
-  (loop for (loc fname-loc fun) in (nreverse *global-cfuns-array*)
-     do (let* ((cfun (fun-cfun fun))
-	       (minarg (fun-minarg fun))
-	       (maxarg (fun-maxarg fun))
-	       (narg (if (= minarg maxarg) maxarg nil)))
-	  (format stream "~%{0,0,~D,0,MAKE_FIXNUM(~D),(cl_objectfn)~A,MAKE_FIXNUM(~D)},"
-		  (or narg -1) (second loc) cfun (second fname-loc))))
-  (format stream "~%};~%#endif"))
+  (let ((n-cfuns (length *global-cfuns-array*)))
+    (wt-nl-h "#define compiler_cfuns_size " n-cfuns)
+    (if (zerop n-cfuns)
+	(wt-nl-h "#define compiler_cfuns NULL")
+	(progn
+	  (format stream "~%static const struct ecl_cfun compiler_cfuns[~D] = {~
+~%~t/*t,m,narg,padding,name,entry,block*/"
+		  (length *global-cfuns-array*))
+	  (loop for (loc fname-loc fun) in (nreverse *global-cfuns-array*)
+	     do (let* ((cfun (fun-cfun fun))
+		       (minarg (fun-minarg fun))
+		       (maxarg (fun-maxarg fun))
+		       (narg (if (= minarg maxarg) maxarg nil)))
+		  (format stream "~%{0,0,~D,0,MAKE_FIXNUM(~D),(cl_objectfn)~A,MAKE_FIXNUM(~D)},"
+			  (or narg -1) (second loc) cfun (second fname-loc))))
+	  (format stream "~%};")))))
 
 ;;; ----------------------------------------------------------------------
 
