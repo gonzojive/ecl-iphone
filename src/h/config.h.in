@@ -39,6 +39,9 @@
 # define ECL_API
 #endif
 
+/* Decimal number made with the formula yymmvv */
+#define ECL_VERSION_NUMBER @ECL_VERSION_NUMBER@
+
 /*
  * FEATURES LINKED IN
  */

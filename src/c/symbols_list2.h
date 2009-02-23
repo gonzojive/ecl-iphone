@@ -1749,5 +1749,7 @@ cl_symbols[] = {
 {EXT_ "HEAP-SIZE","si_heap_size"},
 #endif
 
+{EXT_ "+ECL-VERSION-NUMBER+",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};

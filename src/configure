@@ -654,6 +654,7 @@ CL_FIXNUM_TYPE
 EGREP
 GREP
 XMKMF
+ECL_VERSION_NUMBER
 SONAME_LDFLAGS
 SONAME
 SONAME1
@@ -5162,6 +5163,9 @@ fi
 
 { $as_echo "$as_me:$LINENO: checking for soname flags" >&5
 $as_echo_n "checking for soname flags... " >&6; }
+PACKAGE_MAJOR=`echo ${PACKAGE_VERSION} | sed -e 's,\(.*\)\..*\..*,\1,g'`
+PACKAGE_MINOR=`echo ${PACKAGE_VERSION} | sed -e 's,.*\.\(.*\)\..*,\1,g'`
+PACKAGE_LEAST=`echo ${PACKAGE_VERSION} | sed -e 's,.*\..*\.\(.*\),\1,g'`
 if test "${enable_soname}" != yes; then
    SONAME=''
    SONAME1=''
@@ -5172,9 +5176,6 @@ if test "${enable_soname}" != yes; then
    { $as_echo "$as_me:$LINENO: result: none" >&5
 $as_echo "none" >&6; }
 else
-   PACKAGE_MAJOR=`echo ${PACKAGE_VERSION} | sed -e 's,\(.*\)\..*\..*,\1,g'`
-   PACKAGE_MINOR=`echo ${PACKAGE_VERSION} | sed -e 's,.*\.\(.*\)\..*,\1,g'`
-   PACKAGE_LEAST=`echo ${PACKAGE_VERSION} | sed -e 's,.*\..*\.\(.*\),\1,g'`
    i="${PACKAGE_MAJOR}.${PACKAGE_MINOR}.${PACKAGE_LEAST}"
    SONAME3=`echo $SONAME | sed "s,.SOVERSION,.$i,g"`
    i="${PACKAGE_MAJOR}.${PACKAGE_MINOR}"
@@ -5190,6 +5191,9 @@ fi
 
 
 
+
+
+ECL_VERSION_NUMBER=$(($PACKAGE_MAJOR * 10000 + $PACKAGE_MINOR * 100 + $PACKAGE_LEAST))
 
 
 if test "${with_fpe}" != yes; then

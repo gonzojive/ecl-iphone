@@ -1749,5 +1749,7 @@ cl_symbols[] = {
 {EXT_ "HEAP-SIZE", EXT_ORDINARY, si_heap_size, -1, OBJNULL},
 #endif
 
+{EXT_ "+ECL-VERSION-NUMBER+", EXT_CONSTANT, NULL, -1, MAKE_FIXNUM(ECL_VERSION_NUMBER)},
+
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};

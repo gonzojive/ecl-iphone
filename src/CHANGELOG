@@ -87,6 +87,11 @@ ECL 9.1.0:
    now stored using an (ARRAY (SIGNED-BYTE 32)). This saves memory on
    systems with 64-bit pointers.
 
+ - Two new constants, a C macro ECL_VERSION_NUMBER, and Lisp constant
+   EXT:+ECL-VERSION-NUMBER+, allow determining the version of ECL with
+   a greater granurality. The constant is a decimal number, yymmaa,
+   matching the ECL versioning scheme.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***
