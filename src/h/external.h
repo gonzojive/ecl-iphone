@@ -473,6 +473,8 @@ extern ECL_API cl_object ecl_stack_frame_copy(cl_object f, cl_object size);
 extern ECL_API void ecl_stack_frame_close(cl_object f);
 #define si_apply_from_stack_frame ecl_apply_from_stack_frame
 
+extern ECL_API void FEstack_underflow(void);
+extern ECL_API void FEstack_advance(void);
 extern ECL_API void ecl_stack_push(cl_env_ptr env, cl_object o);
 extern ECL_API cl_object ecl_stack_pop(cl_env_ptr env);
 extern ECL_API cl_index ecl_stack_index(cl_env_ptr env);
@@ -498,7 +500,7 @@ extern ECL_API cl_object si_bc_file(cl_object v);
 extern ECL_API cl_object cl_error _ARGS((cl_narg narg, cl_object eformat, ...)) /*__attribute__((noreturn))*/;
 extern ECL_API cl_object cl_cerror _ARGS((cl_narg narg, cl_object cformat, cl_object eformat, ...));
 
-extern ECL_API void ecl_internal_error(const char *s) /*__attribute__((noreturn))*/;
+        extern ECL_API void ecl_inter,nal_error(const char *s) /*__attribute__((noreturn))*/;
 extern ECL_API void ecl_cs_overflow(void) /*__attribute__((noreturn))*/;
 extern ECL_API void FEprogram_error(const char *s, int narg, ...) /*__attribute__((noreturn))*/;
 extern ECL_API void FEcontrol_error(const char *s, int narg, ...) /*__attribute__((noreturn))*/;

@@ -210,6 +210,48 @@ extern ECL_API ecl_frame_ptr _ecl_frs_push(register cl_env_ptr, register cl_obje
  *	tagbody_tag = ( tag[fixnum] . 0 )
  */
 
+/*************
+ * LISP STACK
+ *************/
+
+#define ECL_STACK_INDEX(env) ((env)->stack_top - (env)->stack)
+
+#define ECL_STACK_PUSH(the_env,o) do {                  \
+                const cl_env_ptr env = (the_env);       \
+                cl_object *new_top = env->stack_top;    \
+                if (new_top >= env->stack_limit) {      \
+                        ecl_stack_grow(env);            \
+                }                                       \
+                *new_top = (o);                         \
+                env->stack_top = new_top+1; } while (0)
+
+#define ECL_STACK_POP_UNSAFE(env) *(--((env)->stack_top))
+
+#define ECL_STACK_REF(env,n) ((env)->stack_top[n])
+
+#define ECL_STACK_SET_INDEX(the_env,ndx) do {                   \
+                const cl_env_ptr env = the_env;                 \
+                cl_object *new_top = env->stack + (ndx);        \
+                if (new_top >= env->stack_top)                  \
+                        FEstack_advance();                      \
+                env->stack_top = new_top; } while (0)
+
+#define ECL_STACK_POP_N(the_env,n) do {                         \
+                const cl_env_ptr env = (the_env);               \
+                cl_object *new_top = env->stack_top - (n);      \
+                if (new_top < env->stack) FEstack_underflow();  \
+                env->stack_top = new_top; } while (0)
+
+#define ECL_STACK_POP_N_UNSAFE(the_env,n) ((the_env)->stack_top -= (n))
+
+#define ECL_STACK_PUSH_N(the_env,n) do {                                \
+                const cl_env_ptr env = (the_env) ;                      \
+                cl_index aux = (n);                                     \
+                while ((env->stack_limit - env->stack_top) <= aux) {    \
+                        ecl_stack_grow(env);                            \
+                }                                                       \
+                env->stack_top += aux; } while (0)
+
 /*********************************
  * HIGH LEVEL CONTROL STRUCTURES *
  *********************************/
