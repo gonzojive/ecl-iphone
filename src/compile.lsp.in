@@ -175,7 +175,8 @@
 
 #+WANTS-SOCKETS
 (build-module "sockets"
-	      '("ext:sockets;sockets.lisp")
+	      '("ext:sockets;package.lisp"
+		"ext:sockets;sockets.lisp")
 	      :dir "build:ext;"
 	      :prefix "EXT")
 
@@ -205,29 +206,35 @@
 ;;;
 
 #+WANTS-CLX
-(let ((+clx-src-files+ '("src:clx;package.lisp"
-			 "src:clx;depdefs.lisp"
-			 "src:clx;clx.lisp"
-			 "src:clx;dependent.lisp"
-			 "src:clx;macros.lisp"
-			 "src:clx;bufmac.lisp"
-			 "src:clx;buffer.lisp"
-			 "src:clx;display.lisp"
-			 "src:clx;gcontext.lisp"
-			 "src:clx;input.lisp"
-			 "src:clx;requests.lisp"
-			 "src:clx;fonts.lisp"
-			 "src:clx;graphics.lisp"
-			 "src:clx;text.lisp"
-			 "src:clx;attributes.lisp"
-			 "src:clx;translate.lisp"
-			 "src:clx;keysyms.lisp"
-			 "src:clx;manager.lisp"
-			 "src:clx;image.lisp"
-			 "src:clx;resource.lisp"))
-      #+:msvc
-      (c::*cc-flags* (concatenate 'string c::*cc-flags* " -Zm150")))
-  (pushnew :clx-ansi-common-lisp *features*)
+(let* ((*features* (cons :clx-ansi-common-lisp *features*))
+       (+clx-src-files+ '("src:clx;package.lisp"
+                          "src:clx;depdefs.lisp"
+                          "src:clx;clx.lisp"
+                          "src:clx;dependent.lisp"
+                          "src:clx;macros.lisp"
+                          "src:clx;bufmac.lisp"
+                          "src:clx;buffer.lisp"
+                          "src:clx;display.lisp"
+                          "src:clx;gcontext.lisp"
+                          "src:clx;input.lisp"
+                          "src:clx;requests.lisp"
+                          "src:clx;fonts.lisp"
+                          "src:clx;graphics.lisp"
+                          "src:clx;text.lisp"
+                          "src:clx;attributes.lisp"
+                          "src:clx;translate.lisp"
+                          "src:clx;keysyms.lisp"
+                          "src:clx;manager.lisp"
+                          "src:clx;image.lisp"
+                          "src:clx;resource.lisp"
+			  "build:clx;module.lisp"))
+       #+:msvc
+       (c::*cc-flags* (concatenate 'string c::*cc-flags* " -Zm150")))
+  (with-open-file (s "build:clx;module.lisp" :direction :output :if-exists :overwrite
+		     :if-does-not-exist :create)
+    (print '(provide :clx) s))
+  (unless (find-package "SB-BSD-SOCKETS")
+    (load "ext:sockets;package.lisp"))
   (mapcar #'load +clx-src-files+)
   (build-module "clx" +clx-src-files+ :dir "build:clx;" :prefix "CLX"))
 
