@@ -230,9 +230,11 @@
 			  "build:clx;module.lisp"))
        #+:msvc
        (c::*cc-flags* (concatenate 'string c::*cc-flags* " -Zm150")))
-  (with-open-file (s "build:clx;module.lisp" :direction :output :if-exists :overwrite
-		     :if-does-not-exist :create)
-    (print '(provide :clx) s))
+  (let ((filename "build:clx;module.lisp"))
+    (ensure-directories-exist filename)
+    (with-open-file (s filename :direction :output :if-exists :overwrite
+		       :if-does-not-exist :create)
+     (print '(provide :clx) s)))
   (unless (find-package "SB-BSD-SOCKETS")
     (load "ext:sockets;package.lisp"))
   (mapcar #'load +clx-src-files+)
