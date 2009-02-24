@@ -1827,7 +1827,7 @@
 ;;;	You are STRONGLY encouraged to write a specialized version
 ;;;	of buffer-write-default that does block transfers.
 
-#-(or Genera explorer excl lcl3.0 Minima CMU sbcl clisp)
+#-(or Genera explorer excl lcl3.0 Minima CMU sbcl clisp ecl)
 (defun buffer-write-default (vector display start end)
   ;; The default buffer write function for use with common-lisp streams
   (declare (type buffer-bytes vector)
