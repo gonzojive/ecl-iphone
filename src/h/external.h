@@ -478,7 +478,6 @@ extern ECL_API void FEstack_advance(void);
 extern ECL_API cl_object *ecl_stack_grow(cl_env_ptr env);
 extern ECL_API cl_object *ecl_stack_set_size(cl_env_ptr env, cl_index new_size);
 extern ECL_API void ecl_stack_pop_n(cl_env_ptr env, cl_index n);
-extern ECL_API void ecl_stack_insert(cl_env_ptr env, cl_index where, cl_index n);
 extern ECL_API void ecl_stack_push_n(cl_env_ptr env, cl_index n, cl_object *args);
 extern ECL_API cl_index ecl_stack_push_values(cl_env_ptr env);
 extern ECL_API void ecl_stack_pop_values(cl_env_ptr env, cl_index n);
