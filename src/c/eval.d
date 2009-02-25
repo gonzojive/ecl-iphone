@@ -72,9 +72,9 @@ ecl_apply_from_stack_frame(cl_object frame, cl_object x)
 		fun = SYM_FUN(fun);
 		goto AGAIN;
 	case t_bytecodes:
-		return ecl_interpret(frame, Cnil, fun, 0);
+		return ecl_interpret(frame, Cnil, fun);
 	case t_bclosure:
-		return ecl_interpret(frame, fun->bclosure.lex, fun->bclosure.code, 0);
+		return ecl_interpret(frame, fun->bclosure.lex, fun->bclosure.code);
 	default:
 	ERROR:
 		FEinvalid_function(x);

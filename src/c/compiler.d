@@ -2165,7 +2165,7 @@ compile_body(cl_env_ptr env, cl_object body, int flags) {
 			VALUES(0) = Cnil;
 			NVALUES = 0;
 			bytecodes = asm_end(env, handle);
-			ecl_interpret((cl_object)&frame, new_c_env.lex_env, bytecodes, 0);
+			ecl_interpret((cl_object)&frame, new_c_env.lex_env, bytecodes);
 			asm_clear(env, handle);
 			env->c_env = old_c_env;
 #ifdef GBC_BOEHM
@@ -2789,7 +2789,7 @@ si_make_lambda(cl_object name, cl_object rest)
                 frame.stack = frame.base = 0;
                 frame.size = 0;
                 frame.env = the_env;
-                output = ecl_interpret((cl_object)&frame, interpreter_env, bytecodes, 0);
+                output = ecl_interpret((cl_object)&frame, interpreter_env, bytecodes);
 #ifdef GBC_BOEHM
                 GC_free(bytecodes->bytecodes.code);
                 GC_free(bytecodes->bytecodes.data);

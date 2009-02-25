@@ -244,7 +244,7 @@ _ecl_bytecodes_dispatch_vararg(cl_narg narg, ...)
 {
         cl_object output;
         ECL_STACK_FRAME_VARARGS_BEGIN(narg, narg, frame);
-        output = ecl_interpret(frame, Cnil, frame->frame.env->function, 0);
+        output = ecl_interpret(frame, Cnil, frame->frame.env->function);
         ECL_STACK_FRAME_VARARGS_END(frame);
         return output;
 }
@@ -255,7 +255,7 @@ _ecl_bclosure_dispatch_vararg(cl_narg narg, ...)
         cl_object output;
         ECL_STACK_FRAME_VARARGS_BEGIN(narg, narg, frame) {
                 cl_object fun = frame->frame.env->function;
-                output = ecl_interpret(frame, fun->bclosure.lex, fun->bclosure.code, 0);
+                output = ecl_interpret(frame, fun->bclosure.lex, fun->bclosure.code);
         } ECL_STACK_FRAME_VARARGS_END(frame);
         return output;
 }
@@ -290,13 +290,13 @@ close_around(cl_object fun, cl_object lex) {
 /* -------------------- THE INTERPRETER -------------------- */
 
 cl_object
-ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offset)
+ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes)
 {
 	ECL_OFFSET_TABLE;
         const cl_env_ptr the_env = frame->frame.env;
 	volatile cl_index old_bds_top_index = the_env->bds_top - the_env->bds_org;
         volatile cl_index frame_index = 0;
-	cl_opcode *vector = (cl_opcode*)bytecodes->bytecodes.code + offset;
+	cl_opcode *vector = (cl_opcode*)bytecodes->bytecodes.code;
 	cl_object *data = bytecodes->bytecodes.data;
 	cl_object reg0, reg1, lex_env = env;
 	cl_index narg;
@@ -544,10 +544,10 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 			reg0 = SYM_FUN(reg0);
 			goto AGAIN;
 		case t_bytecodes:
-			reg0 = ecl_interpret(frame, Cnil, reg0, 0);
+			reg0 = ecl_interpret(frame, Cnil, reg0);
 			break;
 		case t_bclosure:
-			reg0 = ecl_interpret(frame, reg0->bclosure.lex, reg0->bclosure.code, 0);
+			reg0 = ecl_interpret(frame, reg0->bclosure.lex, reg0->bclosure.code);
 			break;
 		default:
 			FEinvalid_function(reg0);
