@@ -31,8 +31,12 @@ ecl_stack_set_size(cl_env_ptr env, cl_index tentative_new_size)
 	cl_index safety_area = ecl_get_option(ECL_OPT_LISP_STACK_SAFETY_AREA);
 	cl_index new_size = tentative_new_size + 2*safety_area;
 
-	if (top > new_size)
-		FEerror("Internal error: cannot shrink stack that much.",0);
+        /* Round to page size */
+        new_size = (new_size + (LISP_PAGESIZE-1))/LISP_PAGESIZE * new_size;
+
+	if (top > new_size) {
+		FEerror("Internal error: cannot shrink stack below stack top.",0);
+        }
 
 	old_stack = env->stack;
 	new_stack = (cl_object *)ecl_alloc_atomic(new_size * sizeof(cl_object));
@@ -74,22 +78,13 @@ ecl_stack_grow(cl_env_ptr env)
 	return ecl_stack_set_size(env, env->stack_size + env->stack_size / 2);
 }
 
-void
-ecl_stack_pop_n(cl_env_ptr env, cl_index index) {
-	cl_object *new_top = env->stack_top - index;
-	if (new_top < env->stack)
-		FEstack_underflow();
-	env->stack_top = new_top;
-}
-
 cl_index
 ecl_stack_push_values(cl_env_ptr env) {
         cl_index i = env->nvalues;
         cl_object *b = env->stack_top;
         cl_object *p = b + i;
         if (p >= env->stack_limit) {
-                ecl_stack_grow(env);
-                b = env->stack_top;
+                b = ecl_stack_grow(env);
                 p = b + i;
         }
         env->stack_top = p;
@@ -112,10 +107,8 @@ ecl_stack_frame_open(cl_env_ptr env, cl_object f, cl_index size)
 {
 	cl_object *base = env->stack_top;
 	if (size) {
-		if (env->stack_limit - base < size) {
-			cl_index delta = (size + (LISP_PAGESIZE-1))/LISP_PAGESIZE;
-			ecl_stack_set_size(env, env->stack_size + delta * LISP_PAGESIZE);
-			base = env->stack_top;
+		if ((env->stack_limit - base) < size) {
+			base = ecl_stack_set_size(env, env->stack_size + size);
 		}
 	}
 	f->frame.t = t_frame;
@@ -130,15 +123,10 @@ ecl_stack_frame_open(cl_env_ptr env, cl_object f, cl_index size)
 void
 ecl_stack_frame_enlarge(cl_object f, cl_index size)
 {
-	cl_object *top;
 	cl_env_ptr env = f->frame.env;
-	top = env->stack_top;
+	cl_object *top = env->stack_top;
 	if ((env->stack_limit - top) < size) {
-		cl_index delta = (size + (LISP_PAGESIZE-1))/LISP_PAGESIZE;
-		ecl_stack_set_size(env, env->stack_size + delta * LISP_PAGESIZE);
-		f->frame.base = (f->frame.base - f->frame.stack) + env->stack;
-		f->frame.stack = env->stack;
-		top = env->stack_top;
+		top = ecl_stack_set_size(env, env->stack_size + size);
 	}
         env->stack_top = (top += size);
         f->frame.base = top - (f->frame.size += size);
@@ -148,14 +136,10 @@ ecl_stack_frame_enlarge(cl_object f, cl_index size)
 void
 ecl_stack_frame_push(cl_object f, cl_object o)
 {
-	cl_object *top;
 	cl_env_ptr env = f->frame.env;
-	top = env->stack_top;
+	cl_object *top = env->stack_top;
 	if (top >= env->stack_limit) {
-		ecl_stack_grow(env);
-		f->frame.base = (f->frame.base - f->frame.stack) + env->stack;
-		f->frame.stack = env->stack;
-		top = env->stack_top;
+		top = ecl_stack_grow(env);
 	}
 	*top = o;
 	env->stack_top = ++top;
@@ -319,11 +303,9 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	struct ecl_stack_frame frame_aux;
 	volatile struct ihs_frame ihs;
 
+        /* INV: bytecodes is of type t_bytecodes */
+
 	ecl_cs_check(the_env, ihs);
-
-	if (type_of(bytecodes) != t_bytecodes)
-		FEinvalid_function(bytecodes);
-
 	ecl_ihs_push(the_env, &ihs, bytecodes, lex_env);
 	frame_aux.t = t_frame;
 	frame_aux.stack = frame_aux.base = 0;
