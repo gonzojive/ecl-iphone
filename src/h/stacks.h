@@ -230,9 +230,9 @@ extern ECL_API ecl_frame_ptr _ecl_frs_push(register cl_env_ptr, register cl_obje
 #define ECL_STACK_REF(env,n) ((env)->stack_top[n])
 
 #define ECL_STACK_SET_INDEX(the_env,ndx) do {                   \
-                const cl_env_ptr __env = the_env;               \
+                const cl_env_ptr __env = (the_env);             \
                 cl_object *__new_top = __env->stack + (ndx);    \
-                if (__new_top >= __env->stack_top)              \
+                if (__new_top > __env->stack_top)               \
                         FEstack_advance();                      \
                 __env->stack_top = __new_top; } while (0)
 

@@ -19,7 +19,7 @@
   (when stack-frame
     (if (stringp stack-frame)
 	(wt-nl "ecl_stack_frame_close(" stack-frame ");")
-	(wt-nl "ecl_stack_set_index(cl_env_copy," stack-frame ");")))
+	(wt-nl "ECL_STACK_SET_INDEX(cl_env_copy," stack-frame ");")))
   (when bds-lcl
     (wt-nl "ecl_bds_unwind(cl_env_copy," bds-lcl ");"))
   (if (< bds-bind 4)

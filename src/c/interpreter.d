@@ -50,8 +50,9 @@ ecl_stack_set_size(cl_env_ptr env, cl_index tentative_new_size)
 	/* A stack always has at least one element. This is assumed by cl__va_start
 	 * and friends, which take a sp=0 to have no arguments.
 	 */
-	if (top == 0)
-		ecl_stack_push(env, MAKE_FIXNUM(0));
+	if (top == 0) {
+                *(env->stack_top++) = MAKE_FIXNUM(0);
+        }
         return env->stack_top;
 }
 
@@ -71,28 +72,6 @@ cl_object *
 ecl_stack_grow(cl_env_ptr env)
 {
 	return ecl_stack_set_size(env, env->stack_size + env->stack_size / 2);
-}
-
-void
-ecl_stack_push(cl_env_ptr env, cl_object x) {
-	if (env->stack_top >= env->stack_limit)
-		ecl_stack_grow(env);
-	*(env->stack_top++) = x;
-}
-
-cl_object
-ecl_stack_pop(cl_env_ptr env) {
-	if (env->stack_top == env->stack)
-		FEstack_underflow();
-	return *(--env->stack_top);
-}
-
-void
-ecl_stack_set_index(cl_env_ptr env, cl_index index) {
-	cl_object *new_top = env->stack + index;
-	if (new_top > env->stack_top)
-		FEstack_advance();
-	env->stack_top = new_top;
 }
 
 void
@@ -240,7 +219,7 @@ void
 ecl_stack_frame_close(cl_object f)
 {
 	if (f->frame.stack) {
-		ecl_stack_set_index(f->frame.env, f->frame.base - f->frame.stack);
+		ECL_STACK_SET_INDEX(f->frame.env, f->frame.base - f->frame.stack);
 	}
 }
 

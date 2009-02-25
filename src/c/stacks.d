@@ -406,7 +406,7 @@ ecl_unwind(cl_env_ptr env, ecl_frame_ptr fr)
 		--env->frs_top;
 	env->ihs_top = env->frs_top->frs_ihs;
 	ecl_bds_unwind(env, env->frs_top->frs_bds_top_index);
-	ecl_stack_set_index(env, env->frs_top->frs_sp);
+	ECL_STACK_SET_INDEX(env, env->frs_top->frs_sp);
 	ecl_longjmp(env->frs_top->frs_jmpbuf, 1);
 	/* never reached */
 }
