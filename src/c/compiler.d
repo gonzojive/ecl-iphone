@@ -63,8 +63,8 @@
 #define asm_clear(h) ecl_stack_set_index(ecl_process_env(), h)
 #define current_pc() ECL_STACK_INDEX(ecl_process_env())
 #define set_pc(n) ecl_stack_set_index(ecl_process_env(), n)
-#define asm_op(o) ecl_stack_push(ecl_process_env(), (cl_object)((cl_fixnum)(o)))
 #define asm_ref(n) (cl_fixnum)(ecl_process_env()->stack[n])
+static void asm_op(cl_fixnum op);
 static void asm_op2(int op, int arg);
 static cl_object asm_end(cl_index handle);
 static cl_index asm_jmp(register int op);
@@ -195,6 +195,13 @@ asm_arg(int n) {
 #else
 #define asm_arg(n) asm_op(n)
 #endif
+
+static void
+asm_op(cl_fixnum code) {
+        const cl_env_ptr env = ecl_process_env();
+        cl_object v = (cl_object)code;
+        ECL_STACK_PUSH(env,v);
+}
 
 static void
 asm_op2(register int code, register int n) {

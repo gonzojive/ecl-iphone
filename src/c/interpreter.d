@@ -23,7 +23,7 @@
 
 /* -------------------- INTERPRETER STACK -------------------- */
 
-void
+cl_object *
 ecl_stack_set_size(cl_env_ptr env, cl_index tentative_new_size)
 {
 	cl_index top = env->stack_top - env->stack;
@@ -52,6 +52,7 @@ ecl_stack_set_size(cl_env_ptr env, cl_index tentative_new_size)
 	 */
 	if (top == 0)
 		ecl_stack_push(env, MAKE_FIXNUM(0));
+        return env->stack_top;
 }
 
 void
@@ -66,10 +67,10 @@ FEstack_advance(void)
         FEerror("Internal error: stack advance beyond current point.",0);
 }
 
-void
+cl_object *
 ecl_stack_grow(cl_env_ptr env)
 {
-	ecl_stack_set_size(env, env->stack_size + env->stack_size / 2);
+	return ecl_stack_set_size(env, env->stack_size + env->stack_size / 2);
 }
 
 void
@@ -305,15 +306,6 @@ close_around(cl_object fun, cl_object lex) {
 	return v;
 }
 
-/*
- * Manipulation of the interpreter stack. As shown here, we omit may
- * security checks, assuming that the interpreted code is consistent.
- * This is done for performance reasons, but could probably be undone
- * using a configuration flag.
- */
-
-#define STACK_REF(the_env,n) (the_env->stack_top[n])
-
 #define SETUP_ENV(the_env) { ihs.lex_env = lex_env; }
 
 /*
@@ -534,7 +526,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	*/
 	CASE(OP_FCALL); {
 		GET_OPARG(narg, vector);
-		reg0 = STACK_REF(the_env,-narg-1);
+		reg0 = ECL_STACK_REF(the_env,-narg-1);
 		goto DO_CALL;
 	}
 
@@ -544,7 +536,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 	*/
 	CASE(OP_MCALL); {
 		narg = fix(ECL_STACK_POP_UNSAFE(the_env));
-		reg0 = STACK_REF(the_env,-narg-1);
+		reg0 = ECL_STACK_REF(the_env,-narg-1);
 		goto DO_CALL;
 	}
 
@@ -1071,8 +1063,8 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 			THREAD_NEXT;
 		} else {
 			reg0 = the_env->values[0];
-			vector = (cl_opcode *)STACK_REF(the_env,-1); /* FIXME! */
-			lex_env = STACK_REF(the_env,-2);
+			vector = (cl_opcode *)ECL_STACK_REF(the_env,-1); /* FIXME! */
+			lex_env = ECL_STACK_REF(the_env,-2);
 			goto DO_EXIT_FRAME;
 		}
 	}
@@ -1101,8 +1093,8 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 			   to ntags-1, depending on the tag. These
 			   numbers are indices into the jump table and
 			   are computed at compile time. */
-			cl_opcode *table = (cl_opcode *)STACK_REF(the_env,-1);
-			lex_env = STACK_REF(the_env,-2);
+			cl_opcode *table = (cl_opcode *)ECL_STACK_REF(the_env,-1);
+			lex_env = ECL_STACK_REF(the_env,-2);
 			table = table + fix(the_env->values[0]) * OPARG_SIZE;
 			vector = table + *(cl_oparg *)table;
 		}
@@ -1140,20 +1132,20 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		cl_index i = the_env->nvalues;
 		ECL_STACK_PUSH_N(the_env, i+1);
 		the_env->values[0] = reg0;
-		memcpy(&STACK_REF(the_env, -(i+1)), the_env->values, i * sizeof(cl_object));
-		STACK_REF(the_env, -1) = MAKE_FIXNUM(the_env->nvalues);
+		memcpy(&ECL_STACK_REF(the_env, -(i+1)), the_env->values, i * sizeof(cl_object));
+		ECL_STACK_REF(the_env, -1) = MAKE_FIXNUM(the_env->nvalues);
 		THREAD_NEXT;
 	}
 	/* OP_PUSHMOREVALUES
 		Adds more values to the ones pushed by OP_PUSHVALUES.
 	*/
 	CASE(OP_PUSHMOREVALUES); {
-		cl_index n = fix(STACK_REF(the_env,-1));
+		cl_index n = fix(ECL_STACK_REF(the_env,-1));
 		cl_index i = the_env->nvalues;
 		ECL_STACK_PUSH_N(the_env, i);
 		the_env->values[0] = reg0;
-		memcpy(&STACK_REF(the_env, -(i+1)), the_env->values, i * sizeof(cl_object));
-		STACK_REF(the_env, -1) = MAKE_FIXNUM(n + i);
+		memcpy(&ECL_STACK_REF(the_env, -(i+1)), the_env->values, i * sizeof(cl_object));
+		ECL_STACK_REF(the_env, -1) = MAKE_FIXNUM(n + i);
 		THREAD_NEXT;
 	}
 	/* OP_POPVALUES
@@ -1170,7 +1162,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 			THREAD_NEXT;
 		} else {
 			ECL_STACK_POP_N_UNSAFE(the_env,n);
-			memcpy(dest, &STACK_REF(the_env,0), n * sizeof(cl_object));
+			memcpy(dest, &ECL_STACK_REF(the_env,0), n * sizeof(cl_object));
 			reg0 = *dest;
 			THREAD_NEXT;
 		}
@@ -1184,7 +1176,7 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes, cl_index offs
 		GET_OPARG(n, vector);
 		the_env->nvalues = n;
 		ECL_STACK_POP_N_UNSAFE(the_env, n);
-		memcpy(the_env->values, &STACK_REF(the_env, 0), n * sizeof(cl_object));
+		memcpy(the_env->values, &ECL_STACK_REF(the_env, 0), n * sizeof(cl_object));
 		reg0 = the_env->values[0];
 		THREAD_NEXT;
 	}

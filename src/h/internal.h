@@ -91,8 +91,6 @@ typedef struct cl_compiler_env *cl_compiler_env_ptr;
 
 /* interpreter.d */
 
-#define ecl_stack_ref(env,n) (env)->stack[n]
-
 #define ECL_BUILD_STACK_FRAME(env,name,frame)	\
 	struct ecl_stack_frame frame;\
 	cl_object name = ecl_stack_frame_open(env, (cl_object)&frame, 0);

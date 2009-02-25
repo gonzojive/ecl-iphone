@@ -216,41 +216,42 @@ extern ECL_API ecl_frame_ptr _ecl_frs_push(register cl_env_ptr, register cl_obje
 
 #define ECL_STACK_INDEX(env) ((env)->stack_top - (env)->stack)
 
-#define ECL_STACK_PUSH(the_env,o) do {                  \
-                const cl_env_ptr env = (the_env);       \
-                cl_object *new_top = env->stack_top;    \
-                if (new_top >= env->stack_limit) {      \
-                        ecl_stack_grow(env);            \
-                }                                       \
-                *new_top = (o);                         \
-                env->stack_top = new_top+1; } while (0)
+#define ECL_STACK_PUSH(the_env,o) do {                          \
+                const cl_env_ptr __env = (the_env);             \
+                cl_object *__new_top = __env->stack_top;        \
+                if (__new_top >= __env->stack_limit) {          \
+                        __new_top = ecl_stack_grow(__env);      \
+                }                                               \
+                *__new_top = (o);                               \
+                __env->stack_top = __new_top+1; } while (0)
 
 #define ECL_STACK_POP_UNSAFE(env) *(--((env)->stack_top))
 
 #define ECL_STACK_REF(env,n) ((env)->stack_top[n])
 
 #define ECL_STACK_SET_INDEX(the_env,ndx) do {                   \
-                const cl_env_ptr env = the_env;                 \
-                cl_object *new_top = env->stack + (ndx);        \
-                if (new_top >= env->stack_top)                  \
+                const cl_env_ptr __env = the_env;               \
+                cl_object *__new_top = __env->stack + (ndx);    \
+                if (__new_top >= __env->stack_top)              \
                         FEstack_advance();                      \
-                env->stack_top = new_top; } while (0)
+                __env->stack_top = __new_top; } while (0)
 
 #define ECL_STACK_POP_N(the_env,n) do {                         \
-                const cl_env_ptr env = (the_env);               \
-                cl_object *new_top = env->stack_top - (n);      \
-                if (new_top < env->stack) FEstack_underflow();  \
-                env->stack_top = new_top; } while (0)
+                const cl_env_ptr __env = (the_env);             \
+                cl_object *__new_top = __env->stack_top - (n);  \
+                if (__new_top < __env->stack) FEstack_underflow();      \
+                __env->stack_top = __new_top; } while (0)
 
 #define ECL_STACK_POP_N_UNSAFE(the_env,n) ((the_env)->stack_top -= (n))
 
 #define ECL_STACK_PUSH_N(the_env,n) do {                                \
-                const cl_env_ptr env = (the_env) ;                      \
-                cl_index aux = (n);                                     \
-                while ((env->stack_limit - env->stack_top) <= aux) {    \
-                        ecl_stack_grow(env);                            \
+                const cl_env_ptr __env = (the_env) ;                    \
+                cl_index __aux = (n);                                   \
+                cl_object *__new_top = __env->stack_top;                \
+                while ((__env->stack_limit - __new_top) <= __aux) {     \
+                        __new_top = ecl_stack_grow(__env);              \
                 }                                                       \
-                env->stack_top += aux; } while (0)
+                __env->stack_top = __new_top + __aux; } while (0)
 
 /*********************************
  * HIGH LEVEL CONTROL STRUCTURES *
