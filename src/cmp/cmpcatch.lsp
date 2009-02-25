@@ -61,7 +61,7 @@
 	 (*unwind-exit* `((STACK ,sp) ,@*unwind-exit*)))
     (wt-nl "{")
     (wt-nl "volatile bool unwinding = FALSE;")
-    (wt-nl "cl_index " sp "=ecl_stack_index(cl_env_copy)," nargs ";")
+    (wt-nl "cl_index " sp "=ECL_STACK_INDEX(cl_env_copy)," nargs ";")
     (wt-nl "ecl_frame_ptr next_fr;")
     ;; Here we compile the form which is protected. When this form
     ;; is aborted, it continues at the ecl_frs_pop() with unwinding=TRUE.

@@ -92,7 +92,6 @@ typedef struct cl_compiler_env *cl_compiler_env_ptr;
 /* interpreter.d */
 
 #define ecl_stack_ref(env,n) (env)->stack[n]
-#define ecl_stack_index(env) ((env)->stack_top-(env)->stack)
 
 #define ECL_BUILD_STACK_FRAME(env,name,frame)	\
 	struct ecl_stack_frame frame;\

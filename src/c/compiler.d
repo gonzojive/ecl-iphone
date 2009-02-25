@@ -59,9 +59,9 @@
 
 /********************* PRIVATE ********************/
 
-#define asm_begin() ecl_stack_index(ecl_process_env())
+#define asm_begin() current_pc()
 #define asm_clear(h) ecl_stack_set_index(ecl_process_env(), h)
-#define current_pc() ecl_stack_index(ecl_process_env())
+#define current_pc() ECL_STACK_INDEX(ecl_process_env())
 #define set_pc(n) ecl_stack_set_index(ecl_process_env(), n)
 #define asm_op(o) ecl_stack_push(ecl_process_env(), (cl_object)((cl_fixnum)(o)))
 #define asm_ref(n) (cl_fixnum)(ecl_process_env()->stack[n])

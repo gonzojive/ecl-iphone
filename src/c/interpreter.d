@@ -66,7 +66,7 @@ FEstack_advance(void)
         FEerror("Internal error: stack advance beyond current point.",0);
 }
 
-static void
+void
 ecl_stack_grow(cl_env_ptr env)
 {
 	ecl_stack_set_size(env, env->stack_size + env->stack_size / 2);
@@ -84,13 +84,6 @@ ecl_stack_pop(cl_env_ptr env) {
 	if (env->stack_top == env->stack)
 		FEstack_underflow();
 	return *(--env->stack_top);
-}
-
-#undef ecl_stack_index
-
-cl_index
-ecl_stack_index(cl_env_ptr env) {
-	return env->stack_top - env->stack;
 }
 
 void
