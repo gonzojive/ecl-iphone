@@ -79,6 +79,8 @@ ECL 9.1.0:
 
  - DEFSTRUCT :INCLUDE did not work with read only slots.
 
+ - EXT:SETENV now ensures that strings are null terminated.
+
 * Visible changes:
 
  - New function (EXT:HEAP-SIZE &optional NEW-MAX-HEAP-SIZE) can change the      

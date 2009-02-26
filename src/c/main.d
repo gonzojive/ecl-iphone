@@ -698,7 +698,8 @@ si_setenv(cl_object var, cl_object value)
 	const cl_env_ptr the_env = ecl_process_env();
 	cl_fixnum ret_val;
 
-	var = ecl_check_cl_type(@'ext::setenv', var, t_base_string);
+	/* Strings have to be null terminated base strings */
+	var = si_copy_to_simple_base_string(var);
 	if (value == Cnil) {
 #ifdef HAVE_SETENV
 		/* Remove the variable when setting to nil, so that
@@ -715,22 +716,20 @@ si_setenv(cl_object var, cl_object value)
 		ret_val = 0;
 	} else {
 #ifdef HAVE_SETENV
-		value = ecl_check_cl_type(@'intern', value, t_base_string);
+		value = si_copy_to_simple_base_string(value);
 		ret_val = setenv((char*)var->base_string.self,
 				 (char*)value->base_string.self, 1);
 #else
-		cl_object temp =
-		  cl_format(4, Cnil, make_constant_base_string("~A=~A"), var,
-			    value);
-		if (temp->base_string.hasfillp && temp->base_string.fillp < temp->base_string.dim)
-		  temp->base_string.self[temp->base_string.fillp] = '\0';
+		value = cl_format(4, Cnil, make_constant_base_string("~A=~A"), var,
+				  value);
+		value = si_copy_to_simple_base_string(value);
 		putenv((char*)temp->base_string.self);
 #endif
 	}
 	if (ret_val == -1)
 		CEerror(Ct, "SI:SETENV failed: insufficient space in environment.",
 			1, Cnil);
-	@(return (value))
+	@(return value)
 }
 #endif
 
