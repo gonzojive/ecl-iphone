@@ -49,8 +49,6 @@ ecl_stack_set_size(cl_env_ptr env, cl_index tentative_new_size)
 	env->stack_limit = env->stack + (new_size - 2*safety_area);
 	ecl_enable_interrupts_env(env);
 
-	ecl_dealloc(old_stack);
-
 	/* A stack always has at least one element. This is assumed by cl__va_start
 	 * and friends, which take a sp=0 to have no arguments.
 	 */
