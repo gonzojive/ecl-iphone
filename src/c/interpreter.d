@@ -292,7 +292,6 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes)
 {
 	ECL_OFFSET_TABLE;
         const cl_env_ptr the_env = frame->frame.env;
-	volatile cl_index old_bds_top_index = the_env->bds_top - the_env->bds_org;
         volatile cl_index frame_index = 0;
 	cl_opcode *vector = (cl_opcode*)bytecodes->bytecodes.code;
 	cl_object *data = bytecodes->bytecodes.data;
@@ -309,8 +308,6 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes)
 	frame_aux.stack = frame_aux.base = 0;
         frame_aux.size = 0;
         frame_aux.env = the_env;
-	reg0 = Cnil;
-	the_env->nvalues = 0;
  BEGIN:
 	BEGIN_SWITCH {
 	CASE(OP_NOP); {
@@ -674,7 +671,6 @@ ecl_interpret(cl_object frame, cl_object env, cl_object bytecodes)
 	*/
 	CASE(OP_EXIT); {
 		ecl_ihs_pop(the_env);
-		ecl_bds_unwind(the_env, old_bds_top_index);
 		return reg0;
 	}
 	/* OP_FLET	nfun{arg}, fun1{object}

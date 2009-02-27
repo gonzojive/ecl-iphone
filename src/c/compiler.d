@@ -697,7 +697,7 @@ c_bind(cl_env_ptr env, cl_object var, cl_object specials)
 }
 
 static void
-c_undo_bindings(cl_env_ptr the_env, cl_object old_vars)
+c_undo_bindings(cl_env_ptr the_env, cl_object old_vars, int only_specials)
 {
 	cl_object env;
 	cl_index num_lexical = 0;
@@ -712,7 +712,7 @@ c_undo_bindings(cl_env_ptr the_env, cl_object old_vars)
 		if (name == @':block' || name == @':tag') {
 			(void)0;
 		} else if (name == @':function' || Null(special)) {
-			num_lexical++;
+			only_specials || num_lexical++;
 		} else if (name == @':declare') {
 			/* Ignored */
 		} else if (special != @'si::symbol-macro') {
@@ -850,7 +850,7 @@ c_block(cl_env_ptr env, cl_object body, int old_flags) {
 		set_pc(env, pc);
 		return compile_body(env, body, old_flags);
 	} else {
-		c_undo_bindings(env, old_env.variables);
+		c_undo_bindings(env, old_env.variables, 0);
 		asm_op(env, OP_EXIT_FRAME);
 		asm_complete(env, 0, labelz);
 		return flags;
@@ -1034,7 +1034,7 @@ c_catch(cl_env_ptr env, cl_object args, int flags) {
 	/* Compile body of CATCH */
 	compile_body(env, args, FLAG_VALUES);
 
-	c_undo_bindings(env, old_env);
+	c_undo_bindings(env, old_env, 0);
 	asm_op(env, OP_EXIT_FRAME);
 	asm_complete(env, 0, labelz);
 
@@ -1253,7 +1253,7 @@ c_labels_flet(cl_env_ptr env, int op, cl_object args, int flags) {
 	flags = c_locally(env, args, flags);
 
 	/* Restore and return */
-	c_undo_bindings(env, old_vars);
+	c_undo_bindings(env, old_vars, 0);
 	env->c_env->macros = old_funs;
 
 	return flags;
@@ -1436,7 +1436,7 @@ c_let_leta(cl_env_ptr env, int op, cl_object args, int flags) {
 
 	flags = compile_body(env, body, flags);
 
-	c_undo_bindings(env, old_variables);
+	c_undo_bindings(env, old_variables, 0);
 	return flags;
 }
 
@@ -1469,7 +1469,7 @@ c_locally(cl_env_ptr env, cl_object args, int flags) {
 	/* ...and then process body */
 	flags = compile_body(env, args, flags);
 
-	c_undo_bindings(env, old_env);
+	c_undo_bindings(env, old_env, 0);
 
 	return flags;
 }
@@ -1532,7 +1532,7 @@ c_multiple_value_bind(cl_env_ptr env, cl_object args, int flags)
 	if (n == 0) {
 		c_declare_specials(env, specials);
 		flags = compile_body(env, body, flags);
-		c_undo_bindings(env, old_env);
+		c_undo_bindings(env, old_env, 0);
 	} else {
 		cl_object old_variables = env->c_env->variables;
 		for (vars=cl_reverse(vars); n--; ) {
@@ -1543,7 +1543,7 @@ c_multiple_value_bind(cl_env_ptr env, cl_object args, int flags)
 		}
 		c_declare_specials(env, specials);
 		flags = compile_body(env, body, flags);
-		c_undo_bindings(env, old_variables);
+		c_undo_bindings(env, old_variables, 0);
 	}
 	return flags;
 }
@@ -1632,7 +1632,7 @@ c_multiple_value_setq(cl_env_ptr env, cl_object orig_args, int flags) {
 		}
 	}
 
-	c_undo_bindings(env, old_variables);
+	c_undo_bindings(env, old_variables, 0);
 
 	return FLAG_REG0;
 }
@@ -1870,7 +1870,7 @@ declared special and appear in a symbol-macrolet.", 1, name);
 	}
 	c_declare_specials(env, specials);
 	flags = compile_body(env, body, flags);
-	c_undo_bindings(env, old_variables);
+	c_undo_bindings(env, old_variables, 0);
 	return flags;
 }
 
@@ -1916,7 +1916,7 @@ c_tagbody(cl_env_ptr env, cl_object args, int flags)
 		}
 	}
 	asm_op(env, OP_EXIT_TAGBODY);
-	c_undo_bindings(env, old_env);
+	c_undo_bindings(env, old_env, 0);
 	return FLAG_REG0;
 }
 
@@ -2621,7 +2621,7 @@ ecl_make_lambda(cl_env_ptr env, cl_object name, cl_object lambda) {
 	 * to be used. We use this to mark the boundary of a function
 	 * environment and when code-walking */
 	c_register_var(env, cl_make_symbol(make_constant_base_string("FUNCTION")),
-		       TRUE, TRUE);
+		       TRUE, FALSE);
 
 	new_c_env.constants = Cnil;
         new_c_env.coalesce = TRUE;
@@ -2673,12 +2673,16 @@ ecl_make_lambda(cl_env_ptr env, cl_object name, cl_object lambda) {
 		c_bind(env, var, specials);
 	}
 	c_declare_specials(env, specials);
+
 	if (!Null(name)) {
 		compile_form(env, @list*(3, @'block', si_function_block_name(name),
                                          body), FLAG_VALUES);
 	} else {
 		compile_body(env, body, FLAG_VALUES);
 	}
+
+        /* Only undo special bindings */
+	c_undo_bindings(env, old_c_env->variables, 1);
 	asm_op(env, OP_EXIT);
 
 	output = asm_end(env, handle);
