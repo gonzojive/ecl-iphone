@@ -130,8 +130,8 @@ pop(cl_object *l) {
 	cl_object head, list = *l;
 	if (ATOM(list))
 		FEill_formed_input();
-	head = CAR(list);
-	*l = CDR(list);
+	head = ECL_CONS_CAR(list);
+	*l = ECL_CONS_CDR(list);
 	return head;
 }
 
@@ -142,8 +142,8 @@ pop_maybe_nil(cl_object *l) {
 		return Cnil;
 	if (ATOM(list))
 		FEill_formed_input();
-	head = CAR(list);
-	*l = CDR(list);
+	head = ECL_CONS_CAR(list);
+	*l = ECL_CONS_CDR(list);
 	return head;
 }
 
@@ -173,8 +173,8 @@ asm_end(cl_env_ptr env, cl_index beginning) {
 		code[i] = (cl_opcode)(cl_fixnum)(env->stack[beginning+i]);
 	}
 	for (i=0; i < data_size; i++) {
-		bytecodes->bytecodes.data[i] = CAR(c_env->constants);
-		c_env->constants = CDR(c_env->constants);
+		bytecodes->bytecodes.data[i] = ECL_CONS_CAR(c_env->constants);
+		c_env->constants = ECL_CONS_CDR(c_env->constants);
 	}
         bytecodes->bytecodes.entry =  _ecl_bytecodes_dispatch_vararg;
 	asm_clear(env, beginning);
@@ -343,8 +343,8 @@ c_register_constant(cl_env_ptr env, cl_object c)
         const cl_compiler_ptr c_env = env->c_env;
 	cl_object p = c_env->constants;
 	int n;
-	for (n = 0; !Null(p); n++, p=CDR(p)) {
-		if (c_env->coalesce && ecl_eql(CAR(p), c)) {
+	for (n = 0; !Null(p); n++, p = ECL_CONS_CDR(p)) {
+		if (c_env->coalesce && ecl_eql(ECL_CONS_CAR(p), c)) {
 			return n;
 		}
 	}
@@ -499,9 +499,9 @@ guess_environment(cl_env_ptr env, cl_object interpreter_env)
 	 */
 	for (interpreter_env = @revappend(interpreter_env, Cnil);
 	     !Null(interpreter_env);
-	     interpreter_env = CDR(interpreter_env))
+	     interpreter_env = ECL_CONS_CDR(interpreter_env))
 	{
-		cl_object record = CAR(interpreter_env);
+		cl_object record = ECL_CONS_CAR(interpreter_env);
 		cl_object record0 = CAR(record);
 		cl_object record1 = CDR(record);
 		if (SYMBOLP(record0)) {
@@ -706,9 +706,11 @@ c_undo_bindings(cl_env_ptr the_env, cl_object old_vars, int only_specials)
 
 	for (env = c_env->variables; env != old_vars && !Null(env); env = ECL_CONS_CDR(env))
 	{
-		cl_object record = ECL_CONS_CAR(env);
-		cl_object name = CAR(record);
-		cl_object special = CADR(record);
+                cl_object record, name, special;
+                record = ECL_CONS_CAR(env);
+		name = ECL_CONS_CAR(record);
+                record = ECL_CONS_CDR(record);
+		special = ECL_CONS_CAR(record);
 		if (name == @':block' || name == @':tag') {
 			(void)0;
 		} else if (name == @':function' || Null(special)) {
@@ -718,7 +720,8 @@ c_undo_bindings(cl_env_ptr the_env, cl_object old_vars, int only_specials)
 		} else if (special != @'si::symbol-macro') {
 			/* If (third special) = NIL, the variable was declared
 			   special, but there is no binding! */
-			if (!Null(CADDR(record))) {
+                        record = ECL_CONS_CDR(record);
+			if (!Null(ECL_CONS_CAR(record))) {
 				num_special++;
 			}
 		}
@@ -836,7 +839,7 @@ c_block(cl_env_ptr env, cl_object body, int old_flags) {
 
 	flags = maybe_values_or_reg0(old_flags);
 	loc = c_register_block(env, name);
-	block_record = CAR(env->c_env->variables);
+	block_record = ECL_CONS_CAR(env->c_env->variables);
 	if (Null(name)) {
 		asm_op(env, OP_DO);
 	} else {
@@ -1884,9 +1887,9 @@ c_tagbody(cl_env_ptr env, cl_object args, int flags)
 	int nt, i;
 
 	/* count the tags */
-	for (nt = 0, body = args; !ecl_endp(body); body = CDR(body)) {
-		label = CAR(body);
-		item_type = type_of(CAR(body));
+	for (nt = 0, body = args; !ecl_endp(body); body = ECL_CONS_CDR(body)) {
+		label = ECL_CONS_CAR(body);
+		item_type = type_of(label);
 		if (item_type == t_symbol || item_type == t_fixnum ||
 	            item_type == t_bignum) {
 			labels = CONS(CONS(label,MAKE_FIXNUM(nt)), labels);
@@ -1904,8 +1907,8 @@ c_tagbody(cl_env_ptr env, cl_object args, int flags)
 	for (i = nt; i; i--)
 		asm_arg(env, 0);
 
-	for (body = args; !ecl_endp(body); body = CDR(body)) {
-		label = CAR(body);
+	for (body = args; !ecl_endp(body); body = ECL_CONS_CDR(body)) {
+		label = ECL_CONS_CAR(body);
 		item_type = type_of(label);
 		if (item_type == t_symbol || item_type == t_fixnum ||
 	            item_type == t_bignum) {
@@ -2048,14 +2051,14 @@ compile_form(cl_env_ptr env, cl_object stmt, int flags) {
 	/*
 	 * Next try with special forms.
 	 */
-	function = CAR(stmt);
+	function = ECL_CONS_CAR(stmt);
 	if (!SYMBOLP(function))
 		goto ORDINARY_CALL;
 	if (function == @'quote') {
-		stmt = CDR(stmt);
-		if (CDR(stmt) != Cnil)
-			FEprogram_error("QUOTE: Too many arguments.",0);
-		stmt = CAR(stmt);
+		stmt = ECL_CONS_CDR(stmt);
+		if (ATOM(stmt) || ECL_CONS_CDR(stmt) != Cnil)
+			FEprogram_error("QUOTE: Ill formed.",0);
+		stmt = ECL_CONS_CAR(stmt);
 		goto QUOTED;
 	}
 	for (l = database; l->symbol != OBJNULL; l++) {
@@ -2065,7 +2068,7 @@ compile_form(cl_env_ptr env, cl_object stmt, int flags) {
 			if (c_env->stepping && function != @'function' &&
 			    c_env->lexical_level)
 				asm_op2c(env, OP_STEPIN, stmt);
-			new_flags = (*(l->compiler))(env, CDR(stmt), flags);
+			new_flags = (*(l->compiler))(env, ECL_CONS_CDR(stmt), flags);
 			if (c_env->stepping && function != @'function' &&
 			    c_env->lexical_level)
 				asm_op(env, OP_STEPOUT);
@@ -2154,13 +2157,13 @@ compile_body(cl_env_ptr env, cl_object body, int flags) {
                 frame.stack = frame.base = 0;
                 frame.size = 0;
                 frame.env = env;
-		while (!ecl_endp(CDR(body))) {
+		while (!ecl_endp(ECL_CONS_CDR(body))) {
 			struct cl_compiler_env new_c_env = *old_c_env;
 			cl_index handle;
 			cl_object bytecodes;
 			env->c_env = &new_c_env;
 			handle = asm_begin(env);
-			compile_form(env, CAR(body), FLAG_VALUES);
+			compile_form(env, ECL_CONS_CAR(body), FLAG_VALUES);
 			asm_op(env, OP_EXIT);
 			VALUES(0) = Cnil;
 			NVALUES = 0;
@@ -2173,17 +2176,17 @@ compile_body(cl_env_ptr env, cl_object body, int flags) {
 			GC_free(bytecodes->bytecodes.data);
 			GC_free(bytecodes);
 #endif
-			body = CDR(body);
+			body = ECL_CONS_CDR(body);
 		}
 	}
 	if (ecl_endp(body)) {
 		return compile_form(env, Cnil, flags);
 	} else {
 		do {
-			if (ecl_endp(CDR(body)))
-				return compile_form(env, CAR(body), flags);
-			compile_form(env, CAR(body), FLAG_IGNORE);
-			body = CDR(body);
+			if (ecl_endp(ECL_CONS_CDR(body)))
+				return compile_form(env, ECL_CONS_CAR(body), flags);
+			compile_form(env, ECL_CONS_CAR(body), FLAG_IGNORE);
+			body = ECL_CONS_CDR(body);
 		} while (1);
 	}
 }
@@ -2304,12 +2307,12 @@ c_listA(cl_env_ptr env, cl_object args, int flags)
   Handles special declarations, removes declarations from body
  */
 @(defun si::process_declarations (body &optional doc)
-	cl_object documentation = Cnil, declarations = Cnil, form, specials = Cnil;
+	cl_object documentation = Cnil, declarations = Cnil, specials = Cnil;
 	cl_object decls, vars, v;
 @
 	/* BEGIN: SEARCH DECLARE */
-	for (; !ecl_endp(body); body = CDR(body)) {
-	  form = CAR(body);
+	for (; !ecl_endp(body); body = ECL_CONS_CDR(body)) {
+	  cl_object form = ECL_CONS_CAR(body);
 
 	  if (!Null(doc) && type_of(form) == t_base_string && !ecl_endp(CDR(body))) {
 	    if (documentation == Cnil)
@@ -2319,17 +2322,17 @@ c_listA(cl_env_ptr env, cl_object args, int flags)
 	    continue;
 	  }
 
-	  if (ATOM(form) || (CAR(form) != @'declare'))
+	  if (ATOM(form) || (ECL_CONS_CAR(form) != @'declare'))
 	    break;
 
-	  for (decls = CDR(form); !ecl_endp(decls); decls = CDR(decls)) {
-	    cl_object sentence = CAR(decls);
+	  for (decls = ECL_CONS_CDR(form); !ecl_endp(decls); decls = ECL_CONS_CDR(decls)) {
+	    cl_object sentence = ECL_CONS_CAR(decls);
 	    if (ATOM(sentence))
 	      FEill_formed_input();
 	    push(sentence, declarations);
-	    if (CAR(sentence) == @'special')
-	      for (vars = CDR(sentence); !ecl_endp(vars); vars = CDR(vars)) {
-		v = CAR(vars);
+	    if (ECL_CONS_CAR(sentence) == @'special')
+	      for (vars = ECL_CONS_CDR(sentence); !ecl_endp(vars); vars = ECL_CONS_CDR(vars)) {
+		v = ECL_CONS_CAR(vars);
 		assert_type_symbol(v);
 		push(v,specials);
 	      }
@@ -2350,7 +2353,7 @@ si_process_lambda(cl_object lambda)
 
 	if (ATOM(lambda))
 		FEprogram_error("LAMBDA: No lambda list.", 0);
-	lambda_list = CAR(lambda);
+	lambda_list = ECL_CONS_CAR(lambda);
 
 	declarations = @si::process-declarations(2, CDR(lambda), Ct);
 	body = VALUES(1);
@@ -2424,8 +2427,8 @@ LOOP:
 			goto REST;
 		}
 	}
-	v = CAR(lambda_list);
-	lambda_list = CDR(lambda_list);
+	v = ECL_CONS_CAR(lambda_list);
+	lambda_list = ECL_CONS_CDR(lambda_list);
 	if (v == @'&optional') {
 		if (stage >= AT_OPTIONALS)
 			goto ILLEGAL_LAMBDA;
@@ -2435,8 +2438,8 @@ LOOP:
 	if (v == @'&rest' || (v == @'&body' && (context == @'si::macro' || context == @'destructuring-bind'))) {
 		if (ATOM(lambda_list))
 			goto ILLEGAL_LAMBDA;
-		v = CAR(lambda_list);
-		lambda_list = CDR(lambda_list);
+		v = ECL_CONS_CAR(lambda_list);
+		lambda_list = ECL_CONS_CDR(lambda_list);
 REST:		if (stage >= AT_REST)
 			goto ILLEGAL_LAMBDA;
 		stage = AT_REST;
@@ -2473,12 +2476,14 @@ REST:		if (stage >= AT_REST)
 		init = Cnil;
 		if (!ATOM(v)) {
 			cl_object x = v;
-			v = CAR(x);
-			if (!ecl_endp(x = CDR(x))) {
-				init = CAR(x);
-				if (!ecl_endp(x = CDR(x))) {
-					spp = CAR(x);
-					if (!ecl_endp(CDR(x)))
+			v = ECL_CONS_CAR(x);
+                        x = ECL_CONS_CDR(x);
+			if (!ecl_endp(x)) {
+				init = ECL_CONS_CAR(x);
+                                x = ECL_CONS_CDR(x);
+				if (!ecl_endp(x)) {
+					spp = ECL_CONS_CAR(x);
+					if (!ecl_endp(ECL_CONS_CDR(x)))
 						goto ILLEGAL_LAMBDA;
 				}
 			}
@@ -2501,19 +2506,21 @@ REST:		if (stage >= AT_REST)
 		spp = Cnil;
 		if (!ATOM(v)) {
 			cl_object x = v;
-			v = CAR(x);
-			if (!ecl_endp(x = CDR(x))) {
-				init = CAR(x);
-				if (!ecl_endp(x = CDR(x))) {
-					spp = CAR(x);
-					if (!ecl_endp(CDR(x)))
+			v = ECL_CONS_CAR(x);
+                        x = ECL_CONS_CDR(x);
+			if (!ecl_endp(x)) {
+				init = ECL_CONS_CAR(x);
+                                x = ECL_CONS_CDR(x);
+				if (!ecl_endp(x)) {
+					spp = ECL_CONS_CAR(x);
+					if (!ecl_endp(ECL_CONS_CDR(x)))
 						goto ILLEGAL_LAMBDA;
 				}
 			}
 		}
 		if (CONSP(v)) {
-			key = CAR(v);
-			if (ecl_endp(CDR(v)) || !ecl_endp(CDDR(v)))
+			key = ECL_CONS_CAR(v);
+			if (ecl_endp(ECL_CONS_CDR(v)) || !ecl_endp(CDDR(v)))
 				goto ILLEGAL_LAMBDA;
 			v = CADR(v);
 			if (context == @'function')
@@ -2539,7 +2546,7 @@ REST:		if (stage >= AT_REST)
 			init = Cnil;
 		} else if (ecl_endp(CDDR(v))) {
 			cl_object x = v;
-			v = CAR(x);
+			v = ECL_CONS_CAR(x);
 			init = CADR(x);
 		} else
 			goto ILLEGAL_LAMBDA;
