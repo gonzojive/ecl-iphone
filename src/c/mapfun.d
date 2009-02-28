@@ -40,13 +40,15 @@
 		cl_index i;
 		for (i = 0;  i < narg;  i++) {
 			cl_object cdr = ECL_STACK_FRAME_REF(cdrs_frame, i);
-			if (ecl_endp(cdr)) {
+                        if (!LISTP(cdr))
+                                FEtype_error_list(cdr);
+			if (Null(cdr)) {
 				ecl_stack_frame_close(cars_frame);
 				ecl_stack_frame_close(cdrs_frame);
 				@(return res)
 			}
-			ECL_STACK_FRAME_SET(cars_frame, i, CAR(cdr));
-			ECL_STACK_FRAME_SET(cdrs_frame, i, CDR(cdr));
+			ECL_STACK_FRAME_SET(cars_frame, i, ECL_CONS_CAR(cdr));
+			ECL_STACK_FRAME_SET(cdrs_frame, i, ECL_CONS_CDR(cdr));
 		}
 		*val = ecl_list1(ecl_apply_from_stack_frame(cars_frame, fun));
 		val = &ECL_CONS_CDR(*val);
@@ -62,13 +64,15 @@
 		cl_index i;
 		for (i = 0;  i < narg;  i++) {
 			cl_object cdr = ECL_STACK_FRAME_REF(cdrs_frame, i);
-			if (ecl_endp(cdr)) {
+                        if (!LISTP(cdr))
+                                FEtype_error_list(cdr);
+			if (Null(cdr)) {
 				ecl_stack_frame_close(cars_frame);
 				ecl_stack_frame_close(cdrs_frame);
 				@(return res)
 			}
 			ECL_STACK_FRAME_SET(cars_frame, i, cdr);
-			ECL_STACK_FRAME_SET(cdrs_frame, i, CDR(cdr));
+			ECL_STACK_FRAME_SET(cdrs_frame, i, ECL_CONS_CDR(cdr));
 		}
 		*val = ecl_list1(ecl_apply_from_stack_frame(cars_frame, fun));
 		val = &ECL_CONS_CDR(*val);
@@ -84,13 +88,15 @@
 		cl_index i;
 		for (i = 0;  i < narg;  i++) {
 			cl_object cdr = ECL_STACK_FRAME_REF(cdrs_frame, i);
-			if (ecl_endp(cdr)) {
+                        if (!LISTP(cdr))
+                                FEtype_error_list(cdr);
+			if (Null(cdr)) {
 				ecl_stack_frame_close(cars_frame);
 				ecl_stack_frame_close(cdrs_frame);
 				@(return onelist)
 			}
-			ECL_STACK_FRAME_SET(cars_frame, i, CAR(cdr));
-			ECL_STACK_FRAME_SET(cdrs_frame, i, CDR(cdr));
+			ECL_STACK_FRAME_SET(cars_frame, i, ECL_CONS_CAR(cdr));
+			ECL_STACK_FRAME_SET(cdrs_frame, i, ECL_CONS_CDR(cdr));
 		}
 		ecl_apply_from_stack_frame(cars_frame, fun);
 	}
@@ -105,13 +111,15 @@
 		cl_index i;
 		for (i = 0;  i < narg;  i++) {
 			cl_object cdr = ECL_STACK_FRAME_REF(cdrs_frame, i);
-			if (ecl_endp(cdr)) {
+                        if (!LISTP(cdr))
+                                FEtype_error_list(cdr);
+			if (Null(cdr)) {
 				ecl_stack_frame_close(cars_frame);
 				ecl_stack_frame_close(cdrs_frame);
 				@(return onelist)
 			}
 			ECL_STACK_FRAME_SET(cars_frame, i, cdr);
-			ECL_STACK_FRAME_SET(cdrs_frame, i, CDR(cdr));
+			ECL_STACK_FRAME_SET(cdrs_frame, i, ECL_CONS_CDR(cdr));
 		}
 		ecl_apply_from_stack_frame(cars_frame, fun);
 	}
@@ -126,13 +134,15 @@
 		cl_index i;
 		for (i = 0;  i < narg;  i++) {
 			cl_object cdr = ECL_STACK_FRAME_REF(cdrs_frame, i);
-			if (ecl_endp(cdr)) {
+                        if (!LISTP(cdr))
+                                FEtype_error_list(cdr);
+			if (Null(cdr)) {
 				ecl_stack_frame_close(cars_frame);
 				ecl_stack_frame_close(cdrs_frame);
 				@(return res)
 			}
-			ECL_STACK_FRAME_SET(cars_frame, i, CAR(cdr));
-			ECL_STACK_FRAME_SET(cdrs_frame, i, CDR(cdr));
+			ECL_STACK_FRAME_SET(cars_frame, i, ECL_CONS_CAR(cdr));
+			ECL_STACK_FRAME_SET(cdrs_frame, i, ECL_CONS_CDR(cdr));
 		}
 		*val = ecl_apply_from_stack_frame(cars_frame, fun);
 		while (CONSP(*val))
@@ -149,13 +159,15 @@
 		cl_index i;
 		for (i = 0;  i < narg;  i++) {
 			cl_object cdr = ECL_STACK_FRAME_REF(cdrs_frame, i);
-			if (ecl_endp(cdr)) {
+                        if (!LISTP(cdr))
+                                FEtype_error_list(cdr);
+			if (Null(cdr)) {
 				ecl_stack_frame_close(cars_frame);
 				ecl_stack_frame_close(cdrs_frame);
 				@(return res)
 			}
 			ECL_STACK_FRAME_SET(cars_frame, i, cdr);
-			ECL_STACK_FRAME_SET(cdrs_frame, i, CDR(cdr));
+			ECL_STACK_FRAME_SET(cdrs_frame, i, ECL_CONS_CDR(cdr));
 		}
 		*val = ecl_apply_from_stack_frame(cars_frame, fun);
 		while (CONSP(*val))
