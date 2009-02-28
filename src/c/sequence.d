@@ -72,14 +72,14 @@ ecl_elt(cl_object seq, cl_fixnum index)
 		goto E;
 	switch (type_of(seq)) {
 	case t_list:
-		for (i = index, l = seq;  i > 0;  --i)
-			if (ecl_endp(l))
-				goto E;
-			else
-				l = CDR(l);
-		if (ecl_endp(l))
-			goto E;
-		return(CAR(l));
+		for (i = index, l = seq;  i > 0;  --i) {
+                        if (!LISTP(l)) goto E0;
+                        if (Null(l)) goto E;
+                        l = ECL_CONS_CDR(l);
+                }
+                if (!LISTP(l)) goto E0;
+                if (Null(l)) goto E;
+		return ECL_CONS_CAR(l);
 
 #ifdef ECL_UNICODE
 	case t_string:
@@ -96,6 +96,7 @@ ecl_elt(cl_object seq, cl_fixnum index)
 		return(CODE_CHAR(seq->base_string.self[index]));
 
 	default:
+        E0:
 		FEtype_error_sequence(seq);
 	}
 E:
@@ -118,13 +119,13 @@ ecl_elt_set(cl_object seq, cl_fixnum index, cl_object val)
 		goto E;
 	switch (type_of(seq)) {
 	case t_list:
-		for (i = index, l = seq;  i > 0;  --i)
-			if (ecl_endp(l))
-				goto E;
-			else
-				l = CDR(l);
-		if (ecl_endp(l))
-			goto E;
+		for (i = index, l = seq;  i > 0;  --i) {
+                        if (!LISTP(l)) goto E0;
+                        if (Null(l)) goto E;
+                        l = ECL_CONS_CDR(l);
+                }
+                if (!LISTP(l)) goto E0;
+                if (Null(l)) goto E;
 		ECL_RPLACA(l, val);
 		return val;
 
@@ -145,6 +146,7 @@ ecl_elt_set(cl_object seq, cl_fixnum index, cl_object val)
 		return(val);
 
 	default:
+        E0:
 		FEtype_error_sequence(seq);
 	}
 E:
@@ -260,8 +262,10 @@ cl_reverse(cl_object seq)
 
 	switch (type_of(seq)) {
 	case t_list: {
-		for (x = seq, output = Cnil;  !ecl_endp(x);  x = CDR(x))
-			output = CONS(CAR(x), output);
+		for (x = seq, output = Cnil; !Null(x); x = ECL_CONS_CDR(x)) {
+                        if (!LISTP(x)) goto E;
+			output = CONS(ECL_CONS_CAR(x), output);
+                }
 		break;
 	}
 #ifdef ECL_UNICODE
@@ -274,8 +278,8 @@ cl_reverse(cl_object seq)
 		ecl_copy_subarray(output, 0, seq, 0, seq->vector.fillp);
 		ecl_reverse_subarray(output, 0, seq->vector.fillp);
 		break;
-
 	default:
+        E:
 		FEtype_error_sequence(seq);
 	}
 	@(return output)
@@ -287,15 +291,14 @@ cl_nreverse(cl_object seq)
 	switch (type_of(seq)) {
 	case t_list: {
 		cl_object x, y, z;
-		if (Null(seq))
-			break;
-		for (x = Cnil, y = seq;  !ecl_endp(CDR(y));) {
-			z = y;
-			y = CDR(y);
-			ECL_RPLACD(z, x);
-			x = z;
-		}
-		ECL_RPLACD(y, x);
+                for (x = seq, y = Cnil; !Null(x); ) {
+                        if (!LISTP(x)) FEtype_error_list(x);
+                        z = x;
+                        x = ECL_CONS_CDR(x);
+                        if (x == seq) FEcircular_list(seq);
+                        ECL_RPLACD(z, y);
+                        y = z;
+                }
 		seq = y;
 		break;
 	}
