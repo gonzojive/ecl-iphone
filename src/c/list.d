@@ -580,15 +580,14 @@ cl_nreconc(cl_object l, cl_object y)
 	/* INV: when a circular list is "reconc'ed", the pointer ends
 	   up at the beginning of the original list, hence we need no
 	   slow pointer */
-	for (x = l; CONSP(x); ) {
+	for (x = l; !Null(x); ) {
+                if (!LISTP(x)) FEtype_error_list(x);
 		z = x;
 		x = ECL_CONS_CDR(x);
 		if (x == l) FEcircular_list(l);
 		ECL_RPLACD(z, y);
 		y = z;
 	}
-	if (x != Cnil)
-		FEtype_error_list(x);
 	@(return y)
 }
 
