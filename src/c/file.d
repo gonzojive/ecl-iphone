@@ -1854,7 +1854,7 @@ broadcast_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	cl_object l;
 	cl_index out = n;
-	for (l = BROADCAST_STREAM_LIST(strm); !ecl_endp(l); l = ECL_CONS_CDR(l)) {
+	for (l = BROADCAST_STREAM_LIST(strm); !Null(l); l = ECL_CONS_CDR(l)) {
 		out = ecl_write_byte8(ECL_CONS_CAR(l), c, n);
 	}
 	return out;
@@ -1864,7 +1864,7 @@ static ecl_character
 broadcast_write_char(cl_object strm, ecl_character c)
 {
 	cl_object l;
-	for (l = BROADCAST_STREAM_LIST(strm); !ecl_endp(l); l = ECL_CONS_CDR(l)) {
+	for (l = BROADCAST_STREAM_LIST(strm); !Null(l); l = ECL_CONS_CDR(l)) {
 		ecl_write_char(c, ECL_CONS_CAR(l));
 	}
 	return c;
@@ -1874,7 +1874,7 @@ static void
 broadcast_write_byte(cl_object c, cl_object strm)
 {
 	cl_object l;
-	for (l = BROADCAST_STREAM_LIST(strm); !ecl_endp(l); l = ECL_CONS_CDR(l)) {
+	for (l = BROADCAST_STREAM_LIST(strm); !Null(l); l = ECL_CONS_CDR(l)) {
 		ecl_write_byte(c, ECL_CONS_CAR(l));
 	}
 }
@@ -1883,7 +1883,7 @@ static void
 broadcast_clear_output(cl_object strm)
 {
 	cl_object l;
-	for (l = BROADCAST_STREAM_LIST(strm); !ecl_endp(l); l = ECL_CONS_CDR(l)) {
+	for (l = BROADCAST_STREAM_LIST(strm); !Null(l); l = ECL_CONS_CDR(l)) {
 		ecl_clear_output(ECL_CONS_CAR(l));
 	}
 }
@@ -1892,7 +1892,7 @@ static void
 broadcast_force_output(cl_object strm)
 {
 	cl_object l;
-	for (l = BROADCAST_STREAM_LIST(strm); !ecl_endp(l); l = ECL_CONS_CDR(l)) {
+	for (l = BROADCAST_STREAM_LIST(strm); !Null(l); l = ECL_CONS_CDR(l)) {
 		ecl_force_output(ECL_CONS_CAR(l));
 	}
 }
@@ -1901,7 +1901,7 @@ static void
 broadcast_finish_output(cl_object strm)
 {
 	cl_object l;
-	for (l = BROADCAST_STREAM_LIST(strm); !ecl_endp(l); l = ECL_CONS_CDR(l)) {
+	for (l = BROADCAST_STREAM_LIST(strm); !Null(l); l = ECL_CONS_CDR(l)) {
 		ecl_finish_output(ECL_CONS_CAR(l));
 	}
 }
