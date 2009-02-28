@@ -253,6 +253,17 @@ extern ECL_API ecl_frame_ptr _ecl_frs_push(register cl_env_ptr, register cl_obje
                 }                                                       \
                 __env->stack_top = __new_top + __aux; } while (0)
 
+#define ECL_STACK_FRAME_COPY(dest,orig) do {                            \
+                cl_object __dest = (dest);                              \
+                cl_object __orig = (orig);                              \
+                cl_index __size = __orig->frame.size;                   \
+                ecl_stack_frame_open(__orig->frame.env, __dest, __size); \
+                memcpy(__dest->frame.base, __orig->frame.base, __size * sizeof(cl_object)); \
+        } while (0);
+
+#define ECL_STACK_FRAME_SET(f,ndx,o) do { (f)->frame.base[(ndx)] = (o); } while(0)
+#define ECL_STACK_FRAME_REF(f,ndx) ((f)->frame.base[(ndx)])
+
 /*********************************
  * HIGH LEVEL CONTROL STRUCTURES *
  *********************************/

@@ -47,7 +47,7 @@ user_function_dispatch(cl_narg narg, ...)
 	const cl_object frame = ecl_stack_frame_open(env, (cl_object)&frame_aux, narg);
         cl_va_list args; cl_va_start(args, narg, narg, 0);
         for (i = 0; i < narg; i++) {
-                ecl_stack_frame_elt_set(frame, i, cl_va_arg(args));
+                ECL_STACK_FRAME_SET(frame, i, cl_va_arg(args));
         }
         fun = fun->instance.slots[fun->instance.length - 1];
         output = ecl_apply_from_stack_frame(frame, fun);
@@ -383,7 +383,9 @@ _ecl_standard_dispatch(cl_object frame, cl_object gf)
 #if !defined(ECL_USE_VARARG_AS_POINTER)
 	struct ecl_stack_frame frame_aux;
 	if (frame->frame.stack == (void*)0x1) {
-		frame = ecl_stack_frame_copy((cl_object)&frame_aux, frame);
+                const cl_object new_frame = (cl_object)&frame_aux;
+                ECL_STACK_FRAME_COPY(new_frame, frame);
+                frame = new_frame;
 	}
 #endif
 	

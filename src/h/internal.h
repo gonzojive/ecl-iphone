@@ -96,6 +96,27 @@ typedef struct cl_compiler_env *cl_compiler_env_ptr;
 	cl_object name = ecl_stack_frame_open(env, (cl_object)&frame, 0);
 
 #ifdef ECL_USE_VARARG_AS_POINTER
+#define ECL_STACK_FRAME_FROM_VA_LIST(e,f,va) do {                  \
+                const cl_object __frame = (f);                     \
+                __frame->frame.t = t_frame;                        \
+                __frame->frame.stack = 0;                          \
+                __frame->frame.env = (e);                          \
+                __frame->frame.size = va[0].narg;                  \
+                __frame->frame.base = va[0].sp? va[0].sp :         \
+                        (cl_object*)va[0].args;                    \
+        } while(0)
+#else
+#define ECL_STACK_FRAME_FROM_VA_LIST(e,f,va) do {                       \
+                const cl_object __frame = (f);                          \
+                cl_index i, nargs = va[0].narg;                         \
+                ecl_stack_frame_open((e), __frame, nargs);              \
+                for (i = 0; i < __nargs; i++) {                         \
+                        __frame->frame.base[i] = cl_va_arg(va);         \
+                }                                                       \
+        } while (0)
+#endif
+
+#ifdef ECL_USE_VARARG_AS_POINTER
 #define ECL_STACK_FRAME_VARARGS_BEGIN(narg,lastarg,frame)               \
         struct ecl_frame __ecl_frame;                                   \
         const cl_object frame = (cl_object)&__ecl_frame;                \

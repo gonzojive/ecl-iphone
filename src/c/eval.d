@@ -145,7 +145,7 @@ cl_funcall(cl_narg narg, cl_object function, ...)
 							     (cl_object)&frame_aux,
 							     narg -= 2);
 		for (i = 0; i < narg; i++) {
-			ecl_stack_frame_elt_set(frame, i, lastarg);
+			ECL_STACK_FRAME_SET(frame, i, lastarg);
 			lastarg = cl_va_arg(args);
 		}
 		if (type_of(lastarg) == t_frame) {

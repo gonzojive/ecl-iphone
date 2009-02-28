@@ -119,19 +119,6 @@ ecl_stack_frame_open(cl_env_ptr env, cl_object f, cl_index size)
 }
 
 void
-ecl_stack_frame_enlarge(cl_object f, cl_index size)
-{
-	cl_env_ptr env = f->frame.env;
-	cl_object *top = env->stack_top;
-	if ((env->stack_limit - top) < size) {
-		top = ecl_stack_set_size(env, env->stack_size + size);
-	}
-        env->stack_top = (top += size);
-        f->frame.base = top - (f->frame.size += size);
-        f->frame.stack = env->stack;
-}
-
-void
 ecl_stack_frame_push(cl_object f, cl_object o)
 {
 	cl_env_ptr env = f->frame.env;
@@ -168,35 +155,6 @@ ecl_stack_frame_pop_values(cl_object f)
 	return o;
 }
 
-cl_object
-ecl_stack_frame_elt(cl_object f, cl_index ndx)
-{
-	if (ndx >= f->frame.size) {
-		FEtype_error_index(f, ecl_make_unsigned_integer(ndx));
-	}
-	return f->frame.base[ndx];
-}
-
-void
-ecl_stack_frame_elt_set(cl_object f, cl_index ndx, cl_object o)
-{
-	if (ndx >= f->frame.size) {
-		FEtype_error_index(f, ecl_make_unsigned_integer(ndx));
-	}
-	f->frame.base[ndx] = o;
-}
-
-cl_object
-ecl_stack_frame_from_va_list(cl_env_ptr env, cl_object frame, cl_va_list args)
-{
-	cl_index i, nargs = args[0].narg;
-	ecl_stack_frame_open(env, frame, nargs);
-        for (i = 0; i < nargs; i++) {
-                frame->frame.base[i] = cl_va_arg(args);
-	}
-	return frame;
-}
-
 void
 ecl_stack_frame_close(cl_object f)
 {
@@ -204,16 +162,6 @@ ecl_stack_frame_close(cl_object f)
 		ECL_STACK_SET_INDEX(f->frame.env, f->frame.base - f->frame.stack);
 	}
 }
-
-cl_object
-ecl_stack_frame_copy(cl_object dest, cl_object orig)
-{
-	cl_index size = orig->frame.size;
-	dest = ecl_stack_frame_open(orig->frame.env, dest, size);
-	memcpy(dest->frame.base, orig->frame.base, size * sizeof(cl_object));
-	return dest;
-}
-
 
 /* ------------------------------ LEXICAL ENV. ------------------------------ */
 

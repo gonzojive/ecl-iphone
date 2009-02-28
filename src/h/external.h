@@ -462,14 +462,9 @@ extern ECL_API cl_object si_eval_with_env _ARGS((cl_narg narg, cl_object form, .
 
 extern ECL_API cl_object si_interpreter_stack _ARGS((cl_narg narg));
 extern ECL_API cl_object ecl_stack_frame_open(cl_env_ptr env, cl_object f, cl_index size);
-extern ECL_API void ecl_stack_frame_enlarge(cl_object f, cl_index size);
 extern ECL_API void ecl_stack_frame_push(cl_object f, cl_object o);
 extern ECL_API void ecl_stack_frame_push_values(cl_object f);
-extern ECL_API cl_object ecl_stack_frame_from_va_list(cl_env_ptr env, cl_object f, cl_va_list args);
 extern ECL_API cl_object ecl_stack_frame_pop_values(cl_object f);
-extern ECL_API cl_object ecl_stack_frame_elt(cl_object f, cl_index n);
-extern ECL_API void ecl_stack_frame_elt_set(cl_object f, cl_index n, cl_object o);
-extern ECL_API cl_object ecl_stack_frame_copy(cl_object f, cl_object size);
 extern ECL_API void ecl_stack_frame_close(cl_object f);
 #define si_apply_from_stack_frame ecl_apply_from_stack_frame
 
@@ -494,7 +489,7 @@ extern ECL_API cl_object si_bc_file(cl_object v);
 extern ECL_API cl_object cl_error _ARGS((cl_narg narg, cl_object eformat, ...)) /*__attribute__((noreturn))*/;
 extern ECL_API cl_object cl_cerror _ARGS((cl_narg narg, cl_object cformat, cl_object eformat, ...));
 
-        extern ECL_API void ecl_inter,nal_error(const char *s) /*__attribute__((noreturn))*/;
+extern ECL_API void ecl_internal_error(const char *s) /*__attribute__((noreturn))*/;
 extern ECL_API void ecl_cs_overflow(void) /*__attribute__((noreturn))*/;
 extern ECL_API void FEprogram_error(const char *s, int narg, ...) /*__attribute__((noreturn))*/;
 extern ECL_API void FEcontrol_error(const char *s, int narg, ...) /*__attribute__((noreturn))*/;
