@@ -2202,7 +2202,7 @@ concatenated_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	cl_object l = CONCATENATED_STREAM_LIST(strm);
 	cl_index out = 0;
-	while (out < n && !ecl_endp(l)) {
+	while (out < n && !Null(l)) {
 		cl_index left = n - out;
 		cl_index delta = ecl_read_byte8(ECL_CONS_CAR(l), c + out, n - out);
 		out += delta;
@@ -2217,7 +2217,7 @@ concatenated_read_byte(cl_object strm)
 {
 	cl_object l = CONCATENATED_STREAM_LIST(strm);
 	cl_object c = Cnil;
-	while (!ecl_endp(l)) {
+	while (!Null(l)) {
 		c = ecl_read_byte(ECL_CONS_CAR(l));
 		if (c != Cnil) break;
 		CONCATENATED_STREAM_LIST(strm) = l = ECL_CONS_CDR(l);
@@ -2230,7 +2230,7 @@ concatenated_read_char(cl_object strm)
 {
 	cl_object l = CONCATENATED_STREAM_LIST(strm);
 	ecl_character c = EOF;
-	while (!ecl_endp(l)) {
+	while (!Null(l)) {
 		c = ecl_read_char(ECL_CONS_CAR(l));
 		if (c != EOF) break;
 		CONCATENATED_STREAM_LIST(strm) = l = ECL_CONS_CDR(l);
@@ -2251,7 +2251,7 @@ static int
 concatenated_listen(cl_object strm)
 {
 	cl_object l = CONCATENATED_STREAM_LIST(strm);
-	while (!ecl_endp(l)) {
+	while (!Null(l)) {
 		int f = ecl_listen_stream(ECL_CONS_CAR(l));
 		l = ECL_CONS_CDR(l);
 		if (f == ECL_LISTEN_EOF) {
@@ -3835,7 +3835,7 @@ cl_file_string_length(cl_object stream, cl_object string)
 	}
 	if (stream->stream.mode == smm_broadcast) {
 		stream = BROADCAST_STREAM_LIST(stream);
-		if (ecl_endp(stream)) {
+		if (Null(stream)) {
 			@(return MAKE_FIXNUM(1));
 		} else {
 			goto BEGIN;
