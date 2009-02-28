@@ -34,7 +34,8 @@ cl_object
 cl_values_list(cl_object list)
 {
 	VALUES(0) = Cnil;
-	for (NVALUES=0; !ecl_endp(list); list=ECL_CONS_CDR(list)) {
+	for (NVALUES=0; !Null(list); list=ECL_CONS_CDR(list)) {
+                if (!LISTP(list)) FEtype_error_list(list);
 		if (NVALUES == ECL_MULTIPLE_VALUES_LIMIT)
 			FEerror("Too many values in VALUES-LIST",0);
 		VALUES(NVALUES++) = ECL_CONS_CAR(list);
