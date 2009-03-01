@@ -273,19 +273,32 @@ ecl_to_int64_t(cl_object x) {
         } while(1);
 }
 
+# if FIXNUM_BITS < 64
 cl_object
 ecl_make_uint64_t(ecl_uint64_t i)
 {
-        cl_object aux = ecl_make_uint32_t(i >> 32);
-        return cl_logior(2, ecl_ash(aux, 32), ecl_make_uint32_t((ecl_uint32_t)i));
+        if (i <= MOST_POSITIVE_FIXNUM) {
+                return MAKE_FIXNUM(i);
+        } else if (i <= ~(ecl_uint32_t)0) {
+                return ecl_make_uint32_t(i);
+        } else {
+                cl_object aux = ecl_make_uint32_t(i >> 32);
+                return cl_logior(2, ecl_ash(aux, 32),
+                                 ecl_make_uint32_t((ecl_uint32_t)i));
+        }
 }
 
 cl_object
 ecl_make_int64_t(ecl_int64_t i)
 {
-        cl_object aux = ecl_make_int32_t(i >> 32);
-        return cl_logior(2, ecl_ash(aux, 32), ecl_make_uint32_t((ecl_uint32_t)i));
+        if (i >= MOST_NEGATIVE_FIXNUM && i <= MOST_POSITIVE_FIXNUM) {
+                return MAKE_FIXNUM(i);
+        } else {
+                cl_object aux = ecl_make_int32_t(i >> 32);
+                return cl_logior(2, ecl_ash(aux, 32), ecl_make_uint32_t((ecl_uint32_t)i));
+        }
 }
+# endif /* FIXNUM_BITS < 64 */
 #endif /* ecl_uint64_t */
 
 cl_object
