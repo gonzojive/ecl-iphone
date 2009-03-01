@@ -94,6 +94,10 @@ ECL 9.1.0:
    also companion functions or macros, ecl_make_[u]int*_t and ecl_to_[u]int*_t
    that respectively convert to and from Lisp integers.
 
+ - New specialized array types for signed and unsigned integers with 8, 16, 32
+   and 64 bits. They depend on the existence of the ecl_[u]int*_t macros
+   mentioned before.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

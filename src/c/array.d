@@ -28,6 +28,18 @@ static const cl_index ecl_aet_size[] = {
   sizeof(cl_index),           /* aet_index */
   sizeof(uint8_t),            /* aet_b8 */
   sizeof(int8_t),             /* aet_i8 */
+#ifdef ecl_uint16_t
+  sizeof(ecl_uint16_t),
+  sizeof(ecl_int16_t),
+#endif
+#ifdef ecl_uint32_t
+  sizeof(ecl_uint32_t),
+  sizeof(ecl_int32_t),
+#endif
+#ifdef ecl_uint64_t
+  sizeof(ecl_uint64_t),
+  sizeof(ecl_int64_t),
+#endif
 #ifdef ECL_UNICODE
   sizeof(cl_object),          /* aet_ch */
 #endif
@@ -156,9 +168,27 @@ do_ecl_aref(cl_object x, cl_index index, cl_elttype type)
 	case aet_df:
 		return(ecl_make_doublefloat(x->array.self.df[index]));
 	case aet_b8:
-		return(MAKE_FIXNUM(x->array.self.b8[index]));
+		return ecl_make_uint8_t(x->array.self.b8[index]);
 	case aet_i8:
-		return(MAKE_FIXNUM(x->array.self.i8[index]));
+		return ecl_make_int8_t(x->array.self.i8[index]);
+#ifdef ecl_uint16_t
+	case aet_b16:
+		return ecl_make_uint16_t(x->array.self.b16[index]);
+	case aet_i16:
+		return ecl_make_int16_t(x->array.self.i16[index]);
+#endif
+#ifdef ecl_uint32_t
+	case aet_b32:
+		return ecl_make_uint32_t(x->array.self.b32[index]);
+	case aet_i32:
+		return ecl_make_int32_t(x->array.self.i32[index]);
+#endif
+#ifdef ecl_uint64_t
+	case aet_b64:
+		return ecl_make_uint64_t(x->array.self.b64[index]);
+	case aet_i64:
+		return ecl_make_int64_t(x->array.self.i64[index]);
+#endif
 	default:
 		FEbad_aet();
 	}
@@ -269,16 +299,36 @@ ecl_aset(cl_object x, cl_index index, cl_object value)
 	case aet_df:
 		x->array.self.df[index] = ecl_to_double(value);
 		break;
-	case aet_b8: {
-		uint8_t i = ecl_fixnum_in_range(@'si::aset',"byte",value,0,255);
-		x->array.self.b8[index] = i;
+	case aet_b8:
+		x->array.self.b8[index] = ecl_to_uint8_t(value);
 		break;
-	}
-	case aet_i8: {
-		int8_t i = ecl_fixnum_in_range(@'si::aset',"byte",value,-128,127);
-		x->array.self.i8[index] = i;
+	case aet_i8:
+		x->array.self.i8[index] = ecl_to_int8_t(value);
 		break;
-	}
+#ifdef ecl_uint16_t
+	case aet_b16:
+		x->array.self.b16[index] = ecl_to_uint16_t(value);
+		break;
+	case aet_i16:
+		x->array.self.i16[index] = ecl_to_int16_t(value);
+		break;
+#endif
+#ifdef ecl_uint32_t
+	case aet_b32:
+		x->array.self.b32[index] = ecl_to_uint32_t(value);
+		break;
+	case aet_i32:
+		x->array.self.i32[index] = ecl_to_int32_t(value);
+		break;
+#endif
+#ifdef ecl_uint64_t
+	case aet_b64:
+		x->array.self.b64[index] = ecl_to_uint64_t(value);
+		break;
+	case aet_i64:
+		x->array.self.i64[index] = ecl_to_int64_t(value);
+		break;
+#endif
 	}
 	return(value);
 }
@@ -418,97 +468,39 @@ si_make_vector(cl_object etype, cl_object dim, cl_object adj,
 void
 ecl_array_allocself(cl_object x)
 {
-	cl_index i, d;
-
-	d = x->array.dim;
-	switch (ecl_array_elttype(x)) {
+        cl_elttype t = ecl_array_elttype(x);
+	cl_index i, d = x->array.dim;
+	switch (t) {
 	/* assign self field only after it has been filled, for GC sake  */
 	case aet_object: {
 		cl_object *elts;
 		elts = (cl_object *)ecl_alloc_align(sizeof(cl_object)*d, sizeof(cl_object));
-		for (i = 0;  i < d;  i++)
+		for (i = 0; i < d;  i++)
 			elts[i] = Cnil;
 		x->array.self.t = elts;
-		break;
-	      }
+		return;
+        }
 #ifdef ECL_UNICODE
 	case aet_ch: {
 		ecl_character *elts;
-		elts = (ecl_character *)ecl_alloc_align(sizeof(ecl_character)*d,
-                                                        sizeof(ecl_character));
-		for (i = 0;  i < d;  i++)
-			elts[i] = ' ';
+                d *= sizeof(ecl_character);
+		elts = (ecl_character *)ecl_alloc_atomic_align(d, sizeof(ecl_character));
+                memset(elts, 0, d);
 		x->string.self = elts;
-		break;
+		return;
         }
 #endif
-	case aet_bc: {
-		ecl_base_char *elts = (ecl_base_char *)ecl_alloc_atomic(d+1);
-		for (i = 0;  i < d;  i++)
-			elts[i] = ' ';
-		elts[d] = '\0';
-		x->base_string.self = elts;
-		break;
+        case aet_bit:
+                d = (d + (CHAR_BIT-1)) / CHAR_BIT;
+                x->vector.self.bit = (byte *)ecl_alloc_atomic(d);
+                x->vector.offset = 0;
+                break;
+        default: {
+                cl_index elt_size = ecl_aet_size[t];
+                d *= elt_size;
+                x->vector.self.bc = (ecl_base_char *)ecl_alloc_atomic_align(d, elt_size);
         }
-	case aet_bit: {
-		byte *elts;
-		d = (d+(CHAR_BIT-1))/CHAR_BIT;
-		elts = (byte *)ecl_alloc_atomic(d);
-		for (i = 0;  i < d;  i++)
-			elts[i] = '\0';
-		x->vector.offset = 0;
-		x->vector.self.bit = elts;
-		break;
-	      }
-	case aet_fix: {
-		cl_fixnum *elts;
-		elts = (cl_fixnum *)ecl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
-		for (i = 0;  i < d;  i++)
-			elts[i] = 0;
-		x->array.self.fix = elts;
-		break;
-	      }
-	case aet_index: {
-		cl_fixnum *elts;
-		elts = (cl_fixnum *)ecl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
-		for (i = 0;  i < d;  i++)
-			elts[i] = 0;
-		x->array.self.fix = elts;
-		break;
-	      }
-	case aet_sf: {
-		float *elts;
-		elts = (float *)ecl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
-		for (i = 0;  i < d;  i++)
-			elts[i] = 0.0;
-		x->array.self.sf = elts;
-		break;
-	      }
-	case aet_df: {
-		double *elts;
-		elts = (double *)ecl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
-		for (i = 0;  i < d;  i++)
-			elts[i] = 0.0;
-		x->array.self.df = elts;
-		break;
-	      }
-	case aet_b8: {
-		uint8_t *elts;
-		elts = (uint8_t *)ecl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
-		for (i = 0;  i < d;  i++)
-			elts[i] = 0;
-		x->array.self.b8 = elts;
-		break;
-	      }
-	case aet_i8: {
-		int8_t *elts;
-		elts = (int8_t *)ecl_alloc_atomic_align(sizeof(*elts)*d, sizeof(*elts));
-		for (i = 0;  i < d;  i++)
-			elts[i] = 0;
-		x->array.self.i8 = elts;
-		break;
-	      }
-	}
+        }
 }
 
 cl_elttype
@@ -541,6 +533,24 @@ ecl_symbol_to_elttype(cl_object x)
 		return(aet_b8);
 	else if (x == @'ext::integer8')
 		return(aet_i8);
+#ifdef ecl_uint16_t
+	else if (x == @'ext::byte16')
+		return(aet_b16);
+	else if (x == @'ext::integer16')
+		return(aet_i16);
+#endif
+#ifdef ecl_uint32_t
+	else if (x == @'ext::byte32')
+		return(aet_b32);
+	else if (x == @'ext::integer32')
+		return(aet_i32);
+#endif
+#ifdef ecl_uint64_t
+	else if (x == @'ext::byte64')
+		return(aet_b64);
+	else if (x == @'ext::integer64')
+		return(aet_i64);
+#endif
 	else if (x == @'t')
 		return(aet_object);
 	else if (x == Cnil) {
@@ -567,6 +577,18 @@ ecl_elttype_to_symbol(cl_elttype aet)
 	case aet_df:		output = @'double-float'; break;
 	case aet_b8:		output = @'ext::byte8'; break;
 	case aet_i8:		output = @'ext::integer8'; break;
+#ifdef ecl_uint16_t
+	case aet_b16:		output = @'ext::byte16'; break;
+	case aet_i16:		output = @'ext::integer16'; break;
+#endif
+#ifdef ecl_uint32_t
+	case aet_b32:		output = @'ext::byte32'; break;
+	case aet_i32:		output = @'ext::integer32'; break;
+#endif
+#ifdef ecl_uint64_t
+	case aet_b64:		output = @'ext::byte64'; break;
+	case aet_i64:		output = @'ext::integer64'; break;
+#endif
 	}
 	return output;
 }
@@ -594,9 +616,23 @@ address_inc(void *address, cl_fixnum inc, cl_elttype elt_type)
 	case aet_df:
 		return aux.df + inc;
 	case aet_b8:
-		return aux.b8 + inc;
 	case aet_i8:
-		return aux.i8 + inc;
+		return aux.b8 + inc;
+#ifdef ecl_uint16_t
+	case aet_b16:
+	case aet_i16:
+		return aux.b16 + inc;
+#endif
+#ifdef ecl_uint32_t
+	case aet_b32:
+	case aet_i32:
+		return aux.b32 + inc;
+#endif
+#ifdef ecl_uint64_t
+	case aet_b64:
+	case aet_i64:
+		return aux.b64 + inc;
+#endif
 	default:
 		FEbad_aet();
 	}
@@ -783,6 +819,24 @@ cl_array_displacement(cl_object a)
 		case aet_i8:
 			offset = a->array.self.b8 - to_array->array.self.b8;
 			break;
+#ifdef ecl_uint16_t
+		case aet_b16:
+		case aet_i16:
+			offset = a->array.self.b16 - to_array->array.self.b16;
+			break;
+#endif
+#ifdef ecl_uint32_t
+		case aet_b32:
+		case aet_i32:
+			offset = a->array.self.b32 - to_array->array.self.b32;
+			break;
+#endif
+#ifdef ecl_uint64_t
+		case aet_b64:
+		case aet_i64:
+			offset = a->array.self.b64 - to_array->array.self.b64;
+			break;
+#endif
 		default:
 			FEbad_aet();
 		}
@@ -990,20 +1044,6 @@ ecl_reverse_subarray(cl_object x, cl_index i0, cl_index i1)
 			x->array.self.df[j] = y;
 		}
 		break;
-	case aet_b8:
-		for (i = i0, j = i1-1;  i < j;  i++, --j) {
-			uint8_t y = x->array.self.b8[i];
-			x->array.self.b8[i] = x->array.self.b8[j];
-			x->array.self.b8[j] = y;
-		}
-		break;
-	case aet_i8:
-		for (i = i0, j = i1-1;  i < j;  i++, --j) {
-			int8_t y = x->array.self.i8[i];
-			x->array.self.i8[i] = x->array.self.i8[j];
-                        x->array.self.i8[j] = y;
-		}
-		break;
 	case aet_bc:
 		for (i = i0, j = i1-1;  i < j;  i++, --j) {
 			ecl_base_char y = x->array.self.bc[i];
@@ -1011,6 +1051,44 @@ ecl_reverse_subarray(cl_object x, cl_index i0, cl_index i1)
                         x->array.self.bc[j] = y;
 		}
 		break;
+	case aet_b8:
+        case aet_i8:
+		for (i = i0, j = i1-1;  i < j;  i++, --j) {
+			ecl_uint8_t y = x->array.self.b8[i];
+			x->array.self.b8[i] = x->array.self.b8[j];
+			x->array.self.b8[j] = y;
+		}
+		break;
+#ifdef ecl_uint16_t
+	case aet_b16:
+        case aet_i16:
+		for (i = i0, j = i1-1;  i < j;  i++, --j) {
+			ecl_uint16_t y = x->array.self.b16[i];
+			x->array.self.b16[i] = x->array.self.b16[j];
+			x->array.self.b16[j] = y;
+		}
+		break;
+#endif
+#ifdef ecl_uint32_t
+	case aet_b32:
+        case aet_i32:
+		for (i = i0, j = i1-1;  i < j;  i++, --j) {
+			ecl_uint32_t y = x->array.self.b32[i];
+			x->array.self.b32[i] = x->array.self.b32[j];
+			x->array.self.b32[j] = y;
+		}
+		break;
+#endif
+#ifdef ecl_uint64_t
+	case aet_b64:
+        case aet_i64:
+		for (i = i0, j = i1-1;  i < j;  i++, --j) {
+			ecl_uint64_t y = x->array.self.b64[i];
+			x->array.self.b64[i] = x->array.self.b64[j];
+			x->array.self.b64[j] = y;
+		}
+		break;
+#endif
 #ifdef ECL_UNICODE
 	case aet_ch:
 		for (i = i0, j = i1-1;  i < j;  i++, --j) {

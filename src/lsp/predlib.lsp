@@ -82,10 +82,16 @@ bignums."
 (deftype bignum ()
   '(OR (INTEGER * (#.most-negative-fixnum)) (INTEGER (#.most-positive-fixnum) *)))
 
-(deftype ext::byte8 () `(INTEGER 0 255))
-(deftype ext::integer8 () `(INTEGER -128 127))
-(deftype ext::cl-fixnum () `(SIGNED-BYTE #.CL-FIXNUM-BITS))
-(deftype ext::cl-index () `(UNSIGNED-BYTE #.CL-FIXNUM-BITS))
+(deftype ext::byte8 () '(INTEGER 0 255))
+(deftype ext::integer8 () '(INTEGER -128 127))
+(deftype ext::byte16 () '(INTEGER 0 #xFFFF))
+(deftype ext::integer16 () '(INTEGER #x-8000 #x7FFF))
+(deftype ext::byte32 () '(INTEGER 0 #xFFFFFFFF))
+(deftype ext::integer32 () '(INTEGER #x-80000000 #x7FFFFFFF))
+(deftype ext::byte64 () '(INTEGER 0 #xFFFFFFFFFFFFFFFF))
+(deftype ext::integer64 () '(INTEGER #x-8000000000000000 #x7FFFFFFFFFFFFFFF))
+(deftype ext::cl-fixnum () '(SIGNED-BYTE #.CL-FIXNUM-BITS))
+(deftype ext::cl-index () '(UNSIGNED-BYTE #.CL-FIXNUM-BITS))
 
 (deftype real (&optional (start '* start-p) (end '*))
   (if start-p
@@ -315,7 +321,11 @@ and is not adjustable."
   (put-sysprop (car l) 'TYPE-PREDICATE (cdr l)))
 
 (defconstant +upgraded-array-element-types+
-  '(NIL BASE-CHAR #+unicode CHARACTER BIT EXT::BYTE8 EXT::INTEGER8 EXT::CL-INDEX EXT::CL-FIXNUM SINGLE-FLOAT DOUBLE-FLOAT T))
+  '(NIL BASE-CHAR #+unicode CHARACTER BIT EXT:BYTE8 EXT:INTEGER8
+    #+:uint16-t EXT:BYTE16 #+:uint16-t EXT:INTEGER16
+    #+:uint32-t EXT:BYTE32 #+:uint32-t EXT:INTEGER32
+    #+:uint64-t EXT:BYTE64 #+:uint64-t EXT:INTEGER64
+    EXT:CL-INDEX EXT:CL-FIXNUM SINGLE-FLOAT DOUBLE-FLOAT T))
 
 (defun upgraded-array-element-type (element-type &optional env)
   (let* ((hash (logand 127 (si:hash-eql element-type)))

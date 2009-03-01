@@ -957,7 +957,7 @@ extern ECL_API ecl_int16_t ecl_to_int16_t(cl_object o);
 #ifdef ecl_uint32_t
 # if FIXNUM_BITS == 32
 #  define ecl_to_uint32_t fixnnint
-#  define ecl_to_int32_t fixnint
+#  define ecl_to_int32_t fixint
 #  define ecl_make_uint32_t ecl_make_unsigned_integer
 #  define ecl_make_int32_t ecl_make_integer
 # else
@@ -975,6 +975,8 @@ extern ECL_API ecl_int32_t ecl_to_int32_t(cl_object o);
 #  define ecl_make_uint64_t ecl_make_unsigned_integer
 #  define ecl_make_int64_t ecl_make_integer
 # else
+extern ECL_API ecl_uint64_t ecl_to_uint64_t(cl_object p);
+extern ECL_API ecl_int64_t ecl_to_int64_t(cl_object p);
 extern ECL_API cl_object ecl_make_uint64_t(ecl_uint64_t i);
 extern ECL_API cl_object ecl_make_int64_t(ecl_int64_t i);
 # endif

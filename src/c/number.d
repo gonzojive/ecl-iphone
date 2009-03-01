@@ -153,7 +153,7 @@ ecl_to_uint16_t(cl_object x) {
         do {
                 if (FIXNUMP(x)) {
                         cl_fixnum y = fix(x);
-                        if (y >= 0 && y < 0xFFFFL) {
+                        if (y >= 0 && y <= 0xFFFFL) {
                                 return (ecl_uint16_t)y;
                         }
                 }
@@ -185,7 +185,7 @@ ecl_to_uint32_t(cl_object x) {
         do {
                 if (FIXNUMP(x)) {
                         cl_fixnum y = fix(x);
-                        if (y >= 0 && y < 0xFFFFFFFFUL) {
+                        if (y >= 0 && y <= 0xFFFFFFFFUL) {
                                 return (ecl_uint32_t)y;
                         }
                 }
@@ -222,17 +222,20 @@ ecl_to_uint64_t(cl_object x) {
                 if (!ecl_minusp(x)) {
                         if (FIXNUMP(x)) {
                                 return (ecl_uint64_t)fix(x);
+                        } else if (type_of(x) != t_bignum) {
+                                (void)0;
+                        } else if (mpz_fits_ulong_p(x->big.big_num)) {
+                                return (ecl_uint64_t)mpz_get_ui(x->big.big_num);
                         } else {
-                                ecl_uint64_t output;
-                                mpz_t copy;
-                                mpz_div_2exp(copy, x->big.big_num, 32);
-                                if (mpz_fits_ulong_p(copy)) {
-                                        output = (ecl_uint64_t)mpz_get_ui(copy);
-                                        output = (output << 32) | mpz_get_ui(x->big.big_num);
-                                        mpz_clear(copy);
+                                cl_object copy = big_register0_get();
+                                mpz_fdiv_q_2exp(copy->big.big_num, x->big.big_num, 32);
+                                if (mpz_fits_ulong_p(copy->big.big_num)) {
+                                        volatile ecl_uint64_t output;
+                                        output = (ecl_uint64_t)mpz_get_ui(copy->big.big_num);
+                                        output = (output << 32) +
+                                                (ecl_uint64_t)mpz_get_ui(x->big.big_num);
                                         return output;
                                 }
-                                mpz_clear(copy);
                         }
                 }
 		x = ecl_type_error(@'coerce', "variable", x,
@@ -248,18 +251,20 @@ ecl_to_int64_t(cl_object x) {
 # endif
         do {
                 if (FIXNUMP(x)) {
-                        return (ecl_uint64_t)fix(x);
+                        return (ecl_int64_t)fix(x);
+                } else if (type_of(x) != t_bignum) {
+                        (void)0;
+                } else if (mpz_fits_slong_p(x->big.big_num)) {
+                        return (ecl_int64_t)mpz_get_si(x->big.big_num);
                 } else {
-                        ecl_int64_t output;
-                        mpz_t copy;
-                        mpz_div_2exp(copy, x->big.big_num, 64);
-                        if (mpz_fits_ulong_p(copy)) {
-                                output = (ecl_int64_t)mpz_get_si(copy);
-                                output = (output << 32) | mpz_get_ui(x->big.big_num);
-                                mpz_clear(copy);
-                                return output;
+                        cl_object copy = big_register0_get();
+                        mpz_fdiv_q_2exp(copy->big.big_num, x->big.big_num, 32);
+                        if (mpz_fits_slong_p(copy->big.big_num)) {
+                                ecl_int64_t output;
+                                output = (ecl_int64_t)mpz_get_si(copy->big.big_num);
+                                mpz_fdiv_r_2exp(copy->big.big_num, x->big.big_num, 32);
+                                return (output << 32) + mpz_get_ui(copy->big.big_num);
                         }
-                        mpz_clear(copy);
                 }
 		x = ecl_type_error(@'coerce', "variable", x,
                                    cl_list(3,@'integer',

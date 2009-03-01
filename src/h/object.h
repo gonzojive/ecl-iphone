@@ -359,6 +359,15 @@ typedef enum {			/*  array element type  */
 	/* Below here, list types accepted by streams (i.e. OPEN) */
 	aet_b8,			/*  byte8	     */
 	aet_i8,			/*  integer8	     */
+#ifdef ecl_uint16_t
+        aet_b16, aet_i16,
+#endif
+#ifdef ecl_uint32_t
+        aet_b32, aet_i32,
+#endif
+#ifdef ecl_uint64_t
+        aet_b64, aet_i64,
+#endif
 #ifdef ECL_UNICODE
 	aet_ch,			/*  character        */
 #endif
@@ -381,6 +390,18 @@ union ecl_array_data {
 #endif
 	uint8_t       *b8;
 	int8_t        *i8;
+#ifdef ecl_uint16_t
+        uint16_t      *b16;
+        int16_t       *i16;
+#endif
+#ifdef ecl_uint32_t
+        uint32_t      *b32;
+        int32_t       *i32;
+#endif
+#ifdef ecl_uint64_t
+        uint64_t      *b64;
+        int64_t       *i64;
+#endif
 	float         *sf;
 	double        *df;
 	cl_fixnum     *fix;
