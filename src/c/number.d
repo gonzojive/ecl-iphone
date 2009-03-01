@@ -316,8 +316,10 @@ ecl_make_ratio(cl_object num, cl_object den)
 		den = ecl_negate(den);
 	}
 	g = ecl_gcd(num, den);
-	num = ecl_integer_divide(num, g);
-	den = ecl_integer_divide(den, g);
+        if (g != MAKE_FIXNUM(1)) {
+                num = ecl_integer_divide(num, g);
+                den = ecl_integer_divide(den, g);
+        }
 	if (den == MAKE_FIXNUM(1))
 		return num;
 	if (den == MAKE_FIXNUM(-1))
