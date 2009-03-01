@@ -969,7 +969,7 @@ extern ECL_API ecl_int32_t ecl_to_int32_t(cl_object o);
 #endif /* ecl_uint32_t */
 
 #ifdef ecl_uint64_t
-# if FIXNUM_BITS == 64
+# if FIXNUM_BITS >= 64
 #  define ecl_to_uint64_t fixnnint
 #  define ecl_to_int64_t fixint
 #  define ecl_make_uint64_t ecl_make_unsigned_integer
