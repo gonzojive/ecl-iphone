@@ -939,6 +939,47 @@ extern ECL_API cl_fixnum ecl_fixnum_in_range(cl_object fun, const char *what, cl
 				     cl_fixnum min, cl_fixnum max);
 extern ECL_API cl_object ecl_make_integer(cl_fixnum i);
 extern ECL_API cl_object ecl_make_unsigned_integer(cl_index i);
+extern ECL_API ecl_uint8_t ecl_to_uint8_t(cl_object o);
+extern ECL_API ecl_int8_t ecl_to_int8_t(cl_object o);
+#define ecl_make_uint8_t(i) MAKE_FIXNUM(i)
+#define ecl_make_int8_t(i) MAKE_FIXNUM(i)
+
+#if FIXNUM_BITS < 32
+# error "Unsupported platforms with FIXNUM_BITS < 32"
+#endif
+#ifdef ecl_uint16_t
+extern ECL_API ecl_uint16_t ecl_to_uint16_t(cl_object o);
+extern ECL_API ecl_int16_t ecl_to_int16_t(cl_object o);
+# define ecl_make_uint16_t(i) MAKE_FIXNUM(i)
+# define ecl_make_int16_t(i) MAKE_FIXNUM(i)
+#endif /* ecl_uint16_t */
+
+#ifdef ecl_uint32_t
+# if FIXNUM_BITS == 32
+#  define ecl_to_uint32_t fixnnint
+#  define ecl_to_int32_t fixnint
+#  define ecl_make_uint32_t ecl_make_unsigned_integer
+#  define ecl_make_int32_t ecl_make_integer
+# else
+#  define ecl_make_uint32_t(i) MAKE_FIXNUM(i)
+#  define ecl_make_int32_t(i) MAKE_FIXNUM(i)
+extern ECL_API ecl_uint32_t ecl_to_uint32_t(cl_object o);
+extern ECL_API ecl_int32_t ecl_to_int32_t(cl_object o);
+# endif
+#endif /* ecl_uint32_t */
+
+#ifdef ecl_uint64_t
+# if FIXNUM_BITS == 64
+#  define ecl_to_uint64_t fixnnint
+#  define ecl_to_int64_t fixint
+#  define ecl_make_uint64_t ecl_make_unsigned_integer
+#  define ecl_make_int64_t ecl_make_integer
+# else
+extern ECL_API cl_object ecl_make_uint64_t(ecl_uint64_t i);
+extern ECL_API cl_object ecl_make_int64_t(ecl_int64_t i);
+# endif
+#endif /* ecl_uint64_t */
+
 extern ECL_API cl_object ecl_make_ratio(cl_object num, cl_object den);
 extern ECL_API cl_object ecl_make_singlefloat(float f);
 extern ECL_API cl_object ecl_make_doublefloat(double f);

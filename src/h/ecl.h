@@ -27,12 +27,15 @@
 #include <stdio.h>		/* FILE */
 #if !defined(_MSC_VER) && !defined(__sun)
 #include <stdint.h> 		/* int8_t and friends */
+#define ecl_int8_t int8_t
+#define ecl_uint8_t uint8_t
 #else
-typedef char int8_t;
-typedef short int16_t;
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef int int32_t;
+#define ecl_uint8_t unsigned char
+#define ecl_int8_t char
+#define ecl_uint16_t unsigned short
+#define ecl_int16_t short
+#define ecl_uint32_t unsigned int
+#define ecl_int32_t int
 #endif
 /* Microsoft VC++ does not have va_copy() */
 #if defined(_MSC_VER) || !defined(va_copy)

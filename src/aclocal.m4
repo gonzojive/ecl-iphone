@@ -13,7 +13,8 @@ AC_DEFUN([AC_C_LONG_LONG],
    ac_cv_c_long_long=no)
    fi])
    if test $ac_cv_c_long_long = yes; then
-     AC_DEFINE(HAVE_LONG_LONG, 1, [compiler understands long long])
+     AC_DEFINE(ecl_long_long_t, long long, [compiler understands long long])
+     AC_DEFINE(ecl_ulong_long_t, unsigned long long, [compiler understands long long])
    fi
 ])
 
@@ -373,7 +374,91 @@ int main() {
 }]])],[ECL_FILE_CNT=3],[])
 fi
 ])
-
+dnl
+dnl --------------------------------------------------------------
+dnl Check the existence of different integer types and that they
+dnl have the right size;
+dnl
+AC_DEFUN(ECL_INTEGER_TYPES,[
+AC_SUBST(ECL_HAVE_INT16_T)
+ECL_UINT16_T=""
+ECL_UINT32_T=""
+ECL_UINT64_T=""
+ECL_INT16_T=""
+ECL_INT32_T=""
+ECL_INT64_T=""
+if test -z "${ECL_UINT16_T}"; then
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdint.h>]], [[
+{
+  uint16_t i = 0x8000UL;
+  if (i == 0)
+    return 0;
+  if ((i << 1))
+    return 0;
+  if ((i - 1) != 0x7FFFUL)
+    return 0;
+  return 1;
+}]])],[ECL_UINT16_T=uint16_t;ECL_INT16_T=int16_t],[])
+fi
+if test -z "${ECL_UINT32_T}"; then
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdint.h>]], [[
+{
+  uint32_t i = 0x80000000UL;
+  if (i == 0)
+    return 0;
+  if ((i << 1))
+    return 0;
+  if ((i - 1) != 0x7FFFFFFFUL)
+    return 0;
+  return 1;
+}]])],[ECL_UINT32_T=uint32_t;ECL_INT32_T=int32_t],[])
+fi
+if test -z "${ECL_UINT64_T}"; then
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdint.h>]], [[
+{
+  uint64_t i = 1;
+  i <<= 63; if (i == 0) return 0;
+  i <<= 1;  if (i) return 0;
+  return 1;
+}]])],[ECL_UINT64_T=uint64_t;ECL_INT64_T=int64_t],[])
+fi
+if test "${ECL_UINT16_T}${CL_FIXNUM_BITS}" = "16"; then
+  ECL_UINT16_T="cl_index"
+  ECL_INT16_T="cl_fixnum"
+fi
+if test "${ECL_UINT32_T}${CL_FIXNUM_BITS}" = "32"; then
+  ECL_UINT32_T="cl_index"
+  ECL_INT32_T="cl_fixnum"
+fi
+if test "${ECL_UINT64_T}${CL_FIXNUM_BITS}" = "64"; then
+  ECL_UINT64_T="cl_index"
+  ECL_INT64_T="cl_fixnum"
+fi
+AC_MSG_CHECKING(uint16_t type)
+if test -n "${ECL_UINT16_T}"; then
+  AC_DEFINE_UNQUOTED([ecl_uint16_t],[$ECL_UINT16_T])
+  AC_DEFINE_UNQUOTED([ecl_int16_t],[$ECL_INT16_T])
+  AC_MSG_RESULT(${ECL_UINT16_T})
+else
+  AC_MSG_RESULT(none)
+fi
+AC_MSG_CHECKING(uint32_t type)
+if test -n "${ECL_UINT32_T}"; then
+  AC_DEFINE_UNQUOTED([ecl_uint32_t],[$ECL_UINT32_T])
+  AC_DEFINE_UNQUOTED([ecl_int32_t],[$ECL_INT32_T])
+  AC_MSG_RESULT(${ECL_UINT32_T})
+else
+  AC_MSG_RESULT(none)
+fi
+AC_MSG_CHECKING(uint64_t type)
+if test -n "${ECL_UINT64_T}"; then
+  AC_DEFINE_UNQUOTED([ecl_uint64_t],[$ECL_UINT64_T])
+  AC_DEFINE_UNQUOTED([ecl_int64_t],[$ECL_INT64_T])
+  AC_MSG_RESULT(${ECL_UINT64_T})
+else
+  AC_MSG_RESULT(none)
+fi
+])
 dnl
 dnl --------------------------------------------------------------
 dnl Check the direction to which the stack grows (for garbage
@@ -573,7 +658,7 @@ case "${host_cpu}" in
 		EXTRA_OBJS="${EXTRA_OBJS} apply_x86.o"
 		AC_DEFINE(ECL_ASM_APPLY)
 	fi
-	AC_DEFINE(ECL_USE_VARARG_AS_POINTER)
+        AC_DEFINE(ECL_USE_VARARG_AS_POINTER)
 	dynamic_ffi=yes
 	;;
    x86_64 )

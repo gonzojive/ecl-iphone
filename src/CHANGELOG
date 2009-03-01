@@ -88,6 +88,12 @@ ECL 9.1.0:
  - New, more efficient bytecodes for parsing the function lambda list, instead
    of using a common function.
 
+ - ECL provides macros that define specialized integer types (ecl_uint8_t,
+   ecl_int32_t, ... up to ecl_int64_t). These macros can be used to check for
+   support of these specialized types in arrays and in compilers. There are
+   also companion functions or macros, ecl_make_[u]int*_t and ecl_to_[u]int*_t
+   that respectively convert to and from Lisp integers.
+
 ;;; Local Variables: ***
 ;;; mode:text ***
 ;;; fill-column:79 ***

@@ -9,6 +9,11 @@
 #else
 # define ECL_NAME(x) NULL
 #endif
+#ifdef ECL_RELATIVE_PACKAGE_NAMES
+# define RELATIVE_PACKAGES_P Ct
+#else
+# define RELATIVE_PACKAGES_P Cnil
+#endif
 #ifdef DPP
 #define CLOS_ "CLOS::"
 #define EXT_ "EXT::"

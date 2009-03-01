@@ -113,6 +113,176 @@ ecl_make_unsigned_integer(cl_index l)
 	return MAKE_FIXNUM(l);
 }
 
+ecl_uint8_t
+ecl_to_uint8_t(cl_object x) {
+        do {
+                if (FIXNUMP(x)) {
+                        cl_fixnum y = fix(x);
+                        if (y >= 0 && y < 256) {
+                                return (uint8_t)y;
+                        }
+                }
+		x = ecl_type_error(@'coerce', "variable", x,
+                                   cl_list(3,@'integer',MAKE_FIXNUM(-128),
+                                           MAKE_FIXNUM(127)));
+        } while(1);
+}
+
+ecl_int8_t
+ecl_to_int8_t(cl_object x) {
+        do {
+                if (FIXNUMP(x)) {
+                        cl_fixnum y = fix(x);
+                        if (y >= -128 && y <= 127) {
+                                return (int8_t)y;
+                        }
+                }
+		x = ecl_type_error(@'coerce', "variable", x,
+                                   cl_list(3,@'integer',MAKE_FIXNUM(-128),
+                                           MAKE_FIXNUM(127)));
+        } while(1);
+}
+
+#if FIXNUM_BITS < 32
+# error "Unsupported platform with cl_fixnum < ecl_uint32_t"
+#endif
+
+#ifdef ecl_uint16_t
+ecl_uint16_t
+ecl_to_uint16_t(cl_object x) {
+        do {
+                if (FIXNUMP(x)) {
+                        cl_fixnum y = fix(x);
+                        if (y >= 0 && y < 0xFFFFL) {
+                                return (ecl_uint16_t)y;
+                        }
+                }
+		x = ecl_type_error(@'coerce', "variable", x,
+                                   cl_list(3,@'integer',MAKE_FIXNUM(0),
+                                           MAKE_FIXNUM(0xFFFFL)));
+        } while(1);
+}
+
+ecl_int16_t
+ecl_to_int16_t(cl_object x) {
+        do {
+                if (FIXNUMP(x)) {
+                        cl_fixnum y = fix(x);
+                        if (y >= -0x8000 && y <= 0x7FFF) {
+                                return (ecl_int16_t)y;
+                        }
+                }
+		x = ecl_type_error(@'coerce', "variable", x,
+                                   cl_list(3,@'integer',MAKE_FIXNUM(-0x8000),
+                                           MAKE_FIXNUM(0x7FFF)));
+        } while(1);
+}
+#endif /* ecl_uint16_t */
+
+#if defined(ecl_uint32_t) && (FIXNUM_BITS != 32)
+ecl_uint32_t
+ecl_to_uint32_t(cl_object x) {
+        do {
+                if (FIXNUMP(x)) {
+                        cl_fixnum y = fix(x);
+                        if (y >= 0 && y < 0xFFFFFFFFUL) {
+                                return (ecl_uint32_t)y;
+                        }
+                }
+		x = ecl_type_error(@'coerce', "variable", x,
+                                   cl_list(3,@'integer',MAKE_FIXNUM(0),
+                                           ecl_make_unsigned_integer(0xFFFFFFFFUL)));
+        } while(1);
+}
+
+ecl_int32_t
+ecl_to_int32_t(cl_object x) {
+        do {
+                if (FIXNUMP(x)) {
+                        cl_fixnum y = fix(x);
+                        if (y >= -0x80000000 && y <= 0x7FFFFFFFL) {
+                                return (ecl_int16_t)y;
+                        }
+                }
+		x = ecl_type_error(@'coerce', "variable", x,
+                                   cl_list(3,@'integer',
+                                           ecl_make_integer(-0x80000000L),
+                                           ecl_make_integer(0x7FFFFFFFL)));
+        } while(1);
+}
+#endif /* ecl_uint32_t */
+
+#if defined(ecl_uint64_t) && (FIXNUM_BITS < 64)
+ecl_uint64_t
+ecl_to_uint64_t(cl_object x) {
+        do {
+# if !defined(WITH_GMP) || FIXNUM_BITS != 32
+#  error "Cannot handle ecl_uint64_t without GMP or 32/64 bits integer"
+# endif
+                if (!ecl_minusp(x)) {
+                        if (FIXNUMP(x)) {
+                                return (ecl_uint64_t)fix(x);
+                        } else {
+                                ecl_uint64_t output;
+                                mpz_t copy;
+                                mpz_div_2exp(copy, x->big.big_num, 32);
+                                if (mpz_fits_ulong_p(copy)) {
+                                        output = (ecl_uint64_t)mpz_get_ui(copy);
+                                        output = (output << 32) | mpz_get_ui(x->big.big_num);
+                                        mpz_clear(copy);
+                                        return output;
+                                }
+                                mpz_clear(copy);
+                        }
+                }
+		x = ecl_type_error(@'coerce', "variable", x,
+                                   cl_list(3,@'integer',MAKE_FIXNUM(0),
+                                           ecl_one_minus(ecl_ash(MAKE_FIXNUM(1), 64))));
+        } while(1);
+}
+
+ecl_int64_t
+ecl_to_int64_t(cl_object x) {
+# if !defined(WITH_GMP) || FIXNUM_BITS != 32
+#  error "Cannot handle ecl_uint64_t without GMP or 32 bits fixnums"
+# endif
+        do {
+                if (FIXNUMP(x)) {
+                        return (ecl_uint64_t)fix(x);
+                } else {
+                        ecl_int64_t output;
+                        mpz_t copy;
+                        mpz_div_2exp(copy, x->big.big_num, 64);
+                        if (mpz_fits_ulong_p(copy)) {
+                                output = (ecl_int64_t)mpz_get_si(copy);
+                                output = (output << 32) | mpz_get_ui(x->big.big_num);
+                                mpz_clear(copy);
+                                return output;
+                        }
+                        mpz_clear(copy);
+                }
+		x = ecl_type_error(@'coerce', "variable", x,
+                                   cl_list(3,@'integer',
+                                           ecl_negate(ecl_ash(MAKE_FIXNUM(1), 63)),
+                                           ecl_one_minus(ecl_ash(MAKE_FIXNUM(1), 63))));
+        } while(1);
+}
+
+cl_object
+ecl_make_uint64_t(ecl_uint64_t i)
+{
+        cl_object aux = ecl_make_uint32_t(i >> 32);
+        return cl_logior(2, ecl_ash(aux, 32), ecl_make_uint32_t((ecl_uint32_t)i));
+}
+
+cl_object
+ecl_make_int64_t(ecl_int64_t i)
+{
+        cl_object aux = ecl_make_int32_t(i >> 32);
+        return cl_logior(2, ecl_ash(aux, 32), ecl_make_uint32_t((ecl_uint32_t)i));
+}
+#endif /* ecl_uint64_t */
+
 cl_object
 ecl_make_ratio(cl_object num, cl_object den)
 {

@@ -397,6 +397,9 @@ dnl ----------------------------------------------------------------------
 dnl SONAME is only active when SONAME_LDFLAGS and SONAME are non nil
 dnl
 AC_MSG_CHECKING(for soname flags)
+PACKAGE_MAJOR=`echo ${PACKAGE_VERSION} | sed -e 's,\(.*\)\..*\..*,\1,g'`
+PACKAGE_MINOR=`echo ${PACKAGE_VERSION} | sed -e 's,.*\.\(.*\)\..*,\1,g'`
+PACKAGE_LEAST=`echo ${PACKAGE_VERSION} | sed -e 's,.*\..*\.\(.*\),\1,g'`
 if test "${enable_soname}" != yes; then
    SONAME=''
    SONAME1=''
@@ -406,9 +409,6 @@ if test "${enable_soname}" != yes; then
    SONAME_LDFLAGS=''
    AC_MSG_RESULT([none])
 else
-   PACKAGE_MAJOR=`echo ${PACKAGE_VERSION} | sed -e 's,\(.*\)\..*\..*,\1,g'`
-   PACKAGE_MINOR=`echo ${PACKAGE_VERSION} | sed -e 's,.*\.\(.*\)\..*,\1,g'`
-   PACKAGE_LEAST=`echo ${PACKAGE_VERSION} | sed -e 's,.*\..*\.\(.*\),\1,g'`
    i="${PACKAGE_MAJOR}.${PACKAGE_MINOR}.${PACKAGE_LEAST}"
    SONAME3=`echo $SONAME | sed "s,.SOVERSION,.$i,g"`
    i="${PACKAGE_MAJOR}.${PACKAGE_MINOR}"
@@ -424,6 +424,10 @@ AC_SUBST(SONAME2)
 AC_SUBST(SONAME1)
 AC_SUBST(SONAME)
 AC_SUBST(SONAME_LDFLAGS)
+
+dnl Related to that, the package version number
+ECL_VERSION_NUMBER=$(($PACKAGE_MAJOR * 10000 + $PACKAGE_MINOR * 100 + $PACKAGE_LEAST))
+AC_SUBST(ECL_VERSION_NUMBER)
 
 dnl ----------------------------------------------------------------------
 dnl Deactivate floating point exceptions if asked to
@@ -484,6 +488,7 @@ dnl fi
 dnl ----------------------------------------------------------------------
 dnl Check the appropiate type for cl_fixnum/cl_index
 ECL_FIXNUM_TYPE
+ECL_INTEGER_TYPES
 
 ECL_LINEFEED_MODE
 ECL_FIND_SETJMP

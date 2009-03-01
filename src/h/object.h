@@ -187,11 +187,11 @@ struct ecl_bignum {
 
 #else  /* WITH_GMP */
 
-# ifdef HAVE_LONG_LONG
+# ifdef ecl_long_long_t
      typedef long long int big_num_t;
-# else  /* HAVE_LONG_LONG */
+# else
      typedef long int big_num_t; /* would it work? */
-# endif /* HAVE_LONG_LONG */
+# endif /* ecl_long_long_t */
 
 struct ecl_bignum {
 	HEADER;

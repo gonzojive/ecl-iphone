@@ -87,6 +87,80 @@ static char stdin_buf[BUFSIZ];
 static char stdout_buf[BUFSIZ];
 #endif
 
+static const char *feature_names[] = {
+        "ECL", "COMMON", ECL_ARCHITECTURE, "FFI", "PREFIXED-API",
+        "IEEE-FLOATING-POINT",
+#ifdef WITH_GMP
+        "COMMON-LISP",
+        "ANSI-CL",
+#endif /* WITH_GMP */
+#if defined(GBC_BOEHM)
+	"BOEHM-GC",
+#endif
+#ifdef ECL_THREADS
+	"THREADS",
+#endif
+#ifdef CLOS
+	"CLOS",
+#endif
+#ifdef ENABLE_DLOPEN
+	"DLOPEN",
+#endif
+#ifdef ECL_OLD_LOOP
+	"OLD-LOOP",
+#endif
+	"ECL-PDE",
+#ifdef unix
+	"UNIX",
+#endif
+#ifdef BSD
+	"BSD",
+#endif
+#ifdef SYSV
+	"SYSTEM-V",
+#endif
+#ifdef MSDOS
+	"MS-DOS",
+#endif
+#ifdef mingw32
+	"MINGW32",
+#endif
+#ifdef _MSC_VER
+	"MSVC",
+#endif
+#ifdef ECL_CMU_FORMAT
+	"CMU-FORMAT",
+#endif
+#ifdef ECL_CLOS_STREAMS
+	"CLOS-STREAMS",
+#endif
+#ifdef ECL_DYNAMIC_FFI
+	"DFFI",
+#endif
+#ifdef ECL_UNICODE
+	"UNICODE",
+#endif
+#ifdef ECL_LONG_FLOAT
+	"LONG-FLOAT",
+#endif
+#ifdef ECL_SHORT_FLOAT
+	"SHORT-FLOAT",
+#endif
+#ifdef ECL_RELATIVE_PACKAGE_NAMES
+	"RELATIVE-PACKAGE-NAMES",
+#endif
+#ifdef ecl_uint16_t
+        "UINT16-T",
+#endif
+#ifdef ecl_uint32_t
+        "UINT32-T",
+#endif
+#ifdef ecl_uint64_t
+        "UINT64-T",
+#endif
+        0
+};
+
 cl_fixnum
 ecl_get_option(int option)
 {
@@ -556,78 +630,9 @@ cl_boot(int argc, char **argv)
 		cl_list(8, @'&optional', @'&rest', @'&key', @'&allow-other-keys',
 			@'&aux', @'&whole', @'&environment', @'&body'));
 
-	features = cl_list(5,
-			   ecl_make_keyword("ECL"),
-			   ecl_make_keyword("COMMON"),
-			   ecl_make_keyword(ECL_ARCHITECTURE),
-			   ecl_make_keyword("FFI"),
-			   ecl_make_keyword("PREFIXED-API"));
-
-#define ADD_FEATURE(name) features = CONS(ecl_make_keyword(name),features)
-
-#ifdef WITH_GMP
-        ADD_FEATURE("COMMON-LISP");
-        ADD_FEATURE("ANSI-CL");
-#endif /* WITH_GMP */
-
-#if defined(GBC_BOEHM)
-	ADD_FEATURE("BOEHM-GC");
-#endif
-#ifdef ECL_THREADS
-	ADD_FEATURE("THREADS");
-#endif
-#ifdef CLOS
-	ADD_FEATURE("CLOS");
-#endif
-#ifdef ENABLE_DLOPEN
-	ADD_FEATURE("DLOPEN");
-#endif
-#ifdef ECL_OLD_LOOP
-	ADD_FEATURE("OLD-LOOP");
-#endif
-	ADD_FEATURE("ECL-PDE");
-#ifdef unix
-	ADD_FEATURE("UNIX");
-#endif
-#ifdef BSD
-	ADD_FEATURE("BSD");
-#endif
-#ifdef SYSV
-	ADD_FEATURE("SYSTEM-V");
-#endif
-#ifdef MSDOS
-	ADD_FEATURE("MS-DOS");
-#endif
-#ifdef mingw32
-	ADD_FEATURE("MINGW32");
-#endif
-#ifdef _MSC_VER
-	ADD_FEATURE("MSVC");
-#endif
-#ifdef ECL_CMU_FORMAT
-	ADD_FEATURE("CMU-FORMAT");
-#endif
-#ifdef ECL_CLOS_STREAMS
-	ADD_FEATURE("CLOS-STREAMS");
-#endif
-#ifdef ECL_DYNAMIC_FFI
-	ADD_FEATURE("DFFI");
-#endif
-#ifdef ECL_UNICODE
-	ADD_FEATURE("UNICODE");
-#endif
-#ifdef ECL_LONG_FLOAT
-	ADD_FEATURE("LONG-FLOAT");
-#endif
-#ifdef ECL_SHORT_FLOAT
-	ADD_FEATURE("SHORT-FLOAT");
-#endif
-#ifdef ECL_RELATIVE_PACKAGE_NAMES
-	ADD_FEATURE("RELATIVE-PACKAGE-NAMES");
-	ECL_SET(@'SI::*RELATIVE-PACKAGE-NAMES*', Ct);
-#endif
-	/* This is assumed in all systems */
-	ADD_FEATURE("IEEE-FLOATING-POINT");
+        for (i = 0, features = Cnil; feature_names[i]; i++) {
+                features = CONS(ecl_make_keyword(feature_names[i]),features);
+        }
 
 	ECL_SET(@'*features*', features);
 

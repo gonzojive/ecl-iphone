@@ -85,6 +85,16 @@
 /* Use mprotect for fast interrupt dispatch				*/
 #undef ECL_USE_MPROTECT
 
+/* Integer types                        				*/
+#undef ecl_uint16_t
+#undef ecl_int16_t
+#undef ecl_uint32_t
+#undef ecl_int32_t
+#undef ecl_uint64_t
+#undef ecl_int64_t
+#undef ecl_long_long_t
+#undef ecl_ulong_long_t
+
 /*
  * C TYPES AND SYSTEM LIMITS
  */
@@ -264,8 +274,6 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_SIGPROCMASK
 /* isatty() checks whether a file is connected to a			*/
 #undef HAVE_ISATTY
-/* compiler understands long long                                       */
-#undef HAVE_LONG_LONG
 /* can manipulate floating point environment				*/
 #undef HAVE_FENV_H
 /* can activate individual traps in floating point environment		*/
