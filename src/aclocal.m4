@@ -4,18 +4,37 @@ dnl --------------------------------------------------------------
 dnl http://autoconf-archive.cryp.to/ac_c_long_long_.html
 dnl Provides a test for the existance of the long long int type and defines HAVE_LONG_LONG if it is found.
 AC_DEFUN([AC_C_LONG_LONG],
-[AC_CACHE_CHECK(for long long int, ac_cv_c_long_long,
-[if test "$GCC" = yes; then
+[AC_MSG_CHECKING(size of long long)
+if test "$GCC" = yes; then
   ac_cv_c_long_long=yes
-  else
-        AC_TRY_COMPILE(,[long long int i;],
-   ac_cv_c_long_long=yes,
-   ac_cv_c_long_long=no)
-   fi])
-   if test $ac_cv_c_long_long = yes; then
-     AC_DEFINE(ecl_long_long_t, long long, [compiler understands long long])
-     AC_DEFINE(ecl_ulong_long_t, unsigned long long, [compiler understands long long])
-   fi
+else
+  AC_TRY_COMPILE(,[long long int i;],
+  ac_cv_c_long_long=yes,
+  ac_cv_c_long_long=no)
+fi
+if test $ac_cv_c_long_long = yes; then
+  AC_RUN_IFELSE([AC_LANG_SOURCE([[#include <stdio.h>
+int main() {
+  const char *int_type;
+  int bits;
+  unsigned long long x = 1;
+  FILE *f=fopen("conftestval", "w");
+  if (!f) exit(1);
+  for (bits = 0; x; bits++) {
+    x <<= 1;
+  }
+  fprintf(f,"ECL_LONG_LONG_BITS='%d'",bits);
+  exit(0);
+}]])],[eval "`cat conftestval`"],[],[])
+fi
+if test -z "$ECL_LONG_LONG_BITS"; then
+  AC_MSG_RESULT(not available)
+else
+  AC_MSG_RESULT([$ECL_LONG_LONG_BITS])
+  AC_DEFINE(ecl_long_long_t, long long, [compiler understands long long])
+  AC_DEFINE(ecl_ulong_long_t, unsigned long long, [compiler understands long long])
+  AC_DEFINE_UNQUOTED([ECL_LONG_LONG_BITS],[$ECL_LONG_LONG_BITS])
+fi
 ])
 
 dnl --------------------------------------------------------------

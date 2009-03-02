@@ -301,6 +301,138 @@ ecl_make_int64_t(ecl_int64_t i)
 # endif /* FIXNUM_BITS < 64 */
 #endif /* ecl_uint64_t */
 
+#if defined(ecl_ulong_long_t)
+# if defined(ecl_uint32_t) && ECL_LONG_LONG_BITS == 32
+ecl_ulong_long_t
+ecl_to_unsigned_long_long(cl_object x) {
+        return (ecl_ulong_long_t)ecl_to_uint32_t(x);
+}
+
+ecl_long_long_t
+ecl_to_long_long(cl_object x) {
+        return (ecl_long_long_t)ecl_to_int32_t(x);
+}
+cl_object
+ecl_make_unsigned_long_long(ecl_ulong_long_t i) {
+        return ecl_make_uint32_t(i);
+}
+cl_object
+ecl_make_long_long(ecl_long_long_t i) {
+        return ecl_make_int32_t(i);
+}
+# else
+#  if defined(ecl_uint64_t) && ECL_LONG_LONG_BITS == 64
+ecl_ulong_long_t
+ecl_to_unsigned_long_long(cl_object x) {
+        return (ecl_ulong_long_t)ecl_to_uint64_t(x);
+}
+ecl_long_long_t
+ecl_to_long_long(cl_object x) {
+        return (ecl_long_long_t)ecl_to_int64_t(x);
+}
+cl_object
+ecl_make_unsigned_long_long(ecl_ulong_long_t i) {
+        return ecl_make_uint64_t(i);
+}
+cl_object
+ecl_make_long_long(ecl_long_long_t i) {
+        return ecl_make_int64_t(i);
+}
+#  else
+#  if !defined(WITH_GMP)
+#   error "Cannot handle ecl_ulong_long_t without GMP"
+#  endif
+ecl_ulong_long_t
+ecl_to_unsigned_long_long(cl_object x) {
+        do {
+                if (!ecl_minusp(x)) {
+                        if (FIXNUMP(x)) {
+                                return (ecl_ulong_long_t)fix(x);
+                        } else if (type_of(x) != t_bignum) {
+                                (void)0;
+                        } else if (mpz_fits_ulong_p(x->big.big_num)) {
+                                return (ecl_ulong_long_t)mpz_get_ui(x->big.big_num);
+                        } else {
+                                cl_object copy = big_register0_get();
+                                int i = ECL_LONG_LONG_BITS - CL_FIXNUM_BITS;
+                                mpz_fdiv_q_2exp(copy->bit.big_num, x->big.big_num, i);
+                                if (mpz_fits_ulong_p(copy->big.big_num)) {
+                                        volatile ecl_ulong_long_t output;
+                                        output = mpz_get_ui(copy->big.big_num);
+                                        for (i -= CL_FIXNUM_BITS; i; i-= CL_FIXNUM_BITS) {
+                                                output = (output << CL_FIXNUM_BITS);
+                                                output += mpz_get_ui(x->big.big_num);
+                                        }
+                                        return output;
+                                }
+                        }
+                }
+		x = ecl_type_error(@'coerce', "variable", x,
+                                   cl_list(3,@'integer',MAKE_FIXNUM(0),
+                                           ecl_one_minus(ecl_ash(MAKE_FIXNUM(1),
+                                                                 ECL_LONG_LONG_BITS))));
+        } while(1);
+}
+
+ecl_long_long_t
+ecl_to_long_long(cl_object x)
+{
+        do {
+                if (FIXNUMP(x)) {
+                        return (ecl_long_long_t)fix(x);
+                } else if (type_of(x) != t_bignum) {
+                        (void)0;
+                } else if (mpz_fits_slong_p(x->big.big_num)) {
+                        return (ecl_long_long_t)mpz_get_si(x->big.big_num);
+                } else {
+                        cl_object copy = big_register0_get();
+                        int i = ECL_LONG_LONG_BITS - CL_FIXNUM_BITS;
+                        mpz_fdiv_q_2exp(copy->bit.big_num, x->big.big_num, i);
+                        if (mpz_fits_ulong_p(copy->big.big_num)) {
+                                volatile ecl_long_long_t output;
+                                output = mpz_get_si(copy->big.big_num);
+                                for (i -= CL_FIXNUM_BITS; i; i-= CL_FIXNUM_BITS) {
+                                        output = (output << CL_FIXNUM_BITS);
+                                        output += mpz_get_ui(x->big.big_num);
+                                }
+                                return output;
+                        }
+                }
+		x = ecl_type_error(@'coerce', "variable", x,
+                                   cl_list(3,@'integer',
+                                           ecl_negate(ecl_ash(MAKE_FIXNUM(1), ECL_LONG_LONG_BITS-1)),
+                                           ecl_one_minus(ecl_ash(MAKE_FIXNUM(1), ECL_LONG_LONG_BITS-1))));
+        } while(1);
+}
+
+cl_object
+ecl_make_unsigned_long_long(ecl_ulong_long_t i)
+{
+        if (i <= MOST_POSITIVE_FIXNUM) {
+                return MAKE_FIXNUM(i);
+        } else if (i <= ~(ecl_uint32_t)0) {
+                return ecl_make_uint32_t(i);
+        } else {
+                cl_object aux = ecl_make_uint32_t(i >> 32);
+                return cl_logior(2, ecl_ash(aux, 32),
+                                 ecl_make_uint32_t((ecl_uint32_t)i));
+        }
+}
+
+cl_object
+ecl_make_long_long(ecl_long_long_t i)
+{
+        if (i >= MOST_NEGATIVE_FIXNUM && i <= MOST_POSITIVE_FIXNUM) {
+                return MAKE_FIXNUM(i);
+        } else {
+                cl_object aux = ecl_make_int32_t(i >> 32);
+                return cl_logior(2, ecl_ash(aux, 32), ecl_make_uint32_t((ecl_uint32_t)i));
+        }
+}
+#  endif
+# endif
+#endif /* ecl_ulong_long_t */
+
 cl_object
 ecl_make_ratio(cl_object num, cl_object den)
 {

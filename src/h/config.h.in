@@ -1,3 +1,4 @@
+
 /*
     config.h.in -- Template configuration file.
 */
@@ -312,6 +313,8 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #undef HAVE_UNAME
 #undef HAVE_UNISTD_H
 #undef HAVE_SYS_WAIT_H
+/* size of long long            					*/
+#undef ECL_LONG_LONG_BITS
 
 /*
  * we do not manage to get proper signal handling of floating point

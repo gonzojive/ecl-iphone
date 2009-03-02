@@ -943,7 +943,6 @@ extern ECL_API ecl_uint8_t ecl_to_uint8_t(cl_object o);
 extern ECL_API ecl_int8_t ecl_to_int8_t(cl_object o);
 #define ecl_make_uint8_t(i) MAKE_FIXNUM(i)
 #define ecl_make_int8_t(i) MAKE_FIXNUM(i)
-
 #if FIXNUM_BITS < 32
 # error "Unsupported platforms with FIXNUM_BITS < 32"
 #endif
@@ -953,7 +952,6 @@ extern ECL_API ecl_int16_t ecl_to_int16_t(cl_object o);
 # define ecl_make_uint16_t(i) MAKE_FIXNUM(i)
 # define ecl_make_int16_t(i) MAKE_FIXNUM(i)
 #endif /* ecl_uint16_t */
-
 #ifdef ecl_uint32_t
 # if FIXNUM_BITS == 32
 #  define ecl_to_uint32_t fixnnint
@@ -967,7 +965,6 @@ extern ECL_API ecl_uint32_t ecl_to_uint32_t(cl_object o);
 extern ECL_API ecl_int32_t ecl_to_int32_t(cl_object o);
 # endif
 #endif /* ecl_uint32_t */
-
 #ifdef ecl_uint64_t
 # if FIXNUM_BITS >= 64
 #  define ecl_to_uint64_t fixnnint
@@ -981,6 +978,12 @@ extern ECL_API cl_object ecl_make_uint64_t(ecl_uint64_t i);
 extern ECL_API cl_object ecl_make_int64_t(ecl_int64_t i);
 # endif
 #endif /* ecl_uint64_t */
+#ifdef ecl_long_long_t
+extern ECL_API ecl_ulong_long_t ecl_to_unsigned_long_long(cl_object p);
+extern ECL_API ecl_long_long_t ecl_to_long_long(cl_object p);
+extern ECL_API cl_object ecl_make_unsigned_long_long(ecl_ulong_long_t i);
+extern ECL_API cl_object ecl_make_long_long(ecl_long_long_t i);
+#endif /* ecl_long_long_t */
 
 extern ECL_API cl_object ecl_make_ratio(cl_object num, cl_object den);
 extern ECL_API cl_object ecl_make_singlefloat(float f);

@@ -7054,15 +7054,12 @@ _ACEOF
 
 fi
 
-{ echo "$as_me:$LINENO: checking for long long int" >&5
-echo $ECHO_N "checking for long long int... $ECHO_C" >&6; }
-if test "${ac_cv_c_long_long+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  if test "$GCC" = yes; then
+{ echo "$as_me:$LINENO: checking size of long long" >&5
+echo $ECHO_N "checking size of long long... $ECHO_C" >&6; }
+if test "$GCC" = yes; then
   ac_cv_c_long_long=yes
-  else
-        cat >conftest.$ac_ext <<_ACEOF
+else
+  cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
@@ -7103,11 +7100,73 @@ sed 's/^/| /' conftest.$ac_ext >&5
 fi
 
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-   fi
 fi
-{ echo "$as_me:$LINENO: result: $ac_cv_c_long_long" >&5
-echo "${ECHO_T}$ac_cv_c_long_long" >&6; }
-   if test $ac_cv_c_long_long = yes; then
+if test $ac_cv_c_long_long = yes; then
+  if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <stdio.h>
+int main() {
+  const char *int_type;
+  int bits;
+  unsigned long long x = 1;
+  FILE *f=fopen("conftestval", "w");
+  if (!f) exit(1);
+  for (bits = 0; x; bits++) {
+    x <<= 1;
+  }
+  fprintf(f,"ECL_LONG_LONG_BITS='%d'",bits);
+  exit(0);
+}
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  eval "`cat conftestval`"
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+fi
+if test -z "$ECL_LONG_LONG_BITS"; then
+  { echo "$as_me:$LINENO: result: not available" >&5
+echo "${ECHO_T}not available" >&6; }
+else
+  { echo "$as_me:$LINENO: result: $ECL_LONG_LONG_BITS" >&5
+echo "${ECHO_T}$ECL_LONG_LONG_BITS" >&6; }
 
 cat >>confdefs.h <<\_ACEOF
 #define ecl_long_long_t long long
@@ -7118,7 +7177,11 @@ cat >>confdefs.h <<\_ACEOF
 #define ecl_ulong_long_t unsigned long long
 _ACEOF
 
-   fi
+  cat >>confdefs.h <<_ACEOF
+#define ECL_LONG_LONG_BITS $ECL_LONG_LONG_BITS
+_ACEOF
+
+fi
 
 
 

@@ -28,12 +28,29 @@ static const cl_object ecl_foreign_type_table[] = {
 	@':unsigned-int',
 	@':long',
 	@':unsigned-long',
+#ifdef ecl_uint16_t
+        @':int16-t',
+        @':uint16-t',
+#endif
+#ifdef ecl_uint32_t
+        @':int64-t',
+        @':uint64-t',
+#endif
+#ifdef ecl_uint64_t
+        @':int64-t',
+        @':uint64-t',
+#endif
+#ifdef ecl_long_long_t
+        @':long-long',
+        @':unsigned-long-long',
+#endif
 	@':pointer-void',
 	@':cstring',
 	@':object',
 	@':float',
 	@':double',
-	@':void'};
+	@':void'
+};
 
 static const cl_object ecl_foreign_cc_table[] = {
 	@':cdecl',
@@ -51,12 +68,29 @@ static unsigned int ecl_foreign_type_size[] = {
 	sizeof(unsigned int),
 	sizeof(long),
 	sizeof(unsigned long),
+#ifdef ecl_uint16_t
+        sizeof(ecl_int16_t),
+        sizeof(ecl_uint16_t),
+#endif
+#ifdef ecl_uint32_t
+        sizeof(ecl_int32_t),
+        sizeof(ecl_uint32_t),
+#endif
+#ifdef ecl_uint64_t
+        sizeof(ecl_int64_t),
+        sizeof(ecl_uint64_t),
+#endif
+#ifdef ecl_long_long_t
+        sizeof(long long),
+        sizeof(unsigned long long),
+#endif
 	sizeof(void *),
 	sizeof(char *),
 	sizeof(cl_object),
 	sizeof(float),
 	sizeof(double),
-	0};
+	0
+};
 
 cl_object
 ecl_make_foreign_data(cl_object tag, cl_index size, void *data)
@@ -284,6 +318,30 @@ ecl_foreign_data_ref_elt(void *p, enum ecl_ffi_tag tag)
 		return ecl_make_unsigned_integer(*(unsigned int *)p);
 	case ECL_FFI_LONG:
 		return ecl_make_integer(*(long *)p);
+#ifdef ecl_uint16_t
+        case ECL_FFI_INT16_T:
+                return ecl_make_int16_t(*(ecl_int16_t *)p);
+        case ECL_FFI_UINT16_T:
+                return ecl_make_uint16_t(*(ecl_uint16_t *)p);
+#endif
+#ifdef ecl_uint32_t
+        case ECL_FFI_INT32_T:
+                return ecl_make_int32_t(*(ecl_int32_t *)p);
+        case ECL_FFI_UINT32_T:
+                return ecl_make_uint32_t(*(ecl_uint32_t *)p);
+#endif
+#ifdef ecl_uint64_t
+        case ECL_FFI_INT64_T:
+                return ecl_make_int64_t(*(ecl_int64_t *)p);
+        case ECL_FFI_UINT64_T:
+                return ecl_make_uint64_t(*(ecl_uint64_t *)p);
+#endif
+#ifdef ecl_long_long_t
+        case ECL_FFI_LONG_LONG:
+                return ecl_make_long_long(*(ecl_long_long_t *)p);
+        case ECL_FFI_UNSIGNED_LONG_LONG:
+                return ecl_make_unsigned_long_long(*(ecl_ulong_long_t *)p);
+#endif
 	case ECL_FFI_UNSIGNED_LONG:
 		return ecl_make_unsigned_integer(*(unsigned long *)p);
 	case ECL_FFI_POINTER_VOID:
@@ -335,6 +393,30 @@ ecl_foreign_data_set_elt(void *p, enum ecl_ffi_tag tag, cl_object value)
 	case ECL_FFI_UNSIGNED_LONG:
 		*(unsigned long *)p = fixnnint(value);
 		break;
+#ifdef ecl_uint16_t
+        case ECL_FFI_INT16_T:
+                *(ecl_int16_t *)p = ecl_to_int16_t(value);
+        case ECL_FFI_UINT16_T:
+                *(ecl_uint16_t *)p = ecl_to_uint16_t(value);
+#endif
+#ifdef ecl_uint32_t
+        case ECL_FFI_INT32_T:
+                *(ecl_int32_t *)p = ecl_to_int32_t(value);
+        case ECL_FFI_UINT32_T:
+                *(ecl_uint32_t *)p = ecl_to_uint32_t(value);
+#endif
+#ifdef ecl_uint64_t
+        case ECL_FFI_INT64_T:
+                *(ecl_int64_t *)p = ecl_to_int64_t(value);
+        case ECL_FFI_UINT64_T:
+                *(ecl_uint64_t *)p = ecl_to_uint64_t(value);
+#endif
+#ifdef ecl_long_long_t
+        case ECL_FFI_LONG_LONG:
+                *(ecl_long_long_t *)p = ecl_to_long_long(value);
+        case ECL_FFI_UNSIGNED_LONG_LONG:
+                *(ecl_ulong_long_t *)p = ecl_to_unsigned_long_long(value);
+#endif
 	case ECL_FFI_POINTER_VOID:
 		*(void **)p = ecl_foreign_data_pointer_safe(value);
 		break;

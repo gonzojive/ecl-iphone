@@ -35,10 +35,18 @@ ecl_fficall_push_arg(union ecl_ffi_values *data, enum ecl_ffi_tag type)
 	case ECL_FFI_UNSIGNED_BYTE: i = data->ub; goto INT;
 	case ECL_FFI_SHORT: i = data->s; goto INT;
 	case ECL_FFI_UNSIGNED_SHORT: i = data->us; goto INT;
+#ifdef ecl_uint16_t
+        case ECL_FFI_INT16_T: i = data->i16; goto INT;
+        case ECL_FFI_UINT16_T: i = data->u16; goto INT;
+#endif
 	case ECL_FFI_INT:
 	case ECL_FFI_LONG:
 	case ECL_FFI_UNSIGNED_INT:
 	case ECL_FFI_UNSIGNED_LONG:
+#ifdef ecl_uint32_t
+        case ECL_FFI_INT32_T:
+        case ECL_FFI_UINT32_T:
+#endif
 	case ECL_FFI_POINTER_VOID:
 	case ECL_FFI_CSTRING:
 	case ECL_FFI_OBJECT:
@@ -55,6 +63,20 @@ ecl_fficall_push_arg(union ecl_ffi_values *data, enum ecl_ffi_tag type)
 		ecl_fficall_align(sizeof(int));
 		ecl_fficall_push_bytes(&data->f, sizeof(float));
 		break;
+#ifdef ecl_uint64_t
+        case ECL_FFI_UINT64_T:
+        case ECL_FFI_INT64_T:
+                ecl_fficall_align(sizeof(ecl_uint64_t));
+                ecl_fficall_push_bytes(&data->ull, sizeof(ecl_uint64_t));
+                break;
+#endif
+#ifdef ecl_long_long_t
+        case ECL_FFI_UNSIGNED_LONG_LONG:
+        case ECL_FFI_LONG_LONG:
+                ecl_fficall_align(sizeof(unsigned long));
+                ecl_fficall_push_bytes(&data->ull, sizeof(unsigned long long));
+                break;
+#endif
 	case ECL_FFI_VOID:
 		FEerror("VOID is not a valid argument type for a C function", 0);
 	}
@@ -98,7 +120,36 @@ ecl_fficall_execute(void *f_ptr, struct ecl_fficall *fficall, enum ecl_ffi_tag r
 		fficall->output.f = ((float (*)())f_ptr)();
 	} else if (return_type == ECL_FFI_DOUBLE) {
 		fficall->output.d = ((double (*)())f_ptr)();
-	} else {
+        }
+#ifdef ecl_uint16_t
+        else if (return_type == ECL_FFI_INT16_T) {
+                fficall->output.i16 = ((ecl_int16_t (*)())f_ptr)();
+	} else if (return_type == ECL_FFI_UINT16_T) {
+                fficall->output.u16 = ((ecl_uint16_t (*)())f_ptr)();
+	}
+#endif
+#ifdef ecl_uint32_t
+        else if (return_type == ECL_FFI_INT32_T) {
+                fficall->output.i32 = ((ecl_int32_t (*)())f_ptr)();
+	} else if (return_type == ECL_FFI_UINT32_T) {
+                fficall->output.u32 = ((ecl_uint32_t (*)())f_ptr)();
+	}
+#endif
+#ifdef ecl_uint64_t
+        else if (return_type == ECL_FFI_INT64_T) {
+                fficall->output.i64 = ((ecl_int64_t (*)())f_ptr)();
+	} else if (return_type == ECL_FFI_UINT32_T) {
+                fficall->output.u64 = ((ecl_uint64_t (*)())f_ptr)();
+	}
+#endif
+#ifdef ecl_long_long_t
+        else if (return_type == ECL_FFI_LONG_LONG) {
+                fficall->output.ll = ((ecl_long_long_t (*)())f_ptr)();
+	} else if (return_type == ECL_FFI_UNSIGNED_LONG_LONG) {
+                fficall->output.ull = ((ecl_ulong_long_t (*)())f_ptr)();
+	}
+#endif
+        else {
 		((void (*)())f_ptr)();
 	}
 #ifdef _MSC_VER
@@ -149,13 +200,23 @@ ecl_dynamic_callback_execute(cl_object cbk_info, char *arg_buffer)
 	case ECL_FFI_UNSIGNED_CHAR: i = output.uc; goto INT;
 	case ECL_FFI_BYTE: i = output.b; goto INT;
 	case ECL_FFI_UNSIGNED_BYTE: i = output.ub; goto INT;
+#ifdef ecl_uint32_t
+        case ECL_FFI_INT16_T:
+#endif
 	case ECL_FFI_SHORT: i = output.s; goto INT;
+#ifdef ecl_uint32_t
+        case ECL_FFI_UINT16_T:
+#endif
 	case ECL_FFI_UNSIGNED_SHORT: i = output.us; goto INT;
 	case ECL_FFI_POINTER_VOID:
 	case ECL_FFI_OBJECT:
 	case ECL_FFI_CSTRING:
 	case ECL_FFI_INT:
 	case ECL_FFI_UNSIGNED_INT:
+#ifdef ecl_uint32_t
+        case ECL_FFI_INT32_T:
+        case ECL_FFI_UINT32_T:
+#endif
 	case ECL_FFI_LONG:
 	case ECL_FFI_UNSIGNED_LONG:
 		i = output.i;
@@ -169,6 +230,28 @@ INT:
 		}
 #endif
 		return;
+#if defined(ecl_long_long_t) || defined(ecl_uint64_t)
+# ifdef ecl_long_long_t
+        case ECL_FFI_LONG_LONG:
+        case ECL_FFI_UNSIGNED_LONG_LONG:
+# endif
+# ifdef ecl_uint64_t
+        case ECL_FFI_INT64_T:
+        case ECL_FFI_UINT64_T:
+# endif
+# ifdef _MSC_VER
+		__asm mov eax,output.l2[0]
+                __asm mov edx,output.l2[1]
+# else
+		{
+		register int eax asm("eax");
+		register int edx asm("edx");
+		eax = output.l2[0];
+                edx = output.l2[1];
+		}
+# endif
+                return;
+#endif /* ecl_long_long_t */
 	case ECL_FFI_DOUBLE: {
 #ifdef _MSC_VER
 		__asm fld output.d
