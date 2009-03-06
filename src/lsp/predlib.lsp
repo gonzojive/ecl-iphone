@@ -321,11 +321,13 @@ and is not adjustable."
   (put-sysprop (car l) 'TYPE-PREDICATE (cdr l)))
 
 (defconstant +upgraded-array-element-types+
-  '(NIL BASE-CHAR #+unicode CHARACTER BIT EXT:BYTE8 EXT:INTEGER8
-    #+:uint16-t EXT:BYTE16 #+:uint16-t EXT:INTEGER16
-    #+:uint32-t EXT:BYTE32 #+:uint32-t EXT:INTEGER32
-    #+:uint64-t EXT:BYTE64 #+:uint64-t EXT:INTEGER64
-    EXT:CL-INDEX EXT:CL-FIXNUM SINGLE-FLOAT DOUBLE-FLOAT T))
+  '#.(append '(NIL BASE-CHAR #+unicode CHARACTER BIT EXT:BYTE8 EXT:INTEGER8)
+             #+:uint16-t '(EXT:BYTE16 EXT:INTEGER16)
+             #+:uint32-t '(EXT:BYTE32 EXT:INTEGER32)
+             (when (< 32 cl-fixnum-bits 64) '(EXT::CL-INDEX FIXNUM))
+             #+:uint64-t '(EXT:BYTE64 EXT:INTEGER64)
+             (when (< 64 cl-fixnum-bits) '(EXT::CL-INDEX FIXNUM))
+             '(SINGLE-FLOAT DOUBLE-FLOAT T)))
 
 (defun upgraded-array-element-type (element-type &optional env)
   (let* ((hash (logand 127 (si:hash-eql element-type)))

@@ -68,7 +68,7 @@
   nil)
 
 (defmacro def-inline (name safety arg-types return-rep-type expansion
-                      &key (one-liner t)
+                      &key (one-liner t) (exact-return-type nil)
 		      &aux arg-rep-types)
   (setf safety
 	(case safety
@@ -79,15 +79,26 @@
   (setf arg-rep-types
 	(mapcar #'(lambda (x) (if (eq x '*) x (lisp-type->rep-type x)))
 		arg-types))
-  (let ((inline-info
-	 (make-inline-info :arg-rep-types arg-rep-types
-			   :return-rep-type return-rep-type
-			   :return-type (rep-type->lisp-type return-rep-type)
-			   :arg-types arg-types
-;			   :side-effects (not (get-sysprop name 'no-side-effects))
-                           :one-liner one-liner
-			   :expansion expansion)))
-    (put-sysprop name safety (cons inline-info (get-sysprop name safety))))
+  (when (eq return-rep-type t)
+    (setf return-rep-type :object))
+  (let* ((return-type (rep-type->lisp-type return-rep-type))
+         (inline-info
+          (make-inline-info :arg-rep-types arg-rep-types
+                            :return-rep-type return-rep-type
+                            :return-type (rep-type->lisp-type return-rep-type)
+                            :arg-types arg-types
+                            :exact-return-type exact-return-type
+                            ;; :side-effects (not (get-sysprop name 'no-side-effects))
+                            :one-liner one-liner
+                            :expansion expansion))
+         (previous (get-sysprop name safety)))
+    #+(or)
+    (loop for i in previous
+       when (and (equalp (inline-info-arg-types i) arg-types)
+                 (not (equalp return-type (inline-info-return-type i))))
+       do (format t "~&;;; Redundand inline definition for ~A~&;;; ~<~A~>~&;;; ~<~A~>"
+                  name i inline-info))
+    (put-sysprop name safety (cons inline-info previous)))
   nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -104,6 +115,7 @@
 (proclaim-function si:make-pure-array (*) array)
 (proclaim-function si:make-vector (*) vector)
 (proclaim-function aref (array *) t :no-side-effects t)
+
 (def-inline aref :unsafe (t t t) t
  "@0;ecl_aref(#0,fix(#1)*(#0)->array.dims[1]+fix(#2))")
 (def-inline aref :unsafe ((array t) t t) t
@@ -122,28 +134,12 @@
  "@0;(#0)->array.self.sf[#1*(#0)->array.dims[1]+#2]")
 (def-inline aref :unsafe ((array fixnum) fixnum fixnum) :fixnum
  "@0;(#0)->array.self.fix[#1*(#0)->array.dims[1]+#2]")
+
 (def-inline aref :always (t t) t "ecl_aref1(#0,fixint(#1))")
 (def-inline aref :always (t fixnum) t "ecl_aref1(#0,#1)")
 (def-inline aref :unsafe (t t) t "ecl_aref1(#0,fix(#1))")
-(def-inline aref :unsafe (t fixnum) t "ecl_aref1(#0,#1)")
 (def-inline aref :unsafe ((array bit) t) :fixnum "ecl_aref_bv(#0,fix(#1))")
 (def-inline aref :unsafe ((array bit) fixnum) :fixnum "ecl_aref_bv(#0,#1)")
-(def-inline aref :unsafe ((array base-char) fixnum) t
- "CODE_CHAR((#0)->base_string.self[#1])")
-#+unicode
-(def-inline aref :unsafe ((array character) fixnum) t
- "@0;CODE_CHAR((#0)->string.self[#1*(#0)->array.dims[1]+#2])")
-(def-inline aref :unsafe ((array double-float) fixnum) t
- "ecl_make_doublefloat((#0)->array.self.df[#1])")
-(def-inline aref :unsafe ((array single-float) fixnum) t
- "ecl_make_singlefloat((#0)->array.self.sf[#1])")
-(def-inline aref :unsafe ((array fixnum) fixnum) t
- "MAKE_FIXNUM((#0)->array.self.fix[#1])")
-#+unicode
-(def-inline aref :unsafe ((array character) fixnum) :fixnum
- "(#0)->string.self[#1]")
-(def-inline aref :unsafe ((array base-char) fixnum) :fixnum
- "(#0)->base_string.self[#1]")
 #+unicode
 (def-inline aref :unsafe ((array character) fixnum) :wchar
  "(#0)->string.self[#1]")
@@ -676,51 +672,51 @@
 (proclaim-function + (*) t :no-side-effects t)
 (def-inline + :always (t t) t "ecl_plus(#0,#1)")
 (def-inline + :always (fixnum-float fixnum-float) :double
- "(double)(#0)+(double)(#1)")
+ "(double)(#0)+(double)(#1)" :exact-return-type t)
 (def-inline + :always (fixnum-float fixnum-float) :float
- "(float)(#0)+(float)(#1)")
-(def-inline + :always (fixnum fixnum) :fixnum "(#0)+(#1)")
+ "(float)(#0)+(float)(#1)" :exact-return-type t)
+(def-inline + :always (fixnum fixnum) :fixnum "(#0)+(#1)" :exact-return-type t)
 
 (proclaim-function - (t *) t :no-side-effects t)
 (def-inline - :always (t) t "ecl_negate(#0)")
 (def-inline - :always (t t) t "ecl_minus(#0,#1)")
 (def-inline - :always (fixnum-float fixnum-float) :double
- "(double)(#0)-(double)(#1)")
+ "(double)(#0)-(double)(#1)" :exact-return-type t)
 (def-inline - :always (fixnum-float fixnum-float) :float
- "(float)(#0)-(float)(#1)")
-(def-inline - :always (fixnum fixnum) :fixnum "(#0)-(#1)")
-(def-inline - :always (fixnum-float) :double "-(double)(#0)")
-(def-inline - :always (fixnum-float) :float "-(float)(#0)")
-(def-inline - :always (fixnum) :fixnum "-(#0)")
+ "(float)(#0)-(float)(#1)" :exact-return-type t)
+(def-inline - :always (fixnum fixnum) :fixnum "(#0)-(#1)" :exact-return-type t)
+(def-inline - :always (fixnum-float) :double "-(double)(#0)" :exact-return-type t)
+(def-inline - :always (fixnum-float) :float "-(float)(#0)" :exact-return-type t)
+(def-inline - :always (fixnum) :fixnum "-(#0)" :exact-return-type t)
 
 (proclaim-function * (*) t :no-side-effects t)
 (def-inline * :always (t t) t "ecl_times(#0,#1)")
 (def-inline * :always (fixnum-float fixnum-float) :double
- "(double)(#0)*(double)(#1)")
+ "(double)(#0)*(double)(#1)" :exact-return-type t)
 (def-inline * :always (fixnum-float fixnum-float) :float
- "(float)(#0)*(float)(#1)")
-(def-inline * :always (fixnum fixnum) t "fixnum_times(#0,#1)")
-(def-inline * :always (fixnum fixnum) :fixnum "(#0)*(#1)")
+ "(float)(#0)*(float)(#1)" :exact-return-type t)
+(def-inline * :always (fixnum fixnum) t "fixnum_times(#0,#1)" :exact-return-type t)
+(def-inline * :always (fixnum fixnum) :fixnum "(#0)*(#1)" :exact-return-type t)
 
 (proclaim-function / (t *) t :no-side-effects t)
 (def-inline / :always (t t) t "ecl_divide(#0,#1)")
 (def-inline / :always (fixnum-float fixnum-float) :double
- "(double)(#0)/(double)(#1)")
+ "(double)(#0)/(double)(#1)" :exact-return-type t)
 (def-inline / :always (fixnum-float fixnum-float) :float
- "(float)(#0)/(float)(#1)")
-(def-inline / :always (fixnum fixnum) :fixnum "(#0)/(#1)")
+ "(float)(#0)/(float)(#1)" :exact-return-type t)
+(def-inline / :always (fixnum fixnum) :fixnum "(#0)/(#1)" :exact-return-type t)
 
 (proclaim-function 1+ (t) t :no-side-effects t)
 (def-inline 1+ :always (t) t "ecl_one_plus(#0)")
-(def-inline 1+ :always (fixnum-float) :double "(double)(#0)+1")
-(def-inline 1+ :always (fixnum-float) :float "(float)(#0)+1")
-(def-inline 1+ :always (fixnum) :fixnum "(#0)+1")
+(def-inline 1+ :always (double-loat) :double "(double)(#0)+1")
+(def-inline 1+ :always (single-float) :float "(float)(#0)+1")
+(def-inline 1+ :always (fixnum) :fixnum "(#0)+1" :exact-return-type t)
 
 (proclaim-function 1- (t) t :no-side-effects t)
 (def-inline 1- :always (t) t "ecl_one_minus(#0)")
-(def-inline 1- :always (fixnum-float) :double "(double)(#0)-1")
-(def-inline 1- :always (fixnum-float) :float "(float)(#0)-1")
-(def-inline 1- :always (fixnum) :fixnum "(#0)-1")
+(def-inline 1- :always (double-float) :double "(double)(#0)-1")
+(def-inline 1- :always (single-float) :float "(float)(#0)-1")
+(def-inline 1- :always (fixnum) :fixnum "(#0)-1" :exact-return-type t)
 
 (proclaim-function conjugate (t) t)
 (proclaim-function gcd (*) t)
@@ -729,10 +725,10 @@
 ;; file num_co.d
 
 (proclaim-function float (t *) t :no-side-effects t)
-(def-inline float :always (t single-float) :float "ecl_to_double(#0)")
+(def-inline float :always (t single-float) :float "ecl_to_float(#0)")
 (def-inline float :always (t double-float) :double "ecl_to_double(#0)")
-(def-inline float :always (fixnum-float) :double "((double)(#0))")
-(def-inline float :always (fixnum-float) :float "((float)(#0))")
+(def-inline float :always (fixnum-float) :double "((double)(#0))" :exact-return-type t)
+(def-inline float :always (fixnum-float) :float "((float)(#0))" :exact-return-type t)
 
 (proclaim-function numerator (t) t)
 (proclaim-function denominator (t) t)
@@ -882,30 +878,29 @@
 (proclaim-function make-random-state (*) t)
 (proclaim-function random-state-p (t) t :predicate t)
 (proclaim-function expt (t t) t :no-side-effects t)
-(def-inline expt :always (t t) t "cl_expt(#0,#1)")
 (def-inline expt :always ((integer 2 2) (integer 0 29)) :fixnum "(1<<(#1))")
 (def-inline expt :always ((integer 0 0) t) :fixnum "0")
 (def-inline expt :always ((integer 1 1) t) :fixnum "1")
 
 (proclaim-function log (t *) t :no-side-effects t)
-(def-inline log :always (fixnum-float) :double "log((double)(#0))")
-(def-inline log :always (fixnum-float) :float "(float)log((double)(#0))")
+(def-inline log :always (fixnum-float) :double "log((double)(#0))" :exact-return-type t)
+(def-inline log :always (fixnum-float) :float "(float)log((double)(#0))" :exact-return-type t)
 
 (proclaim-function sqrt (number) number :no-side-effects t)
 (def-inline sqrt :always ((or (long-float 0.0 *) (double-float 0.0 *))) :double "sqrt((double)(#0))")
 (def-inline sqrt :always ((or (single-float 0.0 *) (short-float 0.0 *))) :float "(float)sqrt((double)(#0))")
 
 (proclaim-function sin (number) number :no-side-effects t)
-(def-inline sin :always (fixnum-float) :double "sin((double)(#0))")
-(def-inline sin :always (fixnum-float) :float "(float)sin((double)(#0))")
+(def-inline sin :always (fixnum-float) :double "sin((double)(#0))" :exact-return-type t)
+(def-inline sin :always (fixnum-float) :float "(float)sin((double)(#0))" :exact-return-type t)
 
 (proclaim-function cos (number) number :no-side-effects t)
-(def-inline cos :always (fixnum-float) :double "cos((double)(#0))")
-(def-inline cos :always (fixnum-float) :float "(float)cos((double)(#0))")
+(def-inline cos :always (fixnum-float) :double "cos((double)(#0))" :exact-return-type t)
+(def-inline cos :always (fixnum-float) :float "(float)cos((double)(#0))" :exact-return-type t)
 
 (proclaim-function tan (number) number :no-side-effects t)
-(def-inline tan :always (fixnum-float) :double "tan((double)(#0))")
-(def-inline tan :always (fixnum-float) :float "(float)tan((double)(#0))")
+(def-inline tan :always (fixnum-float) :double "tan((double)(#0))" :exact-return-type t)
+(def-inline tan :always (fixnum-float) :float "(float)tan((double)(#0))" :exact-return-type t)
 
 (proclaim-function atan (t *) t)
 
@@ -1024,10 +1019,8 @@ type_of(#0)==t_bitvector")
 
 (proclaim-function eql (t t) t :predicate t :no-side-effects t)
 (def-inline eql :always (t t) :bool "ecl_eql(#0,#1)")
-(def-inline eql :always (character t) :bool
- "(CHARACTERP(#1) && (#0)==CHAR_CODE(#1))")
-(def-inline eql :always (t character) :bool
- "(CHARACTERP(#0) && CHAR_CODE(#0)==(#1))")
+(def-inline eql :always (character t) :bool "(CODE_CHAR(#0)==(#1))")
+(def-inline eql :always (t character) :bool "((#0)==CODE_CHAR(#1))")
 (def-inline eql :always (character character) :bool "(#0)==(#1)")
 (def-inline eql :always ((not (or complex bignum ratio float)) t) :bool
  "(#0)==(#1)")
@@ -1138,10 +1131,8 @@ type_of(#0)==t_bitvector")
 (proclaim-function subseq (sequence fixnum *) sequence)
 (proclaim-function copy-seq (sequence) sequence)
 (proclaim-function length (sequence) fixnum :no-side-effects t)
-(def-inline length :always (t) t "cl_length(#0)")
 (def-inline length :always (t) :fixnum "ecl_length(#0)")
-(def-inline length :unsafe ((array t)) :fixnum "(#0)->vector.fillp")
-(def-inline length :unsafe (string) :fixnum "(#0)->base_string.fillp")
+(def-inline length :unsafe (array t) :fixnum "(#0)->vector.fillp")
 
 (proclaim-function reverse (sequence) sequence)
 (proclaim-function nreverse (sequence) sequence)
@@ -1149,19 +1140,14 @@ type_of(#0)==t_bitvector")
 ;; file character.d
 
 (proclaim-function char (string fixnum) character :no-side-effects t)
-(def-inline char :always (t t) t "cl_char(#0,#1)")
 (def-inline char :always (t fixnum) t "ecl_aref1(#0,#1)")
 (def-inline char :always (t fixnum) :wchar "ecl_char(#0,#1)")
 #-unicode
 (def-inline char :unsafe (t t) t "CODE_CHAR((#0)->base_string.self[fix(#1)])")
 #-unicode
-(def-inline char :unsafe (t fixnum) :fixnum "(#0)->base_string.self[#1]")
-#-unicode
 (def-inline char :unsafe (t fixnum) :char "(#0)->base_string.self[#1]")
 (def-inline char :unsafe (base-string fixnum) :fixnum "(#0)->base_string.self[#1]")
 (def-inline char :unsafe (base-string fixnum) :unsigned-char "(#0)->base_string.self[#1]")
-#+unicode
-(def-inline char :unsafe (ext:extended-string fixnum) :fixnum "(#0)->string.self[#1]")
 #+unicode
 (def-inline char :unsafe (ext:extended-string fixnum) :wchar "(#0)->string.self[#1]")
 

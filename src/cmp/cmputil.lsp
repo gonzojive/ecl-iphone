@@ -67,6 +67,8 @@
   nil)
 
 (defun handle-internal-error (c)
+  (print c)
+  (si::default-debugger c)
   (unless (typep c 'compiler-error)
     (signal 'compiler-internal-error
 	    :format-control "~A"

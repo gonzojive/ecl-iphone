@@ -58,6 +58,9 @@ ECL 9.1.0:
 
  - READ-DELIMITED-LIST interpreted the value of :RECURSIVEP the wrong way.
 
+ - A trivial bug in the compiler prevented ECL from considering many
+   unsafe inlined forms for AREF, (SETF AREF) and many other functions.
+
 * AMOP:
 
  - In DEFCLASS, the :TYPE of slots was ignored.

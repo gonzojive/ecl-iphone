@@ -230,6 +230,8 @@
   return-rep-type	;;; Representation type for the output
   arg-types		;;; List of lisp types for the arguments
   return-type		;;; Lisp type for the output
+  exact-return-type	;;; Only use this expansion when the output is
+			;;; declared to have a subtype of RETURN-TYPE
   expansion		;;; C template containing the expansion
   one-liner		;;; Whether the expansion spans more than one line
 )

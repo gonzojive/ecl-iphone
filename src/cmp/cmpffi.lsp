@@ -116,6 +116,7 @@
   (cond ((member loc '(NIL T)) :object)
 	((var-p loc) (var-rep-type loc))
 	((si::fixnump loc) :fixnum)
+        ((eq loc 'TRASH) :void)
 	((atom loc) :object)
 	(t
 	 (case (first loc)

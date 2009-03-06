@@ -89,12 +89,16 @@
 ;;;   ARGS is the list of arguments
 ;;;   LOC is either NIL or the location of the function object
 ;;;
-(defun c2call-global (fname args &optional (return-type (destination-type)))
+(defun c2call-global (fname args &optional (return-type T))
   (let ((fun (find fname *global-funs* :key #'fun-name :test #'same-fname-p)))
     (when (and fun (c2try-tail-recursive-call fun args))
       (return-from c2call-global))
-    (let ((*inline-blocks* 0))
-      (unwind-exit (call-global-loc fname fun (inline-args args) return-type))
+    (let* ((*inline-blocks* 0)
+           (destination-rep-type (loc-representation-type *destination*))
+           (destination-type (loc-type *destination*)))
+      (unwind-exit (call-global-loc fname fun (inline-args args)
+                                    (type-and return-type destination-type)
+                                    destination-rep-type))
       (close-inline-blocks))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -108,7 +112,8 @@
 ;;;   ARGS: a list of typed locs with arguments
 ;;;   RETURN-TYPE: the type to which the output is coerced
 ;;;
-(defun call-global-loc (fname fun args return-type &aux loc found fd minarg maxarg)
+(defun call-global-loc (fname fun args return-type &optional (return-rep-type 'any)
+                        &aux loc found fd minarg maxarg)
   (cond
     ;; Check whether it is a global function that we cannot call directly.
      ((and (or (null fun) (fun-global fun)) (not (inline-possible fname)))
@@ -116,7 +121,7 @@
 
      ;; Open-codable function call.
      ((and (or (null fun) (fun-global fun))
-	   (setq loc (inline-function fname args return-type)))
+	   (setq loc (inline-function fname args return-type return-rep-type)))
       loc)
 
      ;; Call to a function defined in the same file. Direct calls are
