@@ -33,6 +33,11 @@ compute it. This version only handles the simplest cases."
         (t
          (second array))))
 
+(defun get-constant-value (form default)
+  (if (constantp form)
+      (cmp-eval form)
+      default))
+
 (def-type-propagator si::aset (fname obj array &rest indices)
   (let* ((array-type (c1form-primary-type array))
          (elt-type (or (type-from-array-elt array) t)))
@@ -44,3 +49,37 @@ compute it. This version only handles the simplest cases."
          (elt-type (or (type-from-array-elt array) t)))
     (values (list* array-type (make-list (length indices) :initial-element 'si::index))
             elt-type)))
+
+(define-compiler-macro make-array (&whole form dimensions
+                                          &key (element-type t)
+                                          (initial-element nil initial-element-supplied-p)
+                                          (initial-contents nil initial-contents-supplied-p)
+                                          adjustable fill-pointer
+                                          displaced-to (displaced-index-offset 0))
+  (let* ((type (if (or (get-constant-value adjustable t)
+                       (get-constant-value fill-pointer t)
+                       (get-constant-value displaced-to t))
+                   'array
+                   'simple-array))
+         (upgraded-type (get-constant-value element-type '*))
+         (guess-dims (get-constant-value dimensions '*))
+         (form (list 'si::make-pure-array element-type dimensions adjustable
+                     fill-pointer displaced-to displaced-index-offset)))
+    (unless (eq upgraded-type '*)
+      ;; Known type?
+      (if (nth-value 1 (subtypep t upgraded-type))
+          (setf upgraded-type (upgraded-array-element-type upgraded-type))
+          (cmpnote "Unknown element type ~A passed to MAKE-ARRAY" upgraded-type)))
+    (unless (eq guess-dims '*)
+      (if (listp gues-dims)
+          (setf guess-dims (make-list (length guess-dims) :initial-element '*))
+          (setf guess-dims '(*))))
+    (setf type (list type upgraded-type guess-dims))
+    (cond (initial-element-supplied-p
+           (when initial-contents-supplied-p
+             (cmpwarn "In MAKE-ARRAY, both :INITIAL-ELEMENT and :INITIAL-CONTENTS were supplied."))
+           (setf form `(si::fill-array-with-elt ,form ,initial-element 0 nil)))
+          (initial-contents-supplied-p
+           (setf form `(si::fill-array-with-seq ,form ,initial-contents))))
+    `(the ,type ,form)))
+
