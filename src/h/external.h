@@ -302,6 +302,7 @@ extern ECL_API cl_object si_replace_array(cl_object old_obj, cl_object new_obj);
 extern ECL_API cl_object cl_aref _ARGS((cl_narg narg, cl_object x, ...));
 extern ECL_API cl_object si_aset _ARGS((cl_narg narg, cl_object v, cl_object x, ...));
 extern ECL_API cl_object si_make_pure_array(cl_object etype, cl_object dims, cl_object adj, cl_object fillp, cl_object displ, cl_object disploff);
+extern ECL_API cl_object si_fill_array_with_elt(cl_object array, cl_object elt, cl_object start, cl_object end);
 
 extern ECL_API cl_index ecl_to_index(cl_object n);
 extern ECL_API cl_object ecl_aref(cl_object x, cl_index index);
@@ -1663,6 +1664,7 @@ extern ECL_API cl_object ecl_alloc_adjustable_extended_string(cl_index l);
 
 /* arraylib.lsp */
 extern ECL_API cl_object cl_make_array _ARGS((cl_narg narg, cl_object V1, ...));
+extern ECL_API cl_object si_fill_array_with_seq _ARGS((cl_narg narg, cl_object V1, cl_object V2, ...));
 extern ECL_API cl_object cl_vector _ARGS((cl_narg narg, ...));
 extern ECL_API cl_object cl_array_dimensions _ARGS((cl_narg narg, cl_object V1, ...));
 extern ECL_API cl_object cl_array_in_bounds_p _ARGS((cl_narg narg, cl_object V1, ...));

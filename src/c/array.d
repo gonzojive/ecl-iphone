@@ -1122,3 +1122,128 @@ ecl_reverse_subarray(cl_object x, cl_index i0, cl_index i1)
 		FEbad_aet();
 	}
 }
+
+cl_object
+si_fill_array_with_elt(cl_object x, cl_object elt, cl_object start, cl_object end)
+{
+	cl_elttype t = ecl_array_elttype(x);
+        cl_index first = fixnnint(start);
+        cl_index last = Null(end)? x->array.dim : fixnnint(end);
+        if (first >= last) {
+                goto END;
+        }
+	switch (t) {
+	case aet_object: {
+                cl_object *p = x->vector.self.t + first;
+		for (first = last - first; first; --first, ++p) { *p = elt; }
+		break;
+        }
+	case aet_bc: {
+                ecl_base_char e = ecl_char_code(elt);
+                ecl_base_char *p = x->vector.self.bc + first;
+		for (first = last - first; first; --first, ++p) { *p = e; }
+		break;
+        }
+#ifdef ECL_UNICODE
+	case aet_ch: {
+                ecl_character e = ecl_char_code(elt);
+                ecl_character *p = x->vector.self.ch + first;
+		for (first = last - first; first; --first, ++p) { *p = e; }
+		break;
+        }
+#endif
+	case aet_fix: {
+                cl_fixnum e = fixint(elt);
+                cl_fixnum *p = x->vector.self.fix + first;
+		for (first = last - first; first; --first, ++p) { *p = e; }
+		break;
+        }
+	case aet_index: {
+                cl_index e = fixnnint(elt);
+                cl_index *p = x->vector.self.index + first;
+		for (first = last - first; first; --first, ++p) { *p = e; }
+		break;
+        }
+	case aet_sf: {
+                float e = ecl_to_float(elt);
+                float *p = x->vector.self.sf + first;
+		for (first = last - first; first; --first, ++p) { *p = e; }
+		break;
+        }
+	case aet_df: {
+                double e = ecl_to_double(elt);
+                double *p = x->vector.self.df + first;
+		for (first = last - first; first; --first, ++p) { *p = e; }
+		break;
+        }
+	case aet_b8: {
+                uint8_t e = ecl_to_uint8_t(elt);
+                uint8_t *p = x->vector.self.b8 + first;
+		for (first = last - first; first; --first, ++p) { *p = e; }
+		break;
+        }
+	case aet_i8: {
+                int8_t e = ecl_to_int8_t(elt);
+                int8_t *p = x->vector.self.i8 + first;
+		for (first = last - first; first; --first, ++p) { *p = e; }
+		break;
+        }
+#ifdef ecl_uint16_t
+	case aet_b16: {
+                ecl_uint16_t e = ecl_to_uint16_t(elt);
+                ecl_uint16_t *p = x->vector.self.b16 + first;
+		for (first = last - first; first; --first, ++p) { *p = e; }
+		break;
+        }
+	case aet_i16: {
+                ecl_int16_t e = ecl_to_int16_t(elt);
+                ecl_int16_t *p = x->vector.self.i16 + first;
+		for (first = last - first; first; --first, ++p) { *p = e; }
+		break;
+        }
+#endif
+#ifdef ecl_uint32_t
+	case aet_b32: {
+                ecl_uint32_t e = ecl_to_uint32_t(elt);
+                ecl_uint32_t *p = x->vector.self.b32 + first;
+		for (first = last - first; first; --first, ++p) { *p = e; }
+		break;
+        }
+	case aet_i32: {
+                ecl_int32_t e = ecl_to_int32_t(elt);
+                ecl_int32_t *p = x->vector.self.i32 + first;
+		for (first = last - first; first; --first, ++p) { *p = e; }
+		break;
+        }
+#endif
+#ifdef ecl_uint64_t
+	case aet_b64: {
+                ecl_uint64_t e = ecl_to_uint64_t(elt);
+                ecl_uint64_t *p = x->vector.self.b64 + first;
+		for (first = last - first; first; --first, ++p) { *p = e; }
+		break;
+        }
+	case aet_i64: {
+                ecl_int64_t e = ecl_to_int64_t(elt);
+                ecl_int64_t *p = x->vector.self.i64 + first;
+		for (first = last - first; first; --first, ++p) { *p = e; }
+		break;
+        }
+#endif
+	case aet_bit: {
+                int i = ecl_fixnum_in_range(@'si::aset',"bit",elt,0,1);
+		for (last -= first, first += x->vector.offset; last; --last, ++first) {
+                        int mask = 0200>>first%CHAR_BIT;
+                        if (i == 0)
+                                x->vector.self.bit[first/CHAR_BIT] &= ~mask;
+                        else
+                                x->vector.self.bit[first/CHAR_BIT] |= mask;
+		}
+		break;
+        }
+	default:
+		FEbad_aet();
+	}
+ END:
+        @(return x)
+}

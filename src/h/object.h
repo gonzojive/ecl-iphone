@@ -391,16 +391,16 @@ union ecl_array_data {
 	uint8_t       *b8;
 	int8_t        *i8;
 #ifdef ecl_uint16_t
-        uint16_t      *b16;
-        int16_t       *i16;
+        ecl_uint16_t  *b16;
+        ecl_int16_t   *i16;
 #endif
 #ifdef ecl_uint32_t
-        uint32_t      *b32;
-        int32_t       *i32;
+        ecl_uint32_t  *b32;
+        ecl_int32_t   *i32;
 #endif
 #ifdef ecl_uint64_t
-        uint64_t      *b64;
-        int64_t       *i64;
+        ecl_uint64_t  *b64;
+        ecl_int64_t   *i64;
 #endif
 	float         *sf;
 	double        *df;

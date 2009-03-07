@@ -1769,5 +1769,7 @@ cl_symbols[] = {
 {EXT_ "HEAP-SIZE", EXT_ORDINARY, si_heap_size, -1, OBJNULL},
 #endif
 
+{EXT_ "FILL-ARRAY-WITH-ELT", EXT_ORDINARY, si_fill_array_with_elt, 4, OBJNULL},
+
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};

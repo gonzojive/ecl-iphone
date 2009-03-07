@@ -46,16 +46,16 @@ contiguous block."
   (let ((x (sys:make-pure-array element-type dimensions adjustable
 				fill-pointer displaced-to displaced-index-offset)))
     (declare (array x))
-    (when initial-element-supplied-p
-      (dotimes (i (array-total-size x))
-	(declare (fixnum i))
-	(sys::row-major-aset x i initial-element)))
-    (when initial-contents-supplied-p
-      (fill-array x initial-contents))
-    x))
+    (cond (initial-element-supplied-p
+           (when initial-contents-supplied-p
+             (error "MAKE-ARRAY: Cannot supply both :INITIAL-ELEMENT and :INITIAL-CONTENTS"))
+           (fill-array-with-elt x initial-element 0 nil))
+          (initial-contents-supplied-p
+           (fill-array-with-seq x initial-contents))
+          (t
+           x))))
 
-(defun fill-array (array initial-contents)
-  (declare (si::c-local))
+(defun fill-array-with-seq (array initial-contents)
   (labels ((iterate-over-contents (array contents dims written)
 	     (declare (fixnum written)
 		      (array array)
@@ -77,7 +77,8 @@ contiguous block."
     (let ((dims (array-dimensions array)))
       (if dims
 	  (iterate-over-contents array initial-contents dims 0)
-	  (setf (aref array) initial-contents)))))
+	  (setf (aref array) initial-contents))))
+  array)
 
 
 (defun vector (&rest objects)
@@ -85,8 +86,7 @@ contiguous block."
 Creates and returns a simple-vector, with the N-th OBJECT being the N-th
 element."
   (let ((a (si:make-vector t (length objects) nil nil nil 0)))
-    (fill-array a objects)
-    a))
+    (fill-array-with-seq a objects)))
 
 (defun array-dimensions (array)
   "Args: (array)
