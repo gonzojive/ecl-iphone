@@ -1475,6 +1475,7 @@ type_of(#0)==t_bitvector")
     si::make-seq-iterator si::seq-iterator-ref si::seq-iterator-set si::seq-iterator-next
     si::structure-type-error si::define-structure
     si::coerce-to-list si::coerce-to-vector
+    si::fill-array-with-seq
     #+formatter
     ,@'(
     format-princ format-prin1 format-print-named-character
