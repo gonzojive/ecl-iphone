@@ -232,7 +232,10 @@ The function thus belongs to the type of functions that cl_make_cfun accepts."
 	    do (push `(type ,type ,var) declarations))
       ;; We generate automatic type checks for function arguments that
       ;; are declared These checks can be deactivated by appropriate
-      ;; safety settings which are checked by OPTIONAL-CHECK-TYPE
+      ;; safety settings which are checked by OPTIONAL-CHECK-TYPE. Note
+      ;; that not all type declarations can be checked (take for instance
+      ;; (type (function (t t) t) foo)) We let OPTIONAL-CHECK-TYPE do the
+      ;; job.
       ;;
       (let* ((pairs (loop for var in type-checks
 		       nconc (let* ((name (var-name var))

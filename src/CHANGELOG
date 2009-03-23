@@ -85,6 +85,13 @@ ECL 9.1.0:
 
  - DEFSTRUCT :INCLUDE did not work with read only slots.
 
+ - EXT:SETENV now ensures that strings are null terminated.
+
+ - For high safety settings, ECL produces a CHECK-TYPE for each declaration
+   at the beginning of a function. If the declaration has a function type,
+   these checks were wrong, for TYPEP cannot take an arbitrary function type
+   as argument.
+
 * Visible changes:
 
  - New function (EXT:HEAP-SIZE &optional NEW-MAX-HEAP-SIZE) can change the      
