@@ -502,17 +502,19 @@ guess_environment(cl_env_ptr env, cl_object interpreter_env)
 	     interpreter_env = ECL_CONS_CDR(interpreter_env))
 	{
 		cl_object record = ECL_CONS_CAR(interpreter_env);
-		cl_object record0 = CAR(record);
-		cl_object record1 = CDR(record);
-		if (SYMBOLP(record0)) {
-			c_register_var(env, record0, FALSE, TRUE);
-		} else if (!FIXNUMP(record0)) {
-			c_register_function(env, record1);
-		} else if (record1 == MAKE_FIXNUM(0)) {
-			c_register_tags(env, Cnil);
-		} else {
-			c_register_block(env, record1);
-		}
+                if (!LISTP(record)) {
+			c_register_function(env, record);
+                } else {
+                        cl_object record0 = ECL_CONS_CAR(record);
+                        cl_object record1 = ECL_CONS_CDR(record);
+                        if (SYMBOLP(record0)) {
+                                c_register_var(env, record0, FALSE, TRUE);
+                        } else if (record1 == MAKE_FIXNUM(0)) {
+                                c_register_tags(env, Cnil);
+                        } else {
+                                c_register_block(env, record1);
+                        }
+                }
 	}
 }
 

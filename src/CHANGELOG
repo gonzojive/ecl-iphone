@@ -61,6 +61,9 @@ ECL 9.1.0:
  - A trivial bug in the compiler prevented ECL from considering many
    unsafe inlined forms for AREF, (SETF AREF) and many other functions.
 
+ - A bug in the bytecodes compiler prevented ECL's debugger from inspecting the
+   stack when there were local functions.
+
 * AMOP:
 
  - In DEFCLASS, the :TYPE of slots was ignored.
