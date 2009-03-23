@@ -48,9 +48,6 @@
 
   (setf vars (nreverse vars) forms (nreverse forms))
 
-  (print vars)
-  (print args)
-
   (mapc #'push-vars vars)
 
   (check-vdecl vnames ts is)
