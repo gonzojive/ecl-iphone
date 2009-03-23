@@ -160,10 +160,10 @@ static struct {
 /******************************* ------- ******************************/
 
 #ifdef HAVE_SIGPROCMASK
-#define define_handler(name, sig, info, aux) name(sig, info, aux)
-#define call_handler(name, sig, info, aux) name(sig, info, aux)
-#define reinstall_signal(x,y)
-#define copy_siginfo(x,y) memcpy(x, y, sizeof(struct sigaction))
+# define define_handler(name, sig, info, aux) name(sig, info, aux)
+# define call_handler(name, sig, info, aux) name(sig, info, aux)
+# define reinstall_signal(x,y)
+# define copy_siginfo(x,y) memcpy(x, y, sizeof(struct sigaction))
 static void
 mysignal(int code, void *handler)
 {
@@ -182,12 +182,12 @@ mysignal(int code, void *handler)
 #endif
 	sigaction(code, &new_action, &old_action);
 }
-#else
-#define define_handler(name, sig, info, aux) name(sig)
-#define call_handler(name, sig, info, aux) name(sig)
-#define mysignal(x,y) signal(x,y)
-#define reinstall_signal(x,y) signal(x,y)
-#define copy_siginfo(x,y)
+#else /* HAVE_SIGPROCMASK */
+# define define_handler(name, sig, info, aux) name(sig)
+# define call_handler(name, sig, info, aux) name(sig)
+# define mysignal(x,y) signal(x,y)
+# define reinstall_signal(x,y) signal(x,y)
+# define copy_siginfo(x,y)
 #endif
 
 static bool
@@ -293,7 +293,7 @@ unblock_signal(int signal)
 # endif
 }
 #else
-#define unblock_signal(sig)
+# define unblock_signal(sig)
 #endif
 
 static void
@@ -321,7 +321,6 @@ define_handler(non_evil_signal_handler, int sig, siginfo_t *siginfo, void *data)
 	}
 	the_env = ecl_process_env();
 	reinstall_signal(sig, non_evil_signal_handler);
-	printf("Non evil handler\n");
 	/*
 	 * If interrupts are disabled by C we are not so eager on
 	 * detecting when the interrupts become enabled again. We
@@ -346,19 +345,12 @@ define_handler(non_evil_signal_handler, int sig, siginfo_t *siginfo, void *data)
 	if (interrupts_disabled_by_C(the_env)) {
 		the_env->disable_interrupts = 3;
 		if (!the_env->interrupt_pending) {
-			struct sigaction oact;
 			the_env->interrupt_pending = sig;
 			copy_siginfo(the_env->interrupt_info, siginfo);
-			printf("Postponing signal %d\n", sig);
-			sigaction(SIGSEGV, NULL, &oact);
-			printf("SIGSEGV Handler: %x\n", oact.sa_sigaction);
-			sigaction(SIGBUS, NULL, &oact);
-			printf("SIGBUS Handler: %x\n", oact.sa_sigaction);
-			printf("sigsegv_handler: %x\n", sigsegv_handler);
 #ifdef ECL_USE_MPROTECT
-			printf("Protecting %x\n", the_env);
-			if (mprotect(the_env, sizeof(*the_env), PROT_READ) < 0)
+			if (mprotect(the_env, sizeof(*the_env), PROT_READ) < 0) {
 				ecl_internal_error("Unable to mprotect environment.");
+                        }
 #endif
 		}
 		errno = old_errno;
@@ -406,7 +398,6 @@ define_handler(sigsegv_handler, int sig, siginfo_t *info, void *aux)
 			the_env->interrupt_pending = sig;
 			copy_siginfo(the_env->interrupt_info, info);
 # ifdef ECL_USE_MPROTECT
-			printf("Protecting %p\n", the_env);
 			if (mprotect(the_env, sizeof(*the_env), PROT_READ) < 0)
 				ecl_internal_error("Unable to mprotect environment.");
 # endif
@@ -429,14 +420,12 @@ static void
 define_handler(sigbus_handler, int sig, siginfo_t *info, void *aux)
 {
 	cl_env_ptr the_env = &cl_env;
-	printf("Entering sigbus_handler for address %0p\n", info->si_addr);
 #if defined(SA_SIGINFO) && defined(ECL_USE_MPROTECT)
 	/* We access the environment when it was protected. That
 	 * means there was a pending signal. */
 	if (the_env == info->si_addr) {
 		int signal = the_env->interrupt_pending;
 		siginfo_t info = *(siginfo_t*)(the_env->interrupt_info);
-		printf("Unprotecting %p\n", the_env);
 		mprotect(the_env, sizeof(*the_env), PROT_READ | PROT_WRITE);
 		the_env->interrupt_pending = 0;
 		the_env->disable_interrupts = 0;
