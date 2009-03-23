@@ -227,9 +227,10 @@
 #+clx-ansi-common-lisp
 (common-lisp:in-package :common-lisp-user)
 
-#+(and ecl (not stage1))
-(eval-when (:compile-toplevel :load-toplevel :execute)
+#+ecl
+(eval-when (#-stage1 :compile-toplevel :load-toplevel #-stage1 :execute)
   (require 'sockets))
+
 
 #+clx-ansi-common-lisp
 (defpackage xlib

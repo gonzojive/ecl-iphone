@@ -1771,5 +1771,7 @@ cl_symbols[] = {
 
 {EXT_ "FILL-ARRAY-WITH-ELT","si_fill_array_with_elt"},
 
+{EXT_ "+ECL-VERSION-NUMBER+",NULL},
+
 /* Tag for end of list */
 {NULL,NULL}};

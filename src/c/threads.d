@@ -647,6 +647,17 @@ init_threads(cl_env_ptr env)
 	pthread_mutexattr_destroy(&attr);
 #endif
 
+	/* We have to set the environment before any allocation takes place,
+	 * so that the interrupt handling code works. */
+#if !defined(WITH___THREAD)
+# if defined(ECL_WINDOWS_THREADS)
+	cl_env_key = TlsAlloc();
+# else
+	pthread_key_create(&cl_env_key, NULL);
+# endif
+#endif
+	ecl_set_process_env(env);
+
 	process = ecl_alloc_object(t_process);
 	process->process.active = 1;
 	process->process.name = @'si::top-level';
@@ -656,14 +667,6 @@ init_threads(cl_env_ptr env)
 	process->process.env = env;
 
 	env->own_process = process;
-#if !defined(WITH___THREAD)
-# if defined(ECL_WINDOWS_THREADS)
-	cl_env_key = TlsAlloc();
-# else
-	pthread_key_create(&cl_env_key, NULL);
-# endif
-#endif
-	ecl_set_process_env(env);
 
 	cl_core.processes = ecl_list1(process);
 

@@ -1771,5 +1771,7 @@ cl_symbols[] = {
 
 {EXT_ "FILL-ARRAY-WITH-ELT", EXT_ORDINARY, si_fill_array_with_elt, 4, OBJNULL},
 
+{EXT_ "+ECL-VERSION-NUMBER+", EXT_CONSTANT, NULL, -1, MAKE_FIXNUM(ECL_VERSION_NUMBER)},
+
 /* Tag for end of list */
 {NULL, CL_ORDINARY, NULL, -1, OBJNULL}};

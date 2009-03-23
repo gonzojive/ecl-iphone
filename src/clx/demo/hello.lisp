@@ -2,13 +2,13 @@
 
 (in-package :xlib)
 
-(defun hello-world (host &rest args &key (string "Hello World") (font "fixed"))
+(defun hello-world (&optional host &rest args &key (string "Hello World") (font "fixed"))
   ;; CLX demo, says STRING using FONT in its own window on HOST
   (let ((display nil)
 	(abort t))
     (unwind-protect
 	(progn 
-	  (setq display (open-display host))
+	  (setq display (if host (open-display host) (open-default-display)))
 	  (multiple-value-prog1
 	    (let* ((screen (display-default-screen display))
 		   (black (screen-black-pixel screen))

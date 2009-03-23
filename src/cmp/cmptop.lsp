@@ -222,7 +222,11 @@
       (wt-nl1 "static cl_object " c-name "(cl_narg narg, ...)"
 	      "{TRAMPOLINK(narg," lisp-name ",&" var-name ",Cblock);}")))
 
-  (output-cfuns *compiler-output1*)
+  (wt-nl-h "#ifdef __cplusplus")
+  (wt-nl-h "}")
+  (wt-nl-h "#endif")
+
+  (output-cfuns *compiler-output2*)
 
   (setq *compiler-phase* 't3)
 
@@ -231,10 +235,6 @@
     (wt-nl-h "#include <ecl/internal.h>")
     (dolist (x *callbacks*)
       (apply #'t3-defcallback x)))
-
-  (wt-nl-h "#ifdef __cplusplus")
-  (wt-nl-h "}")
-  (wt-nl-h "#endif")
 
   (wt-nl top-output-string))
 

@@ -80,8 +80,6 @@ const struct ecl_file_ops *stream_dispatch_table(cl_object strm);
 
 static int flisten(FILE *);
 static int file_listen(int);
-static void io_stream_begin_write(cl_object strm);
-static void io_stream_begin_read(cl_object strm);
 static cl_object ecl_off_t_to_integer(ecl_off_t offset);
 static ecl_off_t ecl_integer_to_off_t(cl_object offset);
 
@@ -97,10 +95,12 @@ static void unread_error(cl_object strm);
 static void unread_twice(cl_object strm);
 static void io_error(cl_object strm);
 static void character_size_overflow(cl_object strm, ecl_character c);
+#ifdef ECL_UNICODE
 static void unsupported_character(cl_object strm);
 static void malformed_character(cl_object strm);
 static void too_long_utf8_sequence(cl_object strm);
 static void invalid_codepoint(cl_object strm, cl_fixnum c);
+#endif
 static void wrong_file_handler(cl_object strm);
 
 /**********************************************************************
@@ -118,13 +118,6 @@ static cl_index
 not_input_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 {
 	not_an_input_stream(strm);
-	return 0;
-}
-
-static cl_index
-not_binary_write_byte8(cl_object strm, unsigned char *c, cl_index n)
-{
-	not_a_binary_stream(strm);
 	return 0;
 }
 
@@ -200,19 +193,6 @@ not_character_write_char(cl_object strm, ecl_character c)
 {
 	not_a_character_stream(strm);
 	return c;
-}
-
-static void
-not_character_unread_char(cl_object strm, ecl_character c)
-{
-	not_a_character_stream(strm);
-}
-
-static int
-not_character_listen(cl_object strm)
-{
-	not_a_character_stream(strm);
-	return -1;
 }
 
 static void
@@ -3204,7 +3184,7 @@ io_stream_write_byte8(cl_object strm, unsigned char *c, cl_index n)
 		ecl_fseeko(IO_STREAM_FILE(strm), 0, SEEK_CUR);
 	}
 	strm->stream.last_op = -1;
-	return input_stream_read_byte8(strm, c, n);
+	return output_stream_write_byte8(strm, c, n);
 }
 
 static void io_stream_force_output(cl_object strm);
@@ -3219,7 +3199,7 @@ io_stream_read_byte8(cl_object strm, unsigned char *c, cl_index n)
 		io_stream_force_output(strm);
 	}
 	strm->stream.last_op = +1;
-	return output_stream_write_byte8(strm, c, n);
+	return input_stream_read_byte8(strm, c, n);
 }
 
 static int

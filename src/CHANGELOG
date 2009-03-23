@@ -64,6 +64,12 @@ ECL 9.1.0:
  - A bug in the bytecodes compiler prevented ECL's debugger from inspecting the
    stack when there were local functions.
 
+ - Fixed problems with C/C++ forward declarations of static arrays in compiled
+   code that prevented ECL from building with a C++ compiler.
+
+ - The CLX module now adds itself to *MODULES* and also requires SOCKETS
+   automatically on startup.
+
 * AMOP:
 
  - In DEFCLASS, the :TYPE of slots was ignored.
@@ -76,6 +82,8 @@ ECL 9.1.0:
 
  - With null safety settings, the slot accessors for structures with
    specialized vector types were not properly compiled.
+
+ - DEFSTRUCT :INCLUDE did not work with read only slots.
 
 * Visible changes:
 
@@ -103,6 +111,11 @@ ECL 9.1.0:
  - New specialized array types for signed and unsigned integers with 8, 16, 32
    and 64 bits. They depend on the existence of the ecl_[u]int*_t macros
    mentioned before.
+
+ - Two new constants, a C macro ECL_VERSION_NUMBER, and Lisp constant
+   EXT:+ECL-VERSION-NUMBER+, allow determining the version of ECL with
+   a greater granurality. The constant is a decimal number, yymmaa,
+   matching the ECL versioning scheme.
 
 ;;; Local Variables: ***
 ;;; mode:text ***
