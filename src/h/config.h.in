@@ -1,4 +1,3 @@
-
 /*
     config.h.in -- Template configuration file.
 */
@@ -373,19 +372,15 @@ typedef unsigned @CL_FIXNUM_TYPE@ cl_hashkey;
 #  define FILE_CNT(fp)	((fp)->_cnt)
 #endif
 
-#if defined(MSDOS) || defined(cygwin) || defined(mingw32)
+#if defined(cygwin) || defined(mingw32) || defined(_MSC_VER)
 #  define IS_DIR_SEPARATOR(x) ((x=='/')||(x=='\\'))
-#  ifdef MSDOS
-#    define DIR_SEPARATOR	'\\'
-#  else
-#    define DIR_SEPARATOR	'/'
-#  endif
+#  define DIR_SEPARATOR		'/'
 #  define PATH_SEPARATOR	';'
 #else
 #  define IS_DIR_SEPARATOR(x) (x=='/')
 #  define DIR_SEPARATOR	'/'
 #  define PATH_SEPARATOR	':'
-#endif /* MSDOS */
+#endif
 
 #define ECL_ARCHITECTURE "@ARCHITECTURE@"
 

@@ -37,6 +37,9 @@
 # define ECL_API
 #endif
 
+/* Decimal number made with the formula yymmvv */
+#define ECL_VERSION_NUMBER @ECL_VERSION_NUMBER@
+
 /*
  * FEATURES LINKED IN
  */
@@ -60,6 +63,9 @@
 # define GC_WIN32_THREADS
 #endif
 
+/* __thread thread-local variables?                                     */
+/* #undef WITH___THREAD */
+
 /* Network streams							*/
 #define TCP 1
 #if defined(TCP) && (defined(_MSC_VER) || defined(mingw32))
@@ -68,6 +74,25 @@
 
 /* Foreign functions interface						*/
 #define ECL_FFI
+
+/* Support for Unicode strings */
+/* #undef ECL_UNICODE */
+
+/* Stack grows downwards						*/
+#define ECL_DOWN_STACK 1
+
+/* Use mprotect for fast interrupt dispatch				*/
+/* #undef ECL_USE_MPROTECT */
+
+/* Integer types                        				*/
+/* #undef ecl_uint16_t */
+/* #undef ecl_int16_t */
+/* #undef ecl_uint32_t */
+/* #undef ecl_int32_t */
+/* #undef ecl_uint64_t */
+/* #undef ecl_int64_t */
+/* #undef ecl_long_long_t */
+/* #undef ecl_ulong_long_t */
 
 /*
  * C TYPES AND SYSTEM LIMITS
@@ -139,6 +164,15 @@ typedef unsigned int cl_hashkey;
  */
 #define ECL_SLOTS_LIMIT	32768
 
+/* compiler understands long double                                     */
+/* #undef HAVE_LONG_DOUBLE */
+#ifdef HAVE_LONG_DOUBLE
+# define ECL_LONG_FLOAT
+#endif
+/* compiler understands complex                                         */
+/* #undef HAVE_DOUBLE_COMPLEX */
+/* #undef HAVE_FLOAT_COMPLEX */
+
 /* Missing integer types */
 typedef char int8_t;
 typedef short int16_t;
@@ -196,11 +230,8 @@ typedef unsigned int uint32_t;
 /* Assembler implementation of APPLY and friends			*/
 /* #undef ECL_ASM_APPLY */
 
-/* Stack grows downwards						*/
-#define ECL_DOWN_STACK 1
-
-/* Use mprotect for fast interrupt dispatch				*/
-/* #undef ECL_USE_MPROTECT */
+/* Activate Boehm-Weiser incremental garbage collector			*/
+/* #undef GBC_BOEHM_GENGC */
 
 /*
  * SYSTEM FEATURES:
@@ -221,12 +252,17 @@ typedef unsigned int uint32_t;
 #define HAVE_FLOAT_H 1
 /* select()								*/
 /* #undef HAVE_SELECT */
+/* #undef HAVE_SYS_SELECT_H */
 /* #undef HAVE_SYS_IOCTL_H */
 /* putenv() or setenv()							*/
 #undef HAVE_SETENV
 #define HAVE_PUTENV 1
 /* times() and sys/times.h						*/
 /* #undef HAVE_TIMES */
+/* gettimeofday() and sys/time.h					*/
+/* #undef HAVE_GETTIMEOFDAY */
+/* getrusage() and sys/resource.h					*/
+/* #undef HAVE_GETRUSAGE */
 /* user home directory, user name, etc...				*/
 /* #undef HAVE_PW_H */
 /* symbolic links and checking their existence				*/
@@ -245,12 +281,41 @@ typedef unsigned int uint32_t;
 /* #undef HAVE_SIGPROCMASK */
 /* isatty() checks whether a file is connected to a                     */ 
 #define HAVE_ISATTY  1 
+/* can manipulate floating point environment				*/
+/* #undef HAVE_FENV_H */
+/* can activate individual traps in floating point environment		*/
+/* #undef HAVE_FEENABLEEXCEPT */
+/* do we want to deactivate all support for floating point exceptions   */
+/* #undef ECL_AVOID_FPE_H */
+/* do we want to have signed zeros					*/
+/* #undef ECL_SIGNED_ZERO */
+/* has support for large files						*/
+/* #undef HAVE_FSEEKO */
 /* compiler understands long long                                       */ 
 #define HAVE_LONG_LONG 1
 /* the tzset() function gets the current time zone			*/
 #define HAVE_TZSET 1
 /* whether we have sched_yield() that gives priority to other threads	*/
 /* #undef HAVE_SCHED_YIELD */
+/* uname() for system identification					*/
+/* #undef HAVE_UNAME */
+/* #undef HAVE_UNISTD_H */
+/* #undef HAVE_SYS_WAIT_H */
+/* size of long long            					*/
+/* #undef ECL_LONG_LONG_BITS */
+
+/*
+ * we do not manage to get proper signal handling of floating point
+ * arithmetics in the Alpha chips.
+ */
+#if defined(__alpha__)
+# ifdef HAVE_FENV_H
+#  undef HAVE_FENV_H
+# endif
+# ifdef HAVE_FEENABLEEXCEPT
+#  undef HAVE_FEENABLEEXCEPT
+# endif
+#endif
 
 /* what characters are used to mark beginning of new line		*/
 #define ECL_NEWLINE_IS_CRLF 1
@@ -265,21 +330,6 @@ typedef unsigned int uint32_t;
  */
 #define	LISP_PAGESIZE	2048	/* Page size in bytes			*/
 #define MAXPAGE	16384		/* Maximum Memory Size			*/
-
-/*
- * The lisp environment has several stacks. These are their limits:
- */
-#define BDSSIZE	2048		/* Size of Binding Stack		*/
-#define	BDSGETA	16		/* Safety zone of BDS			*/
-#define FRSSIZE	1024		/* Size of Frame Stack			*/
-#define	FRSGETA	16		/* Safety zone of FRS			*/
-#ifdef THREADS
-#define	CSSIZE	7500		/* Size of C Stack of each thread	*/
-#define	CSGETA	500
-#else
-#define	CSSIZE	20000		/* Size of C Stack			*/
-#define	CSGETA	4000
-#endif
 
 /* We reserve these many bytes for computation with bignums registers	*/
 #define BIGNUM_REGISTER_SIZE 16
@@ -308,17 +358,23 @@ typedef unsigned int uint32_t;
 #  define FILE_CNT(fp)	((fp)->_cnt)
 #endif
 
-#if defined(MSDOS) || defined(cygwin) || defined(mingw32) || defined(_MSC_VER)
+#if defined(cygwin) || defined(mingw32) || defined(_MSC_VER)
 #  define IS_DIR_SEPARATOR(x) ((x=='/')||(x=='\\'))
-#  define DIR_SEPARATOR	'/'
+#  define DIR_SEPARATOR		'/'
 #  define PATH_SEPARATOR	';'
 #else
 #  define IS_DIR_SEPARATOR(x) (x=='/')
 #  define DIR_SEPARATOR	'/'
 #  define PATH_SEPARATOR	':'
-#endif /* MSDOS */
+#endif
 
 #define ECL_ARCHITECTURE "PENTIUM4"
+
+#ifdef ECL_AVOID_FPE_H
+# define ecl_detect_fpe()
+#else
+# include "@ECL_FPE_CODE@"
+#endif
 
 #define strcasecmp _stricmp
 #define isnan _isnan
