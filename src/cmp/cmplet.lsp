@@ -48,6 +48,9 @@
 
   (setf vars (nreverse vars) forms (nreverse forms))
 
+  (print vars)
+  (print args)
+
   (mapc #'push-vars vars)
 
   (check-vdecl vnames ts is)
@@ -506,7 +509,7 @@
 
 ;;; ----------------------------------------------------------------------
 
-(put-sysprop 'LET 'C1SPECIAL #'c1let)
+(put-sysprop 'LET 'C1SPECIAL 'c1let)
 (put-sysprop 'LET 'C2 'c2let)
-(put-sysprop 'LET* 'C1SPECIAL #'c1let*)
+(put-sysprop 'LET* 'C1SPECIAL 'c1let*)
 (put-sysprop 'LET* 'C2 'c2let*)
