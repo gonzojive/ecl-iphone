@@ -110,7 +110,7 @@ typedef struct cl_compiler_env *cl_compiler_env_ptr;
                 const cl_object __frame = (f);                          \
                 cl_index i, nargs = va[0].narg;                         \
                 ecl_stack_frame_open((e), __frame, nargs);              \
-                for (i = 0; i < __nargs; i++) {                         \
+                for (i = 0; i < nargs; i++) {                           \
                         __frame->frame.base[i] = cl_va_arg(va);         \
                 }                                                       \
         } while (0)

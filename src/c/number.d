@@ -216,15 +216,24 @@ ecl_to_int32_t(cl_object x) {
 ecl_uint64_t
 ecl_to_uint64_t(cl_object x) {
         do {
-# if !defined(WITH_GMP) || FIXNUM_BITS != 32
+# if (FIXNUM_BITS != 32)
 #  error "Cannot handle ecl_uint64_t without GMP or 32/64 bits integer"
-# endif
+#endif
                 if (!ecl_minusp(x)) {
                         if (FIXNUMP(x)) {
                                 return (ecl_uint64_t)fix(x);
                         } else if (type_of(x) != t_bignum) {
                                 (void)0;
-                        } else if (mpz_fits_ulong_p(x->big.big_num)) {
+                        }
+# if !defined(WITH_GMP) 
+//#   warn "Originally this function required GMP, but now we  just ignore the possibility of bignums."
+			//else if (type_of(x) == t_bignum) {
+			//	return 0;
+			//}
+# else
+
+
+			else if (mpz_fits_ulong_p(x->big.big_num)) {
                                 return (ecl_uint64_t)mpz_get_ui(x->big.big_num);
                         } else {
                                 cl_object copy = big_register0_get();
@@ -237,6 +246,7 @@ ecl_to_uint64_t(cl_object x) {
                                         return output;
                                 }
                         }
+# endif
                 }
 		x = ecl_type_error(@'coerce', "variable", x,
                                    cl_list(3,@'integer',MAKE_FIXNUM(0),
@@ -246,7 +256,7 @@ ecl_to_uint64_t(cl_object x) {
 
 ecl_int64_t
 ecl_to_int64_t(cl_object x) {
-# if !defined(WITH_GMP) || FIXNUM_BITS != 32
+# if FIXNUM_BITS != 32
 #  error "Cannot handle ecl_uint64_t without GMP or 32 bits fixnums"
 # endif
         do {
@@ -254,7 +264,11 @@ ecl_to_int64_t(cl_object x) {
                         return (ecl_int64_t)fix(x);
                 } else if (type_of(x) != t_bignum) {
                         (void)0;
-                } else if (mpz_fits_slong_p(x->big.big_num)) {
+                }
+# if !defined(WITH_GMP)
+//#  warn "Originally this function required GMP, but now we just ignore the possibility of bignums"
+#else
+		else if (mpz_fits_slong_p(x->big.big_num)) {
                         return (ecl_int64_t)mpz_get_si(x->big.big_num);
                 } else {
                         cl_object copy = big_register0_get();
@@ -266,6 +280,7 @@ ecl_to_int64_t(cl_object x) {
                                 return (output << 32) + mpz_get_ui(copy->big.big_num);
                         }
                 }
+#endif
 		x = ecl_type_error(@'coerce', "variable", x,
                                    cl_list(3,@'integer',
                                            ecl_negate(ecl_ash(MAKE_FIXNUM(1), 63)),

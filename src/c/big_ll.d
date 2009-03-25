@@ -130,17 +130,17 @@ int big_num_t_sgn(big_num_t x)
 }
 
 
-void init_big_registers(void)
+void init_big_registers(cl_env_ptr env)
 {
 	int i;
 	for (i = 0; i < 3; i++) {
-		cl_env.big_register[i] = ecl_alloc_object(t_bignum);
-                cl_env.big_register[i]->big.big_num = 0ll;
+		env->big_register[i] = ecl_alloc_object(t_bignum);
+                env->big_register[i]->big.big_num = 0ll;
 	}
 }
 
 void
-init_big(void)
+init_big(cl_env_ptr env)
 {
-	init_big_registers();
+	init_big_registers(env);
 }

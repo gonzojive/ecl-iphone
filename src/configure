@@ -7103,11 +7103,9 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
 if test $ac_cv_c_long_long = yes; then
   if test "$cross_compiling" = yes; then
-  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&5
-echo "$as_me: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
+    echo "$as_me:$LINENO: error: cannot run test program while cross compiling.  See \`config.log' for more details." >&5
+    echo "ASSUMING 64 bits" >&5
+    ECL_LONG_LONG_BITS=64
 else
   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
