@@ -1147,7 +1147,7 @@ si_fill_array_with_elt(cl_object x, cl_object elt, cl_object start, cl_object en
 #ifdef ECL_UNICODE
 	case aet_ch: {
                 ecl_character e = ecl_char_code(elt);
-                ecl_character *p = x->vector.self.ch + first;
+                ecl_character *p = x->vector.self.c + first;
 		for (first = last - first; first; --first, ++p) { *p = e; }
 		break;
         }
