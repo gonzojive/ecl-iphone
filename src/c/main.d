@@ -728,7 +728,7 @@ si_setenv(cl_object var, cl_object value)
 		value = cl_format(4, Cnil, make_constant_base_string("~A=~A"), var,
 				  value);
 		value = si_copy_to_simple_base_string(value);
-		putenv((char*)temp->base_string.self);
+		putenv((char*)value->base_string.self);
 #endif
 	}
 	if (ret_val == -1)
