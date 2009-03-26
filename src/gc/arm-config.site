@@ -1,0 +1,26 @@
+# config.site for configure
+# Modified from the one provided by Bradley D. LaRonde
+# Edited by Andrej Cedilnik <acedil1@csee.umbc.edu>
+# Used some of solutions by Tilman Vogel <Tilman.Vogel@web.de>
+# Ported for iPAQ Familiar by Oliver Kurth <oliver.kurth@innominate.com>
+# Further modified by Margaret Fleck for the badge4
+
+HOSTCC=gcc
+
+# Names of the cross-compilers
+CC=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc-4.0
+CXX=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc-4.0
+CPP=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/cpp
+
+# The cross compiler specific options
+CFLAGS="-arch armv6 -pipe -std=c99 -Wno-trigraphs -fpascal-strings -fasm-blocks -O0 -Wreturn-type -Wunused-variable -fmessage-length=0 -fvisibility=hidden -miphoneos-version-min=2.0 -gdwarf-2 -mthumb -miphoneos-version-min=2.0 -I/Library/iPhone/include -isysroot /Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS2.0.sdk"
+CXXFLAGS="-arch armv6 -pipe -std=c99 -Wno-trigraphs -fpascal-strings -fasm-blocks -O0 -Wreturn-type -Wunused-variable -fmessage-length=0 -fvisibility=hidden -miphoneos-version-min=2.0 -gdwarf-2 -mthumb -miphoneos-version-min=2.0 -I/Library/iPhone/include -isysroot /Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS2.0.sdk"
+CPPFLAGS="-arch armv6 -pipe -std=c99 -Wno-trigraphs -fpascal-strings -fasm-blocks -O0 -Wreturn-type -Wunused-variable -fmessage-length=0 -fvisibility=hidden -miphoneos-version-min=2.0 -gdwarf-2 -mthumb -miphoneos-version-min=2.0 -I/Library/iPhone/include -isysroot /Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS2.0.sdk"
+LDFLAGS="-arch armv6 -pipe -std=c99 -gdwarf-2 -mthumb -I/Library/iPhone/include -isysroot /Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS2.0.sdk"
+
+# Some other programs
+AR=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/ar
+RANLIB=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/ranlib
+NM=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/nm
+ac_cv_path_NM=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/nm
+ac_cv_func_setpgrp_void=yes
