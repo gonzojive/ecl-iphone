@@ -36,7 +36,7 @@ echo "=================================================="
 make distclean
 mkdir build
 cp cross_config_iPhoneOS build/cross_config
-echo "ECL_TO_RUN=`pwd`/install_iPhoneSimulator/bin/ecl"
+echo "ECL_TO_RUN=$THIS_DIR/install_iPhoneSimulator/bin/ecl"
 
 DEVROOT=/Developer/Platforms/iPhoneOS.platform/Developer
 sh ./configure \
