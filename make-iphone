@@ -1,8 +1,8 @@
 #!/bin/sh
-make distclean
 echo "=================================================="
 echo "Making the build-platform ECL to be used for cross compilation:"
 echo "=================================================="
+make distclean
 THIS_DIR=`pwd`
 DEVROOT=/Developer/Platforms/iPhoneSimulator.platform/Developer
 ./configure \
@@ -33,13 +33,14 @@ chmod -R 775 ./install_iPhoneSimulator/lib/
 echo "=================================================="
 echo "Making the host-platform ECL to be used on the iPhone:"
 echo "=================================================="
+make distclean
 mkdir build
 cp cross_config_iPhoneOS build/cross_config
 echo "ECL_TO_RUN=`pwd`/install_iPhoneSimulator/bin/ecl"
 
 DEVROOT=/Developer/Platforms/iPhoneOS.platform/Developer
 sh ./configure \
- --prefix=/Users/red/Projects/ecl/ecl-git/install_iPhoneOS/ \
+ --prefix=$THIS_DIR/install_iPhoneOS/ \
  --host=arm-apple-darwin \
  --target=arm-apple \
  --without-profile \
@@ -52,6 +53,7 @@ sh ./configure \
  --without-rt \
  --disable-threads \
  --without-gmp \
+ --disable-shared \
  dynamic_ffi=no
  CC="$DEVROOT/usr/bin/gcc-4.0 -arch armv6" \
  AR=$DEVROOT/usr/bin/ar \
