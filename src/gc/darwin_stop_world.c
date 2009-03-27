@@ -175,7 +175,8 @@ void GC_push_all_stacks()
 	  GC_push_one(state . THREAD_FLD (r30));
 	  GC_push_one(state . THREAD_FLD (r31));
 #       elif defined(ARM32)
-	  lo = (void*)state . THREAD_FLD (__r) [0];
+	  lo = (void*)state . THREAD_FLD (__sp);
+	  GC_push_one(state . THREAD_FLD (__r) [0]);
 	  GC_push_one(state . THREAD_FLD (__r) [1]);
 	  GC_push_one(state . THREAD_FLD (__r) [2]);
 	  GC_push_one(state . THREAD_FLD (__r) [3]);
@@ -188,7 +189,6 @@ void GC_push_all_stacks()
 	  GC_push_one(state . THREAD_FLD (__r) [10]);
 	  GC_push_one(state . THREAD_FLD (__r) [11]);
 	  GC_push_one(state . THREAD_FLD (__r) [12]);
-	  GC_push_one(state . THREAD_FLD (__sp));
 	  GC_push_one(state . THREAD_FLD (__lr));
 	  GC_push_one(state . THREAD_FLD (__pc));
 	  GC_push_one(state . THREAD_FLD (__cpsr));

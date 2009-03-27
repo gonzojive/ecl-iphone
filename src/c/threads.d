@@ -67,7 +67,7 @@ ecl_process_env(void)
 	struct cl_env_struct *rv = pthread_getspecific(cl_env_key);
         if (rv)
 		return rv;
-	printf("Getting pthread key %i returned %i\n", (int)cl_env_key, (int)rv);
+	printf("FROM THREAD %i: Getting pthread key %i returned %i\n", (int)pthread_self() , (int)cl_env_key, (int)rv);
 	FElibc_error("pthread_getspecific() failed.", 0);
 	return NULL;
 #endif
@@ -83,12 +83,12 @@ ecl_set_process_env(cl_env_ptr env)
 # ifdef ECL_WINDOWS_THREADS
 	TlsSetValue(cl_env_key, env);
 # else
-	printf("Setting pthread key %i to %i\n", (int)cl_env_key, (int)env);
+	printf("FROM THREAD %i: Setting pthread key %i to %i\n", (int)pthread_self(), (int)cl_env_key, (int)env);
 	if (pthread_setspecific(cl_env_key, env))
 		FElibc_error("pthread_setcspecific() failed.", 0);
 
 	struct cl_env_struct *rv = pthread_getspecific(cl_env_key);
-        if (rv != env || 1)
+        if (rv != env)
 	{
 		printf("Getting pthread key %i returned %i immediately afterwards. should match.\n", (int)cl_env_key, (int)rv);
 	}
@@ -141,9 +141,11 @@ thread_entry_point(cl_object process)
 
 	/* 1) Setup the environment for the execution of the thread */
 	pthread_cleanup_push(thread_cleanup, (void *)env);
+	// set up the environment pointer first so that we can associate
+	// this environment with currently executing pthread
+	ecl_set_process_env(env);
 	ecl_init_env(env);
 	init_big_registers(env);
-	ecl_set_process_env(env);
 	ecl_enable_interrupts_env(env);
 
 	/* 2) Execute the code. The CATCH_ALL point is the destination
@@ -208,9 +210,9 @@ ecl_import_current_thread(cl_object name, cl_object bindings)
 	cl_object process = alloc_process(name);
 	cl_env_ptr env = process->process.env;
 	initialize_process_bindings(process, bindings);
+	ecl_set_process_env(env);
 	ecl_init_env(env);
 	init_big_registers(env);
-	ecl_set_process_env(env);
 	ecl_enable_interrupts_env(env);
 }
 
