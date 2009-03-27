@@ -67,6 +67,7 @@ ecl_process_env(void)
 	struct cl_env_struct *rv = pthread_getspecific(cl_env_key);
         if (rv)
 		return rv;
+	printf("Getting pthread key %i returned %i\n", (int)cl_env_key, (int)rv);
 	FElibc_error("pthread_getspecific() failed.", 0);
 	return NULL;
 #endif
@@ -82,8 +83,17 @@ ecl_set_process_env(cl_env_ptr env)
 # ifdef ECL_WINDOWS_THREADS
 	TlsSetValue(cl_env_key, env);
 # else
+	printf("Setting pthread key %i to %i\n", (int)cl_env_key, (int)env);
 	if (pthread_setspecific(cl_env_key, env))
 		FElibc_error("pthread_setcspecific() failed.", 0);
+
+	struct cl_env_struct *rv = pthread_getspecific(cl_env_key);
+        if (rv != env || 1)
+	{
+		printf("Getting pthread key %i returned %i immediately afterwards. should match.\n", (int)cl_env_key, (int)rv);
+	}
+
+
 # endif
 #endif
 }

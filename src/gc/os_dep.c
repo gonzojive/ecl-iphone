@@ -3877,8 +3877,12 @@ catch_exception_raise(mach_port_t exception_port, mach_port_t thread,
       mach_msg_type_number_t exc_state_count = x86_EXCEPTION_STATE64_COUNT;
       x86_exception_state64_t exc_state;
 #   endif
+# elif defined(ARM32) // iphone
+      thread_state_flavor_t flavor = ARM_EXCEPTION_STATE;
+      mach_msg_type_number_t exc_state_count = ARM_EXCEPTION_STATE_COUNT;
+      arm_exception_state_t exc_state;
 # else
-#   error FIXME for non-ppc/x86 darwin
+#   error FIXME for non-ppc/x86 darwin/arm
 # endif
 
 
@@ -3909,8 +3913,10 @@ catch_exception_raise(mach_port_t exception_port, mach_port_t thread,
     addr = (char*) exc_state. THREAD_FLD(dar);
 # elif defined (I386) || defined (X86_64)
     addr = (char*) exc_state. THREAD_FLD(faultvaddr);
+# elif defined (ARM32)
+    addr = (char*) exc_state. THREAD_FLD(__far);
 # else
-#   error FIXME for non POWERPC/I386
+#   error FIXME for non POWERPC/I386/arm darwin
 # endif
 
     if((HDR(addr)) == 0) {

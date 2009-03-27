@@ -74,7 +74,7 @@ ffi_x86_64.c: arch/ffi_x86_64.d $(DPP) $(HFILES)
 	$(RANLIB) $@
 
 clean:
-	$(RM) $(DPP) *.c *.h $(OBJS) all_symbols.o all_symbols2.o ../libecl.a cinit.o core a.out
+	$(RM) $(DPP) *.c *.h $(OBJS) all_symbols.o all_symbols2.o ../@LIBPREFIX@ecl@LIBPOSTFIX@.a cinit.o core a.out
 
 # Build rules
 

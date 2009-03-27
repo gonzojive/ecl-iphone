@@ -13,6 +13,8 @@ else
   ac_cv_c_long_long=no)
 fi
 if test $ac_cv_c_long_long = yes; then
+
+if test -z "$ECL_LONG_LONG_BITS" ; then
   AC_RUN_IFELSE([AC_LANG_SOURCE([[#include <stdio.h>
 int main() {
   const char *int_type;
@@ -27,6 +29,8 @@ int main() {
   exit(0);
 }]])],[eval "`cat conftestval`"],[],[])
 fi
+fi
+
 if test -z "$ECL_LONG_LONG_BITS"; then
   AC_MSG_RESULT(not available)
 else
@@ -101,6 +105,9 @@ ECL_NEWLINE=LF
 ###          3 = (f)->_cnt
 ECL_FILE_CNT=0
 
+### 1.6) How many bits constitute a long long?
+ECL_LONG_LONG_BITS=64
+
 ### 2) To cross-compile ECL so that it runs on the system
 ###		${host}
 ### you need to first compile ECL on the system in which you are building
@@ -108,6 +115,11 @@ ECL_FILE_CNT=0
 ###		${build}
 ### By default we assume that ECL can be accessed from some directory in
 ### the path.
+###
+### Ensure that you cross-compile ECL with a version of ECL compiled with
+### the same options, otherwise you will run into inconsistencies between
+### symbol tables of the two versions
+
 ECL_TO_RUN=`which ecl`
 EOF
     cat ${with_cross_config}
@@ -178,6 +190,7 @@ AC_SUBST(MACHINE_VERSION)dnl	Version of the machine
 
 AC_SUBST(LDRPATH)dnl	Sometimes the path for finding DLLs must be hardcoded.
 AC_SUBST(LIBPREFIX)dnl	Name components of a statically linked library
+AC_SUBST(LIBPOSTFIX)dnl e.g. libecl_POSTFIX.a
 AC_SUBST(LIBEXT)
 AC_SUBST(SHAREDEXT)dnl	Name components of a dynamically linked library
 AC_SUBST(SHAREDPREFIX)
@@ -189,6 +202,7 @@ LDRPATH='~*'
 SHAREDEXT='so'
 SHAREDPREFIX='lib'
 LIBPREFIX='lib'
+LIBPOSTFIX=''
 LIBEXT='a'
 PICFLAG='-fPIC'
 THREAD_CFLAGS=''
@@ -670,6 +684,8 @@ dnl functions?
 dnl
 AC_DEFUN([ECL_FFI],[
 AC_MSG_CHECKING([whether we can dynamically build calls to C functions])
+if test -z "${dynamic_ffi}" ; then
+
 case "${host_cpu}" in
    i686 | i586 | pentium* | athlon* )
 	EXTRA_OBJS="${EXTRA_OBJS} ffi_x86.o"
@@ -692,6 +708,8 @@ case "${host_cpu}" in
 	dynamic_ffi=no
 	;;
 esac
+fi
+
 AC_MSG_RESULT([${dynamic_ffi}])
 if test "$dynamic_ffi" = "yes" ; then
   AC_DEFINE(ECL_DYNAMIC_FFI, 1, [we can build calls to foreign functions])

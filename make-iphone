@@ -1,0 +1,72 @@
+#!/bin/sh
+make distclean
+echo "=================================================="
+echo "Making the build-platform ECL to be used for cross compilation:"
+echo "=================================================="
+THIS_DIR=`pwd`
+DEVROOT=/Developer/Platforms/iPhoneSimulator.platform/Developer
+./configure \
+ --prefix=$THIS_DIR/install_iPhoneSimulator/ \
+ --without-profile \
+ --without-cmp \
+ --without-asdf \
+ --without-defsystem \
+ --enable-debug \
+ --disable-shared \
+ --without-serve-event \
+ --with-tcp \
+ --without-rt \
+ --enable-threads \
+ --without-gmp \
+ dynamic_ffi=no \
+ CC="$DEVROOT/usr/bin/gcc" \
+ AR=$DEVROOT/usr/bin/ar \
+ RANLIB=$DEVROOT/usr/bin/ranlib \
+ NM=$DEVROOT/usr/bin/nm \
+ CPP=$DEVROOT/usr/bin/cpp \
+ ac_cv_path_NM=$DEVROOT/usr/bin/nm
+
+make
+make install
+chmod -R 775 ./install_iPhoneSimulator/lib/
+
+echo "=================================================="
+echo "Making the host-platform ECL to be used on the iPhone:"
+echo "=================================================="
+mkdir build
+cp cross_config_iPhoneOS build/cross_config
+echo "ECL_TO_RUN=`pwd`/install_iPhoneSimulator/bin/ecl"
+
+DEVROOT=/Developer/Platforms/iPhoneOS.platform/Developer
+sh ./configure \
+ --prefix=/Users/red/Projects/ecl/ecl-git/install_iPhoneOS/ \
+ --host=arm-apple-darwin \
+ --target=arm-apple \
+ --without-profile \
+ --without-cmp \
+ --with-asdf \
+ --without-defsystem \
+ --enable-debug \
+ --without-serve-event \
+ --with-tcp \
+ --without-rt \
+ --disable-threads \
+ --without-gmp \
+ dynamic_ffi=no
+ CC="$DEVROOT/usr/bin/gcc-4.0 -arch armv6" \
+ AR=$DEVROOT/usr/bin/ar \
+ RANLIB=$DEVROOT/usr/bin/ranlib \
+ NM=$DEVROOT/usr/bin/nm \
+ CFLAGS="-arch armv6 -pipe -std=c99 -Wno-trigraphs -fpascal-strings -fasm-blocks -O0 -Wreturn-type -Wunused-variable -fmessage-length=0 -fvisibility=hidden -miphoneos-version-min=2.0 -gdwarf-2 -mthumb -miphoneos-version-min=2.0 -I/Library/iPhone/include -isysroot $DEVROOT/SDKs/iPhoneOS2.0.sdk" \
+ LDFLAGS="-arch armv6 -pipe -std=c99 -gdwarf-2 -mthumb -I/Library/iPhone/include -isysroot $DEVROOT/SDKs/iPhoneOS2.0.sdk" \
+ CPP=$DEVROOT/usr/bin/cpp \
+ ac_cv_path_NM=$DEVROOT/usr/bin/nm \
+ ac_cv_func_setpgrp_void=yes \
+ LIBPOSTFIX=_iPhoneOS
+
+make
+make install
+
+echo "=================================================="
+echo "Finished compiling!  Inspect the output for errors"
+echo "=================================================="

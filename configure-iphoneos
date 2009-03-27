@@ -1,0 +1,33 @@
+#!/bin/sh
+DEVROOT=/Developer/Platforms/iPhoneOS.platform/Developer
+sh ./configure \
+ --prefix=/Users/red/Projects/ecl/ecl-git/install_iPhoneOS/ \
+ --host=arm-apple-darwin \
+ --target=arm-apple \
+ --without-profile \
+ --without-cmp \
+ --with-asdf \
+ --without-defsystem \
+ --enable-debug \
+ --without-serve-event \
+ --with-tcp \
+ --without-rt \
+ --disable-threads \
+ --without-gmp \
+ dynamic_ffi=no
+ CC="$DEVROOT/usr/bin/gcc-4.0 -arch armv6" \
+ AR=$DEVROOT/usr/bin/ar \
+ RANLIB=$DEVROOT/usr/bin/ranlib \
+ NM=$DEVROOT/usr/bin/nm \
+ CFLAGS="-arch armv6 -pipe -std=c99 -Wno-trigraphs -fpascal-strings -fasm-blocks -O0 -Wreturn-type -Wunused-variable -fmessage-length=0 -fvisibility=hidden -miphoneos-version-min=2.0 -gdwarf-2 -mthumb -miphoneos-version-min=2.0 -I/Library/iPhone/include -isysroot $DEVROOT/SDKs/iPhoneOS2.0.sdk" \
+ LDFLAGS="-arch armv6 -pipe -std=c99 -gdwarf-2 -mthumb -I/Library/iPhone/include -isysroot $DEVROOT/SDKs/iPhoneOS2.0.sdk" \
+ CPP=$DEVROOT/usr/bin/cpp \
+ ac_cv_path_NM=$DEVROOT/usr/bin/nm \
+ ac_cv_func_setpgrp_void=yes \
+ LIBPOSTFIX=_iPhoneOS
+
+
+# CPPFLAGS="-isysroot /Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS2.0.sdk"
+#  --disable-shared \
+
+#

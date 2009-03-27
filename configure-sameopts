@@ -1,0 +1,24 @@
+#!/bin/sh
+DEVROOT=/Developer/Platforms/iPhoneSimulator.platform/Developer
+./configure \
+ --prefix=/Users/red/Projects/ecl/ecl-git/install_iPhoneSimulator/ \
+ --without-profile \
+ --without-cmp \
+ --without-asdf \
+ --without-defsystem \
+ --enable-debug \
+ --disable-shared \
+ --without-serve-event \
+ --with-tcp \
+ --without-rt \
+ --enable-threads \
+ --without-gmp \
+ dynamic_ffi=no \
+ CC="$DEVROOT/usr/bin/gcc" \
+ AR=$DEVROOT/usr/bin/ar \
+ RANLIB=$DEVROOT/usr/bin/ranlib \
+ NM=$DEVROOT/usr/bin/nm \
+ CPP=$DEVROOT/usr/bin/cpp \
+ ac_cv_path_NM=$DEVROOT/usr/bin/nm
+
+# --with-system-gmp \

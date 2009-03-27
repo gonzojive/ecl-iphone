@@ -1796,9 +1796,10 @@
       /* There seems to be some issues with trylock hanging on darwin. This
 	 should be looked into some more */
 #     define NO_PTHREAD_TRYLOCK
-     /* NOTE we are attempting to use MMAP because the sbrk method is failing on us. */
+     /* NOTE we are attempting to use MMAP because the sbrk method is failing on us. (it works!) */
 #     define USE_MMAP
 #     define USE_MMAP_ANON
+#     define DEBUG_THREADS  1
 #   endif
 #   ifdef NOSYS
       /* __data_start is usually defined in the target linker script.  */

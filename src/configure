@@ -704,6 +704,7 @@ SOFTWARE_VERSION
 MACHINE_VERSION
 LDRPATH
 LIBPREFIX
+LIBPOSTFIX
 LIBEXT
 SHAREDEXT
 SHAREDPREFIX
@@ -4086,6 +4087,9 @@ ECL_NEWLINE=LF
 ###          3 = (f)->_cnt
 ECL_FILE_CNT=0
 
+### 1.6) How many bits constitute a long long?
+ECL_LONG_LONG_BITS=64
+
 ### 2) To cross-compile ECL so that it runs on the system
 ###		${host}
 ### you need to first compile ECL on the system in which you are building
@@ -4093,6 +4097,11 @@ ECL_FILE_CNT=0
 ###		${build}
 ### By default we assume that ECL can be accessed from some directory in
 ### the path.
+###
+### Ensure that you cross-compile ECL with a version of ECL compiled with
+### the same options, otherwise you will run into inconsistencies between
+### symbol tables of the two versions
+
 ECL_TO_RUN=`which ecl`
 EOF
     cat ${with_cross_config}
@@ -4147,6 +4156,7 @@ LDRPATH='~*'
 SHAREDEXT='so'
 SHAREDPREFIX='lib'
 LIBPREFIX='lib'
+LIBPOSTFIX=''
 LIBEXT='a'
 PICFLAG='-fPIC'
 THREAD_CFLAGS=''
@@ -7102,10 +7112,14 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
 if test $ac_cv_c_long_long = yes; then
+
+if test -z "$ECL_LONG_LONG_BITS" ; then
   if test "$cross_compiling" = yes; then
-    echo "$as_me:$LINENO: error: cannot run test program while cross compiling.  See \`config.log' for more details." >&5
-    echo "ASSUMING 64 bits" >&5
-    ECL_LONG_LONG_BITS=64
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; }
 else
   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
@@ -7159,6 +7173,8 @@ fi
 
 
 fi
+fi
+
 if test -z "$ECL_LONG_LONG_BITS"; then
   { echo "$as_me:$LINENO: result: not available" >&5
 echo "${ECHO_T}not available" >&6; }
@@ -8086,6 +8102,8 @@ fi
 
 { echo "$as_me:$LINENO: checking whether we can dynamically build calls to C functions" >&5
 echo $ECHO_N "checking whether we can dynamically build calls to C functions... $ECHO_C" >&6; }
+if test -z "${dynamic_ffi}" ; then
+
 case "${host_cpu}" in
    i686 | i586 | pentium* | athlon* )
 	EXTRA_OBJS="${EXTRA_OBJS} ffi_x86.o"
@@ -8114,6 +8132,8 @@ _ACEOF
 	dynamic_ffi=no
 	;;
 esac
+fi
+
 { echo "$as_me:$LINENO: result: ${dynamic_ffi}" >&5
 echo "${ECHO_T}${dynamic_ffi}" >&6; }
 if test "$dynamic_ffi" = "yes" ; then
@@ -12540,13 +12560,13 @@ SOFTWARE_VERSION!$SOFTWARE_VERSION$ac_delim
 MACHINE_VERSION!$MACHINE_VERSION$ac_delim
 LDRPATH!$LDRPATH$ac_delim
 LIBPREFIX!$LIBPREFIX$ac_delim
+LIBPOSTFIX!$LIBPOSTFIX$ac_delim
 LIBEXT!$LIBEXT$ac_delim
 SHAREDEXT!$SHAREDEXT$ac_delim
 SHAREDPREFIX!$SHAREDPREFIX$ac_delim
 INSTALL_TARGET!$INSTALL_TARGET$ac_delim
 thehost!$thehost$ac_delim
 INFOEXT!$INFOEXT$ac_delim
-INSTALL_INFO!$INSTALL_INFO$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -12588,6 +12608,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+INSTALL_INFO!$INSTALL_INFO$ac_delim
 SONAME3!$SONAME3$ac_delim
 SONAME2!$SONAME2$ac_delim
 SONAME1!$SONAME1$ac_delim
@@ -12615,7 +12636,7 @@ ECL_GMP_HEADER!$ECL_GMP_HEADER$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 25; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 26; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

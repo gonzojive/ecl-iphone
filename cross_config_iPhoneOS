@@ -32,6 +32,9 @@ ECL_NEWLINE=LF
 ###          3 = (f)->_cnt
 ECL_FILE_CNT=0
 
+### 1.6) How many bits constitute a long long?
+ECL_LONG_LONG_BITS=64
+
 ### 2) To cross-compile ECL so that it runs on the system
 ###		arm-apple-darwin
 ### you need to first compile ECL on the system in which you are building
@@ -39,4 +42,4 @@ ECL_FILE_CNT=0
 ###		i686-apple-darwin9.6.0
 ### By default we assume that ECL can be accessed from some directory in
 ### the path.
-ECL_TO_RUN=/Users/red/Projects/ecl/ecl-git/install_iPhoneSimulator/bin/ecl
+#ECL_TO_RUN=/Users/red/Projects/ecl/ecl-git/install_iPhoneSimulator/bin/ecl

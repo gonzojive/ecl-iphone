@@ -71,11 +71,11 @@ bin/ecl$(EXE): ecl_min$(EXE) compile.lsp sysfun.lsp ecl/external.h BUILD-STAMP
 		ECLDIR=`pwd`/ ./ecl_min compile; \
 	fi
 
-ecl_min$(EXE): $(LIBRARIES) .gdbinit @LIBPREFIX@eclmin.@LIBEXT@
+ecl_min$(EXE): $(LIBRARIES) .gdbinit @LIBPREFIX@eclmin@LIBPOSTFIX@.@LIBEXT@
 	if [ -f CROSS-COMPILER ]; then \
 		touch $@; \
 	else \
-		$(CC) $(LDFLAGS) -o $@ cinit.o c/all_symbols.o -L./ @LIBPREFIX@eclmin.@LIBEXT@ $(CORE_LIBS) $(LIBS) $(FASL_LIBS);\
+		$(CC) $(LDFLAGS) -o $@ cinit.o c/all_symbols.o -L./ @LIBPREFIX@eclmin@LIBPOSTFIX@.@LIBEXT@ $(CORE_LIBS) $(LIBS) $(FASL_LIBS);\
 	fi
 
 .gdbinit: $(srcdir)/util/gdbinit
@@ -95,22 +95,22 @@ bin/ecl-config: bin/ecl-config.pre
 	    -e 's,@includedir\\@,$(includedir),' bin/ecl-config.pre > bin/ecl-config
 
 
-@LIBPREFIX@eclmin.@LIBEXT@: @LIBPREFIX@eclgmp.@LIBEXT@ @LIBPREFIX@eclgc.@LIBEXT@ lsp/config.lsp cmp/cmpdefs.lsp ecl/external.h
+@LIBPREFIX@eclmin@LIBPOSTFIX@.@LIBEXT@: @LIBPREFIX@eclgmp@LIBPOSTFIX@.@LIBEXT@ @LIBPREFIX@eclgc@LIBPOSTFIX@.@LIBEXT@ lsp/config.lsp cmp/cmpdefs.lsp ecl/external.h
 	cd c; $(MAKE)
-@LIBPREFIX@eclgc.@LIBEXT@:
+@LIBPREFIX@eclgc@LIBPOSTFIX@.@LIBEXT@:
 	test -d ecl/gc || mkdir ecl/gc
 	test -d ecl/gc/private || mkdir ecl/gc/private
 	if (echo $(SUBDIRS) | grep gc); then \
 	  cd gc && $(MAKE) install && cd .. && \
 	  cp -rf $(srcdir)/gc/include/gc_{mark,inline,tiny_fl}.h ecl/gc/ && \
 	  cp -rf $(srcdir)/gc/include/private/*.h ecl/gc/private/ && \
-	  mv @LIBPREFIX@gc.@LIBEXT@ @LIBPREFIX@eclgc.@LIBEXT@; \
+	  mv @LIBPREFIX@gc.@LIBEXT@ @LIBPREFIX@eclgc@LIBPOSTFIX@.@LIBEXT@; \
 	fi
-@LIBPREFIX@eclgmp.@LIBEXT@:
+@LIBPREFIX@eclgmp@LIBPOSTFIX@.@LIBEXT@:
 	if (echo $(SUBDIRS) | grep gmp); then \
 	  cd gmp && $(MAKE) install && \
 	  cd .. && mv include/gmp.h ecl/ && rmdir include &&  \
-	  mv ./@LIBPREFIX@gmp.@LIBEXT@ ./@LIBPREFIX@eclgmp.@LIBEXT@; \
+	  mv ./@LIBPREFIX@gmp.@LIBEXT@ ./@LIBPREFIX@eclgmp@LIBPOSTFIX@.@LIBEXT@; \
 	fi
 sysfun.lsp:
 	$(LN_S) $(srcdir)/cmp/sysfun.lsp ./
@@ -156,7 +156,7 @@ install-base:
 	   $(INSTALL_PROGRAM) $$i $(DESTDIR)$(libdir); \
 	  fi \
 	done
-	if [ "x@SONAME@" != "x" ]; then \
+	if [ "x@SONAME@" != "x" ] && [ "@enabled_shared@" = "yes" ] ; then \
 	  ( cd $(DESTDIR)$(libdir) && rm -f @SONAME3@ @SONAME2@ @SONAME1@ && \
 	    mv @SONAME@ @SONAME3@ && \
 	    $(LN_S) @SONAME3@ @SONAME2@ && \
