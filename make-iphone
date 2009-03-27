@@ -1,8 +1,8 @@
 #!/bin/sh
-make distclean
 echo "=================================================="
 echo "Making the build-platform ECL to be used for cross compilation:"
 echo "=================================================="
+make distclean
 THIS_DIR=`pwd`
 DEVROOT=/Developer/Platforms/iPhoneSimulator.platform/Developer
 ./configure \
@@ -33,6 +33,7 @@ chmod -R 775 ./install_iPhoneSimulator/lib/
 echo "=================================================="
 echo "Making the host-platform ECL to be used on the iPhone:"
 echo "=================================================="
+make distclean
 mkdir build
 cp cross_config_iPhoneOS build/cross_config
 echo "ECL_TO_RUN=`pwd`/install_iPhoneSimulator/bin/ecl"
