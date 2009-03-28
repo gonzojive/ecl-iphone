@@ -68,6 +68,8 @@ sh ./configure \
 make
 make install
 
+cp install_iPhoneOS/lib/libecl.a install_iPhoneOS/lib/libecl_iPhoneOS.a && cp install_iPhoneOS/lib/libeclgc.a install_iPhoneOS/lib/libeclgc_iPhoneOS.a
 echo "=================================================="
 echo "Finished compiling!  Inspect the output for errors"
 echo "=================================================="
+
