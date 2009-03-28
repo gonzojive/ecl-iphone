@@ -500,8 +500,8 @@ si_gc_stats(cl_object enable)
 	cl_core.gc_stats = (enable != Cnil);
 	if (cl_core.bytes_consed == Cnil) {
 #ifndef WITH_GMP
-		cl_core.bytes_consed = MAKE_FIXNUM(0);
-		cl_core.gc_counter = MAKE_FIXNUM(0);
+		cl_core.bytes_consed = bignum1(MAKE_FIXNUM(0));
+		cl_core.gc_counter = bignum1(MAKE_FIXNUM(0));
 #else
 		cl_core.bytes_consed = ecl_alloc_object(t_bignum);
 		mpz_init2(cl_core.bytes_consed->big.big_num, 128);
@@ -509,6 +509,7 @@ si_gc_stats(cl_object enable)
 		mpz_init2(cl_core.gc_counter->big.big_num, 128);
 #endif
 	}
+
 	@(return
 	  big_register_normalize(cl_core.bytes_consed)
 	  big_register_normalize(cl_core.gc_counter)

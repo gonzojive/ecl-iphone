@@ -189,6 +189,7 @@ void GC_push_all_stacks()
 	  GC_push_one(state . THREAD_FLD (__r) [10]);
 	  GC_push_one(state . THREAD_FLD (__r) [11]);
 	  GC_push_one(state . THREAD_FLD (__r) [12]);
+	  //GC_push_one(state . THREAD_FLD (__sp));
 	  GC_push_one(state . THREAD_FLD (__lr));
 	  GC_push_one(state . THREAD_FLD (__pc));
 	  GC_push_one(state . THREAD_FLD (__cpsr));

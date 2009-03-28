@@ -310,8 +310,8 @@ ecl_floor2(cl_object x, cl_object y)
 #ifdef WITH_GMP
 		  mpz_fdiv_qr(q->big.big_num, r->big.big_num, x->big.big_num, y->big.big_num);
 #else  /* WITH_GMP */
-                  q = x->big.big_num / y->big.big_num;
-                  r = x->big.big_num % y->big.big_num;
+                  q->big.big_num = x->big.big_num / y->big.big_num;
+                  r->big.big_num = x->big.big_num % y->big.big_num;
 #endif /* WITH_GMP */
 		  v0 = big_register_normalize(q);
 		  v1 = big_register_normalize(r);
@@ -520,9 +520,12 @@ ecl_ceiling2(cl_object x, cl_object y)
 		  cl_object j = big_register2_get();
 		  mpz_set_si(j->big.big_num, fix(x));
 		  mpz_cdiv_qr(q->big.big_num, r->big.big_num, j->big.big_num, y->big.big_num);
-#else  /* WITH_GMP */
-                  q = (big_num_t)fix(x) / y->big.big_num;
-                  r = (big_num_t)fix(x) % y->big.big_num;
+#else  /* WITH_GMP */ // this is probably not the best way to do it...
+		  q->big.big_num = (big_num_t)fix(x) / y->big.big_num;
+		  r->big.big_num = (big_num_t)fix(x) % y->big.big_num;
+                  //q = bignum1((big_num_t)fix(x) / y->big.big_num);
+                  //r = bignum1((big_num_t)fix(x) % y->big.big_num);
+
 #endif /* WITH_GMP */
 		  v0 = big_register_normalize(q);
 		  v1 = big_register_normalize(r);
@@ -582,8 +585,8 @@ ecl_ceiling2(cl_object x, cl_object y)
 		  mpz_set_si(j->big.big_num, fix(y));
 		  mpz_cdiv_qr(q->big.big_num, r->big.big_num, x->big.big_num, j->big.big_num);
 #else  /* WITH_GMP */
-                  q = x->big.big_num / fix(y);
-                  r = x->big.big_num % fix(y);
+                  q->big.big_num = x->big.big_num / fix(y);
+                  r->big.big_num = x->big.big_num % fix(y);
 #endif /* WITH_GMP */
 		  v0 = big_register_normalize(q);
 		  v1 = big_register_normalize(r);
