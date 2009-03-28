@@ -355,7 +355,7 @@ else
     if test "${enable_shared}" = "no"; then
       LIBRARIES="${LIBRARIES} ${LIBPREFIX}eclgc.${LIBEXT}"
     fi
-    AC_DEFINE(GBC_BOEHM, [0], [Use Boehm's garbage collector])
+    AC_DEFINE(GBC_BOEHM, [1], [Use Boehm's garbage collector])
   fi
   EXTRA_OBJS="${EXTRA_OBJS} alloc_2.${OBJEXT}"
 fi
