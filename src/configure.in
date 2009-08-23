@@ -589,6 +589,8 @@ fi
 
 if test "${with_cmp}" = "yes"; then
   ECL_ADD_LISP_MODULE([cmp])
+else
+  ECL_ADD_LISP_MODULE([fake-cmp])
 fi
 
 AC_SUBST(CLX_INFO)

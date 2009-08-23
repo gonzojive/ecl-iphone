@@ -46,8 +46,15 @@
 #-:wants-dlopen (setq *features* (delete :dlopen *features*))
 #+:wants-dlopen (push :dlopen *features*)
 
-(load #+(or cross ecl-min) "cmp/load.lsp"
-      #-(or cross ecl-min) "cmp.so")
+#-(or cross ecl-min)
+(load "cmp.so")
+#+(or cross ecl-min)
+;; the compiler we load at this point is not the one built into the ECL we are compiling,
+;; so strip the WANTS-FAKE-CMP feature while we load build compiler so it is actually a
+;; compiler instead of a fraud
+(let ((*features* (remove :wants-fake-cmp *features*)))
+  (load "cmp/load.lsp"))
+      
 
 ;;;
 ;;; * Remove documentation from compiled files

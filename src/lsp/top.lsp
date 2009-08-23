@@ -52,7 +52,6 @@ rebinds this variable to NIL when control enters a break loop.")
 
 (defvar *break-hidden-functions* '(error cerror apply funcall invoke-debugger))
 (defvar *break-hidden-packages* (list #-ecl-min (find-package 'system)))
-
 (defconstant tpl-commands
    '(("Top level commands"
       ((:cf :compile-file) tpl-compile-command :string

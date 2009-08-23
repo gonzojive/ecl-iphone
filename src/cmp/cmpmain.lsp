@@ -34,7 +34,16 @@
   (let ((format '())
 	(extension '()))
     (unless type-supplied-p
-      (setf type (if system-p :object :fasl)))
+      (setf type
+	    #-wants-fake-cmp
+	    (if system-p :object :fasl)
+	    #+wants-fake-cmp
+	    :lisp))
+
+    #+wants-fake-cmp
+    (unless (eql :lisp type)
+      (warn "Without a true compiler, files may only be compiled to other lisp files.  Type ~A invalid for file ~A." type name))
+
     (case type
       ((:shared-library :dll) (setf format +shared-library-format+))
       ((:static-library :library :lib) (setf format +static-library-format+))
@@ -46,7 +55,10 @@
       (:program (setf format +executable-file-format+))
       #+msvc
       (:import-library (setf extension "implib"))
-      ((:fasl :fas) (setf extension "fas")))
+      ((:fasl :fas) (setf extension "fas"))
+      ((or :lisp :lsp)
+       (setf extension (or (pathname-type name) "lsp"))))
+
     (if format
 	(merge-pathnames (format nil format (pathname-name output-file))
 			 output-file)
@@ -515,6 +527,10 @@ compiled successfully, returns the pathname of the compiled file"
 ~%;;; Therefore, COMPILE-FILE without :SYSTEM-P T is unsupported.~
 ~%;;;"))
 
+  #+wants-fake-cmp
+  (cmpnote "COMPILE-FILE called with the fake compiler.  Will not truly generate compiled code.")
+
+
   (setq *compile-file-pathname* input-pathname)
   (unless (probe-file *compile-file-pathname*)
     (if (pathname-type input-pathname)
@@ -536,32 +552,39 @@ compiled successfully, returns the pathname of the compiled file"
   (let* ((eof '(NIL))
 	 (*compiler-in-use* *compiler-in-use*)
 	 (*load-time-values* nil) ;; Load time values are compiled
-	 (o-pathname (compile-file-pathname output-file :type :object))
-	 (so-pathname (compile-file-pathname output-file :type :fasl))
-         (c-pathname (get-output-pathname o-pathname c-file :c))
-         (h-pathname (get-output-pathname o-pathname h-file :h))
-         (data-pathname (get-output-pathname o-pathname data-file :data))
-	 (shared-data-pathname (get-output-pathname o-pathname shared-data-file
-						    :sdata))
 	 (compiler-conditions nil))
 
     (with-compiler-env (compiler-conditions)
 
-      (setf output-file (if system-p o-pathname so-pathname))
+      #+wants-fake-cmp
+      (when (and load output-file (not system-p))
+	(load output-file :verbose *compile-verbose*))
 
-      (print-compiler-info)
 
-      (when (probe-file "./cmpinit.lsp")
+      #-wants-fake-cmp
+      (let* ((o-pathname (compile-file-pathname output-file :type :object))
+	     (so-pathname (compile-file-pathname output-file :type :fasl))
+	     (c-pathname (get-output-pathname o-pathname c-file :c))
+	     (h-pathname (get-output-pathname o-pathname h-file :h))
+	     (data-pathname (get-output-pathname o-pathname data-file :data))
+	     (shared-data-pathname (get-output-pathname o-pathname shared-data-file :sdata)))
+      
+
+	(setf output-file (if system-p o-pathname so-pathname))
+
+	(print-compiler-info)
+
+	(when (probe-file "./cmpinit.lsp")
 	(load "./cmpinit.lsp" :verbose *compile-verbose*))
 
-      (if shared-data-file
-	  (if system-p
-	      (data-init shared-data-pathname)
-	      (error "Shared data files are only allowed when compiling ~&
+	(if shared-data-file
+	(if system-p
+	    (data-init shared-data-pathname)
+	    (error "Shared data files are only allowed when compiling ~&
 		    with the flag :SYSTEM-P set to T."))
-	  (data-init))
+	(data-init))
 
-      (with-open-file (*compiler-input* *compile-file-pathname*)
+	(with-open-file (*compiler-input* *compile-file-pathname*)
 	(do ((ext:*source-location* (cons *compile-file-pathname* 0))
 	     (form (read *compiler-input* nil eof)
 		   (read *compiler-input* nil eof))
@@ -570,18 +593,18 @@ compiled successfully, returns the pathname of the compiled file"
 	  (t1expr form)
 	  (incf (cdr ext:*source-location*))))
 
-      (cmpprogress "~&;;; End of Pass 1.")
-      (setf init-name (compute-init-name output-file :kind
-					 (if system-p :object :fasl)))
-      (compiler-pass2 c-pathname h-pathname data-pathname system-p
-		      init-name
-		      shared-data-file)
+	(cmpprogress "~&;;; End of Pass 1.")
+	(setf init-name (compute-init-name output-file :kind
+					   (if system-p :object :fasl)))
+	(compiler-pass2 c-pathname h-pathname data-pathname system-p
+	init-name
+	shared-data-file)
     
-      (if shared-data-file
-	  (data-dump shared-data-pathname t)
-	  (data-dump data-pathname))
+	(if shared-data-file
+	(data-dump shared-data-pathname t)
+	(data-dump data-pathname))
       
-      (when output-file
+	(when output-file
 	(compiler-cc c-pathname o-pathname)
 	#+dlopen
 	(unless system-p (bundle-cc (si::coerce-to-filename so-pathname)
@@ -589,20 +612,20 @@ compiled successfully, returns the pathname of the compiled file"
 				    (si::coerce-to-filename o-pathname)))
 	(unless (setf output-file (probe-file output-file))
 	  (cmperr "The C compiler failed to compile the intermediate file.")))
-      (cmpprogress "~&;;; Finished compiling ~a.~%" (namestring input-pathname))
+	(cmpprogress "~&;;; Finished compiling ~a.~%" (namestring input-pathname))
 
-      (when (and load output-file (not system-p))
+	(when (and load output-file (not system-p))
 	(load output-file :verbose *compile-verbose*))
 
-      ) ; with-compiler-env
 
-    (unless c-file (cmp-delete-file c-pathname))
-    (unless h-file (cmp-delete-file h-pathname))
-    (unless (or data-file shared-data-file)
-      (cmp-delete-file data-pathname))
-    #+dlopen
-    (unless system-p (cmp-delete-file o-pathname))
-    (compiler-output-values output-file compiler-conditions)))
+
+	(unless c-file (cmp-delete-file c-pathname))
+	(unless h-file (cmp-delete-file h-pathname))
+	(unless (or data-file shared-data-file)
+	(cmp-delete-file data-pathname))
+	#+dlopen
+	(unless system-p (cmp-delete-file o-pathname))
+	(compiler-output-values output-file compiler-conditions)))))
 
 (defun compiler-output-values (main-value conditions)
   (loop for i in conditions

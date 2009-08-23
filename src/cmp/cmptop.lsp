@@ -33,12 +33,20 @@
             ((consp fun) (t1ordinary form))
             ((not (symbolp fun))
 	     (cmperr "~s is illegal function." fun))
+	    ;; Everything below here is a symbol:
+
+	    ;; quoted items need no special attention
 	    ((eq fun 'QUOTE)
 	     (t1ordinary 'NIL))
+	    ;; if there is a special function to be called for this symbol at the 'T1
+	    ;; compilation stage, call it
 	    ((setq fd (get-sysprop fun 'T1))
 	     (funcall fd args))
+	    ;; if there is a special C1 function to call for this symbol,
+	    ;; call t1ordinary with the form at COMPILE time
 	    ((or (get-sysprop fun 'C1) (get-sysprop fun 'C1SPECIAL))
              (t1ordinary form))
+	    ;; if it is a compiler macro, expand it and recursively call t1expr*
 	    ((and (setq fd (compiler-macro-function fun))
 		  (inline-possible fun)
 		  (let ((success nil))
@@ -46,8 +54,10 @@
 		      (cmp-expand-macro fd form))
 		    success))
 	     (t1expr* fd))
+	    ;; if it is just a normal macro, expand it as well (this should probably come before the above cond case)
 	    ((setq fd (cmp-macro-function fun))
 	     (t1expr* (cmp-expand-macro fd form)))
+	    ;; otherwise it is just an ordinary form
 	    (t (t1ordinary form))
 	   )))))
 
@@ -239,23 +249,30 @@
   (wt-nl top-output-string))
 
 (defun c1eval-when (args)
+  "This function is called with the arguments to an EVAL-WHEN top-level form during the compilation stage."
   (check-args-number 'EVAL-WHEN args 1)
   (let ((load-flag nil)
 	(compile-flag nil)
 	(execute-flag nil))
+    ;; process the situation arguments flags
     (dolist (situation (car args))
       (case situation
 	((LOAD :LOAD-TOPLEVEL) (setq load-flag t))
 	((COMPILE :COMPILE-TOPLEVEL) (setq compile-flag t))
 	((EVAL :EXECUTE)
+	 ;; if we are compiling a top-level form in compile-time-too mode (i.e. we decried prior to now
+	 ;; that this toplevel form shall be execute), then mark the compile-flag
 	 (if *compile-toplevel*
 	     (setq compile-flag (or *compile-time-too* compile-flag))
 	     (setq execute-flag t)))
 	(otherwise (cmperr "The EVAL-WHEN situation ~s is illegal."
 			   situation))))
+    
     (cond ((not *compile-toplevel*)
+	   ;; if somehow we are not compiling a top-level form...
 	   (c1progn (and execute-flag (rest args))))
 	  (load-flag
+	   ;; if a form is to be executed at load-time, then 
 	   (let ((*compile-time-too* compile-flag))
 	     (c1progn (rest args))))
 	  (compile-flag

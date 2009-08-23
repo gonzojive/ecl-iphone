@@ -4804,7 +4804,7 @@ _ACEOF
     fi
 
 cat >>confdefs.h <<\_ACEOF
-#define GBC_BOEHM 0
+#define GBC_BOEHM 1
 _ACEOF
 
   fi
@@ -11413,6 +11413,12 @@ if test "${with_cmp}" = "yes"; then
 
 
 LSP_FEATURES="(cons :wants-cmp ${LSP_FEATURES})"
+
+
+else
+
+
+LSP_FEATURES="(cons :wants-fake-cmp ${LSP_FEATURES})"
 
 
 fi

@@ -132,7 +132,7 @@
 
 (si::pathname-translations "SYS" '(("**;*.*.*" "@ecldir\@/**/*.*")))
 
-#+WANTS-CMP
+#+(or WANTS-CMP) ;WANTS-FAKE-CMP)
 (build-module "cmp" +cmp-module-files+ 
               :dir "build:cmp;" :prefix "CMP" :additional-files '("sysfun.lsp"))
 
