@@ -15,10 +15,20 @@ probably went wrong during the installation process.  The build script is pretty
 keep going even if individual steps encounter errors.  So if you get problems look for the error
 highest up in the output.
 
+# Byproducts
+AS A RESULT of much agony in the archaic land of C portage, we have come out not just with ECL
+but with a version of the Boehm Garbage Collector that works for the iPhone--with multithreading
+support, no less!  It is your job to extract the code (it should not be hard--it's just the
+gc directory).
+
 # Missing Features
 THIS VERSION OF ECL does not have any extra bells and whistles.  It is built without threads,
 bignum support, and ASDF.  If you add any of these features, let me or the ECL list know so we can
 all share the wealth.
+
+## Threads
+Actually, I believe threading does work.  It has been a while, but I certainly remember geting
+the GC to work with multithreading support.
 
 ## ASDF
 ASDF is essential for modern lisp programming, but it is currently missing. The reason is that ECL's
